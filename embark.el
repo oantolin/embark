@@ -3310,22 +3310,20 @@ Return the category metadatum as the type of the candidates."
                         (cons '(vertico-current . embark-target) fr)
                       fr))))))
 
-(defun embark--vertico-highlight-selected (cand _prefix _suffix _index _start)
-  "Highlight Vertico itmes in the current Embark selection.
-This is meant to be used as advice for `vertico--format-candidate'."
-  (if (member (concat vertico--base cand) embark--selection)
-      (add-face-text-property 0 (length cand) 'embark-selected nil cand)
-    (vertico--remove-face 0 (length cand) 'embark-selected cand)))
-
 (with-eval-after-load 'vertico
+  (cl-defmethod vertico--format-candidate
+    :around (cand prefix suffix index start &context (embark--selection cons))
+    (when (member (concat vertico--base (nth index vertico--candidates))
+                  embark--selection)
+      (setq cand (copy-sequence cand))
+      (add-face-text-property 0 (length cand) 'embark-selected t cand))
+    (cl-call-next-method cand prefix suffix index start))
   (add-hook 'embark-indicators #'embark--vertico-indicator)
   (add-hook 'embark-target-finders #'embark--vertico-selected)
   (add-hook 'embark-candidate-collectors #'embark--vertico-candidates)
   (setq embark-candidate-collectors
-        (cons 'embark-selected-candidates ; ensure highest priority
-              (delq 'embark-selected-candidates embark-candidate-collectors)))
-  (advice-add 'vertico--format-candidate
-              :before 'embark--vertico-highlight-selected))
+        (cons #'embark-selected-candidates ; ensure highest priority
+              (delq 'embark-selected-candidates embark-candidate-collectors))))
 
 ;; ivy
 
