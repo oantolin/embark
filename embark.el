@@ -3214,13 +3214,14 @@ PRED is a predicate function used to filter the items."
   (when-let ((overlay (get-text-property 0 'embark-selection target)))
     (cons (overlay-start overlay) (overlay-end overlay))))
 
-(cl-defun embark--toggle-select (&key target type bounds &allow-other-keys)
+(cl-defun embark--toggle-select
+    (&key target orig-target type bounds &allow-other-keys)
   "Add or remove TARGET of given TYPE to the selection.
 If BOUNDS are given, also highlight the target when selecting it."
   (if-let ((existing
             (seq-some
              (lambda (cand)
-               (and (equal cand target)
+               (and (equal cand orig-target)
                     (eq (car (get-text-property 0 'multi-category cand)) type)
                     (equal (embark--selected-target-bounds cand) bounds)
                     cand))
@@ -3229,7 +3230,7 @@ If BOUNDS are given, also highlight the target when selecting it."
         (setq embark--selection (delq existing embark--selection))
         (when-let ((overlay (get-text-property 0 'embark-selection existing)))
           (delete-overlay overlay)))
-    (let ((full-target (concat target)) overlay)
+    (let ((full-target (copy-sequence orig-target)) overlay)
       (when bounds
         (setq overlay (make-overlay (car bounds) (cdr bounds)))
         (overlay-put overlay 'face 'embark-selected)
