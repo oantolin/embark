@@ -123,6 +123,9 @@ indicate it could not determine the type of completion."
 (defvar embark--abortp nil
   "Whether to abort all minibuffers after the action.")
 
+(defvar embark--overlay nil
+  "Overlay to communicate embarking on an action to the user.")
+
 (defun embark-target ()
   "Return the target for the current action.
 Save the result somewhere if you need it more than once: calling
@@ -143,6 +146,8 @@ return nil."
     (setq enable-recursive-minibuffers embark--old-erm)
     (remove-hook 'minibuffer-setup-hook #'embark--inject)
     (remove-hook 'post-command-hook #'embark--cleanup)
+    (delete-overlay embark--overlay)
+    (setq embark--overlay nil)
     (when embark--abortp
       (setq embark--abortp nil)
       (abort-recursive-edit))))
@@ -169,7 +174,10 @@ Bind this command to a key in `minibuffer-local-completion-map'."
           enable-recursive-minibuffers t
           embark--abortp arg)
     (embark--set-target)
-    (message "Act on %s %s" kind embark--target)
+    (setq embark--overlay
+          (make-overlay (point-min)
+                        (minibuffer-prompt-end)))
+    (overlay-put embark--overlay 'before-string "<ACT> ")
     (add-hook 'minibuffer-setup-hook #'embark--inject)
     (add-hook 'post-command-hook #'embark--cleanup)
     (set-transient-map (symbol-value keymap))))
