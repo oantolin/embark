@@ -190,31 +190,40 @@ Bind this command to a key in `minibuffer-local-completion-map'."
   (interactive)
   (describe-symbol (intern (embark-target))))
 
-(defvar embark-general-map
+
+(defun embark-keymap (keymap-alist &optional parent-map)
+  "Generage keymap based on KEYMAP-ALIST if PARENT-MAP is non-nil, set it as the parent."
   (let ((map (make-sparse-keymap)))
-    (define-key map "i" #'embark-insert)
-    (define-key map "w" #'embark-save)
+    (mapc (lambda (keypair)
+            (pcase keypair
+              (`(,key . ,fn)
+               (define-key map (kbd key) fn))))
+          keymap-alist)
+    (when parent-map
+      (set-keymap-parent map parent-map))
     map))
+
+(defvar embark-general-map
+  (embark-keymap
+   '(("i" . embark-insert)
+     ("w" . embark-save))))
 
 (defvar embark-file-map
-  (let ((map (make-sparse-keymap)))
-    (set-keymap-parent map embark-general-map)
-    (define-key map "d" #'delete-file)
-    (define-key map "r" #'rename-file)
-    (define-key map "c" #'copy-file)
-    map))
+  (embark-keymap
+   '(("d" . delete-file)
+     ("r" . rename-file)
+     ("c" . copy-file))
+   embark-general-map))
 
 (defvar embark-buffer-map
-  (let ((map (make-sparse-keymap)))
-    (set-keymap-parent map embark-general-map)
-    (define-key map "k" #'kill-buffer)
-    map))
+  (embark-keymap
+   '(("k" . kill-buffer))
+   embark-general-map))
 
 (defvar embark-symbol-map
-  (let ((map (make-sparse-keymap)))
-    (set-keymap-parent map embark-general-map)
-    (define-key map "o" #'embark-describe-symbol)
-    map))
+  (embark-keymap
+   '(("o" . embark-describe-symbol))
+   embark-general-map))
 
 (provide 'embark)
 ;;; embark.el ends here
