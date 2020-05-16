@@ -2,8 +2,10 @@
 
 This package provides a command =embark-act= to execute actions on
 the top minibuffer completion canidate (the one that would be
-chosen by minibuffer-force-complete).  You should bind =embark-act=
-to some key in =minibuffer-local-completion-map=.
+chosen by minibuffer-force-complete) or on the completion candidate
+at point in the completions buffer.  You should bind =embark-act=
+to some key in =minibuffer-local-completion-map= and in
+=completion-list-mode-map=.
 
 The actions are arranged into keymaps separated by the type of
 completion currently taking place.  By default =embark= recognizes

@@ -27,8 +27,10 @@
 
 ;; This package provides a command `embark-act' to execute actions on
 ;; the top minibuffer completion canidate (the one that would be
-;; chosen by minibuffer-force-complete).  You should bind `embark-act'
-;; to some key in `minibuffer-local-completion-map'.
+;; chosen by minibuffer-force-complete) or on the completion candidate
+;; at point in the completions buffer.  You should bind `embark-act'
+;; to some key in `minibuffer-local-completion-map' and in
+;; `completion-list-mode-map'.
 
 ;; The actions are arranged into keymaps separated by the type of
 ;; completion currently taking place.  By default `embark' recognizes
@@ -154,14 +156,32 @@ return nil."
 
 (defun embark--set-target ()
   "Set the top completion candidate as target."
-  (let ((completions (completion-all-sorted-completions)))
-    (if (null completions)
-        (minibuffer-contents)
-      (setq embark--target
-            (concat
-             (substring (minibuffer-contents)
-                        0 (or (cdr (last completions)) 0))
-             (car completions))))))
+  (cond
+   ((minibufferp)
+    (let ((completions (completion-all-sorted-completions)))
+      (if (null completions)
+          (minibuffer-contents)
+        (setq embark--target
+              (concat
+               (substring (minibuffer-contents)
+                          0 (or (cdr (last completions)) 0))
+               (car completions))))))
+   ((eq major-mode 'completion-list-mode)
+    (if (not (get-text-property (point) 'mouse-face))
+        (user-error "No completion here.")
+      ;; this fairly delicate logic is taken from `choose-completion'
+      (let (beg end)
+        (cond
+         ((and (not (eobp)) (get-text-property (point) 'mouse-face))
+          (setq end (point) beg (1+ (point))))
+         ((and (not (bobp))
+               (get-text-property (1- (point)) 'mouse-face))
+          (setq end (1- (point)) beg (point)))
+         (t (user-error "No completion here")))
+        (setq beg (previous-single-property-change beg 'mouse-face))
+        (setq end (or (next-single-property-change end 'mouse-face)
+                      (point-max)))
+        (setq embark--target (buffer-substring-no-properties beg end)))))))
 
 (defun embark-act (arg)
   "Embark upon a minibuffer action.
@@ -174,10 +194,13 @@ Bind this command to a key in `minibuffer-local-completion-map'."
           enable-recursive-minibuffers t
           embark--abortp arg)
     (embark--set-target)
-    (setq embark--overlay
-          (make-overlay (point-min)
-                        (minibuffer-prompt-end)))
-    (overlay-put embark--overlay 'before-string "<ACT> ")
+    (let ((mini (active-minibuffer-window)))
+      (when mini
+        (setq embark--overlay
+              (make-overlay (point-min)
+                            (minibuffer-prompt-end)
+                            (window-buffer mini)))
+        (overlay-put embark--overlay 'before-string "<ACT> ")))
     (add-hook 'minibuffer-setup-hook #'embark--inject)
     (add-hook 'post-command-hook #'embark--cleanup)
     (set-transient-map (symbol-value keymap))))
