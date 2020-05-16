@@ -209,8 +209,9 @@ Bind this command to a key in `minibuffer-local-completion-map'."
 (defun embark-insert ()
   "Insert `embark-target' into the previously selected buffer at point."
   (interactive)
-  (with-selected-window (minibuffer-selected-window)
-    (insert (embark-target))))
+  (with-selected-window (active-minibuffer-window)
+    (with-selected-window (minibuffer-selected-window)
+      (insert (embark-target)))))
 
 (defun embark-save ()
   "Save `embark-target' in the kill ring."
