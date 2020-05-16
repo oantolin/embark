@@ -72,6 +72,8 @@
 
 ;;; Code:
 
+(require 'subr-x)
+
 (defgroup embark nil
   "Emacs Mini-Buffer Actions Rooted in Keymaps"
   :group 'minibuffer)
@@ -168,7 +170,7 @@ return nil."
                (car completions))))))
    ((eq major-mode 'completion-list-mode)
     (if (not (get-text-property (point) 'mouse-face))
-        (user-error "No completion here.")
+        (user-error "No completion here")
       ;; this fairly delicate logic is taken from `choose-completion'
       (let (beg end)
         (cond
@@ -189,18 +191,17 @@ With a prefix ARG, exit minibuffer after the action.
 Bind this command to a key in `minibuffer-local-completion-map'."
   (interactive "P")
   (let* ((kind (embark-classify))
-         (keymap (cdr (assq kind embark-keymap-alist))))
+         (keymap (alist-get kind embark-keymap-alist)))
     (setq embark--old-erm enable-recursive-minibuffers
           enable-recursive-minibuffers t
           embark--abortp arg)
     (embark--set-target)
-    (let ((mini (active-minibuffer-window)))
-      (when mini
-        (setq embark--overlay
-              (make-overlay (point-min)
-                            (minibuffer-prompt-end)
-                            (window-buffer mini)))
-        (overlay-put embark--overlay 'before-string "<ACT> ")))
+    (when-let ((mini (active-minibuffer-window)))
+      (setq embark--overlay
+            (make-overlay (point-min)
+                          (minibuffer-prompt-end)
+                          (window-buffer mini)))
+      (overlay-put embark--overlay 'before-string "<ACT> "))
     (add-hook 'minibuffer-setup-hook #'embark--inject)
     (add-hook 'post-command-hook #'embark--cleanup)
     (set-transient-map (symbol-value keymap))))
