@@ -193,6 +193,11 @@ Bind this command to a key in `minibuffer-local-completion-map'."
   (interactive)
   (kill-new (embark-target)))
 
+(defun embark-cancel ()
+  "Cancel current action."
+  (interactive)
+  (ignore (embark-target)))
+
 (defun embark-describe-symbol ()
   "Describe `embark-target' as a symbol."
   (interactive)
@@ -214,7 +219,8 @@ Bind this command to a key in `minibuffer-local-completion-map'."
 (defvar embark-general-map
   (embark-keymap
    '(("i" . embark-insert)
-     ("w" . embark-save))))
+     ("w" . embark-save)
+     ("C-g" . embark-cancel))))
 
 (defvar embark-file-map
   (embark-keymap
