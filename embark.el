@@ -149,11 +149,14 @@ return nil."
 
 (defun embark--set-target ()
   "Set the top completion candidate as target."
-  (let ((old-contents (minibuffer-contents)))
-    (minibuffer-force-complete nil nil t)
-    (setq embark--target (minibuffer-contents))
-    (delete-minibuffer-contents)
-    (insert old-contents)))
+  (let ((completions (completion-all-sorted-completions)))
+    (if (null completions)
+        (minibuffer-contents)
+      (setq embark--target
+            (concat
+             (substring (minibuffer-contents)
+                        0 (or (cdr (last completions)) 0))
+             (car completions))))))
 
 (defun embark-act (arg)
   "Embark upon a minibuffer action.
