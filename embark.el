@@ -4,6 +4,9 @@
 
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Keywords: convenience
+;; Version: 0.1
+;; Homepage: https://github.com/oantolin/embark
+;; Package-Requires: ((emacs "25.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -20,7 +23,50 @@
 
 ;;; Commentary:
 
-;; 
+;; embark - Emacs Mini-Buffer Actions Rooted in Keymaps.
+
+;; This package provides a command `embark-act' to execute actions on
+;; the top minibuffer completion canidate (the one that would be
+;; chosen by minibuffer-force-complete).  You should bind `embark-act'
+;; to some key in `minibuffer-local-completion-map'.
+
+;; The actions are arranged into keymaps separated by the type of
+;; completion currently taking place.  By default `embark' recognizes
+;; the following types of completion: file names, buffers and symbols.
+;; The classification is configurable, see the variable
+;; `embark-classifiers'.
+
+;; For any given type there is a corresponding keymap as noted in
+;; `embark-keymap-alist'.  For example, for the completion category
+;; `file', by default the corresponding keymap is `embark-file-map'.
+;; In this keymap you can bind normal commands you might want to use
+;; on file names.  For example, by default `embark-file-map' binds
+;; `delete-file' to "d", `rename-file' to "r" and `copy-file' to "c".
+
+;; The default keymaps that come with `embark' all set
+;; `embark-general-map' as their parent, so that the actions bound
+;; there are available no matter what type of completion you are in
+;; the middle of.  By default this includes bindings to save the
+;; current candidate in the kill ring and to insert the current
+;; candidate in the previously selected buffer (the buffer that was
+;; current when you executed a command that opened up the minibuffer).
+
+;; You can use any command that reads from the minibuffer as an action
+;; and the target of the action will be inserted at the first
+;; minibuffer prompt.  You don't even have to bind a command in one of
+;; the keymaps listed in `embark-keymap-alist' to use it!  After
+;; running `embark-act' all of your keybindings and even
+;; `execute-extended-command' can be used to run a command.
+
+;; Additionally you can write your own commands that do not read from
+;; the minibuffer but act on the current target anyway: just use the
+;; `embark-target' function (exactly once!: it "self-destructs") to
+;; retrieve the current target.  See the definitions of
+;; `embark-insert' or `embark-save' for examples.
+
+;; If you wish to see a reminder of which actions are available, for
+;; now, I recommend installing which-key and using `which-key-mode'
+;; with the `which-key-show-transient-maps' variable set to t.
 
 ;;; Code:
 
@@ -32,6 +78,7 @@
   '((general . embark-general-map)
     (file . embark-file-map)
     (buffer . embark-buffer-map)
+    (command . embark-symbol-map)
     (symbol . embark-symbol-map))
   "Alist of action types and corresponding keymaps."
   :type '(alist :key-type symbol :value-type variable)
@@ -73,6 +120,9 @@ indicate it could not determine the type of completion."
 (defvar embark--old-erm nil
   "Stores value of `enable-recursive-minibuffers'.")
 
+(defvar embark--abortp nil
+  "Whether to abort all minibuffers after the action.")
+
 (defun embark-target ()
   "Return the target for the current action.
 Save the result somewhere if you need it more than once: calling
@@ -92,7 +142,10 @@ return nil."
   (unless embark--target
     (setq enable-recursive-minibuffers embark--old-erm)
     (remove-hook 'minibuffer-setup-hook #'embark--inject)
-    (remove-hook 'post-command-hook #'embark--cleanup)))
+    (remove-hook 'post-command-hook #'embark--cleanup)
+    (when embark--abortp
+      (setq embark--abortp nil)
+      (abort-recursive-edit))))
 
 (defun embark--set-target ()
   "Set the top completion candidate as target."
@@ -102,14 +155,16 @@ return nil."
     (delete-minibuffer-contents)
     (insert old-contents)))
 
-(defun embark-act ()
+(defun embark-act (arg)
   "Embark upon a minibuffer action.
+With a prefix ARG, exit minibuffer after the action.
 Bind this command to a key in `minibuffer-local-completion-map'."
-  (interactive)
+  (interactive "P")
   (let* ((kind (embark-classify))
          (keymap (cdr (assq kind embark-keymap-alist))))
     (setq embark--old-erm enable-recursive-minibuffers
-          enable-recursive-minibuffers t)
+          enable-recursive-minibuffers t
+          embark--abortp arg)
     (embark--set-target)
     (message "Act on %s %s" kind embark--target)
     (add-hook 'minibuffer-setup-hook #'embark--inject)
@@ -127,7 +182,7 @@ Bind this command to a key in `minibuffer-local-completion-map'."
   (kill-new (embark-target)))
 
 (defun embark-describe-symbol ()
-  "Describe `embark-target' as a symbol"
+  "Describe `embark-target' as a symbol."
   (interactive)
   (describe-symbol (intern (embark-target))))
 
