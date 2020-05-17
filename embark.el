@@ -139,10 +139,11 @@ return nil."
     (setq embark--target nil)))
 
 (defun embark--inject ()
-  "Inject `embark-string' into next minibuffer prompt."
-  (unless (eq this-command 'execute-extended-command)
-    (delete-minibuffer-contents)
-    (insert (embark-target))))
+  "Inject embark target into minibuffer prompt."
+  (when-let ((target (embark-target)))
+    (unless (eq this-command 'execute-extended-command)
+      (delete-minibuffer-contents)
+      (insert target))))
 
 (defun embark--cleanup ()
   "Remove all hooks and modifications."
@@ -272,6 +273,12 @@ minibuffers.  Bind this command to a key in
   "Display the definition of embark target, from the relevant manual."
   (info-lookup-symbol (intern (embark-target)) 'emacs-lisp-mode))
 
+(defun embark-rename-buffer ()
+  "Rename embark target buffer."
+  (interactive)
+  (with-current-buffer (embark-target)
+    (call-interactively #'rename-buffer)))
+
 ;;; keymaps
 
 (defvar embark-general-map
@@ -299,6 +306,7 @@ minibuffers.  Bind this command to a key in
      ("b" . switch-to-buffer)
      ("o" . switch-to-buffer-other-window)
      ("q" . bury-buffer)
+     ("r" . embark-rename-buffer)
      ("=" . ediff-buffers))
    embark-general-map))
 
