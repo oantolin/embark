@@ -297,7 +297,9 @@ minibuffers.  Bind this command to a key in
   (embark-keymap
    '(("k" . kill-buffer)
      ("b" . switch-to-buffer)
-     ("o" . switch-to-buffer-other-window))
+     ("o" . switch-to-buffer-other-window)
+     ("q" . bury-buffer)
+     ("=" . ediff-buffers))
    embark-general-map))
 
 (defvar embark-symbol-map
