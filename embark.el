@@ -210,29 +210,6 @@ minibuffers.  Bind this command to a key in
     (add-hook 'post-command-hook #'embark--cleanup)
     (set-transient-map (symbol-value keymap))))
 
-(defun embark-insert ()
-  "Insert `embark-target' into the previously selected buffer at point."
-  (interactive)
-  (with-selected-window (active-minibuffer-window)
-    (with-selected-window (minibuffer-selected-window)
-      (insert (embark-target)))))
-
-(defun embark-save ()
-  "Save `embark-target' in the kill ring."
-  (interactive)
-  (kill-new (embark-target)))
-
-(defun embark-cancel ()
-  "Cancel current action."
-  (interactive)
-  (ignore (embark-target)))
-
-(defun embark-describe-symbol ()
-  "Describe `embark-target' as a symbol."
-  (interactive)
-  (describe-symbol (intern (embark-target))))
-
-
 (defun embark-keymap (keymap-alist &optional parent-map)
   "Generage keymap based on KEYMAP-ALIST if PARENT-MAP is non-nil, set it as the parent."
   (let ((map (make-sparse-keymap)))
@@ -245,6 +222,58 @@ minibuffers.  Bind this command to a key in
       (set-keymap-parent map parent-map))
     map))
 
+;;; custom actions
+
+(defun embark-insert ()
+  "Insert embark target into the previously selected buffer at point."
+  (interactive)
+  (with-selected-window (active-minibuffer-window)
+    (with-selected-window (minibuffer-selected-window)
+      (insert (embark-target)))))
+
+(defun embark-save ()
+  "Save embark target in the kill ring."
+  (interactive)
+  (kill-new (embark-target)))
+
+(defun embark-cancel ()
+  "Cancel current action."
+  (interactive)
+  (ignore (embark-target)))
+
+(defun embark-eshell-in-directory ()
+  "Run eshell in directory of embark target."
+  (interactive)
+  (let ((default-directory
+          (file-name-directory
+           (expand-file-name
+            (embark-target)))))
+    (eshell '(4))))
+
+(defun embark-describe-symbol ()
+  "Describe embark target as a symbol."
+  (interactive)
+  (describe-symbol (intern (embark-target))))
+
+(defun embark-find-definition ()
+  "Find definition of embark target."
+  (interactive)
+  (let ((symbol (intern (embark-target))))
+    (cond
+     ((fboundp symbol) (find-function symbol))
+     ((boundp symbol) (find-variable symbol)))))
+
+(defun embark-info-emacs-command ()
+  "Go to the Info node in the Emacs manual for embark target."
+  (interactive)
+  (Info-goto-emacs-command-node (embark-target)))
+
+(defun embark-info-lookup-symbol ()
+  "Display the definition of embark target, from the relevant manual."
+  (info-lookup-symbol (intern (embark-target)) 'emacs-lisp-mode))
+
+;;; keymaps
+
 (defvar embark-general-map
   (embark-keymap
    '(("i" . embark-insert)
@@ -253,19 +282,30 @@ minibuffers.  Bind this command to a key in
 
 (defvar embark-file-map
   (embark-keymap
-   '(("d" . delete-file)
+   '(("f" . find-file)
+     ("o" . find-file-other-window)
+     ("d" . delete-file)
      ("r" . rename-file)
-     ("c" . copy-file))
+     ("c" . copy-file)
+     ("!" . shell-command)
+     ("&" . async-shell-command)
+     ("=" . ediff-files)
+     ("e" . embark-eshell-in-directory))
    embark-general-map))
 
 (defvar embark-buffer-map
   (embark-keymap
-   '(("k" . kill-buffer))
+   '(("k" . kill-buffer)
+     ("b" . switch-to-buffer)
+     ("o" . switch-to-buffer-other-window))
    embark-general-map))
 
 (defvar embark-symbol-map
   (embark-keymap
-   '(("o" . embark-describe-symbol))
+   '(("h" . embark-describe-symbol)
+     ("c" . embark-info-emacs-command)
+     ("s" . embark-info-lookup-symbol)
+     ("d" . embark-find-definition))
    embark-general-map))
 
 (provide 'embark)
