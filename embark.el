@@ -60,15 +60,25 @@
 ;; running `embark-act' all of your keybindings and even
 ;; `execute-extended-command' can be used to run a command.
 
+;; By default embark just inserts the target of the action into the
+;; next minibuffer prompt but doesn't "press RET" for you.  This is a
+;; prudent default, to let you examine the minibuffer before commiting
+;; to execute the action.  But if you want to live dangerously you can
+;; put the `embark-ratify' property on a command for which you want
+;; embark to "Automatically press RET".  For example, to have embark
+;; kill buffers without confirmation use:
+
+;; (put 'kill-buffer 'embark-ratify t)
+
 ;; Additionally you can write your own commands that do not read from
 ;; the minibuffer but act on the current target anyway: just use the
 ;; `embark-target' function (exactly once!: it "self-destructs") to
 ;; retrieve the current target.  See the definitions of
 ;; `embark-insert' or `embark-save' for examples.
 
-;; If you wish to see a reminder of which actions are available, for
-;; now, I recommend installing which-key and using `which-key-mode'
-;; with the `which-key-show-transient-maps' variable set to t.
+;; If you wish to see a reminder of which actions are available, I
+;; recommend installing which-key and using `which-key-mode' with the
+;; `which-key-show-transient-maps' variable set to t.
 
 ;;; Code:
 
@@ -143,7 +153,9 @@ return nil."
   (when-let ((target (embark-target)))
     (unless (eq this-command 'execute-extended-command)
       (delete-minibuffer-contents)
-      (insert target))))
+      (insert target)
+      (when (get this-command 'embark-ratify)
+        (setq unread-command-events '(13))))))
 
 (defun embark--cleanup ()
   "Remove all hooks and modifications."
