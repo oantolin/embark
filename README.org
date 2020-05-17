@@ -39,7 +39,7 @@ By default embark just inserts the target of the action into the next
 minibuffer prompt but doesn't "press =RET=" for you.  This is a prudent
 default, to let you examine the minibuffer before commiting to execute
 the action.  But if you want to live dangerously you can put the
-`embark-ratify' property on a command for which you want embark to
+=embark-ratify= property on a command for which you want embark to
 "automatically press =RET=".  For example, to have embark kill buffers
 without confirmation use:
 
