@@ -204,7 +204,8 @@ minibuffers.  Bind this command to a key in
             (make-overlay (point-min)
                           (minibuffer-prompt-end)
                           (window-buffer mini)))
-      (overlay-put embark--overlay 'before-string "<ACT> "))
+      (overlay-put embark--overlay 'before-string
+                   (concat (propertize "Act" 'face 'highlight) " ")))
     (add-hook 'minibuffer-setup-hook #'embark--inject)
     (add-hook 'post-command-hook #'embark--cleanup)
     (set-transient-map (symbol-value keymap))))
