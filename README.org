@@ -33,6 +33,9 @@ ring and to insert the current candidate in the previously selected
 buffer (the buffer that was current when you executed a command that
 opened up the minibuffer).
 
+You can read about the [[https://github.com/oantolin/embark/wiki/Default-Actions][default actions and their keybindings]]
+on the GitHub project wiki.
+
 ** Not waiting for confirmation
 
 By default =embark= just inserts the target of the action into the next
