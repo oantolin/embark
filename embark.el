@@ -124,8 +124,8 @@ indicate it could not determine the type of completion."
 (defvar embark--old-erm nil
   "Stores value of `enable-recursive-minibuffers'.")
 
-(defvar embark--abortp nil
-  "Whether to abort all minibuffers after the action.")
+(defvar embark--abort nil
+  "Command to abort 0, 1 or all recursive minibuffers after action.")
 
 (defvar embark--overlay nil
   "Overlay to communicate embarking on an action to the user.")
@@ -152,9 +152,7 @@ return nil."
     (remove-hook 'post-command-hook #'embark--cleanup)
     (delete-overlay embark--overlay)
     (setq embark--overlay nil)
-    (when embark--abortp
-      (setq embark--abortp nil)
-      (abort-recursive-edit))))
+    (funcall embark--abort)))
 
 (defun embark--set-target ()
   "Set the top completion candidate as target."
@@ -187,14 +185,19 @@ return nil."
 
 (defun embark-act (arg)
   "Embark upon a minibuffer action.
-With a prefix ARG, exit minibuffer after the action.
-Bind this command to a key in `minibuffer-local-completion-map'."
+With a universal prefix ARG (\\[universal-argument]), exit minibuffer after the
+action.  With two prefix arguments (\\[universal-argument] \\[universal-argument]) exit all recursive
+minibuffers.  Bind this command to a key in
+`minibuffer-local-completion-map'."
   (interactive "P")
   (let* ((kind (embark-classify))
          (keymap (alist-get kind embark-keymap-alist)))
     (setq embark--old-erm enable-recursive-minibuffers
           enable-recursive-minibuffers t
-          embark--abortp arg)
+          embark--abort (pcase arg
+                          ('(4) #'abort-recursive-edit)
+                          ('(16) #'top-level)
+                          (_ #'ignore)))
     (embark--set-target)
     (when-let ((mini (active-minibuffer-window)))
       (setq embark--overlay
