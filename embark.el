@@ -93,13 +93,14 @@
     (file . embark-file-map)
     (buffer . embark-buffer-map)
     (command . embark-symbol-map)
-    (symbol . embark-symbol-map))
+    (symbol . embark-symbol-map)
+    (package . embark-package-map))
   "Alist of action types and corresponding keymaps."
   :type '(alist :key-type symbol :value-type variable)
   :group 'embark)
 
 (defcustom embark-classifiers
-  '(embark-category embark-symbol)
+  '(embark-category embark-package embark-symbol)
   "List of functions to classify the current completion session.
 Each function should take no arguments and return a symbol
 classifying the current minibuffer completion session, or nil to
@@ -125,6 +126,11 @@ indicate it could not determine the type of completion."
               (and (consp mct) (symbolp (car mct)))
               (completion-metadata-get (embark--metadata) 'symbolsp))
       'symbol)))
+
+(defun embark-package ()
+  "Determine if currently completing package names."
+  (when (string-suffix-p "package: " (or (minibuffer-prompt) ""))
+    'package))
 
 (defun embark-classify ()
   "Classify current minibuffer completion session."
@@ -221,7 +227,8 @@ minibuffers.  Bind this command to a key in
                           (minibuffer-prompt-end)
                           (window-buffer mini)))
       (overlay-put embark--overlay 'before-string
-                   (concat (propertize "Act" 'face 'highlight) " ")))
+                   (concat (propertize (format "Act(%s)" kind)
+                                       'face 'highlight) " ")))
     (add-hook 'minibuffer-setup-hook #'embark--inject)
     (add-hook 'post-command-hook #'embark--cleanup)
     (set-transient-map (symbol-value keymap))))
@@ -294,6 +301,27 @@ minibuffers.  Bind this command to a key in
   (with-current-buffer (embark-target)
     (call-interactively #'rename-buffer)))
 
+(declare-function #'package-desc-p "package")
+(declare-function #'package--from-builtin "package")
+(declare-function #'package-desc-extras "package")
+(defvar package--builtins)
+(defvar package-alist)
+(defvar package-archive-contents)
+
+(defun embark-browse-package-url ()
+  "Open homepage for embark target package with `browse-url'."
+  (interactive)
+  (if-let ((pkg (intern (embark-target)))
+           (desc (or ; found this in `describe-package-1' 
+                  (if (package-desc-p pkg) pkg)
+                  (car (alist-get pkg package-alist))
+                  (if-let ((built-in (assq pkg package--builtins)))
+                      (package--from-builtin built-in)
+                    (car (alist-get pkg package-archive-contents)))))
+           (url (alist-get :url (package-desc-extras desc))))
+      (browse-url url)
+    (message "No homepage found for `%s'" pkg)))
+
 ;;; keymaps
 
 (defvar embark-general-map
@@ -331,6 +359,15 @@ minibuffers.  Bind this command to a key in
      ("c" . embark-info-emacs-command)
      ("s" . embark-info-lookup-symbol)
      ("d" . embark-find-definition))
+   embark-general-map))
+
+(defvar embark-package-map
+  (embark-keymap
+   '(("h" . describe-package)
+     ("i" . package-install)
+     ("d" . package-delete)
+     ("r" . package-reinstall)
+     ("u" . embark-browse-package-url))
    embark-general-map))
 
 (provide 'embark)
