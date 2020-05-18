@@ -107,20 +107,23 @@ indicate it could not determine the type of completion."
   :type 'hook
   :group 'embark)
 
+(defun embark--metadata ()
+  "Return current minibuffer completion metadata."
+  (completion-metadata (minibuffer-contents)
+                       minibuffer-completion-table
+                       minibuffer-completion-predicate))
+
 (defun embark-category ()
   "Return minibuffer completion category per metadata."
-  (completion-metadata-get
-   (completion-metadata (minibuffer-contents)
-                        minibuffer-completion-table
-                        minibuffer-completion-predicate)
-   'category))
+  (completion-metadata-get (embark--metadata) 'category))
 
 (defun embark-symbol ()
   "Determine if currently completing symbols."
   (let ((mct minibuffer-completion-table))
     (when (or (eq mct 'help--symbol-completion-table)
               (vectorp mct)
-              (and (consp mct) (symbolp (car mct))))
+              (and (consp mct) (symbolp (car mct)))
+              (completion-metadata-get (embark--metadata) 'symbolsp))
       'symbol)))
 
 (defun embark-classify ()
