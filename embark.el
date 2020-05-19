@@ -326,6 +326,50 @@ minibuffers.  Bind this command to a key in
       (browse-url url)
     (message "No homepage found for `%s'" pkg)))
 
+(defun embark-insert-relative-path ()
+  "Insert relative path to embark target.
+The insert path is relative to the previously selected buffer's
+`default-directory'."
+  (interactive)
+  (with-selected-window (active-minibuffer-window)
+    (with-selected-window (minibuffer-selected-window)
+      (insert (file-relative-name (embark-target))))))
+
+(defun embark-save-relative-path ()
+  "Save the relative path to embark target to kill-ring.
+The insert path is relative to the previously selected buffer's
+`default-directory'."
+  (interactive)
+  (kill-new (file-relative-name (embark-target))))
+
+(defun embark-shell-command-on-buffer (buffer command &optional replace)
+  "Run shell COMMAND on contents of BUFFER.
+Called with \\[universal-argument], replace contents of buffer
+with command output."
+  (interactive
+   (list
+    (read-buffer "Buffer: ")
+    (read-shell-command "Shell command: ")
+    current-prefix-arg))
+  (with-current-buffer buffer
+    (shell-command-on-region (point-min) (point-max) command replace)))
+
+(defun embark-bury-buffer ()
+  "Bury embark target buffer."
+  (interactive)
+  (if-let ((buf (embark-target))
+           (win (get-buffer-window buf)))
+      (with-selected-window win
+        (bury-buffer))
+    (bury-buffer )))
+
+(defun embark-kill-buffer-and-window ()
+  "Kill embark target buffer and delete its window."
+  (interactive)
+  (when-let ((win (get-buffer-window (embark-target))))
+    (with-selected-window win
+      (kill-buffer-and-window))))
+
 ;;; keymaps
 
 (defvar embark-general-map
@@ -346,7 +390,10 @@ minibuffers.  Bind this command to a key in
      ("!" . shell-command)
      ("&" . async-shell-command)
      ("=" . ediff-files)
-     ("e" . embark-eshell-in-directory))
+     ("e" . embark-eshell-in-directory)
+     ("+" . make-directory)
+     ("I" . embark-insert-relative-path)
+     ("W" . embark-save-relative-path))
    embark-general-map))
 
 (defvar embark-buffer-map
@@ -354,9 +401,11 @@ minibuffers.  Bind this command to a key in
    '(("k" . kill-buffer)
      ("b" . switch-to-buffer)
      ("o" . switch-to-buffer-other-window)
-     ("q" . bury-buffer)
+     ("z" . embark-bury-buffer)
+     ("q" . embark-kill-buffer-and-window)
      ("r" . embark-rename-buffer)
-     ("=" . ediff-buffers))
+     ("=" . ediff-buffers)
+     ("|" . embark-shell-command-on-buffer))
    embark-general-map))
 
 (defvar embark-symbol-map
