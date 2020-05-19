@@ -266,15 +266,16 @@ minibuffers.  Bind this command to a key in
                           (_ #'ignore)))
     (setq embark--target
           (run-hook-with-args-until-success 'embark-target-finders))
-    (let ((mini (active-minibuffer-window)))
+    (let ((mini (active-minibuffer-window))
+          (indicator (propertize "Act" 'face 'highlight)))
       (if (not mini)
-          (message (propertize "Act" 'face 'highlight))
+          (message indicator)
         (setq embark--overlay
               (make-overlay (point-min)
                             (minibuffer-prompt-end)
                             (window-buffer mini)))
         (overlay-put embark--overlay 'before-string
-                     (concat (propertize "Act" 'face 'highlight) " "))))
+                     (concat indicator " "))))
     (add-hook 'minibuffer-setup-hook #'embark--inject)
     (add-hook 'post-command-hook #'embark--cleanup)
     (set-transient-map (symbol-value keymap)
