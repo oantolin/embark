@@ -106,7 +106,7 @@
   :group 'embark)
 
 (defcustom embark-classifiers
-  '(embark-category embark-package embark-symbol)
+  '(embark-cached-type embark-category embark-package embark-symbol)
   "List of functions to classify the current completion session.
 Each function should take no arguments and return a symbol
 classifying the current minibuffer completion session, or nil to
@@ -122,6 +122,23 @@ Each function should take no arguments and return either a target
 string or nil (to indicate it found no target)."
   :type 'hook
   :group 'embark)
+
+(defvar embark--cached-type nil
+  "Cache for the completion type, meant to be set buffer-locally.
+Always keep the non-local value equal to nil.")
+
+(defun embark-cached-type ()
+  "Return cached completion type if available."
+  embark--cached-type)
+
+(defun embark--cache-completion-type (&optional _start _end)
+  "Cache the completion type when popping up the completions buffer"
+  (let ((type (embark-classify)))
+    (with-current-buffer "*Completions*"
+      (setq-local embark--cached-type type))))
+
+(advice-add 'minibuffer-completion-help :after
+            #'embark--cache-completion-type)
 
 (defun embark--metadata ()
   "Return current minibuffer completion metadata."
