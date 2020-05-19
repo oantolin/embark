@@ -192,11 +192,20 @@ Takes its value from the disembark property of the current command.")
     (setq embark--overlay nil)
     (funcall embark--abort)))
 
+(defvar selectrum--current-candidate-index)
+(declare-function selectrum--get-full "ext:selectrum")
+(declare-function selectrum--get-candidate "ext:selectrum")
+
 (defun embark--compute-target ()
   "Compute the target for the next action.
 From a minibuffer this is the top completion candidate; from the
-completions buffer, it is the candidate at point."
+completions buffer, it is the candidate at point. If you use
+`selectrum' this is the currently selected candidate."
   (cond
+   ((bound-and-true-p selectrum--active-p)
+    (selectrum--get-full
+     (selectrum--get-candidate
+      selectrum--current-candidate-index)))
    ((minibufferp)
     (let ((completions (completion-all-sorted-completions)))
       (if (null completions)
