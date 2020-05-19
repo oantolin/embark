@@ -66,12 +66,12 @@ For another example see the next section.
 ** Not waiting for confirmation
 
 By default =embark= just inserts the target of the action into the next
-minibuffer prompt but doesn't "press =RET=" for you.  This is a prudent
+minibuffer prompt but doesn't "press =RET=" for you. This is a prudent
 default, to let you examine the minibuffer before commiting to execute
-the action.  But if you want to live dangerously you can put the
-=embark-ratify= property on a command for which you want =embark= to
-"automatically press =RET=".  For example, to have =embark= kill buffers
-without confirmation use:
+the action. But if you want to live dangerously you can put the
+=embark-ratify= function on the =disembark= hook of a command for which
+you want =embark= to "automatically press =RET=". For example, to have
+=embark= kill buffers without confirmation use:
 
 #+begin_src emacs-lisp
 (put 'kill-buffer 'disembark 'embark-ratify)
