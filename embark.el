@@ -197,8 +197,9 @@ Takes its value from the disembark property of the current command.")
     (setq enable-recursive-minibuffers embark--old-erm)
     (remove-hook 'minibuffer-setup-hook #'embark--inject)
     (remove-hook 'post-command-hook #'embark--cleanup)
-    (delete-overlay embark--overlay)
-    (setq embark--overlay nil)
+    (when embark--overlay
+      (delete-overlay embark--overlay)
+      (setq embark--overlay nil))
     (funcall embark--abort)))
 
 (defun embark-top-minibuffer-completion ()
@@ -248,13 +249,15 @@ minibuffers.  Bind this command to a key in
                           (_ #'ignore)))
     (setq embark--target
           (run-hook-with-args-until-success 'embark-target-finders))
-    (when-let ((mini (active-minibuffer-window)))
-      (setq embark--overlay
-            (make-overlay (point-min)
-                          (minibuffer-prompt-end)
-                          (window-buffer mini)))
-      (overlay-put embark--overlay 'before-string
-                   (concat (propertize "Act" 'face 'highlight) " ")))
+    (let ((mini (active-minibuffer-window)))
+      (if (not mini)
+          (message (propertize "Act" 'face 'highlight))
+        (setq embark--overlay
+              (make-overlay (point-min)
+                            (minibuffer-prompt-end)
+                            (window-buffer mini)))
+        (overlay-put embark--overlay 'before-string
+                     (concat (propertize "Act" 'face 'highlight) " "))))
     (add-hook 'minibuffer-setup-hook #'embark--inject)
     (add-hook 'post-command-hook #'embark--cleanup)
     (set-transient-map (symbol-value keymap)
