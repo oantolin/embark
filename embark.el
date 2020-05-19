@@ -176,18 +176,19 @@ return nil."
     (setq embark--overlay nil)
     (funcall embark--abort)))
 
-(defun embark--set-target ()
-  "Set the top completion candidate as target."
+(defun embark--compute-target ()
+  "Compute the target for the next action.
+From a minibuffer this is the top completion candidate; from the
+completions buffer, it is the candidate at point."
   (cond
    ((minibufferp)
     (let ((completions (completion-all-sorted-completions)))
       (if (null completions)
-          (minibuffer-contents)
-        (setq embark--target
-              (concat
-               (substring (minibuffer-contents)
-                          0 (or (cdr (last completions)) 0))
-               (car completions))))))
+           (minibuffer-contents)
+        (concat
+         (substring (minibuffer-contents)
+                    0 (or (cdr (last completions)) 0))
+         (car completions)))))
    ((eq major-mode 'completion-list-mode)
     (if (not (get-text-property (point) 'mouse-face))
         (user-error "No completion here")
@@ -203,7 +204,7 @@ return nil."
         (setq beg (previous-single-property-change beg 'mouse-face))
         (setq end (or (next-single-property-change end 'mouse-face)
                       (point-max)))
-        (setq embark--target (buffer-substring-no-properties beg end)))))))
+        (buffer-substring-no-properties beg end))))))
 
 (defun embark-act (arg)
   "Embark upon a minibuffer action.
@@ -220,7 +221,7 @@ minibuffers.  Bind this command to a key in
                           ('(4) #'abort-recursive-edit)
                           ('(16) #'top-level)
                           (_ #'ignore)))
-    (embark--set-target)
+    (setq embark--target (embark--compute-target))
     (when-let ((mini (active-minibuffer-window)))
       (setq embark--overlay
             (make-overlay (point-min)
