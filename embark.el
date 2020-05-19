@@ -114,6 +114,15 @@ indicate it could not determine the type of completion."
   :type 'hook
   :group 'embark)
 
+(defcustom embark-target-finders
+  '(embark-top-minibuffer-completion
+    embark-completion-at-point)
+  "List of functions to pick the target for actions.
+Each function should take no arguments and return either a target
+string or nil (to indicate it found no target)."
+  :type 'hook
+  :group 'embark)
+
 (defun embark--metadata ()
   "Return current minibuffer completion metadata."
   (completion-metadata (minibuffer-contents)
@@ -192,20 +201,20 @@ Takes its value from the disembark property of the current command.")
     (setq embark--overlay nil)
     (funcall embark--abort)))
 
-(defun embark--compute-target ()
-  "Compute the target for the next action.
-From a minibuffer this is the top completion candidate; from the
-completions buffer, it is the candidate at point."
-  (cond
-   ((minibufferp)
+(defun embark-top-minibuffer-completion ()
+  "Return the top completion candidate in the minibuffer."
+  (when (minibufferp)
     (let ((completions (completion-all-sorted-completions)))
       (if (null completions)
-           (minibuffer-contents)
+          (minibuffer-contents)
         (concat
          (substring (minibuffer-contents)
                     0 (or (cdr (last completions)) 0))
-         (car completions)))))
-   ((eq major-mode 'completion-list-mode)
+         (car completions))))))
+
+(defun embark-completion-at-point ()
+  "Return the completion candidate at point in a completions buffer."
+  (when (eq major-mode 'completion-list-mode)
     (if (not (get-text-property (point) 'mouse-face))
         (user-error "No completion here")
       ;; this fairly delicate logic is taken from `choose-completion'
@@ -220,7 +229,7 @@ completions buffer, it is the candidate at point."
         (setq beg (previous-single-property-change beg 'mouse-face))
         (setq end (or (next-single-property-change end 'mouse-face)
                       (point-max)))
-        (buffer-substring-no-properties beg end))))))
+        (buffer-substring-no-properties beg end)))))
 
 (defun embark-act (arg)
   "Embark upon a minibuffer action.
@@ -237,7 +246,8 @@ minibuffers.  Bind this command to a key in
                           ('(4) #'abort-recursive-edit)
                           ('(16) #'top-level)
                           (_ #'ignore)))
-    (setq embark--target (embark--compute-target))
+    (setq embark--target
+          (run-hook-with-args-until-success 'embark-target-finders))
     (when-let ((mini (active-minibuffer-window)))
       (setq embark--overlay
             (make-overlay (point-min)
