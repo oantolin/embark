@@ -321,9 +321,9 @@ minibuffers.  Bind this command to a key in
   (with-current-buffer (embark-target)
     (call-interactively #'rename-buffer)))
 
-(declare-function #'package-desc-p "package")
-(declare-function #'package--from-builtin "package")
-(declare-function #'package-desc-extras "package")
+(declare-function 'package-desc-p "package")
+(declare-function 'package--from-builtin "package")
+(declare-function 'package-desc-extras "package")
 (defvar package--builtins)
 (defvar package-alist)
 (defvar package-archive-contents)
