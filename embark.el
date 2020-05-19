@@ -60,15 +60,21 @@
 ;; running `embark-act' all of your keybindings and even
 ;; `execute-extended-command' can be used to run a command.
 
+;; If you want to customize what happens after the target is inserted
+;; at the minibuffer prompt of an action, you can use the `disembark'
+;; property of the action command.  That property should be a hook,
+;; that is, a function or list of functions, to be run after inserting
+;; the target into the minibuffer.  For an example, see the following.
+
 ;; By default embark just inserts the target of the action into the
 ;; next minibuffer prompt but doesn't "press RET" for you.  This is a
 ;; prudent default, to let you examine the minibuffer before commiting
 ;; to execute the action.  But if you want to live dangerously you can
-;; put the `embark-ratify' property on a command for which you want
-;; embark to "Automatically press RET".  For example, to have embark
-;; kill buffers without confirmation use:
+;; put the `embark-ratify' function into the `disembark' hook of a
+;; command for which you want embark to "Automatically press RET".
+;; For example, to have embark kill buffers without confirmation use:
 
-;; (put 'kill-buffer 'embark-ratify t)
+;; (put 'kill-buffer 'disembark 'embark-ratify)
 
 ;; Additionally you can write your own commands that do not read from
 ;; the minibuffer but act on the current target anyway: just use the
@@ -157,14 +163,24 @@ return nil."
   (prog1 embark--target
     (setq embark--target nil)))
 
+(defun embark-ratify ()
+  "Act on the embark target without confirmation.
+Add this to the `disembark' property of commands for which you
+wish to automatically confirm acting on the embark target."
+  (setq unread-command-events '(13)))
+
+(defvar embark--disembark nil
+  "Hook to run after injecting target into minibuffer.
+Takes its value from the disembark property of the current command.")
+
 (defun embark--inject ()
   "Inject embark target into minibuffer prompt."
   (when-let ((target (embark-target)))
     (unless (eq this-command 'execute-extended-command)
       (delete-minibuffer-contents)
       (insert target)
-      (when (get this-command 'embark-ratify)
-        (setq unread-command-events '(13))))))
+      (let ((embark--disembark (get this-command 'disembark)))
+        (run-hooks 'embark--disembark)))))
 
 (defun embark--cleanup ()
   "Remove all hooks and modifications."
@@ -396,6 +412,9 @@ with command output."
      ("W" . embark-save-relative-path))
    embark-general-map))
 
+(put 'async-shell-command 'disembark 'beginning-of-line)
+(put 'shell-command 'disembark 'beginning-of-line)
+
 (defvar embark-buffer-map
   (embark-keymap
    '(("k" . kill-buffer)
@@ -407,6 +426,8 @@ with command output."
      ("=" . ediff-buffers)
      ("|" . embark-shell-command-on-buffer))
    embark-general-map))
+
+(put 'embark-shell-command-on-buffer 'disembark 'embark-ratify)
 
 (defvar embark-symbol-map
   (embark-keymap
