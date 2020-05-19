@@ -230,7 +230,11 @@ minibuffers.  Bind this command to a key in
                    (concat (propertize "Act" 'face 'highlight) " ")))
     (add-hook 'minibuffer-setup-hook #'embark--inject)
     (add-hook 'post-command-hook #'embark--cleanup)
-    (set-transient-map (symbol-value keymap))))
+    (set-transient-map (symbol-value keymap)
+                       (lambda ()
+                         (and (symbolp this-command)
+                              (string-suffix-p "-argument"
+                                               (symbol-name this-command)))))))
 
 (defun embark-keymap (keymap-alist &optional parent-map)
   "Generage keymap based on KEYMAP-ALIST if PARENT-MAP is non-nil, set it as the parent."
@@ -327,7 +331,9 @@ minibuffers.  Bind this command to a key in
   (embark-keymap
    '(("i" . embark-insert)
      ("w" . embark-save)
-     ("C-g" . embark-cancel))))
+     ("C-g" . embark-cancel)
+     ("C-u" . universal-argument))
+   universal-argument-map))
 
 (defvar embark-file-map
   (embark-keymap
