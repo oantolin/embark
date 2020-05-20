@@ -288,14 +288,12 @@ minibuffers.  Bind this command to a key in
                               (string-suffix-p "-argument"
                                                (symbol-name this-command)))))))
 
-(defun embark-keymap (keymap-alist &optional parent-map)
-  "Generage keymap based on KEYMAP-ALIST if PARENT-MAP is non-nil, set it as the parent."
+(defun embark-keymap (binding-alist &optional parent-map)
+  "Return keymap with bindings given by BINDING-ALIST.
+If PARENT-MAP is non-nil, set it as the parent keymap."
   (let ((map (make-sparse-keymap)))
-    (mapc (lambda (keypair)
-            (pcase keypair
-              (`(,key . ,fn)
-               (define-key map (kbd key) fn))))
-          keymap-alist)
+    (dolist (key-fn binding-alist)
+      (define-key map (kbd (car key-fn)) (cdr key-fn)))
     (when parent-map
       (set-keymap-parent map parent-map))
     map))
