@@ -295,9 +295,11 @@ Bind this command to a key in `minibuffer-local-completion-map'."
     (add-hook 'post-command-hook #'embark--cleanup)
     (set-transient-map (symbol-value keymap)
                        (lambda ()
-                         (and (symbolp this-command)
-                              (string-suffix-p "-argument"
-                                               (symbol-name this-command)))))))
+                         (memq this-command
+                               '(universal-argument
+                                 universal-argument-more
+                                 digit-argument
+                                 negative-argument))))))
 
 (defun embark-keymap (binding-alist &optional parent-map)
   "Return keymap with bindings given by BINDING-ALIST.
