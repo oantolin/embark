@@ -57,9 +57,10 @@ type the command. That can be arranged as follows:
 #+end_src
 
 Since this particular configuration is so useful, you don't have to
-put the above code in your configuration: it comes with =embark=. Take
-this as an example of the kind of post-processing you might want to do
-with the =embark-setup= property.
+put the above code in your configuration: an even better version comes
+with =embark=, a space is inserted automatically too. Take this as an
+example of the kind of post-processing you might want to do with the
+=embark-setup= property.
 
 If you want some setup run for all commands add it to
 =embark-setup-hook=. Note that this hook only runs for commands which
