@@ -468,8 +468,14 @@ with command output."
      ("W" . embark-save-relative-path))
    embark-general-map))
 
-(put 'async-shell-command 'disembark 'beginning-of-line)
-(put 'shell-command 'disembark 'beginning-of-line)
+(defun embark--bol-spc ()
+  "Insert a space at the beginning of the line, leave point there."
+  (beginning-of-line)
+  (insert " ")
+  (backward-char))
+
+(put 'async-shell-command 'embark-setup #'embark--bol-spc)
+(put 'shell-command 'embark-setup #'embark--bol-spc)
 
 (defvar embark-buffer-map
   (embark-keymap
