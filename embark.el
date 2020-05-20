@@ -106,7 +106,10 @@
   :group 'embark)
 
 (defcustom embark-classifiers
-  '(embark-cached-type embark-category embark-package embark-symbol)
+  '(embark-cached-type
+    embark-category
+    embark-package
+    embark-symbol)
   "List of functions to classify the current completion session.
 Each function should take no arguments and return a symbol
 classifying the current minibuffer completion session, or nil to
@@ -174,7 +177,9 @@ Meant to be added to `completion-setup-hook'."
     (when (or (eq mct 'help--symbol-completion-table)
               (vectorp mct)
               (and (consp mct) (symbolp (car mct)))
-              (completion-metadata-get (embark--metadata) 'symbolsp))
+              (completion-metadata-get (embark--metadata) 'symbolsp)
+              ;; before Emacs 27, M-x does not have command category
+              (string-match-p "M-x" (or (minibuffer-prompt) "")))
       'symbol)))
 
 (defun embark-package ()
