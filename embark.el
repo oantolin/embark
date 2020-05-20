@@ -123,6 +123,11 @@ string or nil (to indicate it found no target)."
   :type 'hook
   :group 'embark)
 
+(defcustom embark-indicator (propertize "Act" 'face 'highlight)
+  "Echo area indicator the user is embarking upon an action."
+  :type 'string
+  :group 'embark)
+
 (defvar embark--cached-type nil
   "Cache for the completion type, meant to be set buffer-locally.
 Always keep the non-local value equal to nil.")
@@ -266,16 +271,15 @@ minibuffers.  Bind this command to a key in
                           (_ #'ignore)))
     (setq embark--target
           (run-hook-with-args-until-success 'embark-target-finders))
-    (let ((mini (active-minibuffer-window))
-          (indicator (propertize "Act" 'face 'highlight)))
+    (let ((mini (active-minibuffer-window)))
       (if (not mini)
-          (message indicator)
+          (message embark-indicator)
         (setq embark--overlay
               (make-overlay (point-min)
                             (minibuffer-prompt-end)
                             (window-buffer mini)))
         (overlay-put embark--overlay 'before-string
-                     (concat indicator " "))))
+                     (concat embark-indicator " "))))
     (add-hook 'minibuffer-setup-hook #'embark--inject)
     (add-hook 'post-command-hook #'embark--cleanup)
     (set-transient-map (symbol-value keymap)
