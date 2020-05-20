@@ -223,13 +223,17 @@ Takes its value from the disembark property of the current command.")
 (defun embark-top-minibuffer-completion ()
   "Return the top completion candidate in the minibuffer."
   (when (minibufferp)
-    (let ((completions (completion-all-sorted-completions)))
-      (if (null completions)
-          (minibuffer-contents)
-        (concat
-         (substring (minibuffer-contents)
-                    0 (or (cdr (last completions)) 0))
-         (car completions))))))
+    (let ((contents (minibuffer-contents)))
+      (if (test-completion contents
+                           minibuffer-completion-table
+                           minibuffer-completion-predicate)
+          contents
+        (let ((completions (completion-all-sorted-completions)))
+          (if (null completions)
+              contents
+            (concat
+             (substring contents 0 (or (cdr (last completions)) 0))
+             (car completions))))))))
 
 (defun embark-completion-at-point ()
   "Return the completion candidate at point in a completions buffer."
