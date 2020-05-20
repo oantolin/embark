@@ -145,6 +145,19 @@ Always keep the non-local value equal to nil.")
 (advice-add 'minibuffer-completion-help :after
             #'embark--cache-completion-type)
 
+(defun embark-completions-default-directory ()
+  "Guess a reasonable default directory for the completions buffer.
+Meant to be added to `completion-setup-hook'."
+  (when (and minibuffer-completing-file-name
+             (minibufferp))
+    (let ((dir (file-name-directory
+                (expand-file-name
+                 (buffer-substring (minibuffer-prompt-end) (point))))))
+      (with-current-buffer standard-output
+        (setq-local default-directory dir)))))
+
+(add-hook 'completion-setup-hook #'embark-completions-default-directory t)
+
 (defun embark--metadata ()
   "Return current minibuffer completion metadata."
   (completion-metadata (minibuffer-contents)
