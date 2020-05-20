@@ -298,12 +298,12 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
   (interactive)
   (with-selected-window (active-minibuffer-window)
     (with-selected-window (minibuffer-selected-window)
-      (insert (embark-target)))))
+      (insert (substring-no-properties (embark-target))))))
 
 (defun embark-save ()
   "Save embark target in the kill ring."
   (interactive)
-  (kill-new (embark-target)))
+  (kill-new (substring-no-properties (embark-target))))
 
 (defun embark-cancel ()
   "Cancel current action."
