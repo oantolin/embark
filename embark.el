@@ -180,9 +180,6 @@ Always keep the non-local value equal to nil.")
 (defvar embark--old-erm nil
   "Stores value of `enable-recursive-minibuffers'.")
 
-(defvar embark--abort nil
-  "Command to abort 0, 1 or all recursive minibuffers after action.")
-
 (defvar embark--overlay nil
   "Overlay to communicate embarking on an action to the user.")
 
@@ -221,8 +218,7 @@ Takes its value from the disembark property of the current command.")
     (remove-hook 'post-command-hook #'embark--cleanup)
     (when embark--overlay
       (delete-overlay embark--overlay)
-      (setq embark--overlay nil))
-    (funcall embark--abort)))
+      (setq embark--overlay nil))))
 
 (defun embark-top-minibuffer-completion ()
   "Return the top completion candidate in the minibuffer."
@@ -254,21 +250,14 @@ Takes its value from the disembark property of the current command.")
                       (point-max)))
         (buffer-substring-no-properties beg end)))))
 
-(defun embark-act (arg)
+(defun embark-act ()
   "Embark upon a minibuffer action.
-With a universal prefix ARG (\\[universal-argument]), exit minibuffer after the
-action.  With two prefix arguments (\\[universal-argument] \\[universal-argument]) exit all recursive
-minibuffers.  Bind this command to a key in
-`minibuffer-local-completion-map'."
-  (interactive "P")
+Bind this command to a key in `minibuffer-local-completion-map'."
+  (interactive)
   (let* ((kind (embark-classify))
          (keymap (alist-get kind embark-keymap-alist)))
     (setq embark--old-erm enable-recursive-minibuffers
-          enable-recursive-minibuffers t
-          embark--abort (pcase arg
-                          ('(4) #'abort-recursive-edit)
-                          ('(16) #'top-level)
-                          (_ #'ignore)))
+          enable-recursive-minibuffers t)
     (setq embark--target
           (run-hook-with-args-until-success 'embark-target-finders))
     (let ((mini (active-minibuffer-window)))
@@ -481,3 +470,4 @@ with command output."
 
 (provide 'embark)
 ;;; embark.el ends here
+
