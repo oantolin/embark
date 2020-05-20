@@ -36,13 +36,13 @@ opened up the minibuffer).
 You can read about the [[https://github.com/oantolin/embark/wiki/Default-Actions][default actions and their keybindings]]
 on the GitHub project wiki.
 
-** Disembarking
+** Running some setup after injecting the target
 
-If you want to customize what happens after the target is inserted
-at the minibuffer prompt of an action, you can use the =disembark=
-property of the action command.  That property should be a hook,
-that is, a function or list of functions, to be run after inserting
-the target into the minibuffer.
+If you want to customize what happens after the target is inserted at
+the minibuffer prompt of an action, you can use the =embark-setup=
+property of the action command. That property should be a hook, that
+is, a function or list of functions, to be run after inserting the
+target into the minibuffer.
 
 For example, =shell-command= and =async-shell-command= can be useful as
 actions during file completion. Usually =embark= leaves point at the end
@@ -52,14 +52,18 @@ beginning of the minibuffer, before the inserted file name, so you can
 type the command. That can be arranged as follows:
 
 #+begin_src emacs-lisp
-(put 'async-shell-command 'disembark 'beginning-of-line)
-(put 'shell-command 'disembark 'beginning-of-line)
+(put 'async-shell-command 'embark-setup 'beginning-of-line)
+(put 'shell-command 'embark-setup 'beginning-of-line)
 #+end_src
 
 Since this particular configuration is so useful, you don't have to
 put the above code in your configuration: it comes with =embark=. Take
 this as an example of the kind of post-processing you might want to do
-with the =disembark= property.
+with the =embark-setup= property.
+
+If you want some setup run for all commands add it to
+=embark-setup-hook=. Note that this hook only runs for commands which
+have no =embark-setup= property.
 
 For another example see the next section.
 
@@ -69,12 +73,12 @@ By default =embark= just inserts the target of the action into the next
 minibuffer prompt but doesn't "press =RET=" for you. This is a prudent
 default, to let you examine the minibuffer before commiting to execute
 the action. But if you want to live dangerously you can put the
-=embark-ratify= function on the =disembark= hook of a command for which
+=embark-ratify= function on the =embark-setup= hook of a command for which
 you want =embark= to "automatically press =RET=". For example, to have
 =embark= kill buffers without confirmation use:
 
 #+begin_src emacs-lisp
-(put 'kill-buffer 'disembark 'embark-ratify)
+(put 'kill-buffer 'embark-setup 'embark-ratify)
 #+end_src
 
 ** Actions that do not read from the minibuffer

@@ -61,7 +61,7 @@
 ;; `execute-extended-command' can be used to run a command.
 
 ;; If you want to customize what happens after the target is inserted
-;; at the minibuffer prompt of an action, you can use the `disembark'
+;; at the minibuffer prompt of an action, you can use the `embark-setup'
 ;; property of the action command.  That property should be a hook,
 ;; that is, a function or list of functions, to be run after inserting
 ;; the target into the minibuffer.  For an example, see the following.
@@ -70,11 +70,11 @@
 ;; next minibuffer prompt but doesn't "press RET" for you.  This is a
 ;; prudent default, to let you examine the minibuffer before commiting
 ;; to execute the action.  But if you want to live dangerously you can
-;; put the `embark-ratify' function into the `disembark' hook of a
+;; put the `embark-ratify' function into the `embark-setup' hook of a
 ;; command for which you want embark to "Automatically press RET".
 ;; For example, to have embark kill buffers without confirmation use:
 
-;; (put 'kill-buffer 'disembark 'embark-ratify)
+;; (put 'kill-buffer 'embark-setup 'embark-ratify)
 
 ;; Additionally you can write your own commands that do not read from
 ;; the minibuffer but act on the current target anyway: just use the
@@ -129,6 +129,16 @@ string or nil (to indicate it found no target)."
 (defcustom embark-indicator (propertize "Act" 'face 'highlight)
   "Echo area indicator the user is embarking upon an action."
   :type 'string
+  :group 'embark)
+
+(defcustom embark-setup-hook nil
+  "Hook to run after injecting target into minibuffer.
+It can be overriden by the `embark-setup' property of the current
+command.  The function `embark-ratify' can be added to this
+hook (or to the `embark-setup' property of a command) to
+automatically confirm using the target, i.e., to \"press RET for
+you\"."
+  :type 'hook
   :group 'embark)
 
 (defvar embark--cached-type nil
@@ -211,13 +221,11 @@ return nil."
 
 (defun embark-ratify ()
   "Act on the embark target without confirmation.
-Add this to the `disembark' property of commands for which you
-wish to automatically confirm acting on the embark target."
+Add this to the `embark-setup' property of commands for which you
+wish to automatically confirm acting on the embark target.  Or if
+you want all actions to skip confirmation, add it to
+`embark-setup-hook'."
   (setq unread-command-events '(13)))
-
-(defvar embark--disembark nil
-  "Hook to run after injecting target into minibuffer.
-Takes its value from the disembark property of the current command.")
 
 (defun embark--inject ()
   "Inject embark target into minibuffer prompt."
@@ -225,8 +233,9 @@ Takes its value from the disembark property of the current command.")
     (unless (eq this-command 'execute-extended-command)
       (delete-minibuffer-contents)
       (insert target)
-      (let ((embark--disembark (get this-command 'disembark)))
-        (run-hooks 'embark--disembark)))))
+      (let ((embark-setup-hook (or (get this-command 'embark-setup)
+                                   embark-setup-hook)))
+        (run-hooks 'embark-setup-hook)))))
 
 (defun embark--cleanup ()
   "Remove all hooks and modifications."
@@ -474,7 +483,7 @@ with command output."
      ("|" . embark-shell-command-on-buffer))
    embark-general-map))
 
-(put 'embark-shell-command-on-buffer 'disembark 'embark-ratify)
+(put 'embark-shell-command-on-buffer 'embark-setup 'embark-ratify)
 
 (defvar embark-symbol-map
   (embark-keymap
