@@ -1,10 +1,13 @@
 * embark - Emacs Mini-Buffer Actions Rooted in Keymaps.
 
-This package provides a command =embark-act= to execute actions on the
-top minibuffer completion canidate (the one that would be chosen by
-minibuffer-force-complete) or on the completion candidate at point
-in the completions buffer. You should bind =embark-act= to some key in
-=minibuffer-local-completion-map= and in =completion-list-mode-map=.
+
+This package provides a pairs of commands, =embark-act= and
+=embark-exit-and-act=, to execute actions on the top minibuffer
+completion canidate: the one that would be chosen by
+=minibuffer-force-complete=. Additionally, =embark-act= can act on the
+completion candidate at point in the completions buffer. You should
+bind both of them in =minibuffer-local-completion-map= and also bind
+=embark-act= in =completion-list-mode-map=.
 
 You can use any command that reads from the minibuffer as an action
 and the target of the action will be inserted at the first minibuffer

@@ -4,7 +4,7 @@
 
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Keywords: convenience
-;; Version: 0.1
+;; Version: 0.2
 ;; Homepage: https://github.com/oantolin/embark
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -25,12 +25,13 @@
 
 ;; embark - Emacs Mini-Buffer Actions Rooted in Keymaps.
 
-;; This package provides a command `embark-act' to execute actions on
-;; the top minibuffer completion canidate (the one that would be
-;; chosen by minibuffer-force-complete) or on the completion candidate
-;; at point in the completions buffer.  You should bind `embark-act'
-;; to some key in `minibuffer-local-completion-map' and in
-;; `completion-list-mode-map'.
+;; This package provides a pairs of commands, `embark-act' and
+;; `embark-exit-and-act', to execute actions on the top minibuffer
+;; completion canidate: the one that would be chosen by
+;; minibuffer-force-complete.  Additionally `embark-act' can act on
+;; the completion candidate at point in the completions buffer.  You
+;; should bind both of them in `minibuffer-local-completion-map' and
+;; also bind `embark-act' in `completion-list-mode-map'.
 
 ;; The actions are arranged into keymaps separated by the type of
 ;; completion currently taking place.  By default `embark' recognizes
@@ -90,6 +91,8 @@
 
 (require 'subr-x)
 
+;;; user facing options
+
 (defgroup embark nil
   "Emacs Mini-Buffer Actions Rooted in Keymaps"
   :group 'minibuffer)
@@ -106,7 +109,7 @@
   :group 'embark)
 
 (defcustom embark-classifiers
-  '(embark-cached-type
+  '(embark-buffer-local-type
     embark-category
     embark-package
     embark-symbol)
@@ -141,22 +144,31 @@ you\"."
   :type 'hook
   :group 'embark)
 
-(defvar embark--cached-type nil
+;;; stashing the type of completions for a *Completions* buffer
+
+(defvar embark--buffer-local-type nil
   "Cache for the completion type, meant to be set buffer-locally.
 Always keep the non-local value equal to nil.")
 
-(defun embark-cached-type ()
-  "Return cached completion type if available."
-  embark--cached-type)
+(defun embark-buffer-local-type ()
+  "Return buffer local cached completion type if available."
+  embark--buffer-local-type)
 
-(defun embark--cache-completion-type (&optional _start _end)
+(defun embark--buffer-local-type (&optional _start _end)
   "Cache the completion type when popping up the completions buffer."
   (let ((type (embark-classify)))
     (with-current-buffer "*Completions*"
-      (setq-local embark--cached-type type))))
+      (setq-local embark--buffer-local-type type)
+      (setq-local embark--prev-buffer
+                  (if (minibufferp completion-reference-buffer)
+                      (with-current-buffer completion-reference-buffer
+                        (window-buffer (minibuffer-selected-window)))
+                    completion-reference-buffer)))))
 
 (advice-add 'minibuffer-completion-help :after
-            #'embark--cache-completion-type)
+            #'embark--buffer-local-type)
+
+;;; better guess for default-directory in *Completions* buffers
 
 (defun embark-completions-default-directory ()
   "Guess a reasonable default directory for the completions buffer.
@@ -170,6 +182,16 @@ Meant to be added to `completion-setup-hook'."
         (setq-local default-directory dir)))))
 
 (add-hook 'completion-setup-hook #'embark-completions-default-directory t)
+
+;;; core functionality
+
+(defvar embark--target nil "String the next action will operate on.")
+(defvar embark--keymap nil "Keymap to activate for next action.")
+(defvar embark--prev-buffer nil "Previously selected buffer.")
+
+(defvar embark--old-erm nil "Stores value of `enable-recursive-minibuffers'.")
+(defvar embark--overlay nil
+  "Overlay to communicate embarking on an action to the user.")
 
 (defun embark--metadata ()
   "Return current minibuffer completion metadata."
@@ -201,15 +223,6 @@ Meant to be added to `completion-setup-hook'."
   "Classify current minibuffer completion session."
   (or (run-hook-with-args-until-success 'embark-classifiers)
       'general))
-
-(defvar embark--target nil
-  "String the next action will operate on.")
-
-(defvar embark--old-erm nil
-  "Stores value of `enable-recursive-minibuffers'.")
-
-(defvar embark--overlay nil
-  "Overlay to communicate embarking on an action to the user.")
 
 (defun embark-target ()
   "Return the target for the current action.
@@ -281,34 +294,59 @@ you want all actions to skip confirmation, add it to
                       (point-max)))
         (buffer-substring-no-properties beg end)))))
 
+(defun embark--setup ()
+  "Setup for next action."
+  (setq embark--keymap
+        (symbol-value (alist-get (embark-classify) embark-keymap-alist)))
+  (setq embark--target
+        (run-hook-with-args-until-success 'embark-target-finders))
+  (when (minibufferp)
+    (setq embark--prev-buffer (window-buffer (minibuffer-selected-window))))
+  (message "current: %s\nmode: %s\nprev-buffer: %s"
+           (current-buffer)
+           major-mode
+           embark--prev-buffer)
+  (setq embark--old-erm enable-recursive-minibuffers)
+  (add-hook 'minibuffer-setup-hook #'embark--inject)
+  (add-hook 'post-command-hook #'embark--cleanup))
+
+(defun embark--prefix-argument-p ()
+  "Is this command a prefix argument setter?
+This is used to keep the transient keymap active."
+  (memq this-command
+        '(universal-argument
+          universal-argument-more
+          digit-argument
+          negative-argument)))
+
+(defun embark--start ()
+  "Start an action: show indicator and setup keymap."
+  (let ((mini (active-minibuffer-window)))
+    (if (not mini)
+        (message "%s on '%s'" embark-indicator embark--target)
+      (setq embark--overlay
+            (make-overlay (point-min)
+                          (minibuffer-prompt-end)
+                          (window-buffer mini)))
+      (overlay-put embark--overlay 'before-string
+                   (concat embark-indicator " "))))
+  (set-transient-map embark--keymap #'embark--prefix-argument-p
+                     (lambda () (setq embark--keymap nil))))
+
 (defun embark-act ()
   "Embark upon a minibuffer action.
 Bind this command to a key in `minibuffer-local-completion-map'."
   (interactive)
-  (let* ((kind (embark-classify))
-         (keymap (alist-get kind embark-keymap-alist)))
-    (setq embark--old-erm enable-recursive-minibuffers
-          enable-recursive-minibuffers t)
-    (setq embark--target
-          (run-hook-with-args-until-success 'embark-target-finders))
-    (let ((mini (active-minibuffer-window)))
-      (if (not mini)
-          (message embark-indicator)
-        (setq embark--overlay
-              (make-overlay (point-min)
-                            (minibuffer-prompt-end)
-                            (window-buffer mini)))
-        (overlay-put embark--overlay 'before-string
-                     (concat embark-indicator " "))))
-    (add-hook 'minibuffer-setup-hook #'embark--inject)
-    (add-hook 'post-command-hook #'embark--cleanup)
-    (set-transient-map (symbol-value keymap)
-                       (lambda ()
-                         (memq this-command
-                               '(universal-argument
-                                 universal-argument-more
-                                 digit-argument
-                                 negative-argument))))))
+  (setq enable-recursive-minibuffers t)
+  (embark--setup)
+  (embark--start))
+
+(defun embark-exit-and-act ()
+  "Exit the minibuffer and embark upon an action."
+  (interactive)
+  (embark--setup)                       ; setup now
+  (run-at-time 0 nil #'embark--start)   ; start action later
+  (top-level))
 
 (defun embark-keymap (binding-alist &optional parent-map)
   "Return keymap with bindings given by BINDING-ALIST.
@@ -325,9 +363,9 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
 (defun embark-insert ()
   "Insert embark target into the previously selected buffer at point."
   (interactive)
-  (with-selected-window (active-minibuffer-window)
-    (with-selected-window (minibuffer-selected-window)
-      (insert (substring-no-properties (embark-target))))))
+  (with-current-buffer embark--prev-buffer
+    (insert (substring-no-properties (embark-target)))
+    (setq embark--prev-buffer nil)))
 
 (defun embark-save ()
   "Save embark target in the kill ring."
