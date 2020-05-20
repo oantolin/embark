@@ -447,6 +447,7 @@ with command output."
    '(("f" . find-file)
      ("o" . find-file-other-window)
      ("d" . delete-file)
+     ("D" . delete-directory)
      ("r" . rename-file)
      ("c" . copy-file)
      ("!" . shell-command)
