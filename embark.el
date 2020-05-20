@@ -140,7 +140,7 @@ Always keep the non-local value equal to nil.")
   embark--cached-type)
 
 (defun embark--cache-completion-type (&optional _start _end)
-  "Cache the completion type when popping up the completions buffer"
+  "Cache the completion type when popping up the completions buffer."
   (let ((type (embark-classify)))
     (with-current-buffer "*Completions*"
       (setq-local embark--cached-type type))))
@@ -378,7 +378,7 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
   "Open homepage for embark target package with `browse-url'."
   (interactive)
   (if-let ((pkg (intern (embark-target)))
-           (desc (or ; found this in `describe-package-1' 
+           (desc (or ; found this in `describe-package-1'
                   (if (package-desc-p pkg) pkg)
                   (car (alist-get pkg package-alist))
                   (if-let ((built-in (assq pkg package--builtins)))
@@ -398,7 +398,7 @@ The insert path is relative to the previously selected buffer's
       (insert (file-relative-name (embark-target))))))
 
 (defun embark-save-relative-path ()
-  "Save the relative path to embark target to kill-ring.
+  "Save the relative path to embark target to kill ring.
 The insert path is relative to the previously selected buffer's
 `default-directory'."
   (interactive)
@@ -495,4 +495,3 @@ with command output."
 
 (provide 'embark)
 ;;; embark.el ends here
-
