@@ -154,7 +154,7 @@ Always keep the non-local value equal to nil.")
   "Return buffer local cached completion type if available."
   embark--buffer-local-type)
 
-(defun embark--buffer-local-type (&optional _start _end)
+(defun embark--buffer-local-info (&optional _start _end)
   "Cache the completion type when popping up the completions buffer."
   (let ((type (embark-classify)))
     (with-current-buffer "*Completions*"
@@ -166,7 +166,7 @@ Always keep the non-local value equal to nil.")
                     completion-reference-buffer)))))
 
 (advice-add 'minibuffer-completion-help :after
-            #'embark--buffer-local-type)
+            #'embark--buffer-local-info)
 
 ;;; better guess for default-directory in *Completions* buffers
 
