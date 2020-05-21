@@ -292,7 +292,10 @@ you want all actions to skip confirmation, add it to
         (setq beg (previous-single-property-change beg 'mouse-face))
         (setq end (or (next-single-property-change end 'mouse-face)
                       (point-max)))
-        (buffer-substring-no-properties beg end)))))
+        (let ((raw (buffer-substring-no-properties beg end)))
+          (if (eq embark--buffer-local-type 'file)
+              (abbreviate-file-name (expand-file-name raw))
+            raw))))))
 
 (defun embark--setup ()
   "Setup for next action."
