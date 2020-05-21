@@ -48,11 +48,10 @@ is, a function or list of functions, to be run after inserting the
 target into the minibuffer.
 
 For example, =shell-command= and =async-shell-command= can be useful as
-actions during file completion. Usually =embark= leaves point at the end
-of the minibuffer after inserting the completion candidate acted upon,
-but for these commands it would be more useful to leave point at the
-beginning of the minibuffer, before the inserted file name, so you can
-type the command. That can be arranged as follows:
+actions during file completion. For these commands it would be useful
+to leave point at the beginning of the minibuffer, before the inserted
+file name, so you can type the command. That can be arranged as
+follows:
 
 #+begin_src emacs-lisp
 (put 'async-shell-command 'embark-setup 'beginning-of-line)
@@ -60,8 +59,8 @@ type the command. That can be arranged as follows:
 #+end_src
 
 Since this particular configuration is so useful, you don't have to
-put the above code in your configuration: an even better version comes
-with =embark=, a space is inserted automatically too. Take this as an
+put the above code in your init file; an even better version comes
+with =embark=: a space is inserted automatically too. Take this as an
 example of the kind of post-processing you might want to do with the
 =embark-setup= property.
 
@@ -73,16 +72,26 @@ For another example see the next section.
 
 ** Not waiting for confirmation
 
-By default =embark= just inserts the target of the action into the next
-minibuffer prompt but doesn't "press =RET=" for you. This is a prudent
-default, to let you examine the minibuffer before commiting to execute
-the action. But if you want to live dangerously you can put the
-=embark-ratify= function on the =embark-setup= hook of a command for which
-you want =embark= to "automatically press =RET=". For example, to have
-=embark= kill buffers without confirmation use:
+By default, for most commands =embark= inserts the target of the action
+into the next minibuffer prompt and "presses =RET=" for you. This
+"pressing =RET=" is done by the command =embark-ratify=, which is the
+default value of =embark-setup-hook=. For a few commands that are deemed
+hard to undo (like commands to delete a file or directory, or to kill
+a buffer), =embark= comes with an overriding =embark-setup= property to
+wait for the user to manually press =RET=.
+
+If you disagree with these defaults, you can, for example, have =embark=
+kill buffers without confirmation:
 
 #+begin_src emacs-lisp
 (put 'kill-buffer 'embark-setup 'embark-ratify)
+#+end_src
+
+Or, maybe you want to be prudent and have all commands wait for you to
+press =RET= after inspecting the minibuffer. In that case:
+
+#+begin_src emacs-lisp
+  (setq embark-setup-hook nil)
 #+end_src
 
 ** Actions that do not read from the minibuffer

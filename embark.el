@@ -62,23 +62,23 @@
 ;; `execute-extended-command' can be used to run a command.
 
 ;; If you want to customize what happens after the target is inserted
-;; at the minibuffer prompt of an action, you can use the `embark-setup'
-;; property of the action command.  That property should be a hook,
-;; that is, a function or list of functions, to be run after inserting
-;; the target into the minibuffer.  For an example, see the following.
+;; at the minibuffer prompt of an action, you can use the global
+;; `embark-setup-hook' or override it with the `embark-setup' property
+;; of the action command.  These should be hooks, that is, a function
+;; or list of functions, to be run after inserting the target into the
+;; minibuffer.  For an example, see the following.
 
-;; By default embark just inserts the target of the action into the
-;; next minibuffer prompt but doesn't "press RET" for you.  This is a
-;; prudent default, to let you examine the minibuffer before commiting
-;; to execute the action.  But if you want to live dangerously you can
-;; put the `embark-ratify' function into the `embark-setup' hook of a
-;; command for which you want embark to "Automatically press RET".
-;; For example, to have embark kill buffers without confirmation use:
+;; The default value of `embark-setup-hook' is `embark-ratify', which
+;; "presses RET for you". For a few commands that are hard to undo
+;; this is overridden with the `embark-setup' property: `delete-file',
+;; `delete-directory', `kill-buffer', for example.  If you decide you
+;; don't want to wait for confirmation before killing buffers you can
+;; use:
 
 ;; (put 'kill-buffer 'embark-setup 'embark-ratify)
 
-;; Additionally you can write your own commands that do not read from
-;; the minibuffer but act on the current target anyway: just use the
+;; You can also write your own commands that do not read from the
+;; minibuffer but act on the current target anyway: just use the
 ;; `embark-target' function (exactly once!: it "self-destructs") to
 ;; retrieve the current target.  See the definitions of
 ;; `embark-insert' or `embark-save' for examples.
@@ -134,7 +134,7 @@ string or nil (to indicate it found no target)."
   :type 'string
   :group 'embark)
 
-(defcustom embark-setup-hook nil
+(defcustom embark-setup-hook 'embark-ratify
   "Hook to run after injecting target into minibuffer.
 It can be overriden by the `embark-setup' property of the current
 command.  The function `embark-ratify' can be added to this
@@ -510,6 +510,8 @@ with command output."
 
 (put 'async-shell-command 'embark-setup #'embark--bol-spc)
 (put 'shell-command 'embark-setup #'embark--bol-spc)
+(put 'delete-file 'embark-setup #'ignore)
+(put 'delete-directory 'embark-setup #'ignore)
 
 (defvar embark-buffer-map
   (embark-keymap
@@ -523,7 +525,8 @@ with command output."
      ("|" . embark-shell-command-on-buffer))
    embark-general-map))
 
-(put 'embark-shell-command-on-buffer 'embark-setup 'embark-ratify)
+(put 'kill-buffer 'embark-setup #'ignore)
+(put 'embark-kill-buffer-and-window 'embark-setup #'ignore)
 
 (defvar embark-symbol-map
   (embark-keymap
