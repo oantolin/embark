@@ -302,10 +302,6 @@ you want all actions to skip confirmation, add it to
         (run-hook-with-args-until-success 'embark-target-finders))
   (when (minibufferp)
     (setq embark--prev-buffer (window-buffer (minibuffer-selected-window))))
-  (message "current: %s\nmode: %s\nprev-buffer: %s"
-           (current-buffer)
-           major-mode
-           embark--prev-buffer)
   (setq embark--old-erm enable-recursive-minibuffers)
   (add-hook 'minibuffer-setup-hook #'embark--inject)
   (add-hook 'post-command-hook #'embark--cleanup))
