@@ -360,7 +360,7 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
 ;;; custom actions
 
 (defun embark-insert ()
-  "Insert embark target into the previously selected buffer at point."
+  "Insert embark target at point into the previously selected buffer."
   (interactive)
   (with-current-buffer embark--prev-buffer
     (insert (substring-no-properties (embark-target)))
