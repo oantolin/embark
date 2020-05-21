@@ -225,7 +225,6 @@ Meant to be added to `completion-setup-hook'."
 
 (defvar embark--target nil "String the next action will operate on.")
 (defvar embark--keymap nil "Keymap to activate for next action.")
-(defvar embark--prev-buffer nil "Previously selected buffer.")
 
 (defvar embark--old-erm nil "Stores value of `enable-recursive-minibuffers'.")
 (defvar embark--overlay nil
