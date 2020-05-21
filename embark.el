@@ -428,7 +428,7 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
         (dolist (binding (cdr occur-map))
           (setcdr binding (embark--action-command (cdr binding))))
         (push (cons t occur-map) minor-mode-overriding-map-alist))
-      (run-at-time 0 nil (lambda () (switch-to-buffer occur-buffer)))
+      (run-at-time 0 nil (lambda () (pop-to-buffer occur-buffer)))
       (top-level))))
 
 ;;; custom actions
