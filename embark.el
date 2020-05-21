@@ -406,11 +406,18 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
 
 (defun embark--action-command (action)
   "Turn an action into a command that performs the action."
-  (lambda ()
-    (interactive)
-    (setq this-command action)
-    (embark--setup)
-    (call-interactively action)))
+  (let ((name (intern (concat "embark-direct-action:"
+                              (format "%s" action))))
+        (fn (lambda ()
+              (interactive)
+              (setq this-command action)
+              (embark--setup)
+              (call-interactively action))))
+    (fset name fn)
+    (when (symbolp action)
+      (put name 'function-documentation
+           (documentation action)))
+    name))
 
 (defun embark-occur ()
   "Create a buffer with current candidates for further action."
