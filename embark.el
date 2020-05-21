@@ -190,14 +190,25 @@ Always keep the non-local value equal to nil.")
   "Cache for the previous buffer, meant to be set buffer-locally.
 Always keep the non-local value equal to nil.")
 
+(defvar embark--command nil
+  "Command that started the completion session.")
+
+(defun embark--record-command ()
+  "Record the command that opened the minibuffer."
+  (setq-local embark--command this-command))
+
+(add-hook 'minibuffer-setup-hook #'embark--record-command)
+
 (defun embark-buffer-local-type ()
   "Return buffer local cached completion type if available."
   embark--buffer-local-type)
 
 (defun embark--buffer-local-info (&optional _start _end)
   "Cache the completion type when popping up the completions buffer."
-  (let ((type (embark-classify)))
+  (let ((type (embark-classify))
+        (cmd embark--command))
     (with-current-buffer "*Completions*"
+      (setq-local embark--command cmd)
       (setq-local embark--buffer-local-type type)
       (setq-local embark--prev-buffer
                   (if (minibufferp completion-reference-buffer)
@@ -392,6 +403,33 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
     (when parent-map
       (set-keymap-parent map parent-map))
     map))
+
+(defun embark--action-command (action)
+  "Turn an action into a command that performs the action."
+  (lambda ()
+    (interactive)
+    (setq this-command action)
+    (embark--setup)
+    (call-interactively action)))
+
+(defun embark-occur ()
+  "Create a buffer with current candidates for further action."
+  (interactive)
+  (when (minibufferp) (switch-to-completions))
+  (when (eq major-mode 'completion-list-mode)
+    (let ((occur-buffer (current-buffer)))
+      (rename-buffer "*Embark Occur*" t)
+      (let ((default embark--command)
+            (occur-map
+             (keymap-canonicalize
+              (symbol-value (alist-get embark--buffer-local-type
+                                       embark-keymap-alist)))))
+        (define-key occur-map (kbd "RET") (embark--action-command default))
+        (dolist (binding (cdr occur-map))
+          (setcdr binding (embark--action-command (cdr binding))))
+        (push (cons t occur-map) minor-mode-overriding-map-alist))
+      (run-at-time 0 nil (lambda () (switch-to-buffer occur-buffer)))
+      (top-level))))
 
 ;;; custom actions
 
