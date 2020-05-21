@@ -142,7 +142,8 @@ It can be overriden by the `embark-setup-overrides' alist."
 
 (defcustom embark-setup-overrides
   '((async-shell-command embark--bol-spc)
-    (shell-command embark--bol-spc))
+    (shell-command embark--bol-spc)
+    (eval-expression embark--eval-prep))
   "Alist associating commands with post-injection setup hooks.
 For commands appearing as keys in this alist, run the
 corresponding value as a setup hook (instead of
@@ -166,7 +167,8 @@ When this variable is nil, it is overridden by
     kill-buffer
     shell-command
     async-shell-command
-    embark-kill-buffer-and-window)
+    embark-kill-buffer-and-window
+    eval-expression)
   "Allowing editing of target prior to acting for these commands.
 This list is used only when `embark-allow-edit-default' is nil."
   :type 'hook
@@ -503,7 +505,7 @@ with command output."
            (win (get-buffer-window buf)))
       (with-selected-window win
         (bury-buffer))
-    (bury-buffer )))
+    (bury-buffer)))
 
 (defun embark-kill-buffer-and-window ()
   "Kill embark target buffer and delete its window."
@@ -545,6 +547,16 @@ with command output."
   (insert " ")
   (backward-char))
 
+(defun embark--eval-prep ()
+  "If target is: a variable, skip edit; a function, wrap in parens."
+  (if (not (fboundp (intern (minibuffer-contents))))
+      (setq unread-command-events '(13))
+    (beginning-of-line)
+    (insert "(")
+    (end-of-line)
+    (insert ")")
+    (backward-char)))
+
 (defvar embark-buffer-map
   (embark-keymap
    '(("k" . kill-buffer)
@@ -562,7 +574,8 @@ with command output."
    '(("h" . embark-describe-symbol)
      ("c" . embark-info-emacs-command)
      ("s" . embark-info-lookup-symbol)
-     ("d" . embark-find-definition))
+     ("d" . embark-find-definition)
+     ("e" . eval-expression))
    embark-general-map))
 
 (defvar embark-package-map
