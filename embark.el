@@ -184,6 +184,10 @@ This list is used only when `embark-allow-edit-default' is t."
   "Cache for the completion type, meant to be set buffer-locally.
 Always keep the non-local value equal to nil.")
 
+(defvar embark--prev-buffer nil
+  "Cache for the previous buffer, meant to be set buffer-locally.
+Always keep the non-local value equal to nil.")
+
 (defun embark-buffer-local-type ()
   "Return buffer local cached completion type if available."
   embark--buffer-local-type)
