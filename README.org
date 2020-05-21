@@ -71,10 +71,10 @@ For example, consider using =shell-command= as an action during file
 completion. It would be useful to insert a space before the target
 file name and to leave the point at the beginning, so you can
 immediately type the shell command. That's why in =embark='s default
-there is an entry in =embark-setup-overrides= associating
-=shell-command= to =embark--bol-spc=, a simple helper command that
-inserts a space at the beginning of the line and leaves point to the
-left of it.
+configuration there is an entry in =embark-setup-overrides= associating
+=shell-command= to =embark--bol-spc=, a simple helper command that inserts
+a space at the beginning of the line and leaves point to the left of
+it.
 
 ** Actions that do not read from the minibuffer
 
