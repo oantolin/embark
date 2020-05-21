@@ -1,4 +1,4 @@
-* embark - Emacs Mini-Buffer Actions Rooted in Keymaps.
+* embark - Emacs Mini-Buffer Actions Rooted in Keymaps
 
 
 This package provides a pairs of commands, =embark-act= and
@@ -97,7 +97,15 @@ retrieve the current target. See the definitions of =embark-insert= or
 
 If you wish to see a reminder of which actions are available, you can
 install [[https://github.com/justbur/emacs-which-key][which-key]] and use =which-key-mode= with the
-=which-key-show-transient-maps= variable set to =t=.
+=which-key-show-transient-maps= variable set to =t=. You may want to
+unclutter the display by removing all of the keybindings for the
+universal prefix arguments, namely =C-u= and the digits and minus (as
+well as their numeric keypad counterparts):
+
+#+begin_src emacs-lisp
+  (push '(("^[0-9-]\\|kp-[0-9]\\|kp-subtract\\|C-u$" . nil) . ignore)
+        which-key-replacement-alist)
+#+end_src
 
 ** Creating your own keymaps
 
