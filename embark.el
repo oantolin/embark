@@ -336,8 +336,8 @@ This is used to keep the transient keymap active."
   "Embark upon a minibuffer action.
 Bind this command to a key in `minibuffer-local-completion-map'."
   (interactive)
-  (setq enable-recursive-minibuffers t)
   (embark--setup)
+  (setq enable-recursive-minibuffers t)
   (embark--start))
 
 (defun embark-exit-and-act ()
