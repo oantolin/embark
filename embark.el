@@ -61,21 +61,21 @@
 ;; running `embark-act' all of your keybindings and even
 ;; `execute-extended-command' can be used to run a command.
 
+;; By default, for most commands `embark' inserts the target of the
+;; action into the next minibuffer prompt and "presses RET" for you,
+;; accepting the target as is.  You can add commands for which you
+;; want the chance to edit the target before acting upon it to the
+;; list `embark-allow-edit-commands'.
+
+;; If you want the default to be to allowing editing the target for
+;; all commands, set `embark-allow-edit-default' to t and list
+;; exceptions in `embark-skip-edit-commands'.
+
 ;; If you want to customize what happens after the target is inserted
 ;; at the minibuffer prompt of an action, you can use the global
-;; `embark-setup-hook' or override it with the `embark-setup' property
-;; of the action command.  These should be hooks, that is, a function
-;; or list of functions, to be run after inserting the target into the
-;; minibuffer.  For an example, see the following.
-
-;; The default value of `embark-setup-hook' is `embark-ratify', which
-;; "presses RET for you". For a few commands that are hard to undo
-;; this is overridden with the `embark-setup' property: `delete-file',
-;; `delete-directory', `kill-buffer', for example.  If you decide you
-;; don't want to wait for confirmation before killing buffers you can
-;; use:
-
-;; (put 'kill-buffer 'embark-setup 'embark-ratify)
+;; `embark-setup-hook' or override it in the `embark-setup-overrides'
+;; alist.  See the default value of `embark-setup-overrides' for an
+;; example.
 
 ;; You can also write your own commands that do not read from the
 ;; minibuffer but act on the current target anyway: just use the
@@ -134,13 +134,47 @@ string or nil (to indicate it found no target)."
   :type 'string
   :group 'embark)
 
-(defcustom embark-setup-hook 'embark-ratify
+(defcustom embark-setup-hook nil
   "Hook to run after injecting target into minibuffer.
-It can be overriden by the `embark-setup' property of the current
-command.  The function `embark-ratify' can be added to this
-hook (or to the `embark-setup' property of a command) to
-automatically confirm using the target, i.e., to \"press RET for
-you\"."
+It can be overriden by the `embark-setup-overrides' alist."
+  :type 'hook
+  :group 'embark)
+
+(defcustom embark-setup-overrides
+  '((async-shell-command embark--bol-spc)
+    (shell-command embark--bol-spc))
+  "Alist associating commands with post-injection setup hooks.
+For commands appearing as keys in this alist, run the
+corresponding value as a setup hook (instead of
+`embark-setup-hook') after injecting the target into in the
+minibuffer and before acting on it."
+  :type '(alist :key-type function :value-type hook)
+  :group 'embark)
+
+(defcustom embark-allow-edit-default nil
+  "Is the user allowed to edit the target before acting on it?
+This variable sets the default policy, and can be overidden.
+When this variable is nil, it is overridden by
+`embark-allow-edit-commands'; when it is t, it is overidden by
+`embark-skip-edit-commands'."
+  :type 'boolean
+  :group 'embark)
+
+(defcustom embark-allow-edit-commands
+  '(delete-file
+    delete-directory
+    kill-buffer
+    shell-command
+    async-shell-command
+    embark-kill-buffer-and-window)
+  "Allowing editing of target prior to acting for these commands.
+This list is used only when `embark-allow-edit-default' is nil."
+  :type 'hook
+  :group 'embark)
+
+(defcustom embark-skip-edit-commands nil
+  "Skip editing of target prior to acting for these commands.
+This list is used only when `embark-allow-edit-default' is t."
   :type 'hook
   :group 'embark)
 
@@ -232,23 +266,20 @@ return nil."
   (prog1 embark--target
     (setq embark--target nil)))
 
-(defun embark-ratify ()
-  "Act on the embark target without confirmation.
-Add this to the `embark-setup' property of commands for which you
-wish to automatically confirm acting on the embark target.  Or if
-you want all actions to skip confirmation, add it to
-`embark-setup-hook'."
-  (setq unread-command-events '(13)))
-
 (defun embark--inject ()
   "Inject embark target into minibuffer prompt."
   (when-let ((target (embark-target)))
     (unless (eq this-command 'execute-extended-command)
       (delete-minibuffer-contents)
       (insert target)
-      (let ((embark-setup-hook (or (get this-command 'embark-setup)
-                                   embark-setup-hook)))
-        (run-hooks 'embark-setup-hook)))))
+      (let ((embark-setup-hook
+             (or (alist-get this-command embark-setup-overrides)
+                 embark-setup-hook)))
+        (run-hooks 'embark-setup-hook)
+        (when (if embark-allow-edit-default
+                  (memq this-command embark-skip-edit-commands)
+                (not (memq this-command embark-allow-edit-commands)))
+          (setq unread-command-events '(13)))))))
 
 (defun embark--cleanup ()
   "Remove all hooks and modifications."
@@ -511,11 +542,6 @@ with command output."
   (insert " ")
   (backward-char))
 
-(put 'async-shell-command 'embark-setup #'embark--bol-spc)
-(put 'shell-command 'embark-setup #'embark--bol-spc)
-(put 'delete-file 'embark-setup #'ignore)
-(put 'delete-directory 'embark-setup #'ignore)
-
 (defvar embark-buffer-map
   (embark-keymap
    '(("k" . kill-buffer)
@@ -527,9 +553,6 @@ with command output."
      ("=" . ediff-buffers)
      ("|" . embark-shell-command-on-buffer))
    embark-general-map))
-
-(put 'kill-buffer 'embark-setup #'ignore)
-(put 'embark-kill-buffer-and-window 'embark-setup #'ignore)
 
 (defvar embark-symbol-map
   (embark-keymap

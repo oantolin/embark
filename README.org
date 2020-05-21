@@ -39,65 +39,47 @@ opened up the minibuffer).
 You can read about the [[https://github.com/oantolin/embark/wiki/Default-Actions][default actions and their keybindings]]
 on the GitHub project wiki.
 
-** Running some setup after injecting the target
-
-If you want to customize what happens after the target is inserted at
-the minibuffer prompt of an action, you can use the =embark-setup=
-property of the action command. That property should be a hook, that
-is, a function or list of functions, to be run after inserting the
-target into the minibuffer.
-
-For example, =shell-command= and =async-shell-command= can be useful as
-actions during file completion. For these commands it would be useful
-to leave point at the beginning of the minibuffer, before the inserted
-file name, so you can type the command. That can be arranged as
-follows:
-
-#+begin_src emacs-lisp
-(put 'async-shell-command 'embark-setup 'beginning-of-line)
-(put 'shell-command 'embark-setup 'beginning-of-line)
-#+end_src
-
-Since this particular configuration is so useful, you don't have to
-put the above code in your init file; an even better version comes
-with =embark=: a space is inserted automatically too. Take this as an
-example of the kind of post-processing you might want to do with the
-=embark-setup= property.
-
-If you want some setup run for all commands add it to
-=embark-setup-hook=. Note that this hook only runs for commands which
-have no =embark-setup= property.
-
-For another example see the next section.
-
-** Not waiting for confirmation
+** Allowing the target to be edited before acting on it
 
 By default, for most commands =embark= inserts the target of the action
-into the next minibuffer prompt and "presses =RET=" for you. This
-"pressing =RET=" is done by the command =embark-ratify=, which is the
-default value of =embark-setup-hook=. For a few commands that are deemed
-hard to undo (like commands to delete a file or directory, or to kill
-a buffer), =embark= comes with an overriding =embark-setup= property to
-wait for the user to manually press =RET=.
+into the next minibuffer prompt and "presses =RET=" for you, accepting
+the target as is.
 
-If you disagree with these defaults, you can, for example, have =embark=
-kill buffers without confirmation:
+For some commands this might be undesirable, either for safety
+(because a command is "hard to undo", like =delete-file= or
+=kill-buffer)=, or because further input is required next to the target
+(like when using =shell-command=: the target is the file and you still
+need to enter a shell command to run on it, at the same prompt). You
+can add such commands to the =embark-allow-edit-commands= variable
+(which by default already contains the examples mentioned, and a few
+others as well).
 
-#+begin_src emacs-lisp
-(put 'kill-buffer 'embark-setup 'embark-ratify)
-#+end_src
+Now, automatically pressing =RET= for most commands is only the default.
+If you set the variable =embark-allow-edit-default= to =t=, then =embark=
+will instead give you a chance to edit the target before acting upon
+it, for all commands except those listed in =embark-skip-edit-commands=.
 
-Or, maybe you want to be prudent and have all commands wait for you to
-press =RET= after inspecting the minibuffer. In that case:
+** Running some setup after injecting the target
 
-#+begin_src emacs-lisp
-  (setq embark-setup-hook nil)
-#+end_src
+You can customize what happens after the target is inserted at the
+minibuffer prompt of an action. There is a hook, =embark-setup-hook=,
+that is run by default after injecting the target into the minibuffer.
+This hook can be overidden for specific action commands by associating
+the command to the desired overriding hook in =embark-setup-overrides=.
+
+For example, consider using =shell-command= as an action during file
+completion. It would be useful to insert a space before the target
+file name and to leave the point at the beginning, so you can
+immediately type the shell command. That's why in =embark='s default
+there is an entry in =embark-setup-overrides= associating
+=shell-command= to =embark--bol-spc=, a simple helper command that
+inserts a space at the beginning of the line and leaves point to the
+left of it.
 
 ** Actions that do not read from the minibuffer
 
-Additionally you can write your own commands that do not read from
-the minibuffer but act on the current target anyway: just use the
+You can also write your own commands that do not read from the
+minibuffer but act on the current target anyway: just use the
 =embark-target= function (exactly once!: it "self-destructs") to
 retrieve the current target. See the definitions of =embark-insert= or
 =embark-save= for examples.
