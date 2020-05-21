@@ -439,9 +439,9 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
 The insert path is relative to the previously selected buffer's
 `default-directory'."
   (interactive)
-  (with-selected-window (active-minibuffer-window)
-    (with-selected-window (minibuffer-selected-window)
-      (insert (file-relative-name (embark-target))))))
+  (with-current-buffer embark--prev-buffer
+    (insert (file-relative-name (embark-target)))
+    (setq embark--prev-buffer nil)))
 
 (defun embark-save-relative-path ()
   "Save the relative path to embark target to kill ring.
