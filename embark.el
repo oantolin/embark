@@ -141,8 +141,8 @@ It can be overriden by the `embark-setup-overrides' alist."
   :group 'embark)
 
 (defcustom embark-setup-overrides
-  '((async-shell-command embark--bol-spc)
-    (shell-command embark--bol-spc)
+  '((async-shell-command embark--shell-prep)
+    (shell-command embark--shell-prep)
     (eval-expression embark--eval-prep))
   "Alist associating commands with post-injection setup hooks.
 For commands appearing as keys in this alist, run the
@@ -579,11 +579,14 @@ with command output."
      ("W" . embark-save-relative-path))
    embark-general-map))
 
-(defun embark--bol-spc ()
-  "Insert a space at the beginning of the line, leave point there."
-  (beginning-of-line)
-  (insert " ")
-  (backward-char))
+(defun embark--shell-prep ()
+  "Prepare target for use as argument for a shell command.
+This quotes the spaces, inserts an extra space at the beginning
+and leaves the point to the left of it."
+  (let ((contents (minibuffer-contents)))
+    (delete-minibuffer-contents)
+    (insert " " (replace-regexp-in-string "\s-" "\\\&" contents))
+    (beginning-of-line)))
 
 (defun embark--eval-prep ()
   "If target is: a variable, skip edit; a function, wrap in parens."
