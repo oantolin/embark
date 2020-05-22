@@ -399,7 +399,9 @@ Bind this command to a key in `minibuffer-local-completion-map'."
 If PARENT-MAP is non-nil, set it as the parent keymap."
   (let ((map (make-sparse-keymap)))
     (dolist (key-fn binding-alist)
-      (define-key map (kbd (car key-fn)) (cdr key-fn)))
+      (pcase-let ((`(,key . ,fn) key-fn))
+        (when (stringp key) (setq key (kbd key)))
+        (define-key map key fn)))
     (when parent-map
       (set-keymap-parent map parent-map))
     map))
