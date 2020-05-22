@@ -460,6 +460,13 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
   (interactive)
   (ignore (embark-target)))
 
+(defun embark-undefined ()
+  "Cancel action and show an error message."
+  (interactive)
+  (ignore (embark-target))
+  (embark--cleanup) ; remove overlay immediately
+  (minibuffer-message "Unknown embark action"))
+
 (defun embark-eshell-in-directory ()
   "Run eshell in directory of embark target."
   (interactive)
@@ -590,6 +597,7 @@ and leaves the point to the left of it."
    '(("i" . embark-insert)
      ("w" . embark-save)
      ("C-g" . embark-cancel)
+     ([remap self-insert-command] . embark-undefined)
      ("C-u" . universal-argument))
    universal-argument-map))
 
