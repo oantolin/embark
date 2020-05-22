@@ -284,7 +284,7 @@ return nil."
 
 (defun embark--inject ()
   "Inject embark target into minibuffer prompt."
-  (unless (eq this-command 'execute-extended-command)
+  (unless (string-match-p "M-x" (minibuffer-prompt))
     (when-let ((target (embark-target)))
       (delete-minibuffer-contents)
       (insert target)
