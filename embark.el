@@ -431,9 +431,9 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
              (keymap-canonicalize
               (symbol-value (alist-get embark--buffer-local-type
                                        embark-keymap-alist)))))
-        (define-key occur-map (kbd "RET") (embark--action-command default))
         (dolist (binding (cdr occur-map))
           (setcdr binding (embark--action-command (cdr binding))))
+        (define-key occur-map (kbd "RET") (embark--action-command default))
         (push (cons t occur-map) minor-mode-overriding-map-alist))
       (run-at-time 0 nil (lambda () (pop-to-buffer occur-buffer)))
       (top-level))))
