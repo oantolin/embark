@@ -89,7 +89,7 @@
 
 ;;; Code:
 
-(require 'subr-x)
+(eval-when-compile (require 'subr-x))
 
 ;;; user facing options
 
