@@ -186,7 +186,7 @@ This list is used only when `embark-allow-edit-default' is t."
   "Cache for the completion type, meant to be set buffer-locally.
 Always keep the non-local value equal to nil.")
 
-(defvar embark--prev-buffer nil
+(defvar embark--previous-buffer nil
   "Cache for the previous buffer, meant to be set buffer-locally.
 Always keep the non-local value equal to nil.")
 
@@ -210,7 +210,7 @@ Always keep the non-local value equal to nil.")
     (with-current-buffer "*Completions*"
       (setq-local embark--command cmd)
       (setq-local embark--buffer-local-type type)
-      (setq-local embark--prev-buffer
+      (setq-local embark--previous-buffer
                   (if (minibufferp completion-reference-buffer)
                       (with-current-buffer completion-reference-buffer
                         (window-buffer (minibuffer-selected-window)))
@@ -351,7 +351,7 @@ return nil."
   (setq embark--target
         (run-hook-with-args-until-success 'embark-target-finders))
   (when (minibufferp)
-    (setq embark--prev-buffer (window-buffer (minibuffer-selected-window))))
+    (setq embark--previous-buffer (window-buffer (minibuffer-selected-window))))
   (setq embark--old-erm enable-recursive-minibuffers)
   (add-hook 'minibuffer-setup-hook #'embark--inject)
   (add-hook 'post-command-hook #'embark--cleanup))
@@ -446,9 +446,9 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
 (defun embark-insert ()
   "Insert embark target at point into the previously selected buffer."
   (interactive)
-  (with-current-buffer embark--prev-buffer
+  (with-current-buffer embark--previous-buffer
     (insert (substring-no-properties (embark-target)))
-    (setq embark--prev-buffer nil)))
+    (setq embark--previous-buffer nil)))
 
 (defun embark-save ()
   "Save embark target in the kill ring."
@@ -530,9 +530,9 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
 The insert path is relative to the previously selected buffer's
 `default-directory'."
   (interactive)
-  (with-current-buffer embark--prev-buffer
+  (with-current-buffer embark--previous-buffer
     (insert (file-relative-name (embark-target)))
-    (setq embark--prev-buffer nil)))
+    (setq embark--previous-buffer nil)))
 
 (defun embark-save-relative-path ()
   "Save the relative path to embark target to kill ring.
