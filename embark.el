@@ -343,10 +343,13 @@ return nil."
               (abbreviate-file-name (expand-file-name raw))
             raw))))))
 
+(defun embark--keymap-for-type (type)
+  "Return the keymap for the given completion type."
+  (symbol-value (alist-get type embark-keymap-alist)))
+
 (defun embark--setup ()
   "Setup for next action."
-  (setq embark--keymap
-        (symbol-value (alist-get (embark-classify) embark-keymap-alist)))
+  (setq embark--keymap (embark--keymap-for-type (embark-classify)))
   (setq embark--target
         (run-hook-with-args-until-success 'embark-target-finders))
   (when (minibufferp)
@@ -429,13 +432,10 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
     (let ((occur-buffer (current-buffer)))
       (rename-buffer "*Embark Occur*" t)
       (let ((default embark--command)
-            (occur-map
-             (keymap-canonicalize
-              (symbol-value (alist-get embark--buffer-local-type
-                                       embark-keymap-alist)))))
+            (occur-map (keymap-canonicalize
+                        (embark--keymap-for-type embark--type))))
         (dolist (binding (cdr occur-map))
           (setcdr binding (embark--action-command (cdr binding))))
-        (define-key occur-map (kbd "RET") (embark--action-command default))
         (push (cons t occur-map) minor-mode-overriding-map-alist))
       (run-at-time 0 nil (lambda () (pop-to-buffer occur-buffer)))
       (top-level))))
