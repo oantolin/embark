@@ -25,13 +25,13 @@
 
 ;; embark - Emacs Mini-Buffer Actions Rooted in Keymaps.
 
-;; This package provides a pairs of commands, `embark-act' and
+;; This package provides a pair of commands, `embark-act' and
 ;; `embark-exit-and-act', to execute actions on the top minibuffer
 ;; completion canidate: the one that would be chosen by
-;; minibuffer-force-complete.  Additionally `embark-act' can act on
-;; the completion candidate at point in the completions buffer.  You
-;; should bind both of them in `minibuffer-local-completion-map' and
-;; also bind `embark-act' in `completion-list-mode-map'.
+;; minibuffer-force-complete. Additionally `embark-act' can act on the
+;; completion candidate at point in the completions buffer. You should
+;; bind both of them in `minibuffer-local-completion-map' and also
+;; bind `embark-act' in `completion-list-mode-map'.
 
 ;; The actions are arranged into keymaps separated by the type of
 ;; completion currently taking place.  By default `embark' recognizes
@@ -284,8 +284,8 @@ return nil."
 
 (defun embark--inject ()
   "Inject embark target into minibuffer prompt."
-  (when-let ((target (embark-target)))
-    (unless (eq this-command 'execute-extended-command)
+  (unless (eq this-command 'execute-extended-command)
+    (when-let ((target (embark-target)))
       (delete-minibuffer-contents)
       (insert target)
       (let ((embark-setup-hook
