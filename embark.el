@@ -431,8 +431,7 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
   (when (eq major-mode 'completion-list-mode)
     (let ((occur-buffer (current-buffer)))
       (rename-buffer "*Embark Occur*" t)
-      (let ((default embark--command)
-            (occur-map (keymap-canonicalize
+      (let ((occur-map (keymap-canonicalize
                         (embark--keymap-for-type embark--type))))
         (dolist (binding (cdr occur-map))
           (setcdr binding (embark--action-command (cdr binding))))
@@ -568,6 +567,12 @@ with command output."
     (with-selected-window win
       (kill-buffer-and-window))))
 
+(defun embark-default-action ()
+  "Default action.
+This is whatever command opened the minibuffer in the first place."
+  (interactive)
+  (call-interactively embark--command))
+
 ;;; setup hooks for actions
 
 (defun embark--shell-prep ()
@@ -596,6 +601,7 @@ and leaves the point to the left of it."
    '(("i" . embark-insert)
      ("w" . embark-save)
      ("C-g" . embark-cancel)
+     ("RET" . embark-default-action)
      ([remap self-insert-command] . embark-undefined)
      ("C-u" . universal-argument))
    universal-argument-map))
