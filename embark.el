@@ -424,6 +424,7 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
 (defun embark-occur ()
   "Create a buffer with current candidates for further action."
   (interactive)
+  (ignore (embark-target)) ; allow use from embark-act
   (when (minibufferp) (switch-to-completions))
   (when (eq major-mode 'completion-list-mode)
     (let ((occur-buffer (current-buffer)))
