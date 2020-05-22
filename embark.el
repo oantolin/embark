@@ -567,7 +567,7 @@ This quotes the spaces, inserts an extra space at the beginning
 and leaves the point to the left of it."
   (let ((contents (minibuffer-contents)))
     (delete-minibuffer-contents)
-    (insert " " (replace-regexp-in-string "\s-" "\\\&" contents))
+    (insert " " (replace-regexp-in-string "\\s-" "\\\\\\&" contents))
     (beginning-of-line)))
 
 (defun embark--eval-prep ()
