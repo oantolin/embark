@@ -109,7 +109,7 @@
   :group 'embark)
 
 (defcustom embark-classifiers
-  '(embark-buffer-local-type
+  '(embark-cached-type
     embark-category
     embark-package
     embark-symbol)
@@ -182,7 +182,7 @@ This list is used only when `embark-allow-edit-default' is t."
 
 ;;; stashing the type of completions for a *Completions* buffer
 
-(defvar embark--buffer-local-type nil
+(defvar embark--type nil
   "Cache for the completion type, meant to be set buffer-locally.
 Always keep the non-local value equal to nil.")
 
@@ -199,25 +199,24 @@ Always keep the non-local value equal to nil.")
 
 (add-hook 'minibuffer-setup-hook #'embark--record-command)
 
-(defun embark-buffer-local-type ()
+(defun embark-cached-type ()
   "Return buffer local cached completion type if available."
-  embark--buffer-local-type)
+  embark--type)
 
-(defun embark--buffer-local-info (&optional _start _end)
+(defun embark--completions-info (&optional _start _end)
   "Cache the completion type when popping up the completions buffer."
   (let ((type (embark-classify))
         (cmd embark--command))
     (with-current-buffer "*Completions*"
       (setq-local embark--command cmd)
-      (setq-local embark--buffer-local-type type)
+      (setq-local embark--type type)
       (setq-local embark--previous-buffer
                   (if (minibufferp completion-reference-buffer)
                       (with-current-buffer completion-reference-buffer
                         (window-buffer (minibuffer-selected-window)))
                     completion-reference-buffer)))))
 
-(advice-add 'minibuffer-completion-help :after
-            #'embark--buffer-local-info)
+(advice-add 'minibuffer-completion-help :after #'embark--completions-info)
 
 ;;; better guess for default-directory in *Completions* buffers
 
@@ -340,7 +339,7 @@ return nil."
         (setq end (or (next-single-property-change end 'mouse-face)
                       (point-max)))
         (let ((raw (buffer-substring-no-properties beg end)))
-          (if (eq embark--buffer-local-type 'file)
+          (if (eq embark--type 'file)
               (abbreviate-file-name (expand-file-name raw))
             raw))))))
 
