@@ -180,6 +180,14 @@ This list is used only when `embark-allow-edit-default' is t."
   :type 'hook
   :group 'embark)
 
+(defcustom embark-occur-bind-actions nil
+  "Bind actions without a prefix in the Embark Occur buffer.
+When this variable is non-nil, Embark Occur buffers will have the
+usual actions for that type of candidate bound directly, without
+needing to run `embark-act' to use them."
+  :type 'boolean
+  :group 'embark)
+
 ;;; stashing the type of completions for a *Completions* buffer
 
 (defvar embark--type nil
@@ -410,8 +418,7 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
 
 (defun embark--action-command (action)
   "Turn an action into a command that performs the action."
-  (let ((name (intern (concat "embark-direct-action:"
-                              (format "%s" action))))
+  (let ((name (intern (format "embark-action<%s>" action)))
         (fn (lambda ()
               (interactive)
               (setq this-command action)
@@ -428,14 +435,15 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
   (interactive)
   (ignore (embark-target)) ; allow use from embark-act
   (when (minibufferp) (switch-to-completions))
-  (when (eq major-mode 'completion-list-mode)
+  (when (derived-mode-p 'completion-list-mode)
     (let ((occur-buffer (current-buffer)))
       (rename-buffer "*Embark Occur*" t)
-      (let ((occur-map (keymap-canonicalize
-                        (embark--keymap-for-type embark--type))))
-        (dolist (binding (cdr occur-map))
-          (setcdr binding (embark--action-command (cdr binding))))
-        (push (cons t occur-map) minor-mode-overriding-map-alist))
+      (when embark-occur-bind-actions
+        (let ((occur-map (keymap-canonicalize
+                          (embark--keymap-for-type embark--type))))
+          (dolist (binding (cdr occur-map))
+            (setcdr binding (embark--action-command (cdr binding))))
+          (push (cons t occur-map) minor-mode-overriding-map-alist)))
       (run-at-time 0 nil (lambda () (pop-to-buffer occur-buffer)))
       (top-level))))
 
