@@ -559,6 +559,27 @@ with command output."
     (with-selected-window win
       (kill-buffer-and-window))))
 
+;;; setup hooks for actions
+
+(defun embark--shell-prep ()
+  "Prepare target for use as argument for a shell command.
+This quotes the spaces, inserts an extra space at the beginning
+and leaves the point to the left of it."
+  (let ((contents (minibuffer-contents)))
+    (delete-minibuffer-contents)
+    (insert " " (replace-regexp-in-string "\s-" "\\\&" contents))
+    (beginning-of-line)))
+
+(defun embark--eval-prep ()
+  "If target is: a variable, skip edit; a function, wrap in parens."
+  (if (not (fboundp (intern (minibuffer-contents))))
+      (setq unread-command-events '(13))
+    (beginning-of-line)
+    (insert "(")
+    (end-of-line)
+    (insert ")")
+    (backward-char)))
+
 ;;; keymaps
 
 (defvar embark-general-map
@@ -585,25 +606,6 @@ with command output."
      ("I" . embark-insert-relative-path)
      ("W" . embark-save-relative-path))
    embark-general-map))
-
-(defun embark--shell-prep ()
-  "Prepare target for use as argument for a shell command.
-This quotes the spaces, inserts an extra space at the beginning
-and leaves the point to the left of it."
-  (let ((contents (minibuffer-contents)))
-    (delete-minibuffer-contents)
-    (insert " " (replace-regexp-in-string "\s-" "\\\&" contents))
-    (beginning-of-line)))
-
-(defun embark--eval-prep ()
-  "If target is: a variable, skip edit; a function, wrap in parens."
-  (if (not (fboundp (intern (minibuffer-contents))))
-      (setq unread-command-events '(13))
-    (beginning-of-line)
-    (insert "(")
-    (end-of-line)
-    (insert ")")
-    (backward-char)))
 
 (defvar embark-buffer-map
   (embark-keymap
