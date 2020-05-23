@@ -433,21 +433,21 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
 
 ;;; embark occur
 
-(defvar embark-occur-direction-action-minor-mode-map (make-sparse-keymap)
+(defvar embark-occur-direct-action-minor-mode-map (make-sparse-keymap)
   "Keymap for direct bindings to embark actions.")
 
-(define-minor-mode embark-occur-direction-action-minor-mode
+(define-minor-mode embark-occur-direct-action-minor-mode
   "Bind type-specific actions directly (without need for `embark-act')."
   :init-value nil
   :lighter " Act"
-  :keymap embark-occur-direction-action-minor-mode-map
-  (when embark-occur-direction-action-minor-mode
+  :keymap embark-occur-direct-action-minor-mode-map
+  (when embark-occur-direct-action-minor-mode
     ;; must mutate keymap, not make new one
     (let ((action-map (keymap-canonicalize
                        (embark--keymap-for-type embark--type))))
       (dolist (binding (cdr action-map))
         (setcdr binding (embark--action-command (cdr binding))))
-      (setcdr embark-occur-direction-action-minor-mode-map
+      (setcdr embark-occur-direct-action-minor-mode-map
               (cdr action-map)))))
 
 (defun embark-occur ()
