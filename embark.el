@@ -361,7 +361,6 @@ return nil."
         (run-hook-with-args-until-success 'embark-target-finders))
   (when (minibufferp)
     (setq embark--previous-buffer (window-buffer (minibuffer-selected-window))))
-  (setq embark--old-erm enable-recursive-minibuffers)
   (add-hook 'minibuffer-setup-hook #'embark--inject)
   (add-hook 'post-command-hook #'embark--cleanup))
 
@@ -374,8 +373,8 @@ This is used to keep the transient keymap active."
           digit-argument
           negative-argument)))
 
-(defun embark--start ()
-  "Start an action: show indicator and setup keymap."
+(defun embark--show-indicator ()
+  "Show pending action indicator either in the minibuffer or echo area."
   (let ((mini (active-minibuffer-window)))
     (if (not mini)
         (message "%s on '%s'" embark-indicator embark--target)
@@ -384,26 +383,52 @@ This is used to keep the transient keymap active."
                           (minibuffer-prompt-end)
                           (window-buffer mini)))
       (overlay-put embark--overlay 'before-string
-                   (concat embark-indicator " "))))
-  (set-transient-map embark--keymap #'embark--prefix-argument-p
-                     (lambda ()
-                       (setq embark--keymap nil)
-                       (run-hooks 'embark-pre-action-hook))))
+                   (concat embark-indicator " ")))))
 
-(defun embark-act ()
+(defun embark--bind-actions (exitp)
+  "Set transient keymap with bindings for type-specific actions.
+If EXITP is non-nil, exit all minibuffers too."
+  (set-transient-map
+   embark--keymap
+   #'embark--prefix-argument-p
+   (lambda ()
+     (setq embark--keymap nil)
+     (run-hooks 'embark-pre-action-hook)
+     (when (and exitp
+                (not (memq this-command
+                           '(embark-cancel embark-undefined))))
+       ;; schedule later rerun of this-command
+       (run-at-time 0 nil
+                    (lambda (cmd arg)
+                      (setq inhibit-message nil)
+                      (let ((this-command cmd)
+                            (prefix-arg arg))
+                        (command-execute cmd)))
+                    this-command prefix-arg)
+       ;; avoid the back to top level message
+       (setq inhibit-message t)
+       ;; and cancel current run of this-command
+       (top-level)))))
+
+(defun embark-act (&optional exitp)
   "Embark upon a minibuffer action.
-Bind this command to a key in `minibuffer-local-completion-map'."
-  (interactive)
+Bind this command to a key in `minibuffer-local-completion-map'.
+If EXITP is non-nil (interactively, if called with a prefix
+argument), exit all minibuffers too."
+  (interactive "P")
   (embark--setup)
-  (setq enable-recursive-minibuffers t)
-  (embark--start))
+  (unless exitp
+    (setq embark--old-erm enable-recursive-minibuffers
+          enable-recursive-minibuffers t))
+  (embark--show-indicator)
+  (embark--bind-actions exitp))
 
-(defun embark-exit-and-act ()
-  "Exit the minibuffer and embark upon an action."
-  (interactive)
-  (embark--setup)                       ; setup now
-  (run-at-time 0 nil #'embark--start)   ; start action later
-  (top-level))
+(defun embark-exit-and-act (&optional continuep)
+  "Exit the minibuffer and embark upon an action.
+If CONTINUEP is non-nil (interactively, if called with a prefix
+argument), don't actually exit."
+  (interactive "P")
+  (embark-act (not continuep)))
 
 (defun embark-keymap (binding-alist &optional parent-map)
   "Return keymap with bindings given by BINDING-ALIST.
