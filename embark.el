@@ -188,6 +188,11 @@ needing to run `embark-act' to use them."
   :type 'boolean
   :group 'embark)
 
+(defcustom embark-pre-action-hook nil
+  "Hook run right before an action is embarked upon."
+  :type 'hook
+  :group 'embark)
+
 ;;; stashing the type of completions for a *Completions* buffer
 
 (defvar embark--type nil
@@ -389,7 +394,9 @@ This is used to keep the transient keymap active."
       (overlay-put embark--overlay 'before-string
                    (concat embark-indicator " "))))
   (set-transient-map embark--keymap #'embark--prefix-argument-p
-                     (lambda () (setq embark--keymap nil))))
+                     (lambda ()
+                       (setq embark--keymap nil)
+                       (run-hooks 'embark-pre-action-hook))))
 
 (defun embark-act ()
   "Embark upon a minibuffer action.
