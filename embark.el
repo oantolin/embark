@@ -180,14 +180,6 @@ This list is used only when `embark-allow-edit-default' is t."
   :type 'hook
   :group 'embark)
 
-(defcustom embark-occur-bind-actions nil
-  "Bind actions without a prefix in the Embark Occur buffer.
-When this variable is non-nil, Embark Occur buffers will have the
-usual actions for that type of candidate bound directly, without
-needing to run `embark-act' to use them."
-  :type 'boolean
-  :group 'embark)
-
 (defcustom embark-pre-action-hook nil
   "Hook run right before an action is embarked upon."
   :type 'hook
@@ -441,6 +433,22 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
 
 ;;; embark occur
 
+(defvar embark-occur-direction-action-minor-mode-map '(keymap))
+
+(define-minor-mode embark-occur-direction-action-minor-mode
+  "Bind type-specific actions directly (without need for `embark-act')."
+  :init-value nil
+  :lighter " Act"
+  :keymap embark-occur-direction-action-minor-mode-map
+  (when embark-occur-direction-action-minor-mode
+    ;; must mutate keymap, not make new one
+    (let ((action-map (keymap-canonicalize
+                       (embark--keymap-for-type embark--type))))
+      (dolist (binding (cdr action-map))
+        (setcdr binding (embark--action-command (cdr binding))))
+      (setcdr embark-occur-direction-action-minor-mode-map
+              (cdr action-map)))))
+
 (defun embark-occur ()
   "Create a buffer with current candidates for further action."
   (interactive)
@@ -449,12 +457,6 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
   (when (derived-mode-p 'completion-list-mode)
     (let ((occur-buffer (current-buffer)))
       (rename-buffer "*Embark Occur*" t)
-      (when embark-occur-bind-actions
-        (let ((occur-map (keymap-canonicalize
-                          (embark--keymap-for-type embark--type))))
-          (dolist (binding (cdr occur-map))
-            (setcdr binding (embark--action-command (cdr binding))))
-          (push (cons t occur-map) minor-mode-overriding-map-alist)))
       (run-at-time 0 nil (lambda () (pop-to-buffer occur-buffer)))
       (top-level))))
 
