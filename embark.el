@@ -433,7 +433,8 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
 
 ;;; embark occur
 
-(defvar embark-occur-direction-action-minor-mode-map '(keymap))
+(defvar embark-occur-direction-action-minor-mode-map (make-sparse-keymap)
+  "Keymap for direct bindings to embark actions.")
 
 (define-minor-mode embark-occur-direction-action-minor-mode
   "Bind type-specific actions directly (without need for `embark-act')."
