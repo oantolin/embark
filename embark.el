@@ -297,8 +297,8 @@ return nil."
 (defun embark--inject ()
   "Inject embark target into minibuffer prompt."
   (when (or (not (string-match-p "M-x" (minibuffer-prompt)))
-            (eq this-command 'embark-default-action)
-            (eq this-command 'embark-action<embark-default-action>))
+            (eq real-this-command 'embark-default-action)
+            (eq real-this-command 'embark-action<embark-default-action>))
     (when-let ((target (embark-target)))
       (delete-minibuffer-contents)
       (insert target)
@@ -588,6 +588,7 @@ with command output."
   "Default action.
 This is whatever command opened the minibuffer in the first place."
   (interactive)
+  (setq this-command embark--command)   ; so the proper hooks apply
   (call-interactively embark--command))
 
 ;;; setup hooks for actions
