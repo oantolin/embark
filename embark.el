@@ -122,6 +122,7 @@ indicate it could not determine the type of completion."
 
 (defcustom embark-target-finders
   '(embark-top-minibuffer-completion
+    embark-button-label
     embark-completion-at-point)
   "List of functions to pick the target for actions.
 Each function should take no arguments and return either a target
@@ -193,13 +194,22 @@ These are used to fill an Embark Occur buffer."
   :type 'hook
   :group 'embark)
 
-;;; stashing the type of completions for a *Completions* buffer
+(defcustom embark-annotator-alist
+  '((symbol . embark-first-line-of-docstring))
+  "Alist associating completion types to annotation functions.
+Each function should take a candidate for an action as a string
+and return a string without newlines giving some extra
+information about the candidate."
+  :type '(alist :key-type symbol :value-type function)
+  :group 'embark)
+
+;;; stashing information for actions in buffer local variables
 
 (defvar embark--type nil
   "Cache for the completion type, meant to be set buffer-locally.
 Always keep the non-local value equal to nil.")
 
-(defvar embark--previous-buffer nil
+(defvar embark--target-buffer nil
   "Cache for the previous buffer, meant to be set buffer-locally.
 Always keep the non-local value equal to nil.")
 
@@ -216,23 +226,6 @@ Always keep the non-local value equal to nil.")
   "Return buffer local cached completion type if available."
   embark--type)
 
-(defun embark--completions-info (&optional _start _end)
-  "Cache the completion type when popping up the completions buffer."
-  (let ((type (embark-classify))
-        (cmd embark--command))
-    (with-current-buffer "*Completions*"
-      (setq-local embark--command cmd)
-      (setq-local embark--type type)
-      (setq-local embark--previous-buffer
-                  (if (minibufferp completion-reference-buffer)
-                      (with-current-buffer completion-reference-buffer
-                        (window-buffer (minibuffer-selected-window)))
-                    completion-reference-buffer)))))
-
-(advice-add 'minibuffer-completion-help :after #'embark--completions-info)
-
-;;; better guess for default-directory in *Completions* buffers
-
 (defun embark--default-directory ()
   "Guess a reasonable default directory for the current candidates."
   (if (and minibuffer-completing-file-name
@@ -242,13 +235,29 @@ Always keep the non-local value equal to nil.")
         (buffer-substring (minibuffer-prompt-end) (point))))
     default-directory))
 
-(defun embark--completions-default-directory ()
-  "Guess a reasonable default directory for the completions buffer.
-Meant to be added to `completion-setup-hook'."
-  (with-current-buffer standard-output
-    (setq-local default-directory (embark--default-directory))))
+(defun embark--target-buffer ()
+  "Get target buffer for insert actions."
+  (cond
+   ((minibufferp) (window-buffer (minibuffer-selected-window)))
+   ((derived-mode-p 'completion-list-mode)
+    (if (minibufferp completion-reference-buffer)
+        (with-current-buffer completion-reference-buffer
+          (window-buffer (minibuffer-selected-window)))
+      completion-reference-buffer))))
 
-(add-hook 'completion-setup-hook #'embark--completions-default-directory t)
+(defun embark--cache-info (&optional buffer)
+  "Cache information needed for actions in variables local to BUFFER."
+  (let ((type (embark-classify))
+        (cmd embark--command)
+        (dir (embark--default-directory))
+        (target-buffer (embark--target-buffer)))
+    (with-current-buffer (or buffer standard-output)
+      (setq-local embark--command cmd)
+      (setq-local embark--type type)
+      (setq-local default-directory dir)
+      (setq-local embark--target-buffer target-buffer))))
+
+(add-hook 'completion-setup-hook #'embark--cache-info t)
 
 ;;; core functionality
 
@@ -338,6 +347,10 @@ return nil."
              (substring contents 0 (or (cdr (last completions)) 0))
              (car completions))))))))
 
+(defun embark-button-label ()
+  (when-let ((button (button-at (point))))
+    (button-label button)))
+
 (defun embark-completion-at-point (&optional relative)
   "Return the completion candidate at point in a completions buffer.
 If the completions are file names and RELATIVE is non-nil, return
@@ -372,7 +385,8 @@ relative path."
   (setq embark--target
         (run-hook-with-args-until-success 'embark-target-finders))
   (when (minibufferp)
-    (setq embark--previous-buffer (window-buffer (minibuffer-selected-window))))
+    (setq-local embark--target-buffer
+                (window-buffer (minibuffer-selected-window))))
   (add-hook 'minibuffer-setup-hook #'embark--inject)
   (add-hook 'post-command-hook #'embark--cleanup))
 
@@ -441,33 +455,14 @@ argument), don't actually exit."
   (interactive "P")
   (embark-act (not continuep)))
 
-(defun embark-keymap (binding-alist &optional parent-map)
-  "Return keymap with bindings given by BINDING-ALIST.
-If PARENT-MAP is non-nil, set it as the parent keymap."
-  (let ((map (make-sparse-keymap)))
-    (dolist (key-fn binding-alist)
-      (pcase-let ((`(,key . ,fn) key-fn))
-        (when (stringp key) (setq key (kbd key)))
-        (define-key map key fn)))
-    (when parent-map
-      (set-keymap-parent map parent-map))
-    map))
-
-(defun embark--action-command (action)
-  "Turn an action into a command that performs the action."
-  (let ((name (intern (format "embark-action<%s>" action)))
-        (fn (lambda ()
-              (interactive)
-              (setq this-command action)
-              (embark--setup)
-              (call-interactively action))))
-    (fset name fn)
-    (when (symbolp action)
-      (put name 'function-documentation
-           (documentation action)))
-    name))
-
 ;;; embark occur
+
+(defun embark-first-line-of-docstring (name)
+  "Return the first line of the docstring or NAME.
+To be used as an annotation function for symbols in `embark-occur'."
+  (when-let* ((symbol (intern name))
+              (docstring (documentation symbol)))
+    (car (split-string docstring "\n"))))
 
 (defun embark-minibuffer-candidates ()
   "Return all current completion candidates from the minibuffer."
@@ -492,6 +487,20 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
           (next-completion 1))
         (nreverse all)))))
 
+(defun embark--action-command (action)
+  "Turn an action into a command that performs the action."
+  (let ((name (intern (format "embark-action<%s>" action)))
+        (fn (lambda ()
+              (interactive)
+              (setq this-command action)
+              (embark--setup)
+              (call-interactively action))))
+    (fset name fn)
+    (when (symbolp action)
+      (put name 'function-documentation
+           (documentation action)))
+    name))
+
 (defvar embark-occur-direct-action-minor-mode-map (make-sparse-keymap)
   "Keymap for direct bindings to embark actions.")
 
@@ -509,32 +518,62 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
       (setcdr embark-occur-direct-action-minor-mode-map
               (cdr action-map)))))
 
+(define-button-type 'embark-occur-entry
+  'face 'default
+  'action 'embark-occur-select)
+
+(defun embark-occur-select (_entry)
+  "Run default action on ENTRY."
+  (setq this-command embark--command)
+  (embark--setup)
+  (call-interactively this-command))
+
+(define-derived-mode embark-occur-mode tabulated-list-mode "Embark Occur"
+  "List of candidates to be acted on.
+You should either bind `embark-act' in `embark-occur-mode-map' or
+enable `embark-occur-direct-action-minor-mode' in
+`embark-occur-mode-hook'.")
+
 (defun embark-occur ()
   "Create a buffer with current candidates for further action."
   (interactive)
   (ignore (embark-target)) ; allow use from embark-act
   (let ((candidates (run-hook-with-args-until-success
                      'embark-candidate-collectors))
-        (type (embark-classify))
-        (dir (embark--default-directory))
-        (buffer (generate-new-buffer "*Embark Occur*")))
+        (buffer (generate-new-buffer "*Embark Occur*"))
+        (annotator (alist-get (embark-classify) embark-annotator-alist)))
     (with-current-buffer buffer
-      (completion-list-mode) ; cache type
-      (setq-local embark--type type)
-      (setq-local default-directory dir)
-      (completion--insert-strings candidates)
-      (setq buffer-read-only t))
+      (embark-occur-mode)
+      (setq tabulated-list-format
+            (if annotator
+                [("Candidate" 30 t) ("Annotation" 0 nil)]
+              [("Candidate" 0 t)]))
+      (setq tabulated-list-entries
+            (mapcar (lambda (cand)
+                      (if annotator
+                          `(,cand [(,cand type embark-occur-entry)
+                                   ,(or (funcall annotator cand) "")])
+                        `(,cand [(,cand type embark-occur-entry)])))
+                    candidates))
+      (tabulated-list-print))
+    (embark--cache-info buffer)
     (run-at-time 0 nil (lambda () (pop-to-buffer buffer)))
     (top-level)))
 
 ;;; custom actions
 
+(defun embark-default-action ()
+  "Default action.
+This is whatever command opened the minibuffer in the first place."
+  (interactive)
+  (setq this-command embark--command)   ; so the proper hooks apply
+  (call-interactively embark--command))
+
 (defun embark-insert ()
   "Insert embark target at point into the previously selected buffer."
   (interactive)
-  (with-current-buffer embark--previous-buffer
-    (insert (substring-no-properties (embark-target)))
-    (setq embark--previous-buffer nil)))
+  (with-current-buffer embark--target-buffer
+    (insert (substring-no-properties (embark-target)))))
 
 (defun embark-save ()
   "Save embark target in the kill ring."
@@ -617,9 +656,8 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
 The insert path is relative to the previously selected buffer's
 `default-directory'."
   (interactive)
-  (with-current-buffer embark--previous-buffer
-    (insert (file-relative-name (embark-target)))
-    (setq embark--previous-buffer nil)))
+  (with-current-buffer embark--target-buffer
+    (insert (file-relative-name (embark-target)))))
 
 (defun embark-save-relative-path ()
   "Save the relative path to embark target to kill ring.
@@ -659,13 +697,6 @@ with command output. For replacement behaviour see
     (with-selected-window win
       (kill-buffer-and-window))))
 
-(defun embark-default-action ()
-  "Default action.
-This is whatever command opened the minibuffer in the first place."
-  (interactive)
-  (setq this-command embark--command)   ; so the proper hooks apply
-  (call-interactively embark--command))
-
 ;;; setup hooks for actions
 
 (defun embark--shell-prep ()
@@ -688,6 +719,18 @@ and leaves the point to the left of it."
     (backward-char)))
 
 ;;; keymaps
+
+(defun embark-keymap (binding-alist &optional parent-map)
+  "Return keymap with bindings given by BINDING-ALIST.
+If PARENT-MAP is non-nil, set it as the parent keymap."
+  (let ((map (make-sparse-keymap)))
+    (dolist (key-fn binding-alist)
+      (pcase-let ((`(,key . ,fn) key-fn))
+        (when (stringp key) (setq key (kbd key)))
+        (define-key map key fn)))
+    (when parent-map
+      (set-keymap-parent map parent-map))
+    map))
 
 (defvar embark-general-map
   (embark-keymap
