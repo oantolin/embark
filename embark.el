@@ -541,6 +541,7 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
 
 (defun embark-info-lookup-symbol ()
   "Display the definition of embark target, from the relevant manual."
+  (interactive)
   (info-lookup-symbol (intern (embark-target)) 'emacs-lisp-mode))
 
 (defun embark-rename-buffer ()
