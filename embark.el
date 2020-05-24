@@ -473,7 +473,10 @@ argument), don't actually exit."
   "Return the first line of the docstring or NAME.
 To be used as an annotation function for symbols in `embark-occur'."
   (when-let* ((symbol (intern name))
-              (docstring (documentation symbol)))
+              (docstring (if (functionp symbol)
+                             (documentation symbol)
+                           (documentation-property
+                            symbol 'variable-documentation))))
     (car (split-string docstring "\n"))))
 
 (defun embark-minibuffer-candidates ()
