@@ -587,14 +587,17 @@ The insert path is relative to the previously selected buffer's
 (defun embark-shell-command-on-buffer (buffer command &optional replace)
   "Run shell COMMAND on contents of BUFFER.
 Called with \\[universal-argument], replace contents of buffer
-with command output."
+with command output. For replacement behaviour see
+`shell-command-dont-erase-buffer' setting."
   (interactive
    (list
     (read-buffer "Buffer: ")
     (read-shell-command "Shell command: ")
     current-prefix-arg))
   (with-current-buffer buffer
-    (shell-command-on-region (point-min) (point-max) command replace)))
+    (shell-command-on-region (point-min) (point-max)
+                             command
+                             (and replace (current-buffer)))))
 
 (defun embark-bury-buffer ()
   "Bury embark target buffer."
