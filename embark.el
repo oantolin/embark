@@ -353,8 +353,12 @@ return nil."
              (car completions))))))))
 
 (defun embark-button-label ()
-  (when-let ((button (button-at (point))))
-    (button-label button)))
+  "Return the label of the button at point."
+  (when-let* ((button (button-at (point)))
+              (label (button-label button)))
+    (if (eq embark--type 'file)
+        (abbreviate-file-name (expand-file-name label))
+      label)))
 
 (defun embark-completion-at-point (&optional relative)
   "Return the completion candidate at point in a completions buffer.
