@@ -130,8 +130,13 @@ string or nil (to indicate it found no target)."
   :group 'embark)
 
 (defcustom embark-indicator (propertize "Act" 'face 'highlight)
-  "Echo area indicator the user is embarking upon an action."
-  :type 'string
+  "Indicator to use when embarking upon an action.
+
+If set to a string prepend it to the minibuffer prompt or to the
+message in the echo area when outside of the minibuffer. When set
+to a function it is called with no arguments to indicate the
+pending action itself. For nil no indication is shown."
+  :type '(choice function string nil)
   :group 'embark)
 
 (defcustom embark-setup-hook nil
@@ -372,16 +377,19 @@ This is used to keep the transient keymap active."
           negative-argument)))
 
 (defun embark--show-indicator ()
-  "Show pending action indicator either in the minibuffer or echo area."
-  (let ((mini (active-minibuffer-window)))
-    (if (not mini)
-        (message "%s on '%s'" embark-indicator embark--target)
-      (setq embark--overlay
-            (make-overlay (point-min)
-                          (minibuffer-prompt-end)
-                          (window-buffer mini)))
-      (overlay-put embark--overlay 'before-string
-                   (concat embark-indicator " ")))))
+  "Show pending action indicator accoring to `embark-indicator'."
+  (cond ((stringp embark-indicator)
+         (let ((mini (active-minibuffer-window)))
+           (if (not mini)
+               (message "%s on '%s'" embark-indicator embark--target)
+             (setq embark--overlay
+                   (make-overlay (point-min)
+                                 (minibuffer-prompt-end)
+                                 (window-buffer mini)))
+             (overlay-put embark--overlay 'before-string
+                          (concat embark-indicator " ")))))
+        ((functionp embark-indicator)
+         (funcall embark-indicator))))
 
 (defun embark--bind-actions (exitp)
   "Set transient keymap with bindings for type-specific actions.
@@ -417,8 +425,8 @@ argument), exit all minibuffers too."
   (embark--setup)
   (unless exitp
     (setq-local enable-recursive-minibuffers t))
-  (embark--show-indicator)
-  (embark--bind-actions exitp))
+  (embark--bind-actions exitp)
+  (embark--show-indicator))
 
 (defun embark-exit-and-act (&optional continuep)
   "Exit the minibuffer and embark upon an action.
