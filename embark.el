@@ -185,6 +185,14 @@ This list is used only when `embark-allow-edit-default' is t."
   :type 'hook
   :group 'embark)
 
+(defcustom embark-candidate-collectors
+  '(embark-minibuffer-candidates
+    embark-completions-buffer-candidates)
+  "List of functions that collect all candidates in a given context.
+These are used to fill an Embark Occur buffer."
+  :type 'hook
+  :group 'embark)
+
 ;;; stashing the type of completions for a *Completions* buffer
 
 (defvar embark--type nil
@@ -225,18 +233,22 @@ Always keep the non-local value equal to nil.")
 
 ;;; better guess for default-directory in *Completions* buffers
 
-(defun embark-completions-default-directory ()
+(defun embark--default-directory ()
+  "Guess a reasonable default directory for the current candidates."
+  (if (and minibuffer-completing-file-name
+             (minibufferp))
+      (file-name-directory
+       (expand-file-name
+        (buffer-substring (minibuffer-prompt-end) (point))))
+    default-directory))
+
+(defun embark--completions-default-directory ()
   "Guess a reasonable default directory for the completions buffer.
 Meant to be added to `completion-setup-hook'."
-  (when (and minibuffer-completing-file-name
-             (minibufferp))
-    (let ((dir (file-name-directory
-                (expand-file-name
-                 (buffer-substring (minibuffer-prompt-end) (point))))))
-      (with-current-buffer standard-output
-        (setq-local default-directory dir)))))
+  (with-current-buffer standard-output
+    (setq-local default-directory (embark--default-directory))))
 
-(add-hook 'completion-setup-hook #'embark-completions-default-directory t)
+(add-hook 'completion-setup-hook #'embark--completions-default-directory t)
 
 ;;; core functionality
 
@@ -328,8 +340,10 @@ return nil."
              (substring contents 0 (or (cdr (last completions)) 0))
              (car completions))))))))
 
-(defun embark-completion-at-point ()
-  "Return the completion candidate at point in a completions buffer."
+(defun embark-completion-at-point (&optional relative)
+  "Return the completion candidate at point in a completions buffer.
+If the completions are file names and RELATIVE is non-nil, return
+relative path."
   (when (eq major-mode 'completion-list-mode)
     (if (not (get-text-property (point) 'mouse-face))
         (user-error "No completion here")
@@ -346,7 +360,7 @@ return nil."
         (setq end (or (next-single-property-change end 'mouse-face)
                       (point-max)))
         (let ((raw (buffer-substring-no-properties beg end)))
-          (if (eq embark--type 'file)
+          (if (and (eq embark--type 'file) (not relative))
               (abbreviate-file-name (expand-file-name raw))
             raw))))))
 
@@ -458,6 +472,29 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
 
 ;;; embark occur
 
+(defun embark-minibuffer-candidates ()
+  "Return all current completion candidates from the minibuffer."
+  (when (minibufferp)
+    (let* ((all (completion-all-completions
+                 (minibuffer-contents)
+                 minibuffer-completion-table
+                 minibuffer-completion-predicate
+                 (- (point) (minibuffer-prompt-end))))
+           (last (last all)))
+      (when last (setcdr last nil))
+      all)))
+
+(defun embark-completions-buffer-candidates ()
+  "Return all candidates in a completions buffer."
+  (when (derived-mode-p 'completion-list-mode)
+    (save-excursion
+      (let (all)
+        (next-completion 1)
+        (while (not (eobp))
+          (push (embark-completion-at-point 'relative-path) all)
+          (next-completion 1))
+        (nreverse all)))))
+
 (defvar embark-occur-direct-action-minor-mode-map (make-sparse-keymap)
   "Keymap for direct bindings to embark actions.")
 
@@ -479,12 +516,19 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
   "Create a buffer with current candidates for further action."
   (interactive)
   (ignore (embark-target)) ; allow use from embark-act
-  (when (minibufferp) (switch-to-completions))
-  (when (derived-mode-p 'completion-list-mode)
-    (let ((occur-buffer (current-buffer)))
-      (rename-buffer "*Embark Occur*" t)
-      (run-at-time 0 nil (lambda () (pop-to-buffer occur-buffer)))
-      (top-level))))
+  (let ((candidates (run-hook-with-args-until-success
+                     'embark-candidate-collectors))
+        (type (embark-classify))
+        (dir (embark--default-directory))
+        (buffer (generate-new-buffer "*Embark Occur*")))
+    (with-current-buffer buffer
+      (completion-list-mode) ; cache type
+      (setq-local embark--type type)
+      (setq-local default-directory dir)
+      (completion--insert-strings candidates)
+      (setq buffer-read-only t))
+    (run-at-time 0 nil (lambda () (pop-to-buffer buffer)))
+    (top-level)))
 
 ;;; custom actions
 
