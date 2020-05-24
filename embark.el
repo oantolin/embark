@@ -130,7 +130,8 @@ string or nil (to indicate it found no target)."
   :group 'embark)
 
 (defcustom embark-indicator (propertize "Act" 'face 'highlight)
-  "Echo area indicator the user is embarking upon an action."
+  "Echo area indicator the user is embarking upon an action.
+When set to the empty string no indication is shown."
   :type 'string
   :group 'embark)
 
@@ -375,15 +376,16 @@ This is used to keep the transient keymap active."
 
 (defun embark--show-indicator ()
   "Show pending action indicator either in the minibuffer or echo area."
-  (let ((mini (active-minibuffer-window)))
-    (if (not mini)
-        (message "%s on '%s'" embark-indicator embark--target)
-      (setq embark--overlay
-            (make-overlay (point-min)
-                          (minibuffer-prompt-end)
-                          (window-buffer mini)))
-      (overlay-put embark--overlay 'before-string
-                   (concat embark-indicator " ")))))
+  (unless (string-empty-p embark-indicator)
+    (let ((mini (active-minibuffer-window)))
+      (if (not mini)
+          (message "%s on '%s'" embark-indicator embark--target)
+        (setq embark--overlay
+              (make-overlay (point-min)
+                            (minibuffer-prompt-end)
+                            (window-buffer mini)))
+        (overlay-put embark--overlay 'before-string
+                     (concat embark-indicator " "))))))
 
 (defun embark--bind-actions (exitp)
   "Set transient keymap with bindings for type-specific actions.
