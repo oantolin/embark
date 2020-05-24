@@ -255,7 +255,6 @@ Meant to be added to `completion-setup-hook'."
 (defvar embark--target nil "String the next action will operate on.")
 (defvar embark--keymap nil "Keymap to activate for next action.")
 
-(defvar embark--old-erm nil "Stores value of `enable-recursive-minibuffers'.")
 (defvar embark--overlay nil
   "Overlay to communicate embarking on an action to the user.")
 
@@ -318,7 +317,6 @@ return nil."
 (defun embark--cleanup ()
   "Remove all hooks and modifications."
   (unless embark--target
-    (setq enable-recursive-minibuffers embark--old-erm)
     (remove-hook 'minibuffer-setup-hook #'embark--inject)
     (remove-hook 'post-command-hook #'embark--cleanup)
     (when embark--overlay
@@ -432,8 +430,7 @@ argument), exit all minibuffers too."
   (interactive "P")
   (embark--setup)
   (unless exitp
-    (setq embark--old-erm enable-recursive-minibuffers
-          enable-recursive-minibuffers t))
+    (setq-local enable-recursive-minibuffers t))
   (embark--show-indicator)
   (embark--bind-actions exitp))
 
@@ -634,14 +631,17 @@ The insert path is relative to the previously selected buffer's
 (defun embark-shell-command-on-buffer (buffer command &optional replace)
   "Run shell COMMAND on contents of BUFFER.
 Called with \\[universal-argument], replace contents of buffer
-with command output."
+with command output. For replacement behaviour see
+`shell-command-dont-erase-buffer' setting."
   (interactive
    (list
     (read-buffer "Buffer: ")
     (read-shell-command "Shell command: ")
     current-prefix-arg))
   (with-current-buffer buffer
-    (shell-command-on-region (point-min) (point-max) command replace)))
+    (shell-command-on-region (point-min) (point-max)
+                             command
+                             (and replace (current-buffer)))))
 
 (defun embark-bury-buffer ()
   "Bury embark target buffer."
