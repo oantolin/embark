@@ -581,32 +581,40 @@ You should either bind `embark-act' in `embark-occur-mode-map' or
 enable `embark-occur-direct-action-minor-mode' in
 `embark-occur-mode-hook'.")
 
+(let ((map embark-occur-mode-map))
+  (define-key map "a" 'embark-act)
+  (define-key map "v" 'embark-occur-toggle-view)
+  (define-key map "d" 'embark-occur-direct-action-minor-mode)
+  (define-key map "s" 'isearch-forward)
+  (define-key map (kbd "<right>") #'forward-button)
+  (define-key map (kbd "<left>") #'backward-button))
+
 (defun embark-occur--max-width ()
   "Maximum width of any Embark Occur candidate."
   (cl-loop for cand in embark-occur-candidates
            maximize (length cand)))
 
-(defun embark-occur--list-view (annotator)
-  "List view of candidates and annotations for Embark Occur buffer.
-Use ANNOTATOR to get the annotations."
+(defun embark-occur--list-view ()
+  "List view of candidates and annotations for Embark Occur buffer."
   (setq embark-occur-view 'list)
-  (setq tabulated-list-format
-        (if annotator
-            (let ((width (embark-occur--max-width)))
-              `[("Candidate" ,width t) ("Annotation" 0 nil)])
-          [("Candidate" 0 t)]))
-  (setq tabulated-list-entries
-        (mapcar (lambda (cand)
-                  (if annotator
-                      `(,cand [(,cand type embark-occur-entry)
-                               ,(or (funcall annotator cand) "")])
-                    `(,cand [(,cand type embark-occur-entry)])))
-                embark-occur-candidates)))
+  (let ((annotator (alist-get embark--type embark-annotator-alist)))
+    (setq tabulated-list-format
+          (if annotator
+              (let ((width (embark-occur--max-width)))
+                `[("Candidate" ,width t) ("Annotation" 0 nil)])
+            [("Candidate" 0 t)]))
+    (setq tabulated-list-entries
+          (mapcar (lambda (cand)
+                    (if annotator
+                        `(,cand [(,cand type embark-occur-entry)
+                                 ,(or (funcall annotator cand) "")])
+                      `(,cand [(,cand type embark-occur-entry)])))
+                  embark-occur-candidates))))
 
 (defun embark-occur--grid-view ()
   "Grid view of candidates for Embark Occur buffer."
   (setq embark-occur-view 'grid)
-  (let* ((width (embark-occur--max-width))
+  (let* ((width (min (embark-occur--max-width) (floor (window-width) 2)))
          (columns (/ (window-width) width)))
     (setq tabulated-list-format
           (make-vector columns `("Candidate" ,width nil)))
@@ -626,7 +634,7 @@ Use ANNOTATOR to get the annotations."
   (interactive)
   (if (eq embark-occur-view 'list)
       (embark-occur--grid-view)
-    (embark-occur--list-view (alist-get embark--type embark-annotator-alist)))
+    (embark-occur--list-view))
   (tabulated-list-print))
 
 (defun embark-occur ()
@@ -635,17 +643,18 @@ Use ANNOTATOR to get the annotations."
   (ignore (embark-target)) ; allow use from embark-act
   (let ((candidates (run-hook-with-args-until-success
                      'embark-candidate-collectors))
-        (buffer (generate-new-buffer "*Embark Occur*"))
-        (annotator (alist-get (embark-classify) embark-annotator-alist)))
+        (buffer (generate-new-buffer "*Embark Occur*")))
     (with-current-buffer buffer
       (embark-occur-mode)
-      (setq embark-occur-candidates candidates)
-      (if (eq embark-occur-initial-view 'list)
-          (embark-occur--list-view annotator)
-        (embark-occur--grid-view))
-      (tabulated-list-print))
+      (setq embark-occur-candidates candidates))
     (embark--cache-info buffer)
-    (run-at-time 0 nil (lambda () (pop-to-buffer buffer)))
+    (run-at-time 0 nil (lambda ()
+                         (pop-to-buffer buffer)
+                         ;; wait so grid view knows the window width
+                         (if (eq embark-occur-initial-view 'list)
+                             (embark-occur--list-view)
+                           (embark-occur--grid-view))
+                         (tabulated-list-print)))
     (top-level)))
 
 ;;; custom actions
