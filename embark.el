@@ -480,12 +480,14 @@ If EXITP is non-nil, exit all minibuffers too."
                            '(embark-cancel embark-undefined))))
        ;; schedule later rerun of this-command
        (run-at-time 0 nil
-                    (lambda (cmd arg)
+                    (lambda (cmd arg ecmd)
                       (setq inhibit-message nil)
                       (let ((this-command cmd)
-                            (prefix-arg arg))
+                            (prefix-arg arg)
+                            (embark--command ecmd))
                         (command-execute cmd)))
-                    this-command prefix-arg)
+                    this-command prefix-arg
+                    embark--command)
        ;; avoid the back to top level message
        (setq inhibit-message t)
        ;; and cancel current run of this-command
