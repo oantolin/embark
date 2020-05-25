@@ -200,7 +200,9 @@ These are used to fill an Embark Occur buffer."
   :group 'embark)
 
 (defcustom embark-annotator-alist
-  '((symbol . embark-first-line-of-docstring))
+  '((symbol . embark-first-line-of-docstring)
+    (buffer . embark-file-and-major-mode)
+    (file . embark-size-and-modification-time))
   "Alist associating completion types to annotation functions.
 Each function should take a candidate for an action as a string
 and return a string without newlines giving some extra
@@ -470,7 +472,7 @@ argument), don't actually exit."
 ;;; embark occur
 
 (defun embark-first-line-of-docstring (name)
-  "Return the first line of the docstring or NAME.
+  "Return the first line of the docstring of symbol called NAME.
 To be used as an annotation function for symbols in `embark-occur'."
   (when-let* ((symbol (intern name))
               (docstring (if (functionp symbol)
@@ -478,6 +480,24 @@ To be used as an annotation function for symbols in `embark-occur'."
                            (documentation-property
                             symbol 'variable-documentation))))
     (car (split-string docstring "\n"))))
+
+(defun embark-file-and-major-mode (name)
+  "Return string with file and major mode of buffer called NAME."
+  (when-let ((buffer (get-buffer name)))
+    (format "%s%s (%s)"
+            (if (buffer-modified-p buffer) "*" "")
+            (if-let ((file-name (buffer-file-name buffer)))
+                (abbreviate-file-name file-name)
+              "")
+            (buffer-local-value 'major-mode buffer))))
+
+(defun embark-size-and-modification-time (file)
+  "Return string with size and modification time of file."
+  (let ((attributes (file-attributes file)))
+    (format "%7s %s"
+            (file-size-human-readable (file-attribute-size attributes))
+            (format-time-string "%b %e %k:%M"
+             (file-attribute-modification-time attributes)))))
 
 (defun embark-minibuffer-candidates ()
   "Return all current completion candidates from the minibuffer."
