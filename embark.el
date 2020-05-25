@@ -566,6 +566,8 @@ To be used as an annotation function for symbols in `embark-occur'."
       (when last (setcdr last nil))
       all)))
 
+(declare-function dired-get-filename "dired")
+
 (defun embark-dired-candidates ()
   "Return all files shown in dired buffer."
   (when (derived-mode-p 'dired-mode)
