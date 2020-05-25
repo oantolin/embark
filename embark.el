@@ -913,7 +913,7 @@ with command output. For replacement behaviour see
 `shell-command-dont-erase-buffer' setting."
   (interactive
    (list
-    (read-buffer "Buffer: ")
+    (read-buffer "Buffer: " nil t)
     (read-shell-command "Shell command: ")
     current-prefix-arg))
   (with-current-buffer buffer
