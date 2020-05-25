@@ -4,7 +4,7 @@
 
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Keywords: convenience
-;; Version: 0.2
+;; Version: 0.4
 ;; Homepage: https://github.com/oantolin/embark
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -110,9 +110,11 @@
 
 (defcustom embark-classifiers
   '(embark-cached-type
-    embark-category
-    embark-package
-    embark-symbol)
+    embark-category-type
+    embark-package-type
+    embark-symbol-type
+    embark-dired-type
+    embark-ibuffer-type)
   "List of functions to classify the current completion session.
 Each function should take no arguments and return a symbol
 classifying the current minibuffer completion session, or nil to
@@ -193,7 +195,10 @@ This list is used only when `embark-allow-edit-default' is t."
 
 (defcustom embark-candidate-collectors
   '(embark-minibuffer-candidates
-    embark-completions-buffer-candidates)
+    embark-completions-buffer-candidates
+    embark-dired-candidates
+    embark-ibuffer-candidates
+    embark-embark-occur-candidates)
   "List of functions that collect all candidates in a given context.
 These are used to fill an Embark Occur buffer."
   :type 'hook
@@ -308,11 +313,11 @@ Always keep the non-local value equal to nil.")
                        minibuffer-completion-table
                        minibuffer-completion-predicate))
 
-(defun embark-category ()
+(defun embark-category-type ()
   "Return minibuffer completion category per metadata."
   (completion-metadata-get (embark--metadata) 'category))
 
-(defun embark-symbol ()
+(defun embark-symbol-type ()
   "Determine if currently completing symbols."
   (let ((mct minibuffer-completion-table))
     (when (or (eq mct 'help--symbol-completion-table)
@@ -323,10 +328,18 @@ Always keep the non-local value equal to nil.")
               (string-match-p "M-x" (or (minibuffer-prompt) "")))
       'symbol)))
 
-(defun embark-package ()
+(defun embark-package-type ()
   "Determine if currently completing package names."
   (when (string-suffix-p "package: " (or (minibuffer-prompt) ""))
     'package))
+
+(defun embark-dired-type ()
+  "Report that dired buffers yield files."
+  (when (derived-mode-p 'dired-mode) 'file))
+
+(defun embark-ibuffer-type ()
+  "Report that ibuffer buffers yield buffer."
+  (when (derived-mode-p 'ibuffer-mode) 'buffer))
 
 (defun embark-classify ()
   "Classify current minibuffer completion session."
@@ -551,6 +564,35 @@ To be used as an annotation function for symbols in `embark-occur'."
       (when last (setcdr last nil))
       all)))
 
+(defun embark-dired-candidates ()
+  "Return all files shown in dired buffer."
+  (when (derived-mode-p 'dired-mode)
+    (save-excursion
+      (goto-char (point-min))
+      (let (files)
+        (while (not (eobp))
+          (when-let ((file (dired-get-filename t 'no-error-if-not-filep)))
+            (push file files))
+          (forward-line))
+        (nreverse files)))))
+
+(declare-function ibuffer-map-lines-nomodify "ibuffer")
+
+(defun embark-ibuffer-candidates ()
+  "Return names of buffers listed in ibuffer buffer."
+  (when (derived-mode-p 'ibuffer-mode)
+    (let (buffers)
+      (ibuffer-map-lines-nomodify
+       (lambda (buf _mk)
+         (push (buffer-name buf) buffers)))
+      (nreverse buffers))))
+
+(defun embark-embark-occur-candidates ()
+  "Return candidates in Embark Occur buffer.
+This makes `embark-export' work in Embark Occur buffers."
+  (when (derived-mode-p 'embark-occur-mode)
+    embark-occur-candidates))
+
 (defun embark-completions-buffer-candidates ()
   "Return all candidates in a completions buffer."
   (when (derived-mode-p 'completion-list-mode)
@@ -676,14 +718,27 @@ enable `embark-occur-direct-action-minor-mode' in
     (embark-occur--list-view))
   (tabulated-list-print))
 
-(defun embark-occur (&optional candidates)
-  "Create a buffer with current candidates for further action."
-  (interactive)
+(defun embark-occur (&optional initial-view)
+  "Create a buffer with current candidates for further action.
+Optionally start in INITIAL-VIEW (either `list' or `grid')
+instead of what `embark-occur-initial-view-alist' specifies.
+
+Interactively, \\[universal-argument] requests grid view and a
+numeric argument of 1 requests list view."
+  (interactive
+   (list (pcase current-prefix-arg
+           ('(4) 'grid)
+           (1 'list))))
   (ignore (embark-target)) ; allow use from embark-act
-  (unless candidates
-    (setq candidates (run-hook-with-args-until-success
-                      'embark-candidate-collectors)))
-  (let ((buffer (generate-new-buffer "*Embark Occur*")))
+  (let ((candidates (if (consp initial-view)
+                        ;; embark-export passed us the list of
+                        ;; candidates, might as well use it
+                        initial-view
+                      (run-hook-with-args-until-success
+                       'embark-candidate-collectors)))
+        (buffer (generate-new-buffer "*Embark Occur*")))
+    (when (consp initial-view) ; was really candidate list
+      (setq initial-view nil))
     (with-current-buffer buffer
       (embark-occur-mode)
       (setq embark-occur-candidates candidates))
@@ -695,6 +750,7 @@ enable `embark-occur-direct-action-minor-mode' in
        ;; wait so grid view knows the window width
        (let ((initial
               (or
+               initial-view
                (alist-get embark--type embark-occur-initial-view-alist)
                (alist-get t embark-occur-initial-view-alist)
                'list)))
