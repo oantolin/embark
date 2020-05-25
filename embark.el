@@ -482,6 +482,18 @@ argument), don't actually exit."
   (interactive "P")
   (embark-act (not continuep)))
 
+(defun embark-keymap (binding-alist &optional parent-map)
+  "Return keymap with bindings given by BINDING-ALIST.
+If PARENT-MAP is non-nil, set it as the parent keymap."
+  (let ((map (make-sparse-keymap)))
+    (dolist (key-fn binding-alist)
+      (pcase-let ((`(,key . ,fn) key-fn))
+        (when (stringp key) (setq key (kbd key)))
+        (define-key map key fn)))
+    (when parent-map
+      (set-keymap-parent map parent-map))
+    map))
+
 ;;; embark occur
 
 (defun embark-first-line-of-docstring (name)
@@ -588,13 +600,17 @@ You should either bind `embark-act' in `embark-occur-mode-map' or
 enable `embark-occur-direct-action-minor-mode' in
 `embark-occur-mode-hook'.")
 
-(let ((map embark-occur-mode-map))
-  (define-key map "a" 'embark-act)
-  (define-key map "v" 'embark-occur-toggle-view)
-  (define-key map "d" 'embark-occur-direct-action-minor-mode)
-  (define-key map "s" 'isearch-forward)
-  (define-key map (kbd "<right>") #'forward-button)
-  (define-key map (kbd "<left>") #'backward-button))
+(setq embark-occur-mode-map
+      '(("a" . embark-act)
+        ("A" . embark-occur-direct-action-minor-mode)
+        ("M-q" . embark-occur-toggle-view)
+        ("s" . isearch-forward)
+        ("n" . next-line)
+        ("p" . previous-line)
+        ("f" . forward-button)
+        ("b" . backward-button)
+        ("<right>" . forward-button)
+        ("<left>" . backward-button)))
 
 (defun embark-occur--max-width ()
   "Maximum width of any Embark Occur candidate."
@@ -830,18 +846,6 @@ and leaves the point to the left of it."
     (backward-char)))
 
 ;;; keymaps
-
-(defun embark-keymap (binding-alist &optional parent-map)
-  "Return keymap with bindings given by BINDING-ALIST.
-If PARENT-MAP is non-nil, set it as the parent keymap."
-  (let ((map (make-sparse-keymap)))
-    (dolist (key-fn binding-alist)
-      (pcase-let ((`(,key . ,fn) key-fn))
-        (when (stringp key) (setq key (kbd key)))
-        (define-key map key fn)))
-    (when parent-map
-      (set-keymap-parent map parent-map))
-    map))
 
 (defvar embark-general-map
   (embark-keymap
