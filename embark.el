@@ -210,6 +210,12 @@ information about the candidate."
   :type '(alist :key-type symbol :value-type function)
   :group 'embark)
 
+(defcustom embark-occur-initial-view 'list
+  "Initial view for Embark Occur buffers, either `list' or `grid'."
+  :type '(choice (const :tag "List view" list)
+                 (const :tag "Grid view" grid))
+  :group 'embark)
+
 ;;; stashing information for actions in buffer local variables
 
 (defvar embark--type nil
@@ -563,11 +569,65 @@ To be used as an annotation function for symbols in `embark-occur'."
   (embark--setup)
   (call-interactively this-command))
 
+(defvar-local embark-occur-candidates nil
+  "List of candidates in current occur buffer.")
+
+(defvar-local embark-occur-view 'list
+  "Type of view in occur buffer: `list' or `grid'.")
+
 (define-derived-mode embark-occur-mode tabulated-list-mode "Embark Occur"
   "List of candidates to be acted on.
 You should either bind `embark-act' in `embark-occur-mode-map' or
 enable `embark-occur-direct-action-minor-mode' in
 `embark-occur-mode-hook'.")
+
+(defun embark-occur--max-width ()
+  "Maximum width of any Embark Occur candidate."
+  (cl-loop for cand in embark-occur-candidates
+           maximize (length cand)))
+
+(defun embark-occur--list-view (annotator)
+  "List view of candidates and annotations for Embark Occur buffer.
+Use ANNOTATOR to get the annotations."
+  (setq embark-occur-view 'list)
+  (setq tabulated-list-format
+        (if annotator
+            (let ((width (embark-occur--max-width)))
+              `[("Candidate" ,width t) ("Annotation" 0 nil)])
+          [("Candidate" 0 t)]))
+  (setq tabulated-list-entries
+        (mapcar (lambda (cand)
+                  (if annotator
+                      `(,cand [(,cand type embark-occur-entry)
+                               ,(or (funcall annotator cand) "")])
+                    `(,cand [(,cand type embark-occur-entry)])))
+                embark-occur-candidates)))
+
+(defun embark-occur--grid-view ()
+  "Grid view of candidates for Embark Occur buffer."
+  (setq embark-occur-view 'grid)
+  (let* ((width (embark-occur--max-width))
+         (columns (/ (window-width) width)))
+    (setq tabulated-list-format
+          (make-vector columns `("Candidate" ,width nil)))
+    (setq tabulated-list-entries
+          (cl-loop with cands = (copy-tree embark-occur-candidates)
+                   while cands
+                   collect
+                   (list nil
+                         (apply #'vector
+                                (cl-loop repeat columns
+                                         collect
+                                         `(,(or (pop cands) "")
+                                           type embark-occur-entry))))))))
+
+(defun embark-occur-toggle-view ()
+  "Toggle between list and grid views of Embark Occur buffer."
+  (interactive)
+  (if (eq embark-occur-view 'list)
+      (embark-occur--grid-view)
+    (embark-occur--list-view (alist-get embark--type embark-annotator-alist)))
+  (tabulated-list-print))
 
 (defun embark-occur ()
   "Create a buffer with current candidates for further action."
@@ -579,17 +639,10 @@ enable `embark-occur-direct-action-minor-mode' in
         (annotator (alist-get (embark-classify) embark-annotator-alist)))
     (with-current-buffer buffer
       (embark-occur-mode)
-      (setq tabulated-list-format
-            (if annotator
-                [("Candidate" 30 t) ("Annotation" 0 nil)]
-              [("Candidate" 0 t)]))
-      (setq tabulated-list-entries
-            (mapcar (lambda (cand)
-                      (if annotator
-                          `(,cand [(,cand type embark-occur-entry)
-                                   ,(or (funcall annotator cand) "")])
-                        `(,cand [(,cand type embark-occur-entry)])))
-                    candidates))
+      (setq embark-occur-candidates candidates)
+      (if (eq embark-occur-initial-view 'list)
+          (embark-occur--list-view annotator)
+        (embark-occur--grid-view))
       (tabulated-list-print))
     (embark--cache-info buffer)
     (run-at-time 0 nil (lambda () (pop-to-buffer buffer)))
