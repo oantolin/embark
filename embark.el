@@ -90,6 +90,8 @@
 ;;; Code:
 
 (eval-when-compile (require 'subr-x))
+(require 'ffap)
+(require 'thingatpt)
 
 ;;; user facing options
 
@@ -112,9 +114,11 @@
   '(embark-cached-type
     embark-category-type
     embark-package-type
-    embark-symbol-type
+    embark-symbol-completion-type
     embark-dired-type
-    embark-ibuffer-type)
+    embark-ibuffer-type
+    embark-ffap-type
+    embark-symbol-at-point-type)
   "List of functions to classify the current completion session.
 Each function should take no arguments and return a symbol
 classifying the current minibuffer completion session, or nil to
@@ -125,7 +129,9 @@ indicate it could not determine the type of completion."
 (defcustom embark-target-finders
   '(embark-top-minibuffer-completion
     embark-button-label
-    embark-completion-at-point)
+    embark-completion-at-point
+    ffap-file-at-point
+    embark-symbol-at-point)
   "List of functions to pick the target for actions.
 Each function should take no arguments and return either a target
 string or nil (to indicate it found no target)."
@@ -317,7 +323,7 @@ Always keep the non-local value equal to nil.")
   "Return minibuffer completion category per metadata."
   (completion-metadata-get (embark--metadata) 'category))
 
-(defun embark-symbol-type ()
+(defun embark-symbol-completion-type ()
   "Determine if currently completing symbols."
   (let ((mct minibuffer-completion-table))
     (when (or (eq mct 'help--symbol-completion-table)
@@ -340,6 +346,14 @@ Always keep the non-local value equal to nil.")
 (defun embark-ibuffer-type ()
   "Report that ibuffer buffers yield buffer."
   (when (derived-mode-p 'ibuffer-mode) 'buffer))
+
+(defun embark-ffap-type ()
+  "If there is a file at point, report it."
+  (when (ffap-file-at-point) 'file))
+
+(defun embark-symbol-at-point-type ()
+  "If there is a file at point, report it."
+  (when (symbol-at-point) 'symbol))
 
 (defun embark-classify ()
   "Classify current minibuffer completion session."
@@ -426,6 +440,11 @@ relative path."
           (if (and (eq embark--type 'file) (not relative))
               (abbreviate-file-name (expand-file-name raw))
             raw))))))
+
+(defun embark-symbol-at-point ()
+  "Return name of symbol at point."
+  (when-let ((symbol (symbol-at-point)))
+    (symbol-name symbol)))
 
 (defun embark--keymap-for-type (type)
   "Return the keymap for the given completion type."
