@@ -210,8 +210,15 @@ information about the candidate."
   :type '(alist :key-type symbol :value-type function)
   :group 'embark)
 
-(defcustom embark-occur-initial-view 'list
-  "Initial view for Embark Occur buffers, either `list' or `grid'."
+(defcustom embark-occur-initial-view-alist
+  '((file . grid)
+    (buffer . grid)
+    (symbol . list)
+    (t . list))
+  "Initial views for Embark Occur buffers by type.
+This is an alist associating completion types to either `list' or
+`grid'.  Additionally you can associate t to a default initial
+view for types not mentioned separately."
   :type '(choice (const :tag "List view" list)
                  (const :tag "Grid view" grid))
   :group 'embark)
@@ -648,13 +655,20 @@ enable `embark-occur-direct-action-minor-mode' in
       (embark-occur-mode)
       (setq embark-occur-candidates candidates))
     (embark--cache-info buffer)
-    (run-at-time 0 nil (lambda ()
-                         (pop-to-buffer buffer)
-                         ;; wait so grid view knows the window width
-                         (if (eq embark-occur-initial-view 'list)
-                             (embark-occur--list-view)
-                           (embark-occur--grid-view))
-                         (tabulated-list-print)))
+    (run-at-time
+     0 nil
+     (lambda ()
+       (pop-to-buffer buffer)
+       ;; wait so grid view knows the window width
+       (let ((initial
+              (or
+               (alist-get embark--type embark-occur-initial-view-alist)
+               (alist-get t embark-occur-initial-view-alist)
+               'list)))
+         (if (eq initial 'list)
+             (embark-occur--list-view)
+           (embark-occur--grid-view)))
+       (tabulated-list-print)))
     (top-level)))
 
 ;;; custom actions
