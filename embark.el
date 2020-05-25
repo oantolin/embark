@@ -223,6 +223,22 @@ view for types not mentioned separately."
                  (const :tag "Grid view" grid))
   :group 'embark)
 
+(defcustom embark-exporters-alist
+  '((buffer . embark-ibuffer)
+    (file . embark-dired)
+    (t . embark-occur))
+  "Alist associating completion types to export functions.
+Each function should take a list of strings which are candidates
+for actions and make a buffer appropriate to manage them.  For
+example, the default is to make a dired buffer for files, and an
+ibuffer for buffers.
+
+The key t is also allowed in the alist, and the corresponding
+value indicates the default function to use for other types.  The
+default is `embark-occur'."
+  :type '(alist :key-type symbol :value-type function)
+  :group 'embark)
+
 ;;; stashing information for actions in buffer local variables
 
 (defvar embark--type nil
@@ -248,8 +264,7 @@ Always keep the non-local value equal to nil.")
 
 (defun embark--default-directory ()
   "Guess a reasonable default directory for the current candidates."
-  (if (and minibuffer-completing-file-name
-             (minibufferp))
+  (if (and (minibufferp) minibuffer-completing-file-name)
       (file-name-directory
        (expand-file-name
         (buffer-substring (minibuffer-prompt-end) (point))))
@@ -661,13 +676,14 @@ enable `embark-occur-direct-action-minor-mode' in
     (embark-occur--list-view))
   (tabulated-list-print))
 
-(defun embark-occur ()
+(defun embark-occur (&optional candidates)
   "Create a buffer with current candidates for further action."
   (interactive)
   (ignore (embark-target)) ; allow use from embark-act
-  (let ((candidates (run-hook-with-args-until-success
-                     'embark-candidate-collectors))
-        (buffer (generate-new-buffer "*Embark Occur*")))
+  (unless candidates
+    (setq candidates (run-hook-with-args-until-success
+                      'embark-candidate-collectors)))
+  (let ((buffer (generate-new-buffer "*Embark Occur*")))
     (with-current-buffer buffer
       (embark-occur-mode)
       (setq embark-occur-candidates candidates))
@@ -687,6 +703,38 @@ enable `embark-occur-direct-action-minor-mode' in
            (embark-occur--grid-view)))
        (tabulated-list-print)))
     (top-level)))
+
+(defun embark-export ()
+  "Create a type-specific buffer to manage current candidates.
+The variable `embark-exporters-alist' controls how to make the
+buffer for each type of completion."
+  (interactive)
+  (ignore (embark-target)) ; allow use from embark-act
+  (let* ((candidates (run-hook-with-args-until-success
+                      'embark-candidate-collectors))
+         (type (embark-classify))
+         (dir (embark--default-directory))
+         (exporter (or (alist-get type embark-exporters-alist)
+                       (alist-get t embark-exporters-alist))))
+    (if (eq exporter 'embark-occur)
+        ;; just run it now, so the necessary info is still there
+        ;; at least we already have the candidates gathered.
+        (funcall #'embark-occur candidates)
+      (run-at-time 0 nil
+                   (lambda ()
+                     ;; dired needs the directory
+                     (let ((default-directory dir))
+                       (funcall exporter candidates))))
+      (top-level))))
+
+(defun embark-ibuffer (buffers)
+  "Create an ibuffer buffer listing BUFFERS."
+  (ibuffer t "*Embark Ibuffer*"
+           `((predicate . (member (buffer-name) ',buffers)))))
+
+(defun embark-dired (files)
+  "Create a dired buffer listing FILES."
+  (dired (cons default-directory files)))
 
 ;;; custom actions
 
