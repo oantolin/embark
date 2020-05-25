@@ -662,15 +662,17 @@ enable `embark-occur-direct-action-minor-mode' in
 (setq embark-occur-mode-map
       (embark-keymap
        '(("a" . embark-act)
-        ("A" . embark-occur-direct-action-minor-mode)
-        ("M-q" . embark-occur-toggle-view)
-        ("s" . isearch-forward)
-        ("n" . next-line)
-        ("p" . previous-line)
-        ("f" . forward-button)
-        ("b" . backward-button)
-        ("<right>" . forward-button)
-        ("<left>" . backward-button))))
+         ("A" . embark-occur-direct-action-minor-mode)
+         ("M-q" . embark-occur-toggle-view)
+         ("v" . embark-occur-toggle-view)
+         ("e" . embark-export)
+         ("s" . isearch-forward)
+         ("n" . next-line)
+         ("p" . previous-line)
+         ("f" . forward-button)
+         ("b" . backward-button)
+         ("<right>" . forward-button)
+         ("<left>" . backward-button))))
 
 (defun embark-occur--max-width ()
   "Maximum width of any Embark Occur candidate."
