@@ -461,14 +461,25 @@ relative path."
   (add-hook 'minibuffer-setup-hook #'embark--inject)
   (add-hook 'post-command-hook #'embark--cleanup))
 
-(defun embark--prefix-argument-p ()
+(defun embark--keep-alive-p ()
   "Is this command a prefix argument setter?
 This is used to keep the transient keymap active."
   (memq this-command
         '(universal-argument
           universal-argument-more
           digit-argument
-          negative-argument)))
+          negative-argument
+          embark-keymap-help)))
+
+(defun embark-keymap-help ()
+  "Pop up help buffer for current embark keymap."
+  (interactive)
+  (help-setup-xref (list #'embark-keymap-help)
+                   (called-interactively-p 'interactive))
+  (with-output-to-temp-buffer (help-buffer)
+    (princ
+     (substitute-command-keys
+      (format "\\{%s}" (alist-get (embark-classify) embark-keymap-alist))))))
 
 (defun embark--show-indicator ()
   "Show pending action indicator accoring to `embark-indicator'."
@@ -490,7 +501,7 @@ This is used to keep the transient keymap active."
 If EXITP is non-nil, exit all minibuffers too."
   (set-transient-map
    embark--keymap
-   #'embark--prefix-argument-p
+   #'embark--keep-alive-p
    (lambda ()
      (setq embark--keymap nil)
      (run-hooks 'embark-pre-action-hook)
@@ -996,8 +1007,9 @@ and leaves the point to the left of it."
   (embark-keymap
    '(("i" . embark-insert)
      ("w" . embark-save)
-     ("C-g" . embark-cancel)
      ("RET" . embark-default-action)
+     ("C-g" . embark-cancel)
+     ("C-h" . embark-keymap-help)
      ([remap self-insert-command] . embark-undefined)
      ("C-u" . universal-argument))
    universal-argument-map))
