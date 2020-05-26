@@ -826,7 +826,7 @@ buffer for each type of completion."
 
 (defun embark-dired (files)
   "Create a dired buffer listing FILES."
-  (dired (cons default-directory files))
+  (dired (cons default-directory (mapcar #'directory-file-name files)))
   (rename-buffer (format "*Embark Export Dired %s*" default-directory)))
 
 ;;; custom actions
