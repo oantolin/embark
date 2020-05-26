@@ -496,6 +496,23 @@ This is used to keep the transient keymap active."
         ((functionp embark-indicator)
          (funcall embark-indicator))))
 
+(defmacro embark-after-exit (vars &rest body)
+  "Run BODY after exiting all minibuffers.
+Make sure the current values of VARS are still valid when running
+BODY."
+  (declare (indent defun))
+  (let ((binds (cl-loop for var in vars collect
+                        (list var (make-symbol (symbol-name var))))))
+    `(progn
+       (run-at-time 0 nil
+                    (lambda ,(mapcar #'cadr binds)
+                      (setq inhibit-message nil)
+                      (let (,@binds)
+                        ,@body))
+                    ,@vars)
+       (setq inhibit-message t)
+       (top-level))))
+
 (defun embark--bind-actions (exitp)
   "Set transient keymap with bindings for type-specific actions.
 If EXITP is non-nil, exit all minibuffers too."
@@ -508,22 +525,9 @@ If EXITP is non-nil, exit all minibuffers too."
      (when (and exitp
                 (not (memq this-command
                            '(embark-cancel embark-undefined))))
-       ;; schedule later rerun of this-command
-       (run-at-time 0 nil
-                    (lambda (cmd arg ecmd tbuf)
-                      (setq inhibit-message nil)
-                      (let ((this-command cmd)
-                            (prefix-arg arg)
-                            (embark--command ecmd)
-                            (embark--target-buffer tbuf))
-                        (command-execute cmd)))
-                    this-command prefix-arg
-                    embark--command
-                    embark--target-buffer)
-       ;; avoid the back to top level message
-       (setq inhibit-message t)
-       ;; and cancel current run of this-command
-       (top-level)))))
+       (embark-after-exit
+         (this-command prefix-arg embark--command embark--target-buffer)
+         (command-execute this-command))))))
 
 (defun embark-act (&optional exitp)
   "Embark upon a minibuffer action.
@@ -781,22 +785,19 @@ numeric argument of 1 requests list view."
       (embark-occur-mode)
       (setq embark-occur-candidates candidates))
     (embark--cache-info buffer)
-    (run-at-time
-     0 nil
-     (lambda ()
-       (pop-to-buffer buffer)
-       ;; wait so grid view knows the window width
-       (let ((initial
-              (or
-               initial-view
-               (alist-get embark--type embark-occur-initial-view-alist)
-               (alist-get t embark-occur-initial-view-alist)
-               'list)))
-         (if (eq initial 'list)
-             (embark-occur--list-view)
-           (embark-occur--grid-view)))
-       (tabulated-list-print)))
-    (top-level)))
+    (embark-after-exit ()
+      (pop-to-buffer buffer)
+      ;; wait so grid view knows the window width
+      (let ((initial
+             (or
+              initial-view
+              (alist-get embark--type embark-occur-initial-view-alist)
+              (alist-get t embark-occur-initial-view-alist)
+              'list)))
+        (if (eq initial 'list)
+            (embark-occur--list-view)
+          (embark-occur--grid-view)))
+      (tabulated-list-print))))
 
 (defun embark-export ()
   "Create a type-specific buffer to manage current candidates.
@@ -814,12 +815,9 @@ buffer for each type of completion."
         ;; just run it now, so the necessary info is still there
         ;; at least we already have the candidates gathered.
         (funcall #'embark-occur candidates)
-      (run-at-time 0 nil
-                   (lambda ()
-                     ;; dired needs the directory
-                     (let ((default-directory dir))
-                       (funcall exporter candidates))))
-      (top-level))))
+      (embark-after-exit ()
+        (let ((default-directory dir))  ; dired needs this info
+          (funcall exporter candidates))))))
 
 (defun embark-ibuffer (buffers)
   "Create an ibuffer buffer listing BUFFERS."
@@ -828,7 +826,8 @@ buffer for each type of completion."
 
 (defun embark-dired (files)
   "Create a dired buffer listing FILES."
-  (dired (cons default-directory files)))
+  (dired (cons default-directory files))
+  (rename-buffer (format "*Embark Export Dired %s*" default-directory)))
 
 ;;; custom actions
 
