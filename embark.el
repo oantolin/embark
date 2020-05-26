@@ -824,9 +824,19 @@ buffer for each type of completion."
   (ibuffer t "*Embark Ibuffer*"
            `((predicate . (member (buffer-name) ',buffers)))))
 
+(declare-function dired-check-switches "dired")
+
 (defun embark-dired (files)
   "Create a dired buffer listing FILES."
-  (dired (cons default-directory (mapcar #'directory-file-name files)))
+  (setq files (mapcar #'directory-file-name files))
+  (when (dired-check-switches dired-listing-switches "A" "almost-all")
+    (setq files (cl-remove-if-not
+                 (lambda (path)
+                   (let ((file (file-name-nondirectory path)))
+                     (unless (or (string= file ".") (string= file ".."))
+                       path)))
+                 files)))
+  (dired (cons default-directory files))
   (rename-buffer (format "*Embark Export Dired %s*" default-directory)))
 
 ;;; custom actions
