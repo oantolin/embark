@@ -728,8 +728,9 @@ enable `embark-occur-direct-action-minor-mode' in
 
 (defun embark-occur--max-width ()
   "Maximum width of any Embark Occur candidate."
-  (cl-loop for cand in embark-occur-candidates
-           maximize (length cand)))
+  (or (cl-loop for cand in embark-occur-candidates
+               maximize (length cand))
+      0))
 
 (defun embark-occur--list-view ()
   "List view of candidates and annotations for Embark Occur buffer."
