@@ -412,7 +412,9 @@ return nil."
 (defun embark-button-label ()
   "Return the label of the button at point."
   (when-let* ((button (button-at (point)))
-              (label (button-label button)))
+              (label (buffer-substring
+                      (button-start button)
+                      (buffer-end button))))
     (if (eq embark--type 'file)
         (abbreviate-file-name (expand-file-name label))
       label)))
