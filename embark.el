@@ -562,6 +562,14 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
 
 ;;; embark occur
 
+(defface embark-occur-candidate '((default :inherit default))
+  "Face for candidates in Embark Occur."
+  :group 'embark)
+
+(defface embark-occur-annotation '((default :inherit completions-annotations))
+  "Face for annotations in Embark Occur."
+  :group 'embark)
+
 (defun embark-first-line-of-docstring (name)
   "Return the first line of the docstring of symbol called NAME.
 To be used as an annotation function for symbols in `embark-occur'."
@@ -676,7 +684,7 @@ This makes `embark-export' work in Embark Occur buffers."
               (cdr action-map)))))
 
 (define-button-type 'embark-occur-entry
-  'face 'default
+  'face 'embark-occur-candidate
   'action 'embark-occur-select)
 
 (defun embark-occur-select (_entry)
@@ -736,7 +744,8 @@ enable `embark-occur-direct-action-minor-mode' in
           (mapcar (lambda (cand)
                     (if annotator
                         `(,cand [(,cand type embark-occur-entry)
-                                 ,(or (funcall annotator cand) "")])
+                                 (,(or (funcall annotator cand) "")
+                                  face embark-occur-annotation)])
                       `(,cand [(,cand type embark-occur-entry)])))
                   embark-occur-candidates))))
 
