@@ -90,8 +90,6 @@
 ;;; Code:
 
 (eval-when-compile (require 'subr-x))
-(require 'ffap)
-(require 'thingatpt)
 
 ;;; user facing options
 
@@ -349,9 +347,13 @@ Always keep the non-local value equal to nil.")
   "Report that ibuffer buffers yield buffer."
   (when (derived-mode-p 'ibuffer-mode) 'buffer))
 
+(autoload 'ffap-file-at-point "ffap")
+
 (defun embark-ffap-type ()
   "If there is a file at point, report it."
   (when (ffap-file-at-point) 'file))
+
+(autoload 'symbol-at-point "thingatpt")
 
 (defun embark-symbol-at-point-type ()
   "If there is a file at point, report it."
@@ -618,8 +620,7 @@ To be used as an annotation function for symbols in `embark-occur'."
            (last (last all)))
       (when last (setcdr last nil))
       all)))
-
-(declare-function dired-get-filename "dired")
+(autoload 'dired-get-filename "dired")
 
 (defun embark-dired-candidates ()
   "Return all files shown in dired buffer."
@@ -633,7 +634,7 @@ To be used as an annotation function for symbols in `embark-occur'."
           (forward-line))
         (nreverse files)))))
 
-(declare-function ibuffer-map-lines-nomodify "ibuffer")
+(autoload 'ibuffer-map-lines-nomodify "ibuffer")
 
 (defun embark-ibuffer-candidates ()
   "Return names of buffers listed in ibuffer buffer."
@@ -842,7 +843,7 @@ buffer for each type of completion."
   (ibuffer t "*Embark Ibuffer*"
            `((predicate . (member (buffer-name) ',buffers)))))
 
-(declare-function dired-check-switches "dired")
+(autoload 'dired-check-switches "dired")
 
 (defun embark-dired (files)
   "Create a dired buffer listing FILES."
@@ -927,9 +928,9 @@ This is whatever command opened the minibuffer in the first place."
   (with-current-buffer (embark-target)
     (call-interactively #'rename-buffer)))
 
-(declare-function package-desc-p "package")
-(declare-function package--from-builtin "package")
-(declare-function package-desc-extras "package")
+(autoload 'package-desc-p "package")
+(autoload 'package--from-builtin "package")
+(autoload 'package-desc-extras "package")
 (defvar package--builtins)
 (defvar package-alist)
 (defvar package-archive-contents)
