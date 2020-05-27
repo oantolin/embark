@@ -771,7 +771,7 @@ numeric argument of 1 requests list view."
    (list (pcase current-prefix-arg
            ('(4) 'grid)
            (1 'list))))
-  (ignore (embark-target)) ; allow use from embark-act
+  (ignore (embark-target))              ; allow use from embark-act
   (let ((candidates (if (consp initial-view)
                         ;; embark-export passed us the list of
                         ;; candidates, might as well use it
@@ -779,25 +779,24 @@ numeric argument of 1 requests list view."
                       (run-hook-with-args-until-success
                        'embark-candidate-collectors)))
         (buffer (generate-new-buffer "*Embark Occur*")))
-    (when (consp initial-view) ; was really candidate list
+    (when (consp initial-view)          ; was really candidate list
       (setq initial-view nil))
     (with-current-buffer buffer
       (embark-occur-mode)
       (setq embark-occur-candidates candidates))
     (embark--cache-info buffer)
-    (embark-after-exit ()
-      (pop-to-buffer buffer)
-      ;; wait so grid view knows the window width
-      (let ((initial
-             (or
-              initial-view
-              (alist-get embark--type embark-occur-initial-view-alist)
-              (alist-get t embark-occur-initial-view-alist)
-              'list)))
-        (if (eq initial 'list)
-            (embark-occur--list-view)
-          (embark-occur--grid-view)))
-      (tabulated-list-print))))
+    (pop-to-buffer buffer)
+    ;; wait so grid view knows the window width
+    (let ((initial
+           (or
+            initial-view
+            (alist-get embark--type embark-occur-initial-view-alist)
+            (alist-get t embark-occur-initial-view-alist)
+            'list)))
+      (if (eq initial 'list)
+          (embark-occur--list-view)
+        (embark-occur--grid-view)))
+    (tabulated-list-print)))
 
 (defun embark-export ()
   "Create a type-specific buffer to manage current candidates.
