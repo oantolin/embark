@@ -215,7 +215,7 @@ These are used to fill an Embark Occur buffer."
   '((symbol . embark-first-line-of-docstring)
     (buffer . embark-file-and-major-mode)
     (file . embark-size-and-modification-time)
-    (unicode-name . mule--ucs-names-annotation))
+    (unicode-name . embark-unicode-character))
   "Alist associating completion types to annotation functions.
 Each function should take a candidate for an action as a string
 and return a string without newlines giving some extra
@@ -593,12 +593,19 @@ To be used as an annotation function for symbols in `embark-occur'."
             (buffer-local-value 'major-mode buffer))))
 
 (defun embark-size-and-modification-time (file)
-  "Return string with size and modification time of file."
-  (let ((attributes (file-attributes file)))
+  "Return string with size and modification time of FILE."
+  (when-let ((attributes (file-attributes file)))
     (format "%7s %s"
             (file-size-human-readable (file-attribute-size attributes))
             (format-time-string "%b %e %k:%M"
              (file-attribute-modification-time attributes)))))
+
+(autoload 'ucs-names "mule-cmds")
+
+(defun embark-unicode-character (name)
+  "Return unicode character called NAME."
+  (when-let ((char (gethash name (ucs-names))))
+    (format "%c" char)))
 
 (defun embark-minibuffer-candidates ()
   "Return all current completion candidates from the minibuffer."
@@ -1000,9 +1007,18 @@ with command output. For replacement behaviour see
     (with-selected-window win
       (kill-buffer-and-window))))
 
-(defun embark-save-char ()
+(defun embark-insert-unicode-character ()
+  "Insert unicode character named by embark target to kill ring."
+  (interactive)
+  (when-let ((char (embark-unicode-character (embark-target))))
+    (with-current-buffer embark--target-buffer
+      (insert char))))
+
+(defun embark-save-unicode-character ()
   "Save unicode character named by embark target to kill ring."
-  (kill-new (mule--ucs-names-annotation (embark-target))))
+  (interactive)
+  (when-let ((char (embark-unicode-character (embark-target))))
+     (kill-new char)))
 
 ;;; setup hooks for actions
 
@@ -1088,8 +1104,9 @@ and leaves the point to the left of it."
 
 (defvar embark-unicode-name-map
   (embark-keymap
-   '(("I" . insert-char)
-     ("W" . embark-save-char))))
+   '(("I" . embark-insert-unicode-character)
+     ("W" . embark-save-unicode-character))
+   embark-general-map))
 
 (provide 'embark)
 ;;; embark.el ends here
