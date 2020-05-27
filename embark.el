@@ -691,6 +691,12 @@ This makes `embark-export' work in Embark Occur buffers."
 (defvar-local embark-occur-view 'list
   "Type of view in occur buffer: `list' or `grid'.")
 
+(defvar-local embark-occur-from nil
+  "The buffer `embark-occur' was called from.")
+
+(defvar-local embark-occur-live nil
+  "Whether the occur buffer updates automatically.")
+
 (define-derived-mode embark-occur-mode tabulated-list-mode "Embark Occur"
   "List of candidates to be acted on.
 You should either bind `embark-act' in `embark-occur-mode-map' or
@@ -772,7 +778,8 @@ numeric argument of 1 requests list view."
            ('(4) 'grid)
            (1 'list))))
   (ignore (embark-target))              ; allow use from embark-act
-  (let ((candidates (if (consp initial-view)
+  (let ((from (current-buffer))
+        (candidates (if (consp initial-view)
                         ;; embark-export passed us the list of
                         ;; candidates, might as well use it
                         initial-view
@@ -783,10 +790,10 @@ numeric argument of 1 requests list view."
       (setq initial-view nil))
     (with-current-buffer buffer
       (embark-occur-mode)
-      (setq embark-occur-candidates candidates))
+      (setq embark-occur-candidates candidates)
+      (setq embark-occur-from from))
     (embark--cache-info buffer)
     (pop-to-buffer buffer)
-    ;; wait so grid view knows the window width
     (let ((initial
            (or
             initial-view
