@@ -702,8 +702,8 @@ This makes `embark-export' work in Embark Occur buffers."
 (defvar-local embark-occur-from nil
   "The buffer `embark-occur' was called from.")
 
-(defvar-local embark-occur-live nil
-  "Whether the occur buffer updates automatically.")
+(defvar-local embark-occur-linked-buffer nil
+  "Buffer local variable indicating which Embark Buffer to update.")
 
 (define-derived-mode embark-occur-mode tabulated-list-mode "Embark Occur"
   "List of candidates to be acted on.
@@ -752,7 +752,7 @@ enable `embark-occur-direct-action-minor-mode' in
 (defun embark-occur--grid-view ()
   "Grid view of candidates for Embark Occur buffer."
   (setq embark-occur-view 'grid)
-  (let* ((width (min (embark-occur--max-width) (floor (window-width) 2)))
+  (let* ((width (min (+ (embark-occur--max-width) 2) (floor (window-width) 2)))
          (columns (/ (window-width) width)))
     (setq tabulated-list-format
           (make-vector columns `("Candidate" ,width nil)))
@@ -767,16 +767,42 @@ enable `embark-occur-direct-action-minor-mode' in
                                          `(,(or (pop cands) "")
                                            type embark-occur-entry))))))))
 
+(defun embark-occur--revert (&rest _)
+  "Recalculate Embark Occur candidates if possible."
+  (when (buffer-live-p embark-occur-from)
+    (setq embark-occur-candidates
+          (with-current-buffer embark-occur-from
+            (run-hook-with-args-until-success
+             'embark-candidate-collectors))
+          default-directory
+          (with-current-buffer embark-occur-from
+            (embark--default-directory))))
+  (if (eq embark-occur-view 'list)
+      (embark-occur--list-view)
+    (embark-occur--grid-view)))
+
+(defun embark-occur--sever-link ()
+  "Stop auto-updating linked Embark Occur buffer"
+  (when embark-occur-linked-buffer
+    (remove-hook 'after-change-functions #'embark-occur--update-linked)
+    (remove-hook 'minibuffer-exit-hook #'embark-occur--sever-link)
+    (with-current-buffer embark-occur-linked-buffer
+      (setq embark-occur-from nil))))
+
+(defun embark-occur--update-linked (&rest _)
+  "Update linked Embark Occur buffer."
+  (with-current-buffer embark-occur-linked-buffer
+    (revert-buffer)))
+
 (defun embark-occur-toggle-view ()
   "Toggle between list and grid views of Embark Occur buffer."
   (interactive)
-  (if (eq embark-occur-view 'list)
-      (embark-occur--grid-view)
-    (embark-occur--list-view))
-  (tabulated-list-print))
+  (with-current-buffer (or embark-occur-linked-buffer (current-buffer))
+    (setq embark-occur-view (if (eq embark-occur-view 'list) 'grid 'list))
+    (revert-buffer)))
 
 (defun embark-occur (&optional initial-view)
-  "Create a buffer with current candidates for further action.
+  "Create a live-updating buffer of current candidates ready for action.
 Optionally start in INITIAL-VIEW (either `list' or `grid')
 instead of what `embark-occur-initial-view-alist' specifies.
 
@@ -788,31 +814,38 @@ numeric argument of 1 requests list view."
            (1 'list))))
   (ignore (embark-target))              ; allow use from embark-act
   (let ((from (current-buffer))
-        (candidates (if (consp initial-view)
-                        ;; embark-export passed us the list of
-                        ;; candidates, might as well use it
-                        initial-view
-                      (run-hook-with-args-until-success
-                       'embark-candidate-collectors)))
         (buffer (generate-new-buffer "*Embark Occur*")))
-    (when (consp initial-view)          ; was really candidate list
-      (setq initial-view nil))
+    (setq embark-occur-linked-buffer buffer)
     (with-current-buffer buffer
       (embark-occur-mode)
-      (setq embark-occur-candidates candidates)
-      (setq embark-occur-from from))
+      (when (consp initial-view)
+        ;; embark-export passed us the list of
+        ;; candidates, might as well use it
+        (setq embark-occur-candidates initial-view
+              initial-view nil))
+      (setq embark-occur-from from)
+      (add-hook 'tabulated-list-revert-hook #'embark-occur--revert))
     (embark--cache-info buffer)
-    (pop-to-buffer buffer)
-    (let ((initial
-           (or
-            initial-view
-            (alist-get embark--type embark-occur-initial-view-alist)
-            (alist-get t embark-occur-initial-view-alist)
-            'list)))
-      (if (eq initial 'list)
-          (embark-occur--list-view)
-        (embark-occur--grid-view)))
-    (tabulated-list-print)))
+    (with-current-buffer buffer
+      (setq embark-occur-view
+            (or initial-view
+                (alist-get embark--type embark-occur-initial-view-alist)
+                (alist-get t embark-occur-initial-view-alist)
+                'list))
+      (revert-buffer))
+    (add-hook 'after-change-functions #'embark-occur--update-linked nil t)
+    (when (minibufferp)
+      ;; stop live updates once we exit
+      (add-hook 'minibuffer-exit-hook #'embark-occur--sever-link nil t))
+    (display-buffer buffer)
+    buffer))
+
+(defun embark-exit-and-occur ()
+  "Create an Embark Occur buffer and exit all minibuffers."
+  (interactive)
+  (let ((occur-buffer (embark-occur)))
+    (embark-after-exit ()
+      (display-buffer occur-buffer))))
 
 (defun embark-export ()
   "Create a type-specific buffer to manage current candidates.
