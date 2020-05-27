@@ -793,7 +793,8 @@ enable `embark-occur-direct-action-minor-mode' in
 (defun embark-occur--update-linked (&rest _)
   "Update linked Embark Occur buffer."
   (with-current-buffer embark-occur-linked-buffer
-    (revert-buffer)))
+    (while-no-input
+      (revert-buffer))))
 
 (defun embark-occur-toggle-view ()
   "Toggle between list and grid views of Embark Occur buffer."
@@ -815,7 +816,7 @@ numeric argument of 1 requests list view."
            (1 'list))))
   (ignore (embark-target))              ; allow use from embark-act
   (let ((from (current-buffer))
-        (buffer (generate-new-buffer "*Embark Occur*")))
+        (buffer (get-buffer-create "*Embark Occur*")))
     (setq embark-occur-linked-buffer buffer)
     (with-current-buffer buffer
       (embark-occur-mode)
