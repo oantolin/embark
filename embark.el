@@ -104,6 +104,7 @@
     (file . embark-file-map)
     (buffer . embark-buffer-map)
     (command . embark-symbol-map)
+    (unicode-name . embark-unicode-name-map)
     (symbol . embark-symbol-map)
     (package . embark-package-map))
   "Alist of action types and corresponding keymaps."
@@ -213,7 +214,8 @@ These are used to fill an Embark Occur buffer."
 (defcustom embark-annotator-alist
   '((symbol . embark-first-line-of-docstring)
     (buffer . embark-file-and-major-mode)
-    (file . embark-size-and-modification-time))
+    (file . embark-size-and-modification-time)
+    (unicode-name . mule--ucs-names-annotation))
   "Alist associating completion types to annotation functions.
 Each function should take a candidate for an action as a string
 and return a string without newlines giving some extra
@@ -1039,6 +1041,10 @@ with command output. For replacement behaviour see
     (with-selected-window win
       (kill-buffer-and-window))))
 
+(defun embark-save-char ()
+  "Save unicode character named by embark target to kill ring."
+  (kill-new (mule--ucs-names-annotation (embark-target))))
+
 ;;; setup hooks for actions
 
 (defun embark--shell-prep ()
@@ -1120,6 +1126,11 @@ and leaves the point to the left of it."
      ("r" . package-reinstall)
      ("u" . embark-browse-package-url))
    embark-general-map))
+
+(defvar embark-unicode-name-map
+  (embark-keymap
+   '(("I" . insert-char)
+     ("W" . embark-save-char))))
 
 (provide 'embark)
 ;;; embark.el ends here
