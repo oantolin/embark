@@ -90,8 +90,6 @@
 ;;; Code:
 
 (eval-when-compile (require 'subr-x))
-(require 'ffap)
-(require 'thingatpt)
 
 ;;; user facing options
 
@@ -215,7 +213,7 @@ These are used to fill an Embark Occur buffer."
   '((symbol . embark-first-line-of-docstring)
     (buffer . embark-file-and-major-mode)
     (file . embark-size-and-modification-time)
-    (unicode-name . mule--ucs-names-annotation))
+    (unicode-name . embark-unicode-character))
   "Alist associating completion types to annotation functions.
 Each function should take a candidate for an action as a string
 and return a string without newlines giving some extra
@@ -349,9 +347,13 @@ Always keep the non-local value equal to nil.")
   "Report that ibuffer buffers yield buffer."
   (when (derived-mode-p 'ibuffer-mode) 'buffer))
 
+(autoload 'ffap-file-at-point "ffap")
+
 (defun embark-ffap-type ()
   "If there is a file at point, report it."
   (when (ffap-file-at-point) 'file))
+
+(autoload 'symbol-at-point "thingatpt")
 
 (defun embark-symbol-at-point-type ()
   "If there is a file at point, report it."
@@ -593,12 +595,19 @@ To be used as an annotation function for symbols in `embark-occur'."
             (buffer-local-value 'major-mode buffer))))
 
 (defun embark-size-and-modification-time (file)
-  "Return string with size and modification time of file."
-  (let ((attributes (file-attributes file)))
+  "Return string with size and modification time of FILE."
+  (when-let ((attributes (file-attributes file)))
     (format "%7s %s"
             (file-size-human-readable (file-attribute-size attributes))
             (format-time-string "%b %e %k:%M"
              (file-attribute-modification-time attributes)))))
+
+(autoload 'ucs-names "mule-cmds")
+
+(defun embark-unicode-character (name)
+  "Return unicode character called NAME."
+  (when-let ((char (gethash name (ucs-names))))
+    (format "%c" char)))
 
 (defun embark-minibuffer-candidates ()
   "Return all current completion candidates from the minibuffer."
@@ -611,8 +620,7 @@ To be used as an annotation function for symbols in `embark-occur'."
            (last (last all)))
       (when last (setcdr last nil))
       all)))
-
-(declare-function dired-get-filename "dired")
+(autoload 'dired-get-filename "dired")
 
 (defun embark-dired-candidates ()
   "Return all files shown in dired buffer."
@@ -626,7 +634,7 @@ To be used as an annotation function for symbols in `embark-occur'."
           (forward-line))
         (nreverse files)))))
 
-(declare-function ibuffer-map-lines-nomodify "ibuffer")
+(autoload 'ibuffer-map-lines-nomodify "ibuffer")
 
 (defun embark-ibuffer-candidates ()
   "Return names of buffers listed in ibuffer buffer."
@@ -876,7 +884,7 @@ buffer for each type of completion."
   (ibuffer t "*Embark Ibuffer*"
            `((predicate . (member (buffer-name) ',buffers)))))
 
-(declare-function dired-check-switches "dired")
+(autoload 'dired-check-switches "dired")
 
 (defun embark-dired (files)
   "Create a dired buffer listing FILES."
@@ -961,9 +969,9 @@ This is whatever command opened the minibuffer in the first place."
   (with-current-buffer (embark-target)
     (call-interactively #'rename-buffer)))
 
-(declare-function package-desc-p "package")
-(declare-function package--from-builtin "package")
-(declare-function package-desc-extras "package")
+(autoload 'package-desc-p "package")
+(autoload 'package--from-builtin "package")
+(autoload 'package-desc-extras "package")
 (defvar package--builtins)
 (defvar package-alist)
 (defvar package-archive-contents)
@@ -1041,9 +1049,18 @@ with command output. For replacement behaviour see
     (with-selected-window win
       (kill-buffer-and-window))))
 
-(defun embark-save-char ()
+(defun embark-insert-unicode-character ()
+  "Insert unicode character named by embark target to kill ring."
+  (interactive)
+  (when-let ((char (embark-unicode-character (embark-target))))
+    (with-current-buffer embark--target-buffer
+      (insert char))))
+
+(defun embark-save-unicode-character ()
   "Save unicode character named by embark target to kill ring."
-  (kill-new (mule--ucs-names-annotation (embark-target))))
+  (interactive)
+  (when-let ((char (embark-unicode-character (embark-target))))
+     (kill-new char)))
 
 ;;; setup hooks for actions
 
@@ -1129,8 +1146,9 @@ and leaves the point to the left of it."
 
 (defvar embark-unicode-name-map
   (embark-keymap
-   '(("I" . insert-char)
-     ("W" . embark-save-char))))
+   '(("I" . embark-insert-unicode-character)
+     ("W" . embark-save-unicode-character))
+   embark-general-map))
 
 (provide 'embark)
 ;;; embark.el ends here
