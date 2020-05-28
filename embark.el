@@ -808,12 +808,15 @@ numeric argument of 1 requests list view."
     (when (consp initial-view) ; was really candidate list
       (setq initial-view nil))
     (with-current-buffer buffer
-      (embark-occur-mode)
+      (delay-mode-hooks (embark-occur-mode))
       (setq embark-occur-candidates candidates))
     (embark--cache-info buffer)
     (embark-after-exit ()
       (pop-to-buffer buffer)
-      ;; wait so grid view knows the window width
+      ;; we delay running the mode hooks and setting the initial view
+      ;; until now, so the window is known (grid view uses the window
+      ;; width)
+      (run-mode-hooks)
       (let ((initial
              (or
               initial-view
