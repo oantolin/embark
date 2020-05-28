@@ -894,6 +894,19 @@ instead of what `embark-occur-initial-view-alist' specifies."
     (embark-after-exit ()
       (embark-occur--display occur-buffer))))
 
+(defun embark-completing-read (&rest args)
+  "A completing read function that uses `embark-live-occur.'"
+  (run-with-idle-timer 0.3 nil
+   (lambda () (when (minibufferp) (embark-live-occur))))
+  (apply #'completing-read-default args))
+
+(defun embark-switch-to-live-occur ()
+  "Switch to the Embark Live Occur buffer."
+  (interactive)
+  (if-let ((buffer (get-buffer "*Embark Live Occur*")))
+      (switch-to-buffer buffer)
+    (user-error "No Embark Live Occur buffer")))
+
 (defun embark-export ()
   "Create a type-specific buffer to manage current candidates.
 The variable `embark-exporters-alist' controls how to make the
