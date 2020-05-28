@@ -836,7 +836,7 @@ numeric argument of 1 requests list view."
         (buffer (get-buffer-create "*Embark Occur*")))
     (setq embark-occur-linked-buffer buffer)
     (with-current-buffer buffer
-      (embark-occur-mode)
+      (delay-mode-hooks (embark-occur-mode))
       (when (consp initial-view)
         ;; embark-export passed us the list of
         ;; candidates, might as well use it
@@ -859,6 +859,7 @@ numeric argument of 1 requests list view."
     (setq minibuffer-scroll-window
           (display-buffer buffer '((display-buffer-reuse-window
                                     display-buffer-at-bottom))))
+    (run-mode-hooks)
     buffer))
 
 (defun embark-exit-and-occur ()
