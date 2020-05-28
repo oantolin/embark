@@ -566,11 +566,11 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
 
 ;;; embark occur
 
-(defface embark-occur-candidate '((default :inherit default))
+(defface embark-occur-candidate '((t :inherit default))
   "Face for candidates in Embark Occur."
   :group 'embark)
 
-(defface embark-occur-annotation '((default :inherit completions-annotations))
+(defface embark-occur-annotation '((t :inherit completions-annotations))
   "Face for annotations in Embark Occur."
   :group 'embark)
 
