@@ -849,7 +849,9 @@ numeric argument of 1 requests list view."
     (when (minibufferp)
       ;; stop live updates once we exit
       (add-hook 'minibuffer-exit-hook #'embark-occur--sever-link nil t))
-    (display-buffer buffer)
+    (setq minibuffer-scroll-window
+          (display-buffer buffer '((display-buffer-reuse-window
+                                    display-buffer-at-bottom))))
     buffer))
 
 (defun embark-exit-and-occur ()
