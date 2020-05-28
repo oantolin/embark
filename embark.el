@@ -198,6 +198,11 @@ This list is used only when `embark-allow-edit-default' is t."
   :type 'hook
   :group 'embark)
 
+(defcustom embark-post-action-hook nil
+  "Hook run after an embarked upon action concludes."
+  :type 'hook
+  :group 'embark)
+
 (defcustom embark-candidate-collectors
   '(embark-minibuffer-candidates
     embark-completions-buffer-candidates
@@ -396,7 +401,8 @@ return nil."
     (remove-hook 'post-command-hook #'embark--cleanup)
     (when embark--overlay
       (delete-overlay embark--overlay)
-      (setq embark--overlay nil))))
+      (setq embark--overlay nil))
+    (run-hooks 'embark-post-action-hook)))
 
 (defun embark-top-minibuffer-completion ()
   "Return the top completion candidate in the minibuffer."
@@ -701,6 +707,7 @@ This makes `embark-export' work in Embark Occur buffers."
   "Run default action on ENTRY."
   (setq this-command embark--command)
   (embark--setup)
+  (run-hooks 'embark-pre-action-hook)
   (call-interactively this-command))
 
 (defvar-local embark-occur-candidates nil
