@@ -402,7 +402,7 @@ return nil."
     (when embark--overlay
       (delete-overlay embark--overlay)
       (setq embark--overlay nil))
-    (run-hooks 'embark-post-action-hook)))
+    (run-at-time 0 nil #'run-hooks 'embark-post-action-hook)))
 
 (defun embark-top-minibuffer-completion ()
   "Return the top completion candidate in the minibuffer."
