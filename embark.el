@@ -820,54 +820,79 @@ enable `embark-occur-direct-action-minor-mode' in
     (setq embark-occur-view (if (eq embark-occur-view 'list) 'grid 'list))
     (revert-buffer)))
 
-(defun embark-occur (&optional initial-view)
-  "Create a live-updating buffer of current candidates ready for action.
+(defun embark-occur-noselect (buffer-name &optional initial-view)
+  "Create and return a buffer of current candidates ready for action.
 Optionally start in INITIAL-VIEW (either `list' or `grid')
-instead of what `embark-occur-initial-view-alist' specifies.
-
-Interactively, \\[universal-argument] requests grid view and a
-numeric argument of 1 requests list view."
-  (interactive
-   (list (pcase current-prefix-arg
-           ('(4) 'grid)
-           (1 'list))))
+instead of what `embark-occur-initial-view-alist' specifies."
   (ignore (embark-target))              ; allow use from embark-act
   (let ((from (current-buffer))
-        (buffer (get-buffer-create "*Embark Occur*")))
+        (buffer (get-buffer-create buffer-name)))
     (setq embark-occur-linked-buffer buffer)
     (with-current-buffer buffer
-      (delay-mode-hooks (embark-occur-mode))
-      (when (consp initial-view)
-        ;; embark-export passed us the list of
-        ;; candidates, might as well use it
-        (setq embark-occur-candidates initial-view
-              initial-view nil))
+      (delay-mode-hooks (embark-occur-mode)) ; we'll run them when the
+                                             ; buffer is displayed, so
+                                             ; they can use the window
       (setq embark-occur-from from)
-      (add-hook 'tabulated-list-revert-hook #'embark-occur--revert))
-    (embark--cache-info buffer)
-    (with-current-buffer buffer
+      (add-hook 'tabulated-list-revert-hook #'embark-occur--revert)
       (setq embark-occur-view
             (or initial-view
                 (alist-get embark--type embark-occur-initial-view-alist)
                 (alist-get t embark-occur-initial-view-alist)
-                'list))
-      (revert-buffer))
-    (add-hook 'after-change-functions #'embark-occur--update-linked nil t)
-    (when (minibufferp)
-      ;; stop live updates once we exit
-      (add-hook 'minibuffer-exit-hook #'embark-occur--sever-link nil t))
-    (setq minibuffer-scroll-window
-          (display-buffer buffer '((display-buffer-reuse-window
-                                    display-buffer-at-bottom))))
-    (run-mode-hooks)
+                'list)))
+    (embark--cache-info buffer)
     buffer))
 
-(defun embark-exit-and-occur ()
-  "Create an Embark Occur buffer and exit all minibuffers."
-  (interactive)
-  (let ((occur-buffer (embark-occur)))
+(defun embark-occur--display (occur-buffer &optional action)
+  "Display the Embark Occur buffer and run mode hooks.
+This is also when we initially fill the buffer with candidates,
+since the grid view needs to know the window width. Return the
+window where the buffer is displayed."
+  (let ((occur-window (display-buffer occur-buffer action)))
+    (with-current-buffer occur-buffer
+      (run-mode-hooks)
+      (revert-buffer))
+    occur-window))
+
+(defun embark-occur--initial-view-arg ()
+  "Translate current prefix arg to intial Embark Occur view.
+\\[universal-argument] means grid view, a prefix argument of 1
+means list view, anything else means proceed according to
+`embark-occur-initial-view-alist'."
+  (list (pcase current-prefix-arg
+          ('(4) 'grid)
+          (1 'list))))
+
+(defun embark-live-occur (&optional initial-view)
+  "Create a live-updating Embark Occur buffer.
+Optionally start in INITIAL-VIEW (either `list' or `grid')
+instead of what `embark-occur-initial-view-alist' specifies."
+  (interactive (embark-occur--initial-view-arg))
+  (let ((occur-buffer
+         (embark-occur-noselect "*Embark Live Occur*" initial-view)))
+    (add-hook 'after-change-functions   ; set up live updates!
+              #'embark-occur--update-linked nil t)
+    (let ((occur-window (embark-occur--display
+                         occur-buffer
+                         '((display-buffer-reuse-window
+                            display-buffer-at-bottom)))))
+      (when (minibufferp)
+        ;; stop live updates once we exit
+        (add-hook 'minibuffer-exit-hook #'embark-occur--sever-link nil t)
+        (setq minibuffer-scroll-window occur-window)))))
+
+(defun embark-occur (&optional initial-view)
+  "Create an Embark Occur buffer and exit all minibuffers.
+Optionally start in INITIAL-VIEW (either `list' or `grid')
+instead of what `embark-occur-initial-view-alist' specifies."
+  (interactive (embark-occur--initial-view-arg))
+  (let ((candidates
+         (run-hook-with-args-until-success 'embark-candidate-collectors))
+        (occur-buffer
+         (embark-occur-noselect "*Embark Occur*" initial-view)))
+    (with-current-buffer occur-buffer
+      (setq embark-occur-candidates candidates))
     (embark-after-exit ()
-      (display-buffer occur-buffer))))
+      (embark-occur--display occur-buffer))))
 
 (defun embark-export ()
   "Create a type-specific buffer to manage current candidates.
@@ -875,19 +900,18 @@ The variable `embark-exporters-alist' controls how to make the
 buffer for each type of completion."
   (interactive)
   (ignore (embark-target)) ; allow use from embark-act
-  (let* ((candidates (run-hook-with-args-until-success
-                      'embark-candidate-collectors))
-         (type (embark-classify))
-         (dir (embark--default-directory))
+  (let* ((type (embark-classify))
          (exporter (or (alist-get type embark-exporters-alist)
                        (alist-get t embark-exporters-alist))))
     (if (eq exporter 'embark-occur)
-        ;; just run it now, so the necessary info is still there
-        ;; at least we already have the candidates gathered.
-        (funcall #'embark-occur candidates)
-      (embark-after-exit ()
-        (let ((default-directory dir))  ; dired needs this info
-          (funcall exporter candidates))))))
+        ;; let embark-occur gather the candidates
+        (embark-occur)
+      (let ((candidates (run-hook-with-args-until-success
+                         'embark-candidate-collectors))
+            (dir (embark--default-directory)))
+        (embark-after-exit ()
+          (let ((default-directory dir)) ; dired needs this info
+            (funcall exporter candidates)))))))
 
 (defun embark-ibuffer (buffers)
   "Create an ibuffer buffer listing BUFFERS."
