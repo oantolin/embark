@@ -722,6 +722,9 @@ This makes `embark-export' work in Embark Occur buffers."
 (defvar-local embark-occur-linked-buffer nil
   "Buffer local variable indicating which Embark Buffer to update.")
 
+(defvar-local embark--live-occur--timer nil
+  "Timer scheduled to update Embark Live Occur buffer.")
+
 (define-derived-mode embark-occur-mode tabulated-list-mode "Embark Occur"
   "List of candidates to be acted on.
 You should either bind `embark-act' in `embark-occur-mode-map' or
@@ -809,9 +812,15 @@ enable `embark-occur-direct-action-minor-mode' in
 
 (defun embark-occur--update-linked (&rest _)
   "Update linked Embark Occur buffer."
-  (with-current-buffer embark-occur-linked-buffer
-    (while-no-input
-      (revert-buffer))))
+  (when embark--live-occur--timer 
+    (cancel-timer embark--live-occur--timer))
+  (setq embark--live-occur--timer
+        (run-with-idle-timer
+         0.15 nil
+         (lambda ()
+           (with-current-buffer embark-occur-linked-buffer
+             (while-no-input
+               (revert-buffer)))))))
 
 (defun embark-occur-toggle-view ()
   "Toggle between list and grid views of Embark Occur buffer."
@@ -896,7 +905,7 @@ instead of what `embark-occur-initial-view-alist' specifies."
 
 (defun embark-completing-read (&rest args)
   "A completing read function that uses `embark-live-occur.'"
-  (run-with-idle-timer 0.3 nil
+  (run-with-idle-timer 0.15 nil
    (lambda () (when (minibufferp) (embark-live-occur))))
   (apply #'completing-read-default args))
 
