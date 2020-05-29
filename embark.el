@@ -802,14 +802,6 @@ enable `embark-occur-direct-action-minor-mode' in
       (embark-occur--list-view)
     (embark-occur--grid-view)))
 
-(defun embark-occur--sever-link ()
-  "Stop auto-updating linked Embark Occur buffer"
-  (when embark-occur-linked-buffer
-    (remove-hook 'after-change-functions #'embark-occur--update-linked)
-    (remove-hook 'minibuffer-exit-hook #'embark-occur--sever-link)
-    (with-current-buffer embark-occur-linked-buffer
-      (setq embark-occur-from nil))))
-
 (defun embark-occur--update-linked (&rest _)
   "Update linked Embark Occur buffer."
   (when embark--live-occur--timer 
@@ -821,6 +813,10 @@ enable `embark-occur-direct-action-minor-mode' in
            (with-current-buffer embark-occur-linked-buffer
              (while-no-input
                (revert-buffer)))))))
+
+(defun embark-occur--kill-linked-buffer ()
+  "Kill linked Embark Live Occur buffer."
+  (kill-buffer embark-occur-linked-buffer))
 
 (defun embark-occur-toggle-view ()
   "Toggle between list and grid views of Embark Occur buffer."
@@ -835,7 +831,7 @@ Optionally start in INITIAL-VIEW (either `list' or `grid')
 instead of what `embark-occur-initial-view-alist' specifies."
   (ignore (embark-target))              ; allow use from embark-act
   (let ((from (current-buffer))
-        (buffer (get-buffer-create buffer-name)))
+        (buffer (generate-new-buffer buffer-name)))
     (setq embark-occur-linked-buffer buffer)
     (with-current-buffer buffer
       (delay-mode-hooks (embark-occur-mode)) ; we'll run them when the
@@ -882,11 +878,10 @@ instead of what `embark-occur-initial-view-alist' specifies."
               #'embark-occur--update-linked nil t)
     (let ((occur-window (embark-occur--display
                          occur-buffer
-                         '((display-buffer-reuse-window
+                         '((display-buffer-reuse-mode-window
                             display-buffer-at-bottom)))))
       (when (minibufferp)
-        ;; stop live updates once we exit
-        (add-hook 'minibuffer-exit-hook #'embark-occur--sever-link nil t)
+        (add-hook 'minibuffer-exit-hook #'embark-occur--kill-linked-buffer)
         (setq minibuffer-scroll-window occur-window)))))
 
 (defun embark-occur (&optional initial-view)
