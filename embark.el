@@ -255,6 +255,11 @@ default is `embark-occur'."
   :type '(alist :key-type symbol :value-type function)
   :group 'embark)
 
+(defcustom embark-live-occur-delay 0.1
+  "Wait this long for more input before updating Embark Live Occur buffer."
+  :type 'number
+  :group 'embark)
+
 ;;; stashing information for actions in buffer local variables
 
 (defvar embark--type nil
@@ -804,11 +809,10 @@ enable `embark-occur-direct-action-minor-mode' in
 
 (defun embark-occur--update-linked (&rest _)
   "Update linked Embark Occur buffer."
-  (when embark--live-occur--timer 
+  (when embark--live-occur--timer
     (cancel-timer embark--live-occur--timer))
   (setq embark--live-occur--timer
-        (run-with-idle-timer
-         0.15 nil
+        (run-with-idle-timer embark-live-occur-delay nil
          (lambda ()
            (with-current-buffer embark-occur-linked-buffer
              (while-no-input
@@ -899,8 +903,9 @@ instead of what `embark-occur-initial-view-alist' specifies."
       (embark-occur--display occur-buffer))))
 
 (defun embark-completing-read (&rest args)
-  "A completing read function that uses `embark-live-occur.'"
-  (run-with-idle-timer 0.15 nil
+  "A completing read function using `embark-live-occur'.
+For the supported ARGS and their meaning see `completing-read'."
+  (run-with-idle-timer embark-live-occur-delay nil
    (lambda () (when (minibufferp) (embark-live-occur))))
   (apply #'completing-read-default args))
 
