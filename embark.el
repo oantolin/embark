@@ -709,12 +709,48 @@ Returns the name of the command."
   'face 'embark-occur-candidate
   'action 'embark-occur-select)
 
-(defun embark-occur-select (_entry)
-  "Run default action on ENTRY."
-  (setq this-command embark--command)
-  (embark--setup)
-  (run-hooks 'embark-pre-action-hook)
-  (call-interactively this-command))
+(defun embark--boundaries ()
+  "Get current minibuffer completion boundaries."
+  (let ((contents (minibuffer-contents))
+        (pt (- (point) (minibuffer-prompt-end))))
+    (completion-boundaries
+     (substring contents 0 pt)
+     minibuffer-completion-table
+     minibuffer-completion-predicate
+     (substring contents pt))))
+
+(defun embark-occur-select (entry)
+  "Select an ENTRY in an Embark Occur buffer.
+If the Embark Occur buffer is associated to the active minibuffer
+and is live updating, selecting an entry completes the minibuffer
+input. Otherwise selecting an entry runs the default action on
+it, i.e., runs the command that was in progress when the Embark
+Occur buffer was created."
+  (if (and (active-minibuffer-window)
+           (eq embark-occur-from
+               (window-buffer (active-minibuffer-window)))
+           (memq 'embark-occur--update-linked ; live?
+                 (buffer-local-value 'after-change-functions
+                                     embark-occur-from)))
+      (let ((text (button-label entry)))
+        (select-window (active-minibuffer-window))
+        (pcase-let ((origin (minibuffer-prompt-end))
+                    (`(,beg . ,end) (embark--boundaries)))
+          (delete-region (+ origin beg) (+ (point) end))
+          (goto-char (+ origin beg))
+          (insert text))
+        ;; If the boundaries changed after insertion there are new
+        ;; completion candidates (like when entering a directory in
+        ;; find-file). In that case, don't exit, otherwise revert
+        (unless (= (car (embark--boundaries))
+                   (- (point) (minibuffer-prompt-end)))
+          (cancel-timer embark--live-occur--timer)
+          (exit-minibuffer)))
+    ;; not associated to minibuffer or not live, run default action
+    (setq this-command embark--command)
+    (embark--setup)
+    (run-hooks 'embark-pre-action-hook)
+    (call-interactively this-command)))
 
 (defvar-local embark-occur-candidates nil
   "List of candidates in current occur buffer.")
