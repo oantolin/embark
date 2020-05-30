@@ -260,6 +260,23 @@ default is `embark-occur'."
   :type 'number
   :group 'embark)
 
+(defcustom embark-occur-minibuffer-completion nil
+  "Should RET on an Embark Occur entry do minibuffer completion?
+By default, pressing RET or clicking the mouse on an entry in an
+Embark Occur buffer runs the default action on the entry. If this
+variable is non-nil, then when the Embark Occur buffer is
+associated to the active minibuffer and is live updating,
+pressing RET or clicking the mouse instead completes the
+minibuffer input to the chosen entry and, unless this leads to
+new completion candidates (for example, when entering a directory
+in `find-file'), exits the minibuffer.
+
+If you are using `embark-completing-read' as your
+`completing-read-function' you might want to set
+`embark-occur-minibuffer-completion' to t."
+  :type 'boolean
+  :group 'embark)
+
 ;;; stashing information for actions in buffer local variables
 
 (defvar embark--type nil
@@ -720,13 +737,20 @@ Returns the name of the command."
      (substring contents pt))))
 
 (defun embark-occur-select (entry)
-  "Select an ENTRY in an Embark Occur buffer.
-If the Embark Occur buffer is associated to the active minibuffer
-and is live updating, selecting an entry completes the minibuffer
-input. Otherwise selecting an entry runs the default action on
-it, i.e., runs the command that was in progress when the Embark
-Occur buffer was created."
-  (if (and (active-minibuffer-window)
+  "Run default action on Embark Occur ENTRY.
+
+If the variable `embark-occur-minibuffer-completion' is non-nil,
+this function does something special when the Embark Occur buffer
+is associated to the active minibuffer and is live updating: it
+completes the minibuffer input to ENTRY and, unless this leads to
+new completion candidates (for example, when entering a directory
+in `find-file'), exit the minibuffer.
+
+If you are using `embark-completing-read' as your
+`completing-read-function' you might want to set
+`embark-occur-minibuffer-completion' to t."
+  (if (and embark-occur-minibuffer-completion
+           (active-minibuffer-window)
            (eq embark-occur-from
                (window-buffer (active-minibuffer-window)))
            (memq 'embark-occur--update-linked ; live?
@@ -746,7 +770,7 @@ Occur buffer was created."
                    (- (point) (minibuffer-prompt-end)))
           (cancel-timer embark--live-occur--timer)
           (exit-minibuffer)))
-    ;; not associated to minibuffer or not live, run default action
+    ;; run default action
     (setq this-command embark--command)
     (embark--setup)
     (run-hooks 'embark-pre-action-hook)
