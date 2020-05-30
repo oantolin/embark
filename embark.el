@@ -744,7 +744,8 @@ this function does something special when the Embark Occur buffer
 is associated to the active minibuffer and is live updating: it
 completes the minibuffer input to ENTRY and, unless this leads to
 new completion candidates (for example, when entering a directory
-in `find-file'), exit the minibuffer.
+in `find-file') or the command was called with a prefix argument,
+exit the minibuffer.
 
 If you are using `embark-completing-read' as your
 `completing-read-function' you might want to set
@@ -766,8 +767,9 @@ If you are using `embark-completing-read' as your
         ;; If the boundaries changed after insertion there are new
         ;; completion candidates (like when entering a directory in
         ;; find-file). In that case, don't exit, otherwise revert
-        (unless (= (car (embark--boundaries))
-                   (- (point) (minibuffer-prompt-end)))
+        (unless (or current-prefix-arg
+                    (= (car (embark--boundaries))
+                       (- (point) (minibuffer-prompt-end))))
           (exit-minibuffer)))
     ;; run default action
     (setq this-command embark--command)
