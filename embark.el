@@ -883,10 +883,15 @@ enable `embark-occur-direct-action-minor-mode' in
                  (with-current-buffer occur-buffer
                    (revert-buffer)))))))))
 
-(defun embark-occur--kill-linked-buffer ()
+(defun embark-occur--linked-buffer-is-live-p ()
+  "Is this buffer linked to a live Embark Occur buffer?"
+  (and embark-occur-linked-buffer
+       (string-match-p "Embark Live Occur"
+                       (buffer-name embark-occur-linked-buffer))))
+
+(defun embark-occur--kill-live-occur-buffer ()
   "Kill linked Embark Live Occur buffer."
-  (when (string-match-p "Embark Live Occur"
-                        (buffer-name embark-occur-linked-buffer))
+  (when (embark-occur--linked-buffer-is-live-p)
     (kill-buffer embark-occur-linked-buffer)))
 
 (defun embark-occur-toggle-view ()
@@ -904,10 +909,7 @@ Argument BUFFER-NAME specifies the name of the created buffer."
   (ignore (embark-target))              ; allow use from embark-act
   (let ((from (current-buffer))
         (buffer (generate-new-buffer buffer-name)))
-    (when (and embark-occur-linked-buffer      ; live ones are ephemeral
-               (string-match-p "Embark Live Occur"
-                               (buffer-name embark-occur-linked-buffer)))
-      (kill-buffer embark-occur-linked-buffer))
+    (embark-occur--kill-live-occur-buffer) ; live ones are ephemeral
     (setq embark-occur-linked-buffer buffer)
     (with-current-buffer buffer
       (delay-mode-hooks (embark-occur-mode)) ; we'll run them when the
@@ -962,7 +964,8 @@ to `display-buffer-alist'."
                          '((display-buffer-reuse-mode-window
                             display-buffer-at-bottom)))))
       (when (minibufferp)
-        (add-hook 'minibuffer-exit-hook #'embark-occur--kill-linked-buffer
+        (add-hook 'minibuffer-exit-hook
+                  #'embark-occur--kill-live-occur-buffer
                   nil t)
         (setq minibuffer-scroll-window occur-window)))))
 
@@ -998,7 +1001,9 @@ For the supported ARGS and their meaning see `completing-read'."
 (defun embark-switch-to-live-occur ()
   "Switch to the Embark Live Occur buffer."
   (interactive)
-  (if-let ((buffer (get-buffer "*Embark Live Occur*")))
+  (if-let ((buffer (if (embark-occur--linked-buffer-is-live-p)
+                       embark-occur-linked-buffer
+                     (get-buffer "*Embark Live Occur*"))))
       (switch-to-buffer buffer)
     (user-error "No Embark Live Occur buffer")))
 
