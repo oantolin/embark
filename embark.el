@@ -980,8 +980,10 @@ See `embark-occur-display-action' to control the display."
             (embark-occur-noselect "*Embark Occur*" initial-view)))
       (progn
         (with-current-buffer occur-buffer
-          (setq embark-occur-from nil)
           (setq embark-occur-candidates candidates))
+        (when (minibufferp)
+          (with-current-buffer occur-buffer
+            (setq embark-occur-from nil)))
         (embark-after-exit ()
           (select-window
            (embark-occur--display occur-buffer embark-occur-display-action))))
