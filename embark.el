@@ -885,7 +885,9 @@ enable `embark-occur-direct-action-minor-mode' in
 
 (defun embark-occur--kill-linked-buffer ()
   "Kill linked Embark Live Occur buffer."
-  (kill-buffer embark-occur-linked-buffer))
+  (when (string-match-p "Embark Live Occur"
+                        (buffer-name embark-occur-linked-buffer))
+    (kill-buffer embark-occur-linked-buffer)))
 
 (defun embark-occur-toggle-view ()
   "Toggle between list and grid views of Embark Occur buffer."
@@ -902,11 +904,15 @@ Argument BUFFER-NAME specifies the name of the created buffer."
   (ignore (embark-target))              ; allow use from embark-act
   (let ((from (current-buffer))
         (buffer (generate-new-buffer buffer-name)))
+    (when (and embark-occur-linked-buffer      ; live ones are ephemeral
+               (string-match-p "Embark Live Occur"
+                               (buffer-name embark-occur-linked-buffer)))
+      (kill-buffer embark-occur-linked-buffer))
     (setq embark-occur-linked-buffer buffer)
     (with-current-buffer buffer
       (delay-mode-hooks (embark-occur-mode)) ; we'll run them when the
                                              ; buffer is displayed, so
-                                             ; they can use the window
+                                        ; they can use the window
       (setq embark-occur-from from)
       (add-hook 'tabulated-list-revert-hook #'embark-occur--revert)
       (setq embark-occur-view
@@ -956,7 +962,8 @@ to `display-buffer-alist'."
                          '((display-buffer-reuse-mode-window
                             display-buffer-at-bottom)))))
       (when (minibufferp)
-        (add-hook 'minibuffer-exit-hook #'embark-occur--kill-linked-buffer)
+        (add-hook 'minibuffer-exit-hook #'embark-occur--kill-linked-buffer
+                  nil t)
         (setq minibuffer-scroll-window occur-window)))))
 
 (defun embark-occur (&optional initial-view)
