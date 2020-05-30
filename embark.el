@@ -878,8 +878,10 @@ enable `embark-occur-direct-action-minor-mode' in
          embark-live-occur-delay nil
          (let ((occur-buffer embark-occur-linked-buffer))
            (lambda ()
-             (with-current-buffer occur-buffer
-               (while-no-input (revert-buffer))))))))
+             (while-no-input
+               (when (buffer-live-p occur-buffer) ; might be killed by now
+                 (with-current-buffer occur-buffer
+                   (revert-buffer)))))))))
 
 (defun embark-occur--kill-linked-buffer ()
   "Kill linked Embark Live Occur buffer."
