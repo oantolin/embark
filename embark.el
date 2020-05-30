@@ -768,7 +768,6 @@ If you are using `embark-completing-read' as your
         ;; find-file). In that case, don't exit, otherwise revert
         (unless (= (car (embark--boundaries))
                    (- (point) (minibuffer-prompt-end)))
-          (cancel-timer embark--live-occur--timer)
           (exit-minibuffer)))
     ;; run default action
     (setq this-command embark--command)
@@ -873,11 +872,12 @@ enable `embark-occur-direct-action-minor-mode' in
   (when embark--live-occur--timer
     (cancel-timer embark--live-occur--timer))
   (setq embark--live-occur--timer
-        (run-with-idle-timer embark-live-occur-delay nil
-         (lambda ()
-           (with-current-buffer embark-occur-linked-buffer
-             (while-no-input
-               (revert-buffer)))))))
+        (run-with-idle-timer
+         embark-live-occur-delay nil
+         (let ((occur-buffer embark-occur-linked-buffer))
+           (lambda ()
+             (with-current-buffer occur-buffer
+               (while-no-input (revert-buffer))))))))
 
 (defun embark-occur--kill-linked-buffer ()
   "Kill linked Embark Live Occur buffer."
