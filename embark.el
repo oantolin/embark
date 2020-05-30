@@ -922,12 +922,13 @@ Argument BUFFER-NAME specifies the name of the created buffer."
 This is also when we initially fill the buffer with candidates,
 since the grid view needs to know the window width. Return the
 window where the buffer is displayed.
-Optional argument ACTION is passed to `display-buffer' to control window placement."
+
+Optional argument ACTION is passed to `display-buffer' to control
+window placement."
   (let ((occur-window (display-buffer occur-buffer action)))
     (with-selected-window occur-window
-      (with-current-buffer occur-buffer
-        (run-mode-hooks)
-        (revert-buffer)))
+      (run-mode-hooks)
+      (revert-buffer))
     occur-window))
 
 (defun embark-occur--initial-view-arg ()
