@@ -239,6 +239,18 @@ view for types not mentioned separately."
                  (const :tag "Grid view" grid))
   :group 'embark)
 
+(defcustom embark-occur-display-action nil
+  "The action used to display the occur buffer for `embark-occur'.
+
+The value of this option has the form (FUNCTION . ALIST), where
+FUNCTION is a function or a list of functions.  Each such
+function should accept two arguments: a buffer to display and an
+alist of the same form as ALIST.  See `display-buffer' for
+details."
+  :type '(cons (choice function (repeat :tag "Functions" function))
+               alist)
+  :group 'embark)
+
 (defcustom embark-exporters-alist
   '((buffer . embark-ibuffer)
     (file . embark-dired)
@@ -924,9 +936,10 @@ since the grid view needs to know the window width. Return the
 window where the buffer is displayed.
 Optional argument ACTION is passed to `display-buffer' to control window placement."
   (let ((occur-window (display-buffer occur-buffer action)))
-    (with-current-buffer occur-buffer
-      (run-mode-hooks)
-      (revert-buffer))
+    (with-selected-window occur-window
+      (with-current-buffer occur-buffer
+        (run-mode-hooks)
+        (revert-buffer)))
     occur-window))
 
 (defun embark-occur--initial-view-arg ()
@@ -958,16 +971,21 @@ instead of what `embark-occur-initial-view-alist' specifies."
 (defun embark-occur (&optional initial-view)
   "Create an Embark Occur buffer and exit all minibuffers.
 Optionally start in INITIAL-VIEW (either `list' or `grid')
-instead of what `embark-occur-initial-view-alist' specifies."
+instead of what `embark-occur-initial-view-alist' specifies.
+See `embark-occur-display-action' to control the display."
   (interactive (embark-occur--initial-view-arg))
-  (let ((candidates
-         (run-hook-with-args-until-success 'embark-candidate-collectors))
-        (occur-buffer
-         (embark-occur-noselect "*Embark Occur*" initial-view)))
-    (with-current-buffer occur-buffer
-      (setq embark-occur-candidates candidates))
-    (embark-after-exit ()
-      (embark-occur--display occur-buffer))))
+  (if-let ((candidates
+            (run-hook-with-args-until-success 'embark-candidate-collectors))
+           (occur-buffer
+            (embark-occur-noselect "*Embark Occur*" initial-view)))
+      (progn
+        (with-current-buffer occur-buffer
+          (setq embark-occur-from nil)
+          (setq embark-occur-candidates candidates))
+        (embark-after-exit ()
+          (select-window
+           (embark-occur--display occur-buffer embark-occur-display-action))))
+    (minibuffer-message "No candidates for occur")))
 
 (defun embark-completing-read (&rest args)
   "A completing read function using `embark-live-occur'.
