@@ -462,7 +462,7 @@ relative path."
     (symbol-name symbol)))
 
 (defun embark--keymap-for-type (type)
-  "Return the keymap for the given completion type."
+  "Return the keymap for the given completion TYPE."
   (symbol-value (alist-get type embark-keymap-alist)))
 
 (defun embark--setup ()
@@ -674,7 +674,8 @@ This makes `embark-export' work in Embark Occur buffers."
         (nreverse all)))))
 
 (defun embark--action-command (action)
-  "Turn an action into a command that performs the action."
+  "Turn an ACTION into a command to perform the action.
+Returns the name of the command."
   (let ((name (intern (format "embark-action<%s>" action)))
         (fn (lambda ()
               (interactive)
@@ -832,7 +833,8 @@ enable `embark-occur-direct-action-minor-mode' in
 (defun embark-occur-noselect (buffer-name &optional initial-view)
   "Create and return a buffer of current candidates ready for action.
 Optionally start in INITIAL-VIEW (either `list' or `grid')
-instead of what `embark-occur-initial-view-alist' specifies."
+instead of what `embark-occur-initial-view-alist' specifies.
+Argument BUFFER-NAME specifies the name of the created buffer."
   (ignore (embark-target))              ; allow use from embark-act
   (let ((from (current-buffer))
         (buffer (generate-new-buffer buffer-name)))
@@ -852,10 +854,11 @@ instead of what `embark-occur-initial-view-alist' specifies."
     buffer))
 
 (defun embark-occur--display (occur-buffer &optional action)
-  "Display the Embark Occur buffer and run mode hooks.
+  "Display the Embark OCCUR-BUFFER and run mode hooks.
 This is also when we initially fill the buffer with candidates,
 since the grid view needs to know the window width. Return the
-window where the buffer is displayed."
+window where the buffer is displayed.
+Optional argument ACTION is passed to `display-buffer' to control window placement."
   (let ((occur-window (display-buffer occur-buffer action)))
     (with-current-buffer occur-buffer
       (run-mode-hooks)
@@ -1077,7 +1080,7 @@ with command output. For replacement behaviour see
                              (and replace (current-buffer)))))
 
 (defun embark-open-externally (file)
-  "Open file using system's default application."
+  "Open FILE using system's default application."
   (interactive "fOpen: ")
   (if (and (eq system-type 'windows-nt)
            (fboundp 'w32-shell-execute))
