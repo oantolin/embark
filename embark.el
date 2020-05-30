@@ -239,18 +239,6 @@ view for types not mentioned separately."
                  (const :tag "Grid view" grid))
   :group 'embark)
 
-(defcustom embark-occur-display-action nil
-  "The action used to display the occur buffer for `embark-occur'.
-
-The value of this option has the form (FUNCTION . ALIST), where
-FUNCTION is a function or a list of functions.  Each such
-function should accept two arguments: a buffer to display and an
-alist of the same form as ALIST.  See `display-buffer' for
-details."
-  :type '(cons (choice function (repeat :tag "Functions" function))
-               alist)
-  :group 'embark)
-
 (defcustom embark-exporters-alist
   '((buffer . embark-ibuffer)
     (file . embark-dired)
@@ -954,7 +942,9 @@ means list view, anything else means proceed according to
 (defun embark-live-occur (&optional initial-view)
   "Create a live-updating Embark Occur buffer.
 Optionally start in INITIAL-VIEW (either `list' or `grid')
-instead of what `embark-occur-initial-view-alist' specifies."
+instead of what `embark-occur-initial-view-alist' specifies. To
+control the display, add an entry with key \"Embark Live Occur\"
+to `display-buffer-alist'."
   (interactive (embark-occur--initial-view-arg))
   (let ((occur-buffer
          (embark-occur-noselect "*Embark Live Occur*" initial-view)))
@@ -971,8 +961,9 @@ instead of what `embark-occur-initial-view-alist' specifies."
 (defun embark-occur (&optional initial-view)
   "Create an Embark Occur buffer and exit all minibuffers.
 Optionally start in INITIAL-VIEW (either `list' or `grid')
-instead of what `embark-occur-initial-view-alist' specifies.
-See `embark-occur-display-action' to control the display."
+instead of what `embark-occur-initial-view-alist' specifies. To
+control the display, add an entry with key \"Embark Occur\" to
+`display-buffer-alist'."
   (interactive (embark-occur--initial-view-arg))
   (if-let ((candidates
             (run-hook-with-args-until-success 'embark-candidate-collectors))
@@ -986,7 +977,7 @@ See `embark-occur-display-action' to control the display."
             (setq embark-occur-from nil)))
         (embark-after-exit ()
           (select-window
-           (embark-occur--display occur-buffer embark-occur-display-action))))
+           (embark-occur--display occur-buffer))))
     (minibuffer-message "No candidates for occur")))
 
 (defun embark-completing-read (&rest args)
