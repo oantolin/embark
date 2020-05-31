@@ -385,7 +385,7 @@ Always keep the non-local value equal to nil.")
            'file))))
 
 (defun embark-classify ()
-  "Classify current minibuffer completion session."
+  "Classify current context."
   (or (embark-cached-type)
       (run-hook-with-args-until-success 'embark-classifiers)
       (embark-target-type)
