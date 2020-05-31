@@ -978,6 +978,10 @@ to `display-buffer-alist'."
                   nil t)
         (setq minibuffer-scroll-window occur-window)))))
 
+(defun embark--pop-to-target-buffer ()
+  "Pop to Embark target buffer."
+  (pop-to-buffer embark--target-buffer))
+
 (defun embark-occur (&optional initial-view)
   "Create an Embark Occur buffer and exit all minibuffers.
 Optionally start in INITIAL-VIEW (either `list' or `grid')
@@ -993,7 +997,11 @@ control the display, add an entry with key \"Embark Occur\" to
         (with-current-buffer occur-buffer
           (setq embark-occur-candidates candidates)
           (when (minibufferp embark-occur-from)
-            (setq embark-occur-from nil)))
+            (setq embark-occur-from nil))
+          (when (eq embark--command 'imenu)
+            (add-hook 'embark-pre-action-hook
+                      #'embark--pop-to-target-buffer
+                      nil t)))
         (embark-after-exit ()
           (select-window
            (embark-occur--display occur-buffer))))
