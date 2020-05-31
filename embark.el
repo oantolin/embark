@@ -116,14 +116,15 @@
     embark-symbol-completion-type
     embark-dired-type
     embark-ibuffer-type
-    embark-ffap-type
-    embark-symbol-at-point-type)
-  "List of functions to classify the current completion session.
-Each function should take no arguments and return a symbol
-classifying the current minibuffer completion session, or nil to
-indicate it could not determine the type of completion."
+    embark-target-type)
+  "List of functions to classify according to current context.
+Each function should take no arguments and return the type
+symbol, or nil to indicate it could not determine the type in
+current context."
   :type 'hook
   :group 'embark)
+
+(autoload 'ffap-file-at-point "ffap")
 
 (defcustom embark-target-finders
   '(embark-top-minibuffer-completion
@@ -131,7 +132,7 @@ indicate it could not determine the type of completion."
     embark-completion-at-point
     ffap-file-at-point
     embark-symbol-at-point)
-  "List of functions to pick the target for actions.
+  "List of functions to determine the target in current context.
 Each function should take no arguments and return either a target
 string or nil (to indicate it found no target)."
   :type 'hook
@@ -374,17 +375,16 @@ Always keep the non-local value equal to nil.")
   "Report that ibuffer buffers yield buffer."
   (when (derived-mode-p 'ibuffer-mode) 'buffer))
 
-(autoload 'ffap-file-at-point "ffap")
-
-(defun embark-ffap-type ()
-  "If there is a file at point, report it."
-  (when (ffap-file-at-point) 'file))
-
-(autoload 'symbol-at-point "thingatpt")
-
-(defun embark-symbol-at-point-type ()
-  "If there is a file at point, report it."
-  (when (symbol-at-point) 'symbol))
+(defun embark-target-type ()
+  "Report type determined by target."
+  (when-let ((target
+              (run-hook-with-args-until-success 'embark-target-finders)))
+    (cond ((get-buffer target)
+           'buffer)
+          ((intern-soft target)
+           'symbol)
+          ((file-exists-p target)
+           'file))))
 
 (defun embark-classify ()
   "Classify current minibuffer completion session."
