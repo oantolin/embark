@@ -615,10 +615,19 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
   "Return the first line of the docstring of symbol called NAME.
 To be used as an annotation function for symbols in `embark-occur'."
   (when-let* ((symbol (intern name))
-              (docstring (if (functionp symbol)
-                             (documentation symbol)
-                           (documentation-property
-                            symbol 'variable-documentation))))
+              (docstring
+               (if (functionp symbol)
+                   (documentation symbol)
+                 (or
+                  (documentation-property symbol 'variable-documentation)
+                  (documentation-property symbol 'face-documentation)
+                  ;; flimenu support
+                  (when (string-prefix-p "Variables/" name)
+                    (documentation-property (intern (substring name 10))
+                                            'variable-documentation))
+                  (when (string-prefix-p "Types/" name)
+                    (documentation-property (intern (substring name 6))
+                                            'face-documentation))))))
     (car (split-string docstring "\n"))))
 
 (defun embark-file-and-major-mode (name)
