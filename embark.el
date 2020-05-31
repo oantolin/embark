@@ -115,10 +115,23 @@
     embark-symbol-completion-type
     embark-dired-type
     embark-ibuffer-type)
-  "List of functions to classify according to current buffer context.
+  "List of functions to classify current buffer context.
 Each function should take no arguments and return the type
 symbol, or nil to indicate it could not determine the type in
-current context."
+current context. If the type is not determined by current buffer
+context fallback to `embark-target-classifiers'."
+  :type 'hook
+  :group 'embark)
+
+(defcustom embark-target-classifiers
+  '(embark-file-target-type
+    embark-symbol-target-type
+    embark-buffer-target-type)
+  "List of functions to classify current target.
+Each function takes the target as argument and returns the type
+symbol, or nil to indicate it could not determine the type of
+current target. If the type isn't determined by current target
+fallback to the `general' type."
   :type 'hook
   :group 'embark)
 
@@ -377,12 +390,22 @@ Always keep the non-local value equal to nil.")
   "Report type determined by target."
   (when-let ((target
               (run-hook-with-args-until-success 'embark-target-finders)))
-    (cond ((get-buffer target)
-           'buffer)
-          ((intern-soft target)
-           'symbol)
-          ((file-exists-p target)
-           'file))))
+    (run-hook-with-args-until-success 'embark-target-classifiers target)))
+
+(defun embark-file-target-type (cand)
+  "Report file type if CAND is a file."
+  (when (file-exists-p cand)
+    'file))
+
+(defun embark-symbol-target-type (cand)
+  "Report symbol type if CAND is a known symbol."
+  (when (intern-soft cand)
+    'symbol))
+
+(defun embark-buffer-target-type (cand)
+  "Remport buffer type if CAND is a buffer name."
+  (when (get-buffer cand)
+    'buffer))
 
 (defun embark-classify ()
   "Classify current context."
