@@ -255,8 +255,13 @@ default is `embark-occur'."
   :type '(alist :key-type symbol :value-type function)
   :group 'embark)
 
-(defcustom embark-live-occur-delay 0.1
+(defcustom embark-live-occur-delay 0.15
   "Wait this long for more input before updating Embark Live Occur buffer."
+  :type 'number
+  :group 'embark)
+
+(defcustom embark-completing-read-delay 0.3
+  "Wait this long for input before popping up Embark Live Occur buffer."
   :type 'number
   :group 'embark)
 
@@ -998,7 +1003,7 @@ control the display, add an entry with key \"Embark Occur\" to
 (defun embark-completing-read (&rest args)
   "A completing read function using `embark-live-occur'.
 For the supported ARGS and their meaning see `completing-read'."
-  (run-with-idle-timer embark-live-occur-delay nil
+  (run-with-idle-timer embark-completing-read-delay nil
    (lambda () (when (minibufferp) (embark-live-occur))))
   (apply #'completing-read-default args))
 
