@@ -110,14 +110,12 @@
   :group 'embark)
 
 (defcustom embark-classifiers
-  '(embark-cached-type
-    embark-category-type
+  '(embark-category-type
     embark-package-type
     embark-symbol-completion-type
     embark-dired-type
-    embark-ibuffer-type
-    embark-target-type)
-  "List of functions to classify according to current context.
+    embark-ibuffer-type)
+  "List of functions to classify according to current buffer context.
 Each function should take no arguments and return the type
 symbol, or nil to indicate it could not determine the type in
 current context."
@@ -388,7 +386,9 @@ Always keep the non-local value equal to nil.")
 
 (defun embark-classify ()
   "Classify current minibuffer completion session."
-  (or (run-hook-with-args-until-success 'embark-classifiers)
+  (or (embark-cached-type)
+      (run-hook-with-args-until-success 'embark-classifiers)
+      (embark-target-type)
       'general))
 
 (defun embark-target ()
