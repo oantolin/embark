@@ -475,8 +475,12 @@ relative path."
 
 (defun embark-symbol-at-point ()
   "Return name of symbol at point."
-  (when-let ((symbol (symbol-at-point)))
-    (symbol-name symbol)))
+  (when-let ((symbol (symbol-at-point))
+             (name (symbol-name symbol)))
+    (if (and (derived-mode-p 'org-mode)
+             (string-match-p "^\\([~=]\\).*\\1$" name))
+        (substring name 1 -1)
+      name)))
 
 (defun embark--keymap-for-type (type)
   "Return the keymap for the given completion TYPE."
