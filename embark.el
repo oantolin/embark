@@ -145,7 +145,8 @@ fallback to the `general' type."
     embark-symbol-at-point)
   "List of functions to determine the target in current context.
 Each function should take no arguments and return either a target
-string or nil (to indicate it found no target)."
+string or nil (to indicate it found no target). If the region is
+active the region content is used as current target."
   :type 'hook
   :group 'embark)
 
@@ -392,6 +393,15 @@ Always keep the non-local value equal to nil.")
               (run-hook-with-args-until-success 'embark-target-finders)))
     (run-hook-with-args-until-success 'embark-target-classifiers target)))
 
+(defun embark-active-region-type ()
+  "Report type of active region target."
+  (when-let ((target
+              (and (region-active-p)
+                   (buffer-substring (region-beginning)
+                                     (region-end)))))
+    (or (run-hook-with-args-until-success 'embark-target-classifiers target)
+        'general)))
+
 (defun embark-file-target-type (cand)
   "Report file type if CAND is a file."
   (when (file-exists-p cand)
@@ -413,7 +423,8 @@ Always keep the non-local value equal to nil.")
 
 (defun embark-classify ()
   "Classify current context."
-  (or (embark-cached-type)
+  (or (embark-active-region-type)
+      (embark-cached-type)
       (run-hook-with-args-until-success 'embark-classifiers)
       (embark-target-type)
       'general))
