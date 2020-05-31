@@ -399,8 +399,12 @@ Always keep the non-local value equal to nil.")
 
 (defun embark-symbol-target-type (cand)
   "Report symbol type if CAND is a known symbol."
-  (when (intern-soft cand)
-    'symbol))
+  (let ((sym (intern-soft cand)))
+    (when (and sym
+               (or (boundp sym)
+                   (functionp sym)
+                   (facep sym)))
+    'symbol)))
 
 (defun embark-buffer-target-type (cand)
   "Remport buffer type if CAND is a buffer name."
