@@ -991,9 +991,8 @@ control the display, add an entry with key \"Embark Occur\" to
             (embark-occur-noselect "*Embark Occur*" initial-view)))
       (progn
         (with-current-buffer occur-buffer
-          (setq embark-occur-candidates candidates))
-        (when (minibufferp)
-          (with-current-buffer occur-buffer
+          (setq embark-occur-candidates candidates)
+          (when (minibufferp embark-occur-from)
             (setq embark-occur-from nil)))
         (embark-after-exit ()
           (select-window
