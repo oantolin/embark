@@ -370,13 +370,16 @@ Always keep the non-local value equal to nil.")
 
 (defun embark-symbol-completion-type ()
   "Determine if currently completing symbols."
-  (let ((mct minibuffer-completion-table))
+  (when-let ((mct minibuffer-completion-table))
     (when (or (eq mct 'help--symbol-completion-table)
               (vectorp mct)
               (and (consp mct) (symbolp (car mct)))
               (completion-metadata-get (embark--metadata) 'symbolsp)
               ;; before Emacs 27, M-x does not have command category
-              (string-match-p "M-x" (or (minibuffer-prompt) "")))
+              (string-match-p "M-x" (minibuffer-prompt))
+              (and (eq last-command 'imenu)
+                   (with-selected-window (minibuffer-selected-window)
+                     (derived-mode-p 'emacs-lisp-mode))))
       'symbol)))
 
 (defun embark-package-type ()
