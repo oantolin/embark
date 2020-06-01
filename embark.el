@@ -1304,7 +1304,8 @@ and leaves the point to the left of it."
      ("C-h" . embark-keymap-help)
      ([remap self-insert-command] . embark-undefined)
      ("C-u" . universal-argument))
-   universal-argument-map))
+   universal-argument-map)
+  "Keymap for Embark general actions.")
 
 (defvar embark-file-map
   (embark-keymap
@@ -1322,7 +1323,8 @@ and leaves the point to the left of it."
      ("I" . embark-insert-relative-path)
      ("W" . embark-save-relative-path)
      ("x" . embark-open-externally))
-   embark-general-map))
+   embark-general-map)
+  "Keymap for Embark file actions.")
 
 (defvar embark-buffer-map
   (embark-keymap
@@ -1334,7 +1336,8 @@ and leaves the point to the left of it."
      ("r" . embark-rename-buffer)
      ("=" . ediff-buffers)
      ("|" . embark-shell-command-on-buffer))
-   embark-general-map))
+   embark-general-map)
+  "Keymap for Embark buffer actions.")
 
 (defvar embark-symbol-map
   (embark-keymap
@@ -1343,7 +1346,8 @@ and leaves the point to the left of it."
      ("s" . embark-info-lookup-symbol)
      ("d" . embark-find-definition)
      ("e" . eval-expression))
-   embark-general-map))
+   embark-general-map)
+  "Keymap for Embark symbol actions.")
 
 (defvar embark-package-map
   (embark-keymap
@@ -1352,13 +1356,15 @@ and leaves the point to the left of it."
      ("d" . package-delete)
      ("r" . package-reinstall)
      ("u" . embark-browse-package-url))
-   embark-general-map))
+   embark-general-map)
+  "Keymap for Embark package actions.")
 
 (defvar embark-unicode-name-map
   (embark-keymap
    '(("I" . embark-insert-unicode-character)
      ("W" . embark-save-unicode-character))
-   embark-general-map))
+   embark-general-map)
+  "Keymap for Embark unicode name actions.")
 
 (provide 'embark)
 ;;; embark.el ends here
