@@ -536,7 +536,9 @@ relative path."
   "Setup for next action."
   (setq embark--keymap (embark--keymap-for-type (embark-classify)))
   (setq embark--target
-        (run-hook-with-args-until-success 'embark-target-finders))
+        (if (region-active-p)
+            (buffer-substring (region-beginning) (region-end))
+          (run-hook-with-args-until-success 'embark-target-finders)))
   (when (minibufferp)
     (setq-local embark--target-buffer
                 (window-buffer (minibuffer-selected-window))))
