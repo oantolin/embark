@@ -110,20 +110,32 @@
   :group 'embark)
 
 (defcustom embark-classifiers
-  '(embark-cached-type
-    embark-category-type
+  '(embark-category-type
     embark-package-type
     embark-symbol-completion-type
     embark-dired-type
-    embark-ibuffer-type
-    embark-ffap-type
-    embark-symbol-at-point-type)
-  "List of functions to classify the current completion session.
-Each function should take no arguments and return a symbol
-classifying the current minibuffer completion session, or nil to
-indicate it could not determine the type of completion."
+    embark-ibuffer-type)
+  "List of functions to classify current buffer context.
+Each function should take no arguments and return the type
+symbol, or nil to indicate it could not determine the type in
+current context. If the type is not determined by current buffer
+context fallback to `embark-target-classifiers'."
   :type 'hook
   :group 'embark)
+
+(defcustom embark-target-classifiers
+  '(embark-file-target-type
+    embark-symbol-target-type
+    embark-buffer-target-type)
+  "List of functions to classify current target.
+Each function takes the target as argument and returns the type
+symbol, or nil to indicate it could not determine the type of
+current target. If the type isn't determined by current target
+fallback to the `general' type."
+  :type 'hook
+  :group 'embark)
+
+(autoload 'ffap-file-at-point "ffap")
 
 (defcustom embark-target-finders
   '(embark-top-minibuffer-completion
@@ -131,9 +143,10 @@ indicate it could not determine the type of completion."
     embark-completion-at-point
     ffap-file-at-point
     embark-symbol-at-point)
-  "List of functions to pick the target for actions.
+  "List of functions to determine the target in current context.
 Each function should take no arguments and return either a target
-string or nil (to indicate it found no target)."
+string or nil (to indicate it found no target). If the region is
+active the region content is used as current target."
   :type 'hook
   :group 'embark)
 
@@ -379,21 +392,46 @@ Always keep the non-local value equal to nil.")
   "Report that ibuffer buffers yield buffer."
   (when (derived-mode-p 'ibuffer-mode) 'buffer))
 
-(autoload 'ffap-file-at-point "ffap")
+(defun embark-target-type ()
+  "Report type determined by target."
+  (when-let ((target
+              (run-hook-with-args-until-success 'embark-target-finders)))
+    (run-hook-with-args-until-success 'embark-target-classifiers target)))
 
-(defun embark-ffap-type ()
-  "If there is a file at point, report it."
-  (when (ffap-file-at-point) 'file))
+(defun embark-active-region-type ()
+  "Report type of active region target."
+  (when-let ((target
+              (and (region-active-p)
+                   (buffer-substring (region-beginning)
+                                     (region-end)))))
+    (or (run-hook-with-args-until-success 'embark-target-classifiers target)
+        'general)))
 
-(autoload 'symbol-at-point "thingatpt")
+(defun embark-file-target-type (cand)
+  "Report file type if CAND is a file."
+  (when (file-exists-p cand)
+    'file))
 
-(defun embark-symbol-at-point-type ()
-  "If there is a file at point, report it."
-  (when (symbol-at-point) 'symbol))
+(defun embark-symbol-target-type (cand)
+  "Report symbol type if CAND is a known symbol."
+  (let ((sym (intern-soft cand)))
+    (when (and sym
+               (or (boundp sym)
+                   (functionp sym)
+                   (facep sym)))
+    'symbol)))
+
+(defun embark-buffer-target-type (cand)
+  "Remport buffer type if CAND is a buffer name."
+  (when (get-buffer cand)
+    'buffer))
 
 (defun embark-classify ()
-  "Classify current minibuffer completion session."
-  (or (run-hook-with-args-until-success 'embark-classifiers)
+  "Classify current context."
+  (or (embark-active-region-type)
+      (embark-cached-type)
+      (run-hook-with-args-until-success 'embark-classifiers)
+      (embark-target-type)
       'general))
 
 (defun embark-target ()
