@@ -104,7 +104,8 @@
     (command . embark-symbol-map)
     (unicode-name . embark-unicode-name-map)
     (symbol . embark-symbol-map)
-    (package . embark-package-map))
+    (package . embark-package-map)
+    (region . embark-region-map))
   "Alist of action types and corresponding keymaps."
   :type '(alist :key-type symbol :value-type variable)
   :group 'embark)
@@ -359,6 +360,9 @@ Always keep the non-local value equal to nil.")
 (defvar embark--overlay nil
   "Overlay to communicate embarking on an action to the user.")
 
+(defvar embark--target-region-p nil
+  "Should the active region's contents be put into `embark--target'?")
+
 (defun embark--metadata ()
   "Return current minibuffer completion metadata."
   (completion-metadata (minibuffer-contents)
@@ -433,7 +437,10 @@ Always keep the non-local value equal to nil.")
 
 (defun embark-classify ()
   "Classify current context."
-  (or (embark-active-region-type)
+  (or (if (use-region-p)
+          (if embark--target-region-p
+              (embark-active-region-type)
+            'region))
       (embark-cached-type)
       (run-hook-with-args-until-success 'embark-classifiers)
       (embark-target-type)
@@ -472,6 +479,7 @@ return nil."
     (when embark--overlay
       (delete-overlay embark--overlay)
       (setq embark--overlay nil))
+    (setq embark--target-region-p nil)
     (run-at-time 0 nil #'run-hooks 'embark-post-action-hook)))
 
 (defun embark-top-minibuffer-completion ()
@@ -539,7 +547,8 @@ relative path."
   (setq embark--keymap (embark--keymap-for-type (embark-classify)))
   (setq embark--target
         (if (use-region-p)
-            (buffer-substring (region-beginning) (region-end))
+            (when embark--target-region-p
+              (buffer-substring (region-beginning) (region-end)))
           (run-hook-with-args-until-success 'embark-target-finders)))
   (when (minibufferp)
     (setq-local embark--target-buffer
@@ -565,17 +574,17 @@ This is used to keep the transient keymap active."
   (with-output-to-temp-buffer (help-buffer)
     (princ
      (substitute-command-keys
-      (format "\\{%s}"
-              (if (eq last-command 'embark-act-on-region)
-                  'embark-region-map
-                (alist-get (embark-classify) embark-keymap-alist)))))))
+      (format "\\{%s}" (alist-get (embark-classify) embark-keymap-alist))))))
 
 (defun embark--show-indicator ()
-  "Show pending action indicator accoring to `embark-indicator'."
+  "Show pending action indicator according to `embark-indicator'."
   (cond ((stringp embark-indicator)
          (let ((mini (active-minibuffer-window)))
            (if (not mini)
-               (message "%s on '%s'" embark-indicator embark--target)
+               (message "%s on %s" embark-indicator
+                        (if embark--target
+                            (format "'%s'" embark--target)
+                          "region"))
              (setq embark--overlay
                    (make-overlay (point-min)
                                  (minibuffer-prompt-end)
@@ -1305,15 +1314,11 @@ with command output. For replacement behaviour see
 
 (defvar embark-region-map) ; definition below
 
-(defun embark-act-on-region ()
-  "Act on active region."
+(defun embark-act-on-region-contents ()
+  "Act on contents of active region."
   (interactive)
-  (if (use-region-p)
-      (progn
-        (embark-target) ; consume target
-        (message "%s on region" embark-indicator)
-        (set-transient-map embark-region-map #'embark--keep-alive-p))
-    (minibuffer-message "No active region")))
+  (setq embark--target-region-p t)
+  (embark-act))
 
 ;;; setup hooks for actions
 
@@ -1338,17 +1343,21 @@ and leaves the point to the left of it."
 
 ;;; keymaps
 
+(defvar embark-meta-map
+  (embark-keymap
+   '(("C-h" . embark-keymap-help)
+     ([remap self-insert-command] . embark-undefined)
+     ("C-u" . universal-argument))
+   universal-argument-map)
+  "Keymap for non-action Embark functions.")
+
 (defvar embark-general-map
   (embark-keymap
    '(("i" . embark-insert)
      ("w" . embark-save)
-     ("R" . embark-act-on-region)
      ("RET" . embark-default-action)
-     ("C-g" . embark-cancel)
-     ("C-h" . embark-keymap-help)
-     ([remap self-insert-command] . embark-undefined)
-     ("C-u" . universal-argument))
-   universal-argument-map)
+     ("C-g" . embark-cancel))
+   embark-meta-map)
   "Keymap for Embark general actions.")
 
 (defvar embark-region-map
@@ -1367,9 +1376,8 @@ and leaves the point to the left of it."
      ("w" . write-region)
      ("m" . apply-macro-to-region-lines)
      ("n" . narrow-to-region)
-     ("C-h" . embark-keymap-help)
-     ([remap self-insert-command] . embark-undefined)
-     ("C-u" . universal-argument)))
+     ("RET" . embark-act-on-region-contents))
+   embark-meta-map)
   "Keymap for Embark actions on the active region.")
 
 (defvar embark-file-map
