@@ -406,7 +406,7 @@ Always keep the non-local value equal to nil.")
 (defun embark-active-region-type ()
   "Report type of active region target."
   (when-let ((target
-              (and (region-active-p)
+              (and (use-region-p)
                    (buffer-substring (region-beginning)
                                      (region-end)))))
     (or (run-hook-with-args-until-success 'embark-target-classifiers target)
@@ -538,7 +538,7 @@ relative path."
   "Setup for next action."
   (setq embark--keymap (embark--keymap-for-type (embark-classify)))
   (setq embark--target
-        (if (region-active-p)
+        (if (use-region-p)
             (buffer-substring (region-beginning) (region-end))
           (run-hook-with-args-until-success 'embark-target-finders)))
   (when (minibufferp)
@@ -565,7 +565,10 @@ This is used to keep the transient keymap active."
   (with-output-to-temp-buffer (help-buffer)
     (princ
      (substitute-command-keys
-      (format "\\{%s}" (alist-get (embark-classify) embark-keymap-alist))))))
+      (format "\\{%s}"
+              (if (eq last-command 'embark-act-on-region)
+                  'embark-region-map
+                (alist-get (embark-classify) embark-keymap-alist)))))))
 
 (defun embark--show-indicator ()
   "Show pending action indicator accoring to `embark-indicator'."
@@ -1291,6 +1294,18 @@ with command output. For replacement behaviour see
   (when-let ((char (embark-unicode-character (embark-target))))
      (kill-new char)))
 
+(defvar embark-region-map) ; definition below
+
+(defun embark-act-on-region ()
+  "Act on active region."
+  (interactive)
+  (if (use-region-p)
+      (progn
+        (embark-target) ; consume target
+        (message "%s on region" embark-indicator)
+        (set-transient-map embark-region-map #'embark--keep-alive-p))
+    (minibuffer-message "No active region")))
+
 ;;; setup hooks for actions
 
 (defun embark--shell-prep ()
@@ -1318,6 +1333,7 @@ and leaves the point to the left of it."
   (embark-keymap
    '(("i" . embark-insert)
      ("w" . embark-save)
+     ("R" . embark-act-on-region)
      ("RET" . embark-default-action)
      ("C-g" . embark-cancel)
      ("C-h" . embark-keymap-help)
@@ -1325,6 +1341,27 @@ and leaves the point to the left of it."
      ("C-u" . universal-argument))
    universal-argument-map)
   "Keymap for Embark general actions.")
+
+(defvar embark-region-map
+  (embark-keymap
+   '(("u" . upcase-region)
+     ("l" . downcase-region)
+     ("c" . capitalize-region)
+     ("|" . shell-command-on-region)
+     ("e" . eval-region)
+     ("f" . fill-region-as-paragraph)
+     ("r" . rot13-region)
+     ("=" . count-words-region)
+     ("s" . whitespace-cleanup-region)
+     ("o" . org-table-convert-region)
+     (";" . comment-or-uncomment-region)
+     ("w" . write-region)
+     ("m" . apply-macro-to-region-lines)
+     ("n" . narrow-to-region)
+     ("C-h" . embark-keymap-help)
+     ([remap self-insert-command] . embark-undefined)
+     ("C-u" . universal-argument)))
+  "Keymap for Embark actions on the active region.")
 
 (defvar embark-file-map
   (embark-keymap
