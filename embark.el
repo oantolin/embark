@@ -427,7 +427,7 @@ Always keep the non-local value equal to nil.")
     'symbol)))
 
 (defun embark-buffer-target-type (cand)
-  "Remport buffer type if CAND is a buffer name."
+  "Report buffer type if CAND is a buffer name."
   (when (get-buffer cand)
     'buffer))
 
