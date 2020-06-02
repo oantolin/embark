@@ -231,7 +231,8 @@ These are used to fill an Embark Occur buffer."
   '((symbol . embark-first-line-of-docstring)
     (buffer . embark-file-and-major-mode)
     (file . embark-size-and-modification-time)
-    (unicode-name . embark-unicode-character))
+    (unicode-name . embark-unicode-character)
+    (package . embark-package-summary))
   "Alist associating completion types to annotation functions.
 Each function should take a candidate for an action as a string
 and return a string without newlines giving some extra
@@ -665,13 +666,37 @@ To be used as an annotation function for symbols in `embark-occur'."
                   (documentation-property symbol 'variable-documentation)
                   (documentation-property symbol 'face-documentation)
                   ;; flimenu support
-                  (when (string-prefix-p "Variables/" name)
+                  (cond
+                   ((string-prefix-p "Variables/" name)
                     (documentation-property (intern (substring name 10))
                                             'variable-documentation))
-                  (when (string-prefix-p "Types/" name)
+                  ((string-prefix-p "Types/" name)
                     (documentation-property (intern (substring name 6))
-                                            'face-documentation))))))
+                                            'face-documentation))
+                  ((string-prefix-p "Packages/" name)
+                   (embark-package-summary (substring name 9))))))))
     (car (split-string docstring "\n"))))
+
+(autoload 'package-desc-p "package")
+(autoload 'package--from-builtin "package")
+(autoload 'package-desc-extras "package")
+(autoload 'package-desc-summary "package")
+(defvar package--builtins)
+(defvar package-alist)
+(defvar package-archive-contents)
+
+(defun embark--package-desc (pkg)
+  "Return the description structure for package PKG."
+  (or ; found this in `describe-package-1'
+   (car (alist-get pkg package-alist))
+   (if-let ((built-in (assq pkg package--builtins)))
+           (package--from-builtin built-in)
+           (car (alist-get pkg package-archive-contents)))))
+
+(defun embark-package-summary (pkg)
+  "Return summary of package PKG."
+  (when-let ((desc (embark--package-desc (intern pkg))))
+    (package-desc-summary desc)))
 
 (defun embark-file-and-major-mode (name)
   "Return string with file and major mode of buffer called NAME."
@@ -1184,23 +1209,11 @@ This is whatever command opened the minibuffer in the first place."
   (with-current-buffer (embark-target)
     (call-interactively #'rename-buffer)))
 
-(autoload 'package-desc-p "package")
-(autoload 'package--from-builtin "package")
-(autoload 'package-desc-extras "package")
-(defvar package--builtins)
-(defvar package-alist)
-(defvar package-archive-contents)
-
 (defun embark-browse-package-url ()
   "Open homepage for embark target package with `browse-url'."
   (interactive)
   (if-let ((pkg (intern (embark-target)))
-           (desc (or ; found this in `describe-package-1'
-                  (if (package-desc-p pkg) pkg)
-                  (car (alist-get pkg package-alist))
-                  (if-let ((built-in (assq pkg package--builtins)))
-                      (package--from-builtin built-in)
-                    (car (alist-get pkg package-archive-contents)))))
+           (desc (embark--package-desc pkg))
            (url (alist-get :url (package-desc-extras desc))))
       (browse-url url)
     (message "No homepage found for `%s'" pkg)))
