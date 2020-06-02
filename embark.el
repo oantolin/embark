@@ -378,7 +378,8 @@ Always keep the non-local value equal to nil.")
               (completion-metadata-get (embark--metadata) 'symbolsp)
               ;; before Emacs 27, M-x does not have command category
               (string-match-p "M-x" (minibuffer-prompt))
-              (and (eq last-command 'imenu)
+              ;; imenu from an Emacs Lisp buffer produces symbols
+              (and (eq embark--command 'imenu)
                    (with-selected-window (minibuffer-selected-window)
                      (derived-mode-p 'emacs-lisp-mode))))
       'symbol)))
