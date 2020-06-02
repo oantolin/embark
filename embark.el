@@ -619,10 +619,14 @@ If EXITP is non-nil, exit all minibuffers too."
          (command-execute this-command))))))
 
 (defun embark-act (&optional exitp)
-  "Embark upon a minibuffer action.
-Bind this command to a key in `minibuffer-local-completion-map'.
-If EXITP is non-nil (interactively, if called with a prefix
-argument), exit all minibuffers too."
+  "Embark upon an action.
+The target of the action is chosen by `embark-target-finders'.
+By default, if called from a minibuffer the target is the top
+completion candidate, if called from an Embark Occur or a
+Completions buffer it is the candidate at point.
+
+If called from a minibuffer and EXITP is non-nil (interactively,
+if called with a prefix argument), exit all minibuffers too."
   (interactive "P")
   (embark--setup)
   (unless exitp
@@ -631,7 +635,12 @@ argument), exit all minibuffers too."
   (embark--show-indicator))
 
 (defun embark-exit-and-act (&optional continuep)
-  "Exit the minibuffer and embark upon an action.
+  "Embark upon an action and exit from all minibuffers (if any).
+The target of the action is chosen by `embark-target-finders'.
+By default, if called from a minibuffer the target is the top
+completion candidate, if called from an Embark Occur or a
+Completions buffer it is the candidate at point.
+
 If CONTINUEP is non-nil (interactively, if called with a prefix
 argument), don't actually exit."
   (interactive "P")
