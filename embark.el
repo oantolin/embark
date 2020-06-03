@@ -638,9 +638,8 @@ If called from a minibuffer and EXITP is non-nil (interactively,
 if called with a prefix argument), exit all minibuffers too."
   (interactive "P")
   (embark--setup)
-  (setq exitp (and exitp (minibufferp)))
-  (unless exitp
-    (setq-local enable-recursive-minibuffers t))
+  (setq exitp (and exitp (minibufferp) (not (use-region-p))))
+  (unless exitp (setq-local enable-recursive-minibuffers t))
   (embark--bind-actions exitp)
   (embark--show-indicator))
 
