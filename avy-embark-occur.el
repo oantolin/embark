@@ -20,19 +20,19 @@
 
 ;;; Commentary:
 
-;; This packages provides two commands, `avy-embark-occur-select' and
+;; This packages provides two commands, `avy-embark-occur-choose' and
 ;; `avy-embark-occur-act', that use avy to jump to an Embark Occur
-;; entry and select it or act on it, respectively.
+;; entry and choose it or act on it, respectively.
 
 ;;; Code:
 
 (require 'avy)
 (require 'embark)
 
-(defun avy-action-embark-select (pt)
+(defun avy-action-embark-choose (pt)
   "Choose completion at PT."
   (goto-char pt)
-  (embark-occur-select (button-at pt)))
+  (embark-occur-choose (button-at pt)))
 
 (declare-function embark-act "embark")
 
@@ -83,10 +83,10 @@ The Embark Occur buffer to use is chosen in order of priority as:
                    (nreverse btns)))))))
       (user-error "No *Embark Occur* found"))))
 
-(defun avy-embark-occur-select ()
-  "Select an Embark Occur candidate."
+(defun avy-embark-occur-choose ()
+  "Choose an Embark Occur candidate."
   (interactive)
-  (avy-embark-occur--jump #'avy-action-embark-select
+  (avy-embark-occur--jump #'avy-action-embark-choose
                           '((?x . avy-action-embark-act)
                             (?m . avy-action-goto))))
 
@@ -94,7 +94,7 @@ The Embark Occur buffer to use is chosen in order of priority as:
   "Act on an Embark Occur candidate."
   (interactive)
   (avy-embark-occur--jump #'avy-action-embark-act
-                          '((?x . avy-action-embark-select)
+                          '((?x . avy-action-embark-choose)
                             (?m . avy-action-goto))))
 
 (provide 'avy-embark-occur)

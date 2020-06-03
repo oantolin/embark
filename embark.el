@@ -833,7 +833,7 @@ Returns the name of the command."
 
 (define-button-type 'embark-occur-entry
   'face 'embark-occur-candidate
-  'action 'embark-occur-select)
+  'action 'embark-occur-choose)
 
 (defun embark--boundaries ()
   "Get current minibuffer completion boundaries."
@@ -845,7 +845,7 @@ Returns the name of the command."
      minibuffer-completion-predicate
      (substring contents pt))))
 
-(defun embark-occur-select (entry)
+(defun embark-occur-choose (entry)
   "Run default action on Embark Occur ENTRY.
 
 If the variable `embark-occur-minibuffer-completion' is non-nil,
