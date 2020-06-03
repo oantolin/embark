@@ -1419,6 +1419,7 @@ and leaves the point to the left of it."
      ("c" . embark-info-emacs-command)
      ("s" . embark-info-lookup-symbol)
      ("d" . embark-find-definition)
+     ("b" . where-is)
      ("e" . eval-expression))
    embark-general-map)
   "Keymap for Embark symbol actions.")
