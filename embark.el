@@ -426,7 +426,7 @@ Always keep the non-local value equal to nil.")
   (let ((sym (intern-soft cand)))
     (when (and sym
                (or (boundp sym)
-                   (functionp sym)
+                   (fboundp sym)
                    (facep sym)))
     'symbol)))
 
@@ -683,7 +683,7 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
 To be used as an annotation function for symbols in `embark-occur'."
   (when-let* ((symbol (intern name))
               (docstring
-               (if (functionp symbol)
+               (if (fboundp symbol)
                    (documentation symbol)
                  (or
                   (documentation-property symbol 'variable-documentation)
