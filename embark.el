@@ -993,9 +993,9 @@ enable `embark-occur-direct-action-minor-mode' in
 
 (defun embark-occur--linked-buffer-is-live-p ()
   "Is this buffer linked to a live Embark Occur buffer?"
-  (and embark-occur-linked-buffer
-       (string-match-p "Embark Live Occur"
-                       (buffer-name embark-occur-linked-buffer))))
+  (when-let ((linked embark-occur-linked-buffer)
+             (name (buffer-name linked)))
+    (string-match-p "Embark Live Occur" name)))
 
 (defun embark-occur--kill-live-occur-buffer ()
   "Kill linked Embark Live Occur buffer."
