@@ -299,20 +299,20 @@ If you are using `embark-completing-read' as your
 
 ;;; stashing information for actions in buffer local variables
 
-(defvar embark--type nil
+(defvar-local embark--type nil
   "Cache for the completion type, meant to be set buffer-locally.
 Always keep the non-local value equal to nil.")
 
-(defvar embark--target-buffer nil
+(defvar-local embark--target-buffer nil
   "Cache for the previous buffer, meant to be set buffer-locally.
 Always keep the non-local value equal to nil.")
 
-(defvar embark--command nil
+(defvar-local embark--command nil
   "Command that started the completion session.")
 
 (defun embark--record-command ()
   "Record the command that opened the minibuffer."
-  (setq-local embark--command this-command))
+  (setq embark--command this-command))
 
 (add-hook 'minibuffer-setup-hook #'embark--record-command)
 
@@ -345,10 +345,10 @@ Always keep the non-local value equal to nil.")
         (dir (embark--default-directory))
         (target-buffer (embark--target-buffer)))
     (with-current-buffer (or buffer standard-output)
-      (setq-local embark--command cmd)
-      (setq-local embark--type type)
+      (setq embark--command cmd)
+      (setq embark--type type)
       (setq-local default-directory dir)
-      (setq-local embark--target-buffer target-buffer))))
+      (setq embark--target-buffer target-buffer))))
 
 (add-hook 'completion-setup-hook #'embark--cache-info t)
 
@@ -551,7 +551,7 @@ relative path."
               (buffer-substring (region-beginning) (region-end)))
           (run-hook-with-args-until-success 'embark-target-finders)))
   (when (minibufferp)
-    (setq-local embark--target-buffer
+    (setq embark--target-buffer
                 (window-buffer (minibuffer-selected-window))))
   (add-hook 'minibuffer-setup-hook #'embark--inject)
   (add-hook 'post-command-hook #'embark--cleanup))
