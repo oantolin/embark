@@ -880,11 +880,11 @@ If you are using `embark-completing-read' as your
                     (= (car (embark--boundaries))
                        (- (point) (minibuffer-prompt-end))))
           (exit-minibuffer)))
-    ;; run default action
-    (setq this-command embark--command)
+    (goto-char entry)            ;; pretend RET was pressed even if
+    (setq last-nonmenu-event 13) ;; mouse was clicked, to fool imenu
     (embark--setup)
     (run-hooks 'embark-pre-action-hook)
-    (call-interactively this-command)))
+    (embark-default-action)))
 
 (defvar-local embark-occur-candidates nil
   "List of candidates in current occur buffer.")
@@ -1080,7 +1080,9 @@ to `display-buffer-alist'."
 
 (defun embark--pop-to-target-buffer ()
   "Pop to Embark target buffer."
-  (pop-to-buffer embark--target-buffer))
+  (let ((ecmd embark--command))
+    (pop-to-buffer embark--target-buffer)
+    (setq embark--command ecmd)))
 
 (defun embark-occur (&optional initial-view)
   "Create an Embark Occur buffer and exit all minibuffers.
