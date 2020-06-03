@@ -31,6 +31,7 @@
 
 (defun avy-action-embark-select (pt)
   "Choose completion at PT."
+  (goto-char pt)
   (embark-occur-select (button-at pt)))
 
 (declare-function embark-act "embark")
