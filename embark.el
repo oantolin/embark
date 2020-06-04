@@ -552,7 +552,7 @@ relative path."
           (run-hook-with-args-until-success 'embark-target-finders)))
   (when (minibufferp)
     (setq embark--target-buffer
-                (window-buffer (minibuffer-selected-window))))
+          (window-buffer (minibuffer-selected-window))))
   (add-hook 'minibuffer-setup-hook #'embark--inject)
   (add-hook 'post-command-hook #'embark--cleanup))
 
@@ -1349,7 +1349,8 @@ and leaves the point to the left of it."
   (embark-keymap
    '(("C-h" . embark-keymap-help)
      ([remap self-insert-command] . embark-undefined)
-     ("C-u" . universal-argument))
+     ("C-u" . universal-argument)
+     ("C-g" . embark-cancel))
    universal-argument-map)
   "Keymap for non-action Embark functions.")
 
@@ -1357,8 +1358,7 @@ and leaves the point to the left of it."
   (embark-keymap
    '(("i" . embark-insert)
      ("w" . embark-save)
-     ("RET" . embark-default-action)
-     ("C-g" . embark-cancel))
+     ("RET" . embark-default-action))
    embark-meta-map)
   "Keymap for Embark general actions.")
 
