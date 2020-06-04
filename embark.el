@@ -576,15 +576,16 @@ This is used to keep the transient keymap active."
   "Show pending action indicator according to `embark-indicator'."
   (cond ((stringp embark-indicator)
          (let ((mini (active-minibuffer-window)))
-           (if (not mini)
-               (message "%s on %s" embark-indicator
-                        (if embark--target
-                            (format "'%s'" embark--target)
-                          "region"))
+           (if (or (use-region-p) (not mini))
+               (let (minibuffer-message-timeout)
+                 (minibuffer-message "%s on %s"
+                                     embark-indicator
+                                     (if embark--target
+                                         (format "'%s'" embark--target)
+                                       "region")))
              (setq embark--overlay
-                   (make-overlay (point-min)
-                                 (minibuffer-prompt-end)
-                                 (window-buffer mini)))
+                   (make-overlay (point-min) (point-min)
+                                 (window-buffer mini) t t))
              (overlay-put embark--overlay 'before-string
                           (concat embark-indicator " ")))))
         ((functionp embark-indicator)
