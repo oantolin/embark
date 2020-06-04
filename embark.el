@@ -4,7 +4,7 @@
 
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Keywords: convenience
-;; Version: 0.4
+;; Version: 0.5
 ;; Homepage: https://github.com/oantolin/embark
 ;; Package-Requires: ((emacs "25.1"))
 
@@ -25,13 +25,13 @@
 
 ;; embark - Emacs Mini-Buffer Actions Rooted in Keymaps.
 
-;; This package provides a pair of commands, `embark-act' and
-;; `embark-exit-and-act', to execute actions on the top minibuffer
+;; This package provides a command `embark-act' (and a variant
+;; `embark-act-noexit') to execute actions on the top minibuffer
 ;; completion canidate: the one that would be chosen by
-;; minibuffer-force-complete. Additionally `embark-act' can act on the
-;; completion candidate at point in the completions buffer. You should
-;; bind both of them in `minibuffer-local-completion-map' and also
-;; bind `embark-act' in `completion-list-mode-map'.
+;; minibuffer-force-complete.  Additionally `embark-act' can act on
+;; the completion candidate at point in the completions buffer. You
+;; should bind both of them in `minibuffer-local-completion-map' and
+;; also bind `embark-act' in `completion-list-mode-map'.
 
 ;; The actions are arranged into keymaps separated by the type of
 ;; completion currently taking place.  By default `embark' recognizes
@@ -624,23 +624,7 @@ If EXITP is non-nil, exit all minibuffers too."
          (this-command prefix-arg embark--command embark--target-buffer)
          (command-execute this-command))))))
 
-(defun embark-act (&optional exitp)
-  "Embark upon an action.
-The target of the action is chosen by `embark-target-finders'.
-By default, if called from a minibuffer the target is the top
-completion candidate, if called from an Embark Occur or a
-Completions buffer it is the candidate at point.
-
-If called from a minibuffer and EXITP is non-nil (interactively,
-if called with a prefix argument), exit all minibuffers too."
-  (interactive "P")
-  (embark--setup)
-  (setq exitp (and exitp (minibufferp) (not (use-region-p))))
-  (unless exitp (setq-local enable-recursive-minibuffers t))
-  (embark--bind-actions exitp)
-  (embark--show-indicator))
-
-(defun embark-exit-and-act (&optional continuep)
+(defun embark-act (&optional continuep)
   "Embark upon an action and exit from all minibuffers (if any).
 The target of the action is chosen by `embark-target-finders'.
 By default, if called from a minibuffer the target is the top
@@ -648,9 +632,28 @@ completion candidate, if called from an Embark Occur or a
 Completions buffer it is the candidate at point.
 
 If CONTINUEP is non-nil (interactively, if called with a prefix
-argument), don't actually exit."
+argument), don't actually exit.  The variant `embark-act-noexit'
+has the opposite behavior with respect to minibuffers."
   (interactive "P")
-  (embark-act (not continuep)))
+  (embark--setup)
+  (setq continuep (or continuep (not (minibufferp)) (use-region-p)))
+  (when continuep (setq-local enable-recursive-minibuffers t))
+  (embark--bind-actions (not continuep))
+  (embark--show-indicator))
+
+(defun embark-act-noexit (&optional exitp)
+  "Embark upon an action.
+The target of the action is chosen by `embark-target-finders'.
+By default, if called from a minibuffer the target is the top
+completion candidate, if called from an Embark Occur or a
+Completions buffer it is the candidate at point.
+
+This variant of `embark-act' differs from it only in that by
+default if called from a minibuffer it does not exit the
+minibuffer.  If EXITP is non-nil (interactively, if called with a
+prefix argument), then this command exits all minibuffers too."
+  (interactive "P")
+  (embark-act (not exitp)))
 
 (defun embark-keymap (binding-alist &optional parent-map)
   "Return keymap with bindings given by BINDING-ALIST.
@@ -901,8 +904,10 @@ If you are using `embark-completing-read' as your
 
 (define-derived-mode embark-occur-mode tabulated-list-mode "Embark Occur"
   "List of candidates to be acted on.
-You should either bind `embark-act' in `embark-occur-mode-map' or
-enable `embark-occur-direct-action-minor-mode' in
+The command `embark-act' is bound `embark-occur-mode-map', but
+you might prefer to change the keybinding to match your other
+keybinding for it.  Or alternatively you might want to enable
+`embark-occur-direct-action-minor-mode' in
 `embark-occur-mode-hook'.")
 
 (setq embark-occur-mode-map
