@@ -300,12 +300,10 @@ If you are using `embark-completing-read' as your
 ;;; stashing information for actions in buffer local variables
 
 (defvar-local embark--type nil
-  "Cache for the completion type, meant to be set buffer-locally.
-Always keep the non-local value equal to nil.")
+  "Cache for the completion type, meant to be set buffer-locally.")
 
 (defvar-local embark--target-buffer nil
-  "Cache for the previous buffer, meant to be set buffer-locally.
-Always keep the non-local value equal to nil.")
+  "Cache for the previous buffer, meant to be set buffer-locally.")
 
 (defvar-local embark--command nil
   "Command that started the completion session.")
@@ -398,7 +396,7 @@ Always keep the non-local value equal to nil.")
   (when (derived-mode-p 'dired-mode) 'file))
 
 (defun embark-ibuffer-type ()
-  "Report that ibuffer buffers yield buffer."
+  "Report that ibuffer buffers yield buffers."
   (when (derived-mode-p 'ibuffer-mode) 'buffer))
 
 (defun embark-target-type ()
@@ -410,9 +408,8 @@ Always keep the non-local value equal to nil.")
 (defun embark-active-region-type ()
   "Report type of active region target."
   (when-let ((target
-              (and (use-region-p)
-                   (buffer-substring (region-beginning)
-                                     (region-end)))))
+              (when (use-region-p)
+                (buffer-substring (region-beginning) (region-end)))))
     (or (run-hook-with-args-until-success 'embark-target-classifiers target)
         'general)))
 
@@ -423,11 +420,10 @@ Always keep the non-local value equal to nil.")
 
 (defun embark-symbol-target-type (cand)
   "Report symbol type if CAND is a known symbol."
-  (let ((sym (intern-soft cand)))
-    (when (and sym
-               (or (boundp sym)
-                   (fboundp sym)
-                   (facep sym)))
+  (when-let ((sym (intern-soft cand)))
+    (when (or (boundp sym)
+              (fboundp sym)
+              (facep sym))
     'symbol)))
 
 (defun embark-buffer-target-type (cand)
@@ -499,8 +495,8 @@ return nil."
 
 (defun embark-button-label ()
   "Return the label of the button at point."
-  (when-let* ((button (button-at (point)))
-              (label (button-label button)))
+  (when-let ((button (button-at (point)))
+             (label (button-label button)))
     (if (eq embark--type 'file)
         (abbreviate-file-name (expand-file-name label))
       label)))
@@ -557,7 +553,7 @@ relative path."
   (add-hook 'post-command-hook #'embark--cleanup))
 
 (defun embark--keep-alive-p ()
-  "Is this command a prefix argument setter?
+  "Is this command a prefix argument setter or the help command?
 This is used to keep the transient keymap active."
   (memq this-command
         '(universal-argument
@@ -692,11 +688,11 @@ To be used as an annotation function for symbols in `embark-occur'."
                    ((string-prefix-p "Variables/" name)
                     (documentation-property (intern (substring name 10))
                                             'variable-documentation))
-                  ((string-prefix-p "Types/" name)
+                   ((string-prefix-p "Types/" name)
                     (documentation-property (intern (substring name 6))
                                             'face-documentation))
-                  ((string-prefix-p "Packages/" name)
-                   (embark-package-summary (substring name 9))))))))
+                   ((string-prefix-p "Packages/" name)
+                    (embark-package-summary (substring name 9))))))))
     (car (split-string docstring "\n"))))
 
 (autoload 'package-desc-p "package")
@@ -756,6 +752,7 @@ To be used as an annotation function for symbols in `embark-occur'."
            (last (last all)))
       (when last (setcdr last nil))
       all)))
+
 (autoload 'dired-get-filename "dired")
 
 (defun embark-dired-candidates ()
@@ -777,8 +774,8 @@ To be used as an annotation function for symbols in `embark-occur'."
   (when (derived-mode-p 'ibuffer-mode)
     (let (buffers)
       (ibuffer-map-lines-nomodify
-       (lambda (buf _mk)
-         (push (buffer-name buf) buffers)))
+       (lambda (buffer _mark)
+         (push (buffer-name buffer) buffers)))
       (nreverse buffers))))
 
 (defun embark-embark-occur-candidates ()
@@ -791,8 +788,9 @@ This makes `embark-export' work in Embark Occur buffers."
   "Return all candidates in a completions buffer."
   (when (derived-mode-p 'completion-list-mode)
     (save-excursion
+      (goto-char (point-min))
+      (next-completion 1)
       (let (all)
-        (next-completion 1)
         (while (not (eobp))
           (push (embark-completion-at-point 'relative-path) all)
           (next-completion 1))
@@ -874,7 +872,7 @@ If you are using `embark-completing-read' as your
           (insert text))
         ;; If the boundaries changed after insertion there are new
         ;; completion candidates (like when entering a directory in
-        ;; find-file). In that case, don't exit, otherwise revert
+        ;; find-file). If so, don't exit; otherwise revert.
         (unless (or current-prefix-arg
                     (= (car (embark--boundaries))
                        (- (point) (minibuffer-prompt-end))))
@@ -929,7 +927,6 @@ enable `embark-occur-direct-action-minor-mode' in
 
 (defun embark-occur--list-view ()
   "List view of candidates and annotations for Embark Occur buffer."
-  (setq embark-occur-view 'list)
   (let ((annotator (alist-get embark--type embark-annotator-alist)))
     (setq tabulated-list-format
           (if annotator
@@ -947,7 +944,6 @@ enable `embark-occur-direct-action-minor-mode' in
 
 (defun embark-occur--grid-view ()
   "Grid view of candidates for Embark Occur buffer."
-  (setq embark-occur-view 'grid)
   (let* ((width (min (+ (embark-occur--max-width) 2) (floor (window-width) 2)))
          (columns (/ (window-width) width)))
     (setq tabulated-list-format
@@ -1059,9 +1055,12 @@ means list view, anything else means proceed according to
 (defun embark-live-occur (&optional initial-view)
   "Create a live-updating Embark Occur buffer.
 Optionally start in INITIAL-VIEW (either `list' or `grid')
-instead of what `embark-occur-initial-view-alist' specifies. To
-control the display, add an entry with key \"Embark Live Occur\"
-to `display-buffer-alist'."
+instead of what `embark-occur-initial-view-alist' specifies.
+Interactively, \\[universal-argument] means grid view, a prefix
+argument of 1 means list view.
+
+To control the display, add an entry to `display-buffer-alist'
+with key \"Embark Live Occur\"."
   (interactive (embark-occur--initial-view-arg))
   (let ((occur-buffer
          (embark-occur-noselect "*Embark Live Occur*" initial-view)))
@@ -1086,9 +1085,12 @@ to `display-buffer-alist'."
 (defun embark-occur (&optional initial-view)
   "Create an Embark Occur buffer and exit all minibuffers.
 Optionally start in INITIAL-VIEW (either `list' or `grid')
-instead of what `embark-occur-initial-view-alist' specifies. To
-control the display, add an entry with key \"Embark Occur\" to
-`display-buffer-alist'."
+instead of what `embark-occur-initial-view-alist' specifies.
+Interactively, \\[universal-argument] means grid view, a prefix
+argument of 1 means list view.
+
+To control the display, add an entry to `display-buffer-alist'
+with key \"Embark Occur\"."
   (interactive (embark-occur--initial-view-arg))
   (if-let ((candidates
             (run-hook-with-args-until-success 'embark-candidate-collectors))
