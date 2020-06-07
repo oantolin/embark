@@ -502,7 +502,7 @@ return nil."
   "Return the completion candidate at point in a completions buffer.
 If the completions are file names and RELATIVE is non-nil, return
 relative path."
-  (when (eq major-mode 'completion-list-mode)
+  (when (derived-mode-p 'completion-list-mode)
     (if (not (get-text-property (point) 'mouse-face))
         (user-error "No completion here")
       ;; this fairly delicate logic is taken from `choose-completion'
