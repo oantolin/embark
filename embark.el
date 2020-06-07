@@ -399,7 +399,8 @@ If you are using `embark-completing-read' as your
   "Report type determined by target."
   (when-let ((target
               (run-hook-with-args-until-success 'embark-target-finders)))
-    (run-hook-with-args-until-success 'embark-target-classifiers target)))
+    (unless (string= target "") ; gets classified as a file otherwise
+      (run-hook-with-args-until-success 'embark-target-classifiers target))))
 
 (defun embark-active-region-type ()
   "Report type of active region target."
@@ -1373,7 +1374,8 @@ and leaves the point to the left of it."
      ("c" . capitalize-region)
      ("|" . shell-command-on-region)
      ("e" . eval-region)
-     ("f" . fill-region-as-paragraph)
+     ("f" . fill-region)
+     ("p" . fill-region-as-paragraph)
      ("r" . rot13-region)
      ("=" . count-words-region)
      ("s" . whitespace-cleanup-region)
