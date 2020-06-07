@@ -1056,6 +1056,8 @@ means list view, anything else means proceed according to
           (1 'list))))
 
 (defun embark--reuse-live-occur-window (buffer alist)
+  "Reuse an Embark Live Occur window in the current frame to display BUFFER.
+ALIST comes from the action argument of `display-buffer'."
   (cl-loop for window in (window-list-1 nil 'nomini)
            for name = (buffer-name (window-buffer window))
            when (and (window-live-p window)
