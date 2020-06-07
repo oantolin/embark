@@ -314,10 +314,6 @@ If you are using `embark-completing-read' as your
 
 (add-hook 'minibuffer-setup-hook #'embark--record-command)
 
-(defun embark-cached-type ()
-  "Return buffer local cached completion type if available."
-  embark--type)
-
 (defun embark--default-directory ()
   "Guess a reasonable default directory for the current candidates."
   (if (and (minibufferp) minibuffer-completing-file-name)
@@ -437,7 +433,7 @@ If you are using `embark-completing-read' as your
           (if embark--target-region-p
               (embark-active-region-type)
             'region))
-      (embark-cached-type)
+      embark--type ; cached?
       (run-hook-with-args-until-success 'embark-classifiers)
       (embark-target-type)
       'general))
