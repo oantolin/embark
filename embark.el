@@ -1055,6 +1055,13 @@ means list view, anything else means proceed according to
           ('(4) 'grid)
           (1 'list))))
 
+(defun embark--reuse-live-occur-window (buffer alist)
+  (cl-loop for window in (window-list-1 nil 'nomini)
+           for name = (buffer-name (window-buffer window))
+           when (and (window-live-p window)
+                     (string-match-p "Embark Live Occur" name))
+           return (window--display-buffer buffer window 'reuse alist)))
+
 (defun embark-live-occur (&optional initial-view)
   "Create a live-updating Embark Occur buffer.
 Optionally start in INITIAL-VIEW (either `list' or `grid')
@@ -1071,7 +1078,7 @@ with key \"Embark Live Occur\"."
               #'embark-occur--update-linked nil t)
     (let ((occur-window (embark-occur--display
                          occur-buffer
-                         '((display-buffer-reuse-mode-window
+                         '((embark--reuse-live-occur-window
                             display-buffer-at-bottom)))))
       (when (minibufferp)
         (add-hook 'minibuffer-exit-hook
