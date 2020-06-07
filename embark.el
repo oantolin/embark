@@ -1383,6 +1383,8 @@ and leaves the point to the left of it."
      ("c" . capitalize-region)
      ("|" . shell-command-on-region)
      ("e" . eval-region)
+     ("i" . indent-rigidly)
+     ("TAB" . indent-region)
      ("f" . fill-region)
      ("p" . fill-region-as-paragraph)
      ("r" . rot13-region)
