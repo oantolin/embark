@@ -1013,7 +1013,9 @@ keybinding for it.  Or alternatively you might want to enable
 Optionally start in INITIAL-VIEW (either `list' or `grid')
 instead of what `embark-occur-initial-view-alist' specifies.
 Argument BUFFER-NAME specifies the name of the created buffer."
-  (ignore (embark-target))              ; allow use from embark-act
+  (when (or (eq last-command 'embark-act)
+            (eq last-command 'embark-act-noexit))
+    (ignore (embark-target)))           ; allow use from embark-act
   (let ((from (current-buffer))
         (buffer (generate-new-buffer buffer-name)))
     (embark-occur--kill-live-occur-buffer) ; live ones are ephemeral
@@ -1021,7 +1023,7 @@ Argument BUFFER-NAME specifies the name of the created buffer."
     (with-current-buffer buffer
       (delay-mode-hooks (embark-occur-mode)) ; we'll run them when the
                                              ; buffer is displayed, so
-                                        ; they can use the window
+                                             ; they can use the window
       (setq embark-occur-from from)
       (add-hook 'tabulated-list-revert-hook #'embark-occur--revert)
       (setq embark-occur-view
