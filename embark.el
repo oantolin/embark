@@ -350,6 +350,7 @@ If you are using `embark-completing-read' as your
 
 (defvar embark--target nil "String the next action will operate on.")
 (defvar embark--keymap nil "Keymap to activate for next action.")
+(defvar embark--action nil "Action command.")
 
 (defvar embark--overlay nil
   "Overlay to communicate embarking on an action to the user.")
@@ -464,16 +465,18 @@ return nil."
                 (not (memq this-command embark-allow-edit-commands)))
           (setq unread-command-events '(13)))))))
 
-(defun embark--cleanup ()
+(defun embark--cleanup (&rest _)
   "Remove all hooks and modifications."
-  (unless embark--target
-    (remove-hook 'minibuffer-setup-hook #'embark--inject)
-    (remove-hook 'post-command-hook #'embark--cleanup)
-    (when embark--overlay
-      (delete-overlay embark--overlay)
-      (setq embark--overlay nil))
-    (setq embark--target-region-p nil)
-    (run-at-time 0 nil #'run-hooks 'embark-post-action-hook)))
+  (when embark--target
+    (minibuffer-message "Not an action: %s" embark--action)
+    (setq embark--target nil))
+  (remove-hook 'minibuffer-setup-hook #'embark--inject)
+  (advice-remove embark--action #'embark--cleanup)
+  (when embark--overlay
+    (delete-overlay embark--overlay)
+    (setq embark--overlay nil))
+  (setq embark--target-region-p nil)
+  (run-at-time 0 nil #'run-hooks 'embark-post-action-hook))
 
 (defun embark-top-minibuffer-completion ()
   "Return the top completion candidate in the minibuffer."
@@ -546,8 +549,7 @@ relative path."
   (when (minibufferp)
     (setq embark--target-buffer
           (window-buffer (minibuffer-selected-window))))
-  (add-hook 'minibuffer-setup-hook #'embark--inject)
-  (add-hook 'post-command-hook #'embark--cleanup))
+  (add-hook 'minibuffer-setup-hook #'embark--inject))
 
 (defun embark--keep-alive-p ()
   "Is this command a prefix argument setter or the help command?
@@ -557,7 +559,9 @@ This is used to keep the transient keymap active."
           universal-argument-more
           digit-argument
           negative-argument
-          embark-keymap-help)))
+          embark-keymap-help
+          scroll-other-window
+          scroll-other-window-down)))
 
 (defun embark-keymap-help ()
   "Pop up help buffer for current embark keymap."
@@ -614,6 +618,8 @@ If EXITP is non-nil, exit all minibuffers too."
    (lambda ()
      (setq embark--keymap nil)
      (run-hooks 'embark-pre-action-hook)
+     (setq embark--action this-command)
+     (advice-add this-command :after #'embark--cleanup)
      (when (and exitp
                 (not (memq this-command
                            '(embark-cancel embark-undefined))))
@@ -882,7 +888,8 @@ If you are using `embark-completing-read' as your
     (setq last-nonmenu-event 13) ;; mouse was clicked, to fool imenu
     (embark--setup)
     (run-hooks 'embark-pre-action-hook)
-    (embark-default-action)))
+    (embark-default-action)
+    (run-hooks 'embark-post-action-hook)))
 
 (defvar-local embark-occur-candidates nil
   "List of candidates in current occur buffer.")
@@ -978,12 +985,12 @@ keybinding for it.  Or alternatively you might want to enable
 
 (defun embark-occur--update-linked (&rest _)
   "Update linked Embark Occur buffer."
-  (when embark--live-occur--timer
-    (cancel-timer embark--live-occur--timer))
-  (setq embark--live-occur--timer
-        (run-with-idle-timer
-         embark-live-occur-delay nil
-         (let ((occur-buffer embark-occur-linked-buffer))
+  (when-let ((occur-buffer embark-occur-linked-buffer))
+    (when embark--live-occur--timer
+      (cancel-timer embark--live-occur--timer))
+    (setq embark--live-occur--timer
+          (run-with-idle-timer
+           embark-live-occur-delay nil
            (lambda ()
              (while-no-input
                (when (buffer-live-p occur-buffer) ; might be killed by now
@@ -1204,13 +1211,6 @@ This is whatever command opened the minibuffer in the first place."
   (interactive)
   (ignore (embark-target)))
 
-(defun embark-undefined ()
-  "Cancel action and show an error message."
-  (interactive)
-  (ignore (embark-target))
-  (embark--cleanup) ; remove overlay immediately
-  (minibuffer-message "Unknown embark action"))
-
 (defun embark-eshell-in-directory ()
   "Run eshell in directory of embark target."
   (interactive)
@@ -1364,7 +1364,6 @@ and leaves the point to the left of it."
 (defvar embark-meta-map
   (embark-keymap
    '(("C-h" . embark-keymap-help)
-     ([remap self-insert-command] . embark-undefined)
      ("C-u" . universal-argument)
      ("C-g" . embark-cancel))
    universal-argument-map)
