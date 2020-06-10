@@ -563,16 +563,6 @@ This is used to keep the transient keymap active."
           scroll-other-window
           scroll-other-window-down)))
 
-(defun embark-keymap-help ()
-  "Pop up help buffer for current embark keymap."
-  (interactive)
-  (help-setup-xref (list #'embark-keymap-help)
-                   (called-interactively-p 'interactive))
-  (with-output-to-temp-buffer (help-buffer)
-    (princ
-     (substitute-command-keys
-      (format "\\{%s}" (alist-get (embark-classify) embark-keymap-alist))))))
-
 (defun embark--show-indicator ()
   "Show pending action indicator according to `embark-indicator'."
   (cond ((stringp embark-indicator)
@@ -1188,6 +1178,15 @@ buffer for each type of completion."
 
 ;;; custom actions
 
+(defun embark-keymap-help ()
+  "Pop up help buffer for current embark keymap."
+  (interactive)
+  (help-setup-xref (list #'embark-keymap-help)
+                   (called-interactively-p 'interactive))
+  (with-output-to-temp-buffer (help-buffer)
+    (princ
+     (substitute-command-keys
+      (format "\\{%s}" (alist-get (embark-classify) embark-keymap-alist))))))
 (defun embark-default-action ()
   "Default action.
 This is whatever command opened the minibuffer in the first place."
