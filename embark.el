@@ -151,8 +151,33 @@ active the region content is used as current target."
   :type 'hook
   :group 'embark)
 
-(defcustom embark-indicator (propertize "Act" 'face 'highlight)
+(defcustom embark-become-keymaps
+  '(embark-become-help-map
+    embark-become-file+buffer-map
+    embark-become-shell-command-map)
+  "List of keymaps for `embark-become'.
+Each keymap groups a set of related commands that can
+conveniently become one another."
+  :type '(repeat variable)
+  :group 'embark)
+
+(defcustom embark-input-getter #'minibuffer-contents
+  "Function to get current input for `embark-become'."
+  :type 'function
+  :group 'embark)
+
+(defcustom embark-action-indicator (propertize "Act" 'face 'highlight)
   "Indicator to use when embarking upon an action.
+
+If set to a string prepend it to the minibuffer prompt or to the
+message in the echo area when outside of the minibuffer. When set
+to a function it is called with no arguments to indicate the
+pending action itself. For nil no indication is shown."
+  :type '(choice function string nil)
+  :group 'embark)
+
+(defcustom embark-become-indicator (propertize "Become" 'face 'highlight)
+  "Indicator to use when using `embark-become'.
 
 If set to a string prepend it to the minibuffer prompt or to the
 message in the echo area when outside of the minibuffer. When set
@@ -350,7 +375,9 @@ If you are using `embark-completing-read' as your
 
 (defvar embark--target nil "String the next action will operate on.")
 (defvar embark--keymap nil "Keymap to activate for next action.")
+(defvar embark--keymap-name nil "Variable containing `embark--keymap'.")
 (defvar embark--action nil "Action command.")
+(defvar embark--becoming-p nil "Are we acting or becoming?")
 
 (defvar embark--overlay nil
   "Overlay to communicate embarking on an action to the user.")
@@ -456,18 +483,19 @@ return nil."
     (when-let ((target (embark-target)))
       (delete-minibuffer-contents)
       (insert target)
-      (let ((embark-setup-hook
-             (or (alist-get this-command embark-setup-overrides)
-                 embark-setup-hook)))
-        (run-hooks 'embark-setup-hook)
-        (when (if embark-allow-edit-default
-                  (memq this-command embark-skip-edit-commands)
-                (not (memq this-command embark-allow-edit-commands)))
-          (setq unread-command-events '(13)))))))
+      (unless embark--becoming-p
+        (let ((embark-setup-hook
+               (or (alist-get this-command embark-setup-overrides)
+                   embark-setup-hook)))
+          (run-hooks 'embark-setup-hook)
+          (when (if embark-allow-edit-default
+                    (memq this-command embark-skip-edit-commands)
+                  (not (memq this-command embark-allow-edit-commands)))
+            (setq unread-command-events '(13))))))))
 
 (defun embark--cleanup (&rest _)
   "Remove all hooks and modifications."
-  (setq embark--target nil)
+  (setq embark--target nil embark--becoming-p nil)
   (remove-hook 'minibuffer-setup-hook #'embark--inject)
   (advice-remove embark--action #'embark--cleanup)
   (when embark--overlay
@@ -532,13 +560,10 @@ relative path."
         (substring name 1 -1)
       name)))
 
-(defun embark--keymap-for-type (type)
-  "Return the keymap for the given completion TYPE."
-  (symbol-value (alist-get type embark-keymap-alist)))
-
 (defun embark--setup ()
   "Setup for next action."
-  (setq embark--keymap (embark--keymap-for-type (embark-classify)))
+  (setq embark--keymap-name (alist-get (embark-classify) embark-keymap-alist)
+        embark--keymap (symbol-value embark--keymap-name))
   (setq embark--target
         (if (use-region-p)
             (when embark--target-region-p
@@ -562,23 +587,26 @@ This is used to keep the transient keymap active."
           scroll-other-window-down)))
 
 (defun embark--show-indicator ()
-  "Show pending action indicator according to `embark-indicator'."
-  (cond ((stringp embark-indicator)
-         (let ((mini (active-minibuffer-window)))
-           (if (or (use-region-p) (not mini))
-               (let (minibuffer-message-timeout)
-                 (minibuffer-message "%s on %s"
-                                     embark-indicator
-                                     (if embark--target
-                                         (format "'%s'" embark--target)
-                                       "region")))
-             (setq embark--overlay
-                   (make-overlay (point-min) (point-min)
-                                 (window-buffer mini) t t))
-             (overlay-put embark--overlay 'before-string
-                          (concat embark-indicator " ")))))
-        ((functionp embark-indicator)
-         (funcall embark-indicator))))
+  "Show indicator of pending action or becoming."
+  (let ((indicator (if embark--becoming-p
+                       embark-become-indicator
+                     embark-action-indicator)))
+    (cond ((stringp indicator)
+           (let ((mini (active-minibuffer-window)))
+             (if (or (use-region-p) (not mini))
+                 (let (minibuffer-message-timeout)
+                   (minibuffer-message "%s on %s"
+                                       indicator
+                                       (if embark--target
+                                           (format "'%s'" embark--target)
+                                         "region")))
+               (setq embark--overlay
+                     (make-overlay (point-min) (point-min)
+                                   (window-buffer mini) t t))
+               (overlay-put embark--overlay 'before-string
+                            (concat indicator " ")))))
+          ((functionp indicator)
+           (funcall indicator)))))
 
 (defmacro embark-after-exit (vars &rest body)
   "Run BODY after exiting all minibuffers.
@@ -646,6 +674,28 @@ minibuffer.  If EXITP is non-nil (interactively, if called with a
 prefix argument), then this command exits all minibuffers too."
   (interactive "P")
   (embark-act (not exitp)))
+
+(defun embark-become ()
+  "Become a different command.
+Take the current input as initial input for new command.  The new
+command can be run normally using keybindings or \\[execute-extended-command], but if the
+current command is found in a keymap in `embark-become-keymaps',
+that keymap is activated to provide convenient access to the
+other commands in it."
+  (interactive)
+  (when (minibufferp)
+    (setq embark--becoming-p t
+          embark--target (funcall embark-input-getter)
+          embark--keymap-name
+          (cl-loop for keymap-name in embark-become-keymaps
+                   when (where-is-internal
+                         embark--command
+                         (list (symbol-value keymap-name)))
+                   return keymap-name)
+          embark--keymap (symbol-value embark--keymap-name))
+    (add-hook 'minibuffer-setup-hook #'embark--inject)
+    (embark--bind-actions t)
+    (embark--show-indicator)))
 
 (defun embark-keymap (binding-alist &optional parent-map)
   "Return keymap with bindings given by BINDING-ALIST.
@@ -818,7 +868,8 @@ Returns the name of the command."
   (when embark-occur-direct-action-minor-mode
     ;; must mutate keymap, not make new one
     (let ((action-map (keymap-canonicalize
-                       (embark--keymap-for-type embark--type))))
+                       (symbol-value
+                        (alist-get embark--type embark-keymap-alist)))))
       (dolist (binding (cdr action-map))
         (setcdr binding (embark--action-command (cdr binding))))
       (setcdr embark-occur-direct-action-minor-mode-map
@@ -1182,7 +1233,7 @@ buffer for each type of completion."
   (with-output-to-temp-buffer (help-buffer)
     (princ
      (substitute-command-keys
-      (format "\\{%s}" (alist-get (embark-classify) embark-keymap-alist))))))
+      (format "\\{%s}" embark--keymap-name)))))
 
 (defun embark-undefined ()
   "Cancel action and show an error message."
@@ -1456,6 +1507,33 @@ and leaves the point to the left of it."
      ("W" . embark-save-unicode-character))
    embark-general-map)
   "Keymap for Embark unicode name actions.")
+
+(defvar embark-become-help-map
+  (embark-keymap
+   '(("av" . apropos-variable)
+     ("ao" . apropos-user-option)
+     ("ac" . apropos-command)
+     ("dv" . describe-variable)
+     ("dF" . describe-face)
+     ("df" . describe-function)
+     ("dp" . describe-package)
+     ("di" . describe-input-method))
+   embark-meta-map))
+
+(defvar embark-become-file+buffer-map
+  (embark-keymap
+   '(("f" . find-file)
+     ("p" . project-find-file)
+     ("r" . recentf-find-file)
+     ("b" . switch-to-buffer)
+     ("l" . locate))
+   embark-meta-map))
+
+(defvar embark-become-shell-command-map
+  (embark-keymap
+   '(("!" . shell-command)
+     ("&" . async-shell-command))
+   embark-meta-map))
 
 (provide 'embark)
 ;;; embark.el ends here
