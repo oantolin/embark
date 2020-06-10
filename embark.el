@@ -467,9 +467,7 @@ return nil."
 
 (defun embark--cleanup (&rest _)
   "Remove all hooks and modifications."
-  (when embark--target
-    (minibuffer-message "Not an action: %s" embark--action)
-    (setq embark--target nil))
+  (setq embark--target nil)
   (remove-hook 'minibuffer-setup-hook #'embark--inject)
   (advice-remove embark--action #'embark--cleanup)
   (when embark--overlay
@@ -610,9 +608,10 @@ If EXITP is non-nil, exit all minibuffers too."
      (run-hooks 'embark-pre-action-hook)
      (setq embark--action this-command)
      (advice-add this-command :after #'embark--cleanup)
-     (when (and exitp
-                (not (memq this-command
-                           '(embark-cancel embark-undefined))))
+     (when (and exitp (not (memq this-command
+                                 '(ignore
+                                   embark-undefined
+                                   embark-occur))))
        (embark-after-exit
          (this-command prefix-arg embark--command embark--target-buffer)
          (command-execute this-command))))))
@@ -1010,11 +1009,9 @@ keybinding for it.  Or alternatively you might want to enable
 Optionally start in INITIAL-VIEW (either `list' or `grid')
 instead of what `embark-occur-initial-view-alist' specifies.
 Argument BUFFER-NAME specifies the name of the created buffer."
-  (when (or (eq last-command 'embark-act)
-            (eq last-command 'embark-act-noexit))
-    (ignore (embark-target)))           ; allow use from embark-act
   (let ((from (current-buffer))
         (buffer (generate-new-buffer buffer-name)))
+    (embark--cleanup)                      ; in case we are used as an action
     (embark-occur--kill-live-occur-buffer) ; live ones are ephemeral
     (setq embark-occur-linked-buffer buffer)
     (with-current-buffer buffer
@@ -1142,7 +1139,6 @@ For the supported ARGS and their meaning see `completing-read'."
 The variable `embark-exporters-alist' controls how to make the
 buffer for each type of completion."
   (interactive)
-  (ignore (embark-target)) ; allow use from embark-act
   (let* ((type (embark-classify))
          (exporter (or (alist-get type embark-exporters-alist)
                        (alist-get t embark-exporters-alist))))
@@ -1187,6 +1183,12 @@ buffer for each type of completion."
     (princ
      (substitute-command-keys
       (format "\\{%s}" (alist-get (embark-classify) embark-keymap-alist))))))
+
+(defun embark-undefined ()
+  "Cancel action and show an error message."
+  (interactive)
+  (minibuffer-message "Not an action"))
+
 (defun embark-default-action ()
   "Default action.
 This is whatever command opened the minibuffer in the first place."
@@ -1204,11 +1206,6 @@ This is whatever command opened the minibuffer in the first place."
   "Save embark target in the kill ring."
   (interactive)
   (kill-new (substring-no-properties (embark-target))))
-
-(defun embark-cancel ()
-  "Cancel current action."
-  (interactive)
-  (ignore (embark-target)))
 
 (defun embark-eshell-in-directory ()
   "Run eshell in directory of embark target."
@@ -1364,7 +1361,8 @@ and leaves the point to the left of it."
   (embark-keymap
    '(("C-h" . embark-keymap-help)
      ("C-u" . universal-argument)
-     ("C-g" . embark-cancel))
+     ("C-g" . ignore)
+     ([remap self-insert-command] . embark-undefined))
    universal-argument-map)
   "Keymap for non-action Embark functions.")
 
