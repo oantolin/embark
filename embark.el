@@ -586,27 +586,24 @@ This is used to keep the transient keymap active."
           scroll-other-window
           scroll-other-window-down)))
 
-(defun embark--show-indicator ()
-  "Show indicator of pending action or becoming."
-  (let ((indicator (if embark--becoming-p
-                       embark-become-indicator
-                     embark-action-indicator)))
-    (cond ((stringp indicator)
-           (let ((mini (active-minibuffer-window)))
-             (if (or (use-region-p) (not mini))
-                 (let (minibuffer-message-timeout)
-                   (minibuffer-message "%s on %s"
-                                       indicator
-                                       (if embark--target
-                                           (format "'%s'" embark--target)
-                                         "region")))
-               (setq embark--overlay
-                     (make-overlay (point-min) (point-min)
-                                   (window-buffer mini) t t))
-               (overlay-put embark--overlay 'before-string
-                            (concat indicator " ")))))
-          ((functionp indicator)
-           (funcall indicator)))))
+(defun embark--show-indicator (indicator)
+  "Show indicator for a pending action or a instance of becoming."
+  (cond ((stringp indicator)
+         (let ((mini (active-minibuffer-window)))
+           (if (or (use-region-p) (not mini))
+               (let (minibuffer-message-timeout)
+                 (minibuffer-message "%s on %s"
+                                     indicator
+                                     (if embark--target
+                                         (format "'%s'" embark--target)
+                                       "region")))
+             (setq embark--overlay
+                   (make-overlay (point-min) (point-min)
+                                 (window-buffer mini) t t))
+             (overlay-put embark--overlay 'before-string
+                          (concat indicator " ")))))
+        ((functionp indicator)
+         (funcall indicator))))
 
 (defmacro embark-after-exit (vars &rest body)
   "Run BODY after exiting all minibuffers.
@@ -659,7 +656,7 @@ has the opposite behavior with respect to minibuffers."
   (setq continuep (or continuep (not (minibufferp)) (use-region-p)))
   (when continuep (setq-local enable-recursive-minibuffers t))
   (embark--bind-actions (not continuep))
-  (embark--show-indicator))
+  (embark--show-indicator embark-action-indicator))
 
 (defun embark-act-noexit (&optional exitp)
   "Embark upon an action.
@@ -695,7 +692,7 @@ other commands in it."
           embark--keymap (symbol-value embark--keymap-name))
     (add-hook 'minibuffer-setup-hook #'embark--inject)
     (embark--bind-actions t)
-    (embark--show-indicator)))
+    (embark--show-indicator embark-become-indicator)))
 
 (defun embark-keymap (binding-alist &optional parent-map)
   "Return keymap with bindings given by BINDING-ALIST.
