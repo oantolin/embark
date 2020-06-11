@@ -1530,14 +1530,15 @@ and leaves the point to the left of it."
 
 (defvar embark-become-help-map
   (embark-keymap
-   '(("av" . apropos-variable)
-     ("ao" . apropos-user-option)
-     ("ac" . apropos-command)
-     ("dv" . describe-variable)
-     ("dF" . describe-face)
-     ("df" . describe-function)
-     ("dp" . describe-package)
-     ("di" . describe-input-method))
+   '(("V" . apropos-variable)
+     ("O" . apropos-user-option)
+     ("C" . apropos-command)
+     ("v" . describe-variable)
+     ("f" . describe-function)
+     ("s" . describe-symbol)
+     ("F" . describe-face)
+     ("p" . describe-package)
+     ("i" . describe-input-method))
    embark-meta-map))
 
 (defvar embark-become-file+buffer-map
