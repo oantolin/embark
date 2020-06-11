@@ -584,7 +584,7 @@ relative path."
         (substring name 1 -1)
       name)))
 
-(defun embark--setup ()
+(defun embark--setup-action ()
   "Setup for next action."
   (setq embark--keymap-name (alist-get (embark-classify) embark-keymap-alist)
         embark--keymap (symbol-value embark--keymap-name))
@@ -646,7 +646,7 @@ BODY."
        (setq inhibit-message t)
        (top-level))))
 
-(defun embark--bind-actions (exitp)
+(defun embark--activate-keymap (exitp)
   "Set transient keymap with bindings for type-specific actions.
 If EXITP is non-nil, exit all minibuffers too."
   (set-transient-map
@@ -676,10 +676,10 @@ If CONTINUEP is non-nil (interactively, if called with a prefix
 argument), don't actually exit.  The variant `embark-act-noexit'
 has the opposite behavior with respect to minibuffers."
   (interactive "P")
-  (embark--setup)
+  (embark--setup-action)
   (setq continuep (or continuep (not (minibufferp)) (use-region-p)))
   (when continuep (setq-local enable-recursive-minibuffers t))
-  (embark--bind-actions (not continuep))
+  (embark--activate-keymap (not continuep))
   (embark--show-indicator embark-action-indicator))
 
 (defun embark-act-noexit (&optional exitp)
@@ -714,7 +714,7 @@ convenient access to the other commands in it."
                    return keymap-name)
           embark--keymap (symbol-value embark--keymap-name))
     (add-hook 'minibuffer-setup-hook #'embark--become-inject)
-    (embark--bind-actions t)
+    (embark--activate-keymap t)
     (embark--show-indicator embark-become-indicator)))
 
 (defun embark-keymap (binding-alist &optional parent-map)
@@ -869,7 +869,7 @@ Returns the name of the command."
         (fn (lambda ()
               (interactive)
               (setq this-command action)
-              (embark--setup)
+              (embark--setup-action)
               (call-interactively action))))
     (fset name fn)
     (when (symbolp action)
@@ -946,7 +946,7 @@ If you are using `embark-completing-read' as your
           (exit-minibuffer)))
     (goto-char entry)            ;; pretend RET was pressed even if
     (setq last-nonmenu-event 13) ;; mouse was clicked, to fool imenu
-    (embark--setup)
+    (embark--setup-action)
     (run-hooks 'embark-pre-action-hook)
     (embark-default-action)
     (run-hooks 'embark-post-action-hook)))
