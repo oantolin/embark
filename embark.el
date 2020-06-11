@@ -161,9 +161,11 @@ conveniently become one another."
   :type '(repeat variable)
   :group 'embark)
 
-(defcustom embark-input-getter #'embark-minibuffer-input
-  "Function to get current input for `embark-become'."
-  :type 'function
+(defcustom embark-input-getters 'embark-minibuffer-input
+  "List of functions to get current input for `embark-become'.
+Each function should take no arguments and return either the
+current input string or nil (to indicate it is not applicable)."
+  :type 'hook
   :group 'embark)
 
 (defcustom embark-action-indicator (propertize "Act" 'face 'highlight)
@@ -524,9 +526,10 @@ return nil."
   "Return the current input string in the minibuffer.
 This returns only the portion of the minibuffer contents within
 the completion boundaries."
-  (pcase-let ((`(,beg . ,end) (embark--boundaries)))
-    (substring (minibuffer-contents) beg
-               (+ end (- (point) (minibuffer-prompt-end))))))
+  (when (minibufferp)
+    (pcase-let ((`(,beg . ,end) (embark--boundaries)))
+      (substring (minibuffer-contents) beg
+                 (+ end (- (point) (minibuffer-prompt-end)))))))
 
 (defun embark-top-minibuffer-completion ()
   "Return the top completion candidate in the minibuffer."
@@ -705,7 +708,8 @@ command.  The new command can be run normally using keybindings or
 convenient access to the other commands in it."
   (interactive)
   (when (minibufferp)
-    (setq embark--target (funcall embark-input-getter)
+    (setq embark--target
+          (run-hook-with-args-until-success 'embark-input-getters)
           embark--keymap-name
           (cl-loop for keymap-name in embark-become-keymaps
                    when (where-is-internal
