@@ -161,7 +161,7 @@ conveniently become one another."
   :type '(repeat variable)
   :group 'embark)
 
-(defcustom embark-input-getter #'minibuffer-contents
+(defcustom embark-input-getter #'embark-minibuffer-input
   "Function to get current input for `embark-become'."
   :type 'function
   :group 'embark)
@@ -482,9 +482,10 @@ return nil."
           (eq real-this-command 'embark-default-action)
           (eq real-this-command 'embark-action<embark-default-action>))
       (when-let ((target (embark-target)))
-        (delete-minibuffer-contents)
-        (insert target)
-        (unless embark--becoming-p
+        (if embark--becoming-p
+            (insert target)
+          (delete-minibuffer-contents)
+          (insert target)
           (let ((embark-setup-hook
                  (or (alist-get this-command embark-setup-overrides)
                      embark-setup-hook)))
@@ -513,6 +514,14 @@ return nil."
       (setq embark--overlay nil))
     (setq embark--target-region-p nil)
     (run-at-time 0 nil #'run-hooks 'embark-post-action-hook)))
+
+(defun embark-minibuffer-input ()
+  "Return the current input string in the minibuffer.
+This returns only the portion of the minibuffer contents within
+the completion boundaries."
+  (pcase-let ((`(,beg . ,end) (embark--boundaries)))
+    (substring (minibuffer-contents) beg
+               (+ end (- (point) (minibuffer-prompt-end))))))
 
 (defun embark-top-minibuffer-completion ()
   "Return the top completion candidate in the minibuffer."
