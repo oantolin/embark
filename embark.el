@@ -1547,7 +1547,8 @@ and leaves the point to the left of it."
      ("p" . project-find-file)
      ("r" . recentf-open-files)
      ("b" . switch-to-buffer)
-     ("l" . locate))
+     ("l" . locate)
+     ("L" . find-library))
    embark-meta-map))
 
 (defvar embark-become-shell-command-map
