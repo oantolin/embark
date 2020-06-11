@@ -697,12 +697,12 @@ prefix argument), then this command exits all minibuffers too."
   (embark-act (not exitp)))
 
 (defun embark-become ()
-  "Become a different command.
-Take the current input as initial input for new command.  The new
-command can be run normally using keybindings or \\[execute-extended-command], but if the
-current command is found in a keymap in `embark-become-keymaps',
-that keymap is activated to provide convenient access to the
-other commands in it."
+  "Make current command become a different command.
+Take the current minibuffer input as initial input for new
+command.  The new command can be run normally using keybindings or
+\\[execute-extended-command], but if the current command is found in a keymap in
+`embark-become-keymaps', that keymap is activated to provide
+convenient access to the other commands in it."
   (interactive)
   (when (minibufferp)
     (setq embark--target (funcall embark-input-getter)
