@@ -377,7 +377,6 @@ If you are using `embark-completing-read' as your
 (defvar embark--keymap nil "Keymap to activate for next action.")
 (defvar embark--keymap-name nil "Variable containing `embark--keymap'.")
 (defvar embark--action nil "Action command.")
-(defvar embark--becoming-p nil "Are we acting or becoming?")
 (defvar embark--pending-p nil "Is the injection still pending?")
 
 (defvar embark--overlay nil
@@ -476,24 +475,29 @@ return nil."
   (prog1 embark--target
     (setq embark--target nil)))
 
-(defun embark--inject ()
+(defun embark--act-inject ()
   "Inject embark target into minibuffer prompt."
   (if (or (not (string-match-p "M-x" (minibuffer-prompt)))
           (eq real-this-command 'embark-default-action)
           (eq real-this-command 'embark-action<embark-default-action>))
       (when-let ((target (embark-target)))
-        (if embark--becoming-p
-            (insert target)
-          (delete-minibuffer-contents)
-          (insert target)
-          (let ((embark-setup-hook
-                 (or (alist-get this-command embark-setup-overrides)
-                     embark-setup-hook)))
-            (run-hooks 'embark-setup-hook)
-            (when (if embark-allow-edit-default
-                      (memq this-command embark-skip-edit-commands)
-                    (not (memq this-command embark-allow-edit-commands)))
-              (setq unread-command-events '(13))))))
+        (delete-minibuffer-contents)
+        (insert target)
+        (let ((embark-setup-hook
+               (or (alist-get this-command embark-setup-overrides)
+                   embark-setup-hook)))
+          (run-hooks 'embark-setup-hook)
+          (when (if embark-allow-edit-default
+                    (memq this-command embark-skip-edit-commands)
+                  (not (memq this-command embark-allow-edit-commands)))
+            (setq unread-command-events '(13)))))
+    (setq embark--pending-p t)))
+
+(defun embark--become-inject ()
+  "Inject embark target into minibuffer prompt."
+  (if (not (string-match-p "M-x" (minibuffer-prompt)))
+      (when-let ((target (embark-target)))
+        (insert target))
     (setq embark--pending-p t)))
 
 (defun embark--schedule-cleanup ()
@@ -507,8 +511,9 @@ return nil."
   (advice-remove embark--action #'embark--cleanup)
   (if embark--pending-p
       (add-hook 'embark-pre-command-hook #'embark--schedule-cleanup)
-    (setq embark--target nil embark--becoming-p nil)
-    (remove-hook 'minibuffer-setup-hook #'embark--inject)
+    (setq embark--target nil)
+    (remove-hook 'minibuffer-setup-hook #'embark--act-inject)
+    (remove-hook 'minibuffer-setup-hook #'embark--become-inject)
     (when embark--overlay
       (delete-overlay embark--overlay)
       (setq embark--overlay nil))
@@ -591,7 +596,7 @@ relative path."
   (when (minibufferp)
     (setq embark--target-buffer
           (window-buffer (minibuffer-selected-window))))
-  (add-hook 'minibuffer-setup-hook #'embark--inject))
+  (add-hook 'minibuffer-setup-hook #'embark--act-inject))
 
 (defun embark--keep-alive-p ()
   "Is this command a prefix argument setter or the help command?
@@ -700,8 +705,7 @@ that keymap is activated to provide convenient access to the
 other commands in it."
   (interactive)
   (when (minibufferp)
-    (setq embark--becoming-p t
-          embark--target (funcall embark-input-getter)
+    (setq embark--target (funcall embark-input-getter)
           embark--keymap-name
           (cl-loop for keymap-name in embark-become-keymaps
                    when (where-is-internal
@@ -709,7 +713,7 @@ other commands in it."
                          (list (symbol-value keymap-name)))
                    return keymap-name)
           embark--keymap (symbol-value embark--keymap-name))
-    (add-hook 'minibuffer-setup-hook #'embark--inject)
+    (add-hook 'minibuffer-setup-hook #'embark--become-inject)
     (embark--bind-actions t)
     (embark--show-indicator embark-become-indicator)))
 
