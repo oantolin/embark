@@ -377,7 +377,6 @@ If you are using `embark-completing-read' as your
 
 (defvar embark--target nil "String the next action will operate on.")
 (defvar embark--keymap nil "Keymap to activate for next action.")
-(defvar embark--keymap-name nil "Variable containing `embark--keymap'.")
 (defvar embark--action nil "Action command.")
 (defvar embark--pending-p nil "Is the injection still pending?")
 
@@ -513,7 +512,7 @@ return nil."
   (advice-remove embark--action #'embark--cleanup)
   (if embark--pending-p
       (add-hook 'embark-pre-command-hook #'embark--schedule-cleanup)
-    (setq embark--target nil)
+    (setq embark--target nil embark--keymap nil)
     (remove-hook 'minibuffer-setup-hook #'embark--act-inject)
     (remove-hook 'minibuffer-setup-hook #'embark--become-inject)
     (when embark--overlay
@@ -589,9 +588,9 @@ relative path."
 
 (defun embark--setup-action ()
   "Setup for next action."
-  (setq embark--keymap-name (alist-get (embark-classify) embark-keymap-alist)
-        embark--keymap (symbol-value embark--keymap-name))
-  (setq embark--target
+  (setq embark--keymap
+        (symbol-value (alist-get (embark-classify) embark-keymap-alist))
+        embark--target
         (if (use-region-p)
             (when embark--target-region-p
               (buffer-substring (region-beginning) (region-end)))
@@ -656,7 +655,6 @@ If EXITP is non-nil, exit all minibuffers too."
    embark--keymap
    #'embark--keep-alive-p
    (lambda ()
-     (setq embark--keymap nil)
      (run-hooks 'embark-pre-action-hook)
      (setq embark--action this-command)
      (advice-add this-command :after #'embark--cleanup)
@@ -710,13 +708,11 @@ convenient access to the other commands in it."
   (when (minibufferp)
     (setq embark--target
           (run-hook-with-args-until-success 'embark-input-getters)
-          embark--keymap-name
+          embark--keymap
           (cl-loop for keymap-name in embark-become-keymaps
-                   when (where-is-internal
-                         embark--command
-                         (list (symbol-value keymap-name)))
-                   return keymap-name)
-          embark--keymap (symbol-value embark--keymap-name))
+                   for keymap = (symbol-value keymap-name)
+                   when (where-is-internal embark--command (list keymap))
+                   return keymap))
     (add-hook 'minibuffer-setup-hook #'embark--become-inject)
     (embark--activate-keymap t)
     (embark--show-indicator embark-become-indicator)))
@@ -891,9 +887,9 @@ Returns the name of the command."
   :keymap embark-occur-direct-action-minor-mode-map
   (when embark-occur-direct-action-minor-mode
     ;; must mutate keymap, not make new one
-    (let ((action-map (keymap-canonicalize
-                       (symbol-value
-                        (alist-get embark--type embark-keymap-alist)))))
+    (let ((action-map
+           (keymap-canonicalize
+            (symbol-value (alist-get embark--type embark-keymap-alist)))))
       (dolist (binding (cdr action-map))
         (setcdr binding (embark--action-command (cdr binding))))
       (setcdr embark-occur-direct-action-minor-mode-map
@@ -1257,7 +1253,7 @@ buffer for each type of completion."
   (with-output-to-temp-buffer (help-buffer)
     (princ
      (substitute-command-keys
-      (format "\\{%s}" embark--keymap-name)))))
+      (format "\\{%s}" 'embark--keymap)))))
 
 (defun embark-undefined ()
   "Cancel action and show an error message."
