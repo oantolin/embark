@@ -154,7 +154,8 @@ active the region content is used as current target."
 (defcustom embark-become-keymaps
   '(embark-become-help-map
     embark-become-file+buffer-map
-    embark-become-shell-command-map)
+    embark-become-shell-command-map
+    embark-become-regexp-map)
   "List of keymaps for `embark-become'.
 Each keymap groups a set of related commands that can
 conveniently become one another."
@@ -1557,6 +1558,13 @@ and leaves the point to the left of it."
      ("&" . async-shell-command)
      ("c" . comint-run)
      ("t" . term))
+   embark-meta-map))
+
+(defvar embark-become-regexp-map
+  (embark-keymap
+   '(("o" . occur)
+     ("k" . keep-lines)
+     ("f" . flush-lines))
    embark-meta-map))
 
 (provide 'embark)
