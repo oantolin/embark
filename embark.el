@@ -1544,7 +1544,7 @@ and leaves the point to the left of it."
   (embark-keymap
    '(("f" . find-file)
      ("p" . project-find-file)
-     ("r" . recentf-find-file)
+     ("r" . recentf-open-files)
      ("b" . switch-to-buffer)
      ("l" . locate))
    embark-meta-map))
