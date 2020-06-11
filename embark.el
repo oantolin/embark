@@ -378,6 +378,7 @@ If you are using `embark-completing-read' as your
 (defvar embark--keymap-name nil "Variable containing `embark--keymap'.")
 (defvar embark--action nil "Action command.")
 (defvar embark--becoming-p nil "Are we acting or becoming?")
+(defvar embark--pending-p nil "Is the injection still pending?")
 
 (defvar embark--overlay nil
   "Overlay to communicate embarking on an action to the user.")
@@ -477,32 +478,41 @@ return nil."
 
 (defun embark--inject ()
   "Inject embark target into minibuffer prompt."
-  (when (or (not (string-match-p "M-x" (minibuffer-prompt)))
-            (eq real-this-command 'embark-default-action)
-            (eq real-this-command 'embark-action<embark-default-action>))
-    (when-let ((target (embark-target)))
-      (delete-minibuffer-contents)
-      (insert target)
-      (unless embark--becoming-p
-        (let ((embark-setup-hook
-               (or (alist-get this-command embark-setup-overrides)
-                   embark-setup-hook)))
-          (run-hooks 'embark-setup-hook)
-          (when (if embark-allow-edit-default
-                    (memq this-command embark-skip-edit-commands)
-                  (not (memq this-command embark-allow-edit-commands)))
-            (setq unread-command-events '(13))))))))
+  (if (or (not (string-match-p "M-x" (minibuffer-prompt)))
+          (eq real-this-command 'embark-default-action)
+          (eq real-this-command 'embark-action<embark-default-action>))
+      (when-let ((target (embark-target)))
+        (delete-minibuffer-contents)
+        (insert target)
+        (unless embark--becoming-p
+          (let ((embark-setup-hook
+                 (or (alist-get this-command embark-setup-overrides)
+                     embark-setup-hook)))
+            (run-hooks 'embark-setup-hook)
+            (when (if embark-allow-edit-default
+                      (memq this-command embark-skip-edit-commands)
+                    (not (memq this-command embark-allow-edit-commands)))
+              (setq unread-command-events '(13))))))
+    (setq embark--pending-p t)))
+
+(defun embark--schedule-cleanup ()
+  "Schedule `embark--cleanup' after next command."
+  (setq embark--pending-p nil)
+  (remove-hook 'embark-pre-command-hook #'embark--schedule-cleanup)
+  (advice-add this-command :after #'embark--cleanup))
 
 (defun embark--cleanup (&rest _)
   "Remove all hooks and modifications."
-  (setq embark--target nil embark--becoming-p nil)
-  (remove-hook 'minibuffer-setup-hook #'embark--inject)
   (advice-remove embark--action #'embark--cleanup)
-  (when embark--overlay
-    (delete-overlay embark--overlay)
-    (setq embark--overlay nil))
-  (setq embark--target-region-p nil)
-  (run-at-time 0 nil #'run-hooks 'embark-post-action-hook))
+  (if embark--pending-p
+      (add-hook 'embark-pre-command-hook #'embark--schedule-cleanup)
+    (setq embark--target nil embark--becoming-p nil)
+    (remove-hook 'minibuffer-setup-hook #'embark--inject)
+    (when embark--overlay
+      (delete-overlay embark--overlay)
+      (setq embark--overlay nil))
+    (setq embark--target-region-p nil)
+    (run-at-time 0 nil #'run-hooks 'embark-post-action-hook)))
 
 (defun embark-top-minibuffer-completion ()
   "Return the top completion candidate in the minibuffer."
