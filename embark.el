@@ -1548,7 +1548,9 @@ and leaves the point to the left of it."
 (defvar embark-become-shell-command-map
   (embark-keymap
    '(("!" . shell-command)
-     ("&" . async-shell-command))
+     ("&" . async-shell-command)
+     ("c" . comint-run)
+     ("t" . term))
    embark-meta-map))
 
 (provide 'embark)
