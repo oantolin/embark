@@ -1239,17 +1239,20 @@ buffer for each type of completion."
 (defun embark-prompt-for-action ()
   "Prompt for an action and run it."
   (interactive)
-  (let* ((actions
+  (let* ((arrow (propertize " → " 'face 'shadow))
+         (actions
           (cl-loop
            for (key . cmd) in (cdr (keymap-canonicalize embark--keymap))
            unless (or (not (symbolp cmd))
                       (memq cmd '(ignore embark-prompt-for-action))
                       (memq cmd embark--keep-alive-list))
-           collect (cons (format "%s → %s"
-                                 (if (numberp key)
-                                     (single-key-description key)
-                                   (key-description key))
-                                 cmd)
+           collect (cons (concat (propertize
+                                  (if (numberp key)
+                                      (single-key-description key)
+                                    (key-description key))
+                                  'face 'embark-occur-annotation)
+                                 arrow
+                                 (symbol-name cmd))
                          cmd)))
          (action (completing-read
                   (if (memq 'embark--become-inject minibuffer-setup-hook)
