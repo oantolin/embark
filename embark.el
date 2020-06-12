@@ -155,7 +155,7 @@ active the region content is used as current target."
   '(embark-become-help-map
     embark-become-file+buffer-map
     embark-become-shell-command-map
-    embark-become-regexp-map)
+    embark-become-match-map)
   "List of keymaps for `embark-become'.
 Each keymap groups a set of related commands that can
 conveniently become one another."
@@ -478,10 +478,11 @@ return nil."
     (setq embark--target nil)))
 
 (defun embark--act-inject ()
-  "Inject embark target into minibuffer prompt."
+  "Inject embark action target into minibuffer prompt."
   (if (or (not (string-match-p "M-x" (minibuffer-prompt)))
-          (eq real-this-command 'embark-default-action)
-          (eq real-this-command 'embark-action<embark-default-action>))
+          (memq real-this-command '(embark-default-action
+                                    embark-action<embark-default-action>
+                                    push-button)))
       (when-let ((target (embark-target)))
         (delete-minibuffer-contents)
         (insert target)
@@ -496,7 +497,7 @@ return nil."
     (setq embark--pending-p t)))
 
 (defun embark--become-inject ()
-  "Inject embark target into minibuffer prompt."
+  "Inject embark becoming target into minibuffer prompt."
   (if (not (string-match-p "M-x" (minibuffer-prompt)))
       (when-let ((target (embark-target)))
         (insert target))
@@ -1560,7 +1561,7 @@ and leaves the point to the left of it."
      ("t" . term))
    embark-meta-map))
 
-(defvar embark-become-regexp-map
+(defvar embark-become-match-map
   (embark-keymap
    '(("o" . occur)
      ("k" . keep-lines)
