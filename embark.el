@@ -389,9 +389,10 @@ If you are using `embark-completing-read' as your
 
 (defun embark--metadata ()
   "Return current minibuffer completion metadata."
-  (completion-metadata (minibuffer-contents)
-                       minibuffer-completion-table
-                       minibuffer-completion-predicate))
+  (completion-metadata
+   (buffer-substring-no-properties (field-beginning) (point))
+   minibuffer-completion-table
+   minibuffer-completion-predicate))
 
 (defun embark-category-type ()
   "Return minibuffer completion category per metadata."
