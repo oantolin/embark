@@ -603,17 +603,16 @@ relative path."
           (window-buffer (minibuffer-selected-window))))
   (add-hook 'minibuffer-setup-hook #'embark--act-inject))
 
-(defun embark--keep-alive-p ()
-  "Is this command a prefix argument setter or the help command?
-This is used to keep the transient keymap active."
-  (memq this-command
-        '(universal-argument
-          universal-argument-more
-          digit-argument
-          negative-argument
-          embark-keymap-help
-          scroll-other-window
-          scroll-other-window-down)))
+(defvar embark--keep-alive-list
+  '(universal-argument
+    universal-argument-more
+    digit-argument
+    negative-argument
+    embark-keymap-help
+    scroll-other-window
+    scroll-other-window-down
+    execute-extended-command)
+  "List of commands that can run without canceling the action keymap.")
 
 (defun embark--show-indicator (indicator)
   "Show indicator for a pending action or a instance of becoming."
@@ -656,7 +655,7 @@ BODY."
 If EXITP is non-nil, exit all minibuffers too."
   (set-transient-map
    embark--keymap
-   #'embark--keep-alive-p
+   (lambda () (memq this-command embark--keep-alive-list))
    (lambda ()
      (run-hooks 'embark-pre-action-hook)
      (setq embark--action this-command)
