@@ -600,10 +600,8 @@ relative path."
     universal-argument-more
     digit-argument
     negative-argument
-    embark-keymap-help
     scroll-other-window
-    scroll-other-window-down
-    execute-extended-command)
+    scroll-other-window-down)
   "List of commands that can run without canceling the action keymap.")
 
 (defun embark--show-indicator (indicator)
@@ -1238,15 +1236,28 @@ buffer for each type of completion."
 
 ;;; custom actions
 
-(defun embark-keymap-help ()
-  "Pop up help buffer for current embark keymap."
+(defun embark-prompt-for-action ()
+  "Prompt for an action and run it."
   (interactive)
-  (help-setup-xref (list #'embark-keymap-help)
-                   (called-interactively-p 'interactive))
-  (with-output-to-temp-buffer (help-buffer)
-    (princ
-     (substitute-command-keys
-      (format "\\{%s}" 'embark--keymap)))))
+  (let* ((actions
+          (cl-loop
+           for (key . cmd) in (cdr (keymap-canonicalize embark--keymap))
+           unless (or (not (symbolp cmd))
+                      (memq cmd '(ignore embark-prompt-for-action))
+                      (memq cmd embark--keep-alive-list))
+           collect (cons (format "%s → %s"
+                                 (if (numberp key)
+                                     (single-key-description key)
+                                   (key-description key))
+                                 cmd)
+                         cmd)))
+         (action (completing-read
+                  (if (memq 'embark--become-inject minibuffer-setup-hook)
+                      "Become: "
+                    "Action: ")
+                  actions nil t)))
+    (setq this-command (cdr (assoc action actions)))
+    (call-interactively this-command)))
 
 (defun embark-undefined ()
   "Cancel action and show an error message."
@@ -1423,7 +1434,7 @@ and leaves the point to the left of it."
 
 (defvar embark-meta-map
   (embark-keymap
-   '(("C-h" . embark-keymap-help)
+   '(("C-h" . embark-prompt-for-action)
      ("C-u" . universal-argument)
      ("C-g" . ignore)
      ([remap self-insert-command] . embark-undefined))
