@@ -1076,7 +1076,6 @@ instead of what `embark-occur-initial-view-alist' specifies.
 Argument BUFFER-NAME specifies the name of the created buffer."
   (let ((from (current-buffer))
         (buffer (generate-new-buffer buffer-name)))
-    (embark--cleanup)                      ; in case we are used as an action
     (embark-occur--kill-live-occur-buffer) ; live ones are ephemeral
     (setq embark-occur-linked-buffer buffer)
     (with-current-buffer buffer
