@@ -1255,13 +1255,16 @@ buffer for each type of completion."
                                  arrow
                                  (symbol-name cmd))
                          cmd)))
-         (action (completing-read
-                  (if (memq 'embark--become-inject minibuffer-setup-hook)
-                      "Become: "
-                    "Action: ")
-                  actions nil t)))
-    (setq this-command (cdr (assoc action actions)))
-    (call-interactively this-command)))
+         (action (condition-case nil
+                     (completing-read
+                      (if (memq 'embark--become-inject minibuffer-setup-hook)
+                          "Become: "
+                        "Action: ")
+                      actions nil t)
+                   (quit nil))))
+    (when action
+      (setq this-command (cdr (assoc action actions)))
+      (call-interactively this-command))))
 
 (defun embark-undefined ()
   "Cancel action and show an error message."
