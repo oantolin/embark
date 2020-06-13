@@ -1140,6 +1140,7 @@ with key \"Embark Live Occur\"."
                          occur-buffer
                          '((embark--reuse-live-occur-window
                             display-buffer-at-bottom)))))
+      (set-window-dedicated-p occur-window t)
       (when (minibufferp)
         (add-hook 'minibuffer-exit-hook
                   #'embark-occur--kill-live-occur-buffer
