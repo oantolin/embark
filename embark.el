@@ -1408,8 +1408,6 @@ with command output. For replacement behaviour see
   (when-let ((char (embark-unicode-character (embark-target))))
      (kill-new char)))
 
-(defvar embark-region-map) ; definition below
-
 (defun embark-act-on-region-contents ()
   "Act on contents of active region."
   (interactive)
