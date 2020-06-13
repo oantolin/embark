@@ -1541,7 +1541,9 @@ and leaves the point to the left of it."
      ("i" . package-install)
      ("d" . package-delete)
      ("r" . package-reinstall)
-     ("u" . embark-browse-package-url))
+     ("u" . embark-browse-package-url)
+     ("a" . package-autoremove)
+     ("g" . package-refresh-contents))
    embark-general-map)
   "Keymap for Embark package actions.")
 
