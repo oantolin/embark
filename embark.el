@@ -283,8 +283,9 @@ view for types not mentioned separately."
   :group 'embark)
 
 (defcustom embark-exporters-alist
-  '((buffer . embark-ibuffer)
-    (file . embark-dired)
+  '((buffer . embark-export-ibuffer)
+    (file . embark-export-dired)
+    (package . embark-export-list-packages)
     (t . embark-occur))
   "Alist associating completion types to export functions.
 Each function should take a list of strings which are candidates
@@ -1215,14 +1216,14 @@ buffer for each type of completion."
           (let ((default-directory dir)) ; dired needs this info
             (funcall exporter candidates)))))))
 
-(defun embark-ibuffer (buffers)
+(defun embark-export-ibuffer (buffers)
   "Create an ibuffer buffer listing BUFFERS."
-  (ibuffer t "*Embark Ibuffer*"
+  (ibuffer t "*Embark Export Ibuffer*"
            `((predicate . (member (buffer-name) ',buffers)))))
 
 (autoload 'dired-check-switches "dired")
 
-(defun embark-dired (files)
+(defun embark-export-dired (files)
   "Create a dired buffer listing FILES."
   (setq files (mapcar #'directory-file-name files))
   (when (dired-check-switches dired-listing-switches "A" "almost-all")
@@ -1234,6 +1235,18 @@ buffer for each type of completion."
                  files)))
   (dired (cons default-directory files))
   (rename-buffer (format "*Embark Export Dired %s*" default-directory)))
+
+(autoload 'package-menu-mode "package")
+(autoload 'package-menu--generate "package")
+
+(defun embark-export-list-packages (packages)
+  "Create a package menu mode buffer listing PACKAGES."
+  (interactive)
+  (let ((buf (get-buffer-create "*Embark Export Packages*")))
+    (with-current-buffer buf
+      (package-menu-mode)
+      (package-menu--generate nil (mapcar #'intern packages)))
+    (switch-to-buffer buf)))
 
 ;;; custom actions
 
