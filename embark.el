@@ -1505,7 +1505,9 @@ and leaves the point to the left of it."
      ("+" . make-directory)
      ("I" . embark-insert-relative-path)
      ("W" . embark-save-relative-path)
-     ("x" . embark-open-externally))
+     ("x" . embark-open-externally)
+     ("b" . byte-compile-file)
+     ("B" . byte-recompile-directory))
    embark-general-map)
   "Keymap for Embark file actions.")
 
