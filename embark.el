@@ -1264,7 +1264,7 @@ buffer for each type of completion."
                                   (if (numberp key)
                                       (single-key-description key)
                                     (key-description key))
-                                  'face 'embark-occur-annotation)
+                                  'face 'success)
                                  arrow
                                  (symbol-name cmd))
                          cmd)))
