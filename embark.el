@@ -1506,6 +1506,7 @@ and leaves the point to the left of it."
      ("I" . embark-insert-relative-path)
      ("W" . embark-save-relative-path)
      ("x" . embark-open-externally)
+     ("l" . load-file)
      ("b" . byte-compile-file)
      ("B" . byte-recompile-directory))
    embark-general-map)
