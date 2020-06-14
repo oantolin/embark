@@ -651,7 +651,10 @@ If EXITP is non-nil, exit all minibuffers too."
    (lambda ()
      (run-hooks 'embark-pre-action-hook)
      (setq embark--action this-command)
-     (advice-add this-command :after #'embark--cleanup)
+     (unless (eq this-command 'embark-act-on-region-contents)
+       ;; postpone cleanup; embark-act-on-region-contents runs
+       ;; embark-act and cleanup is scheduled then
+       (advice-add this-command :after #'embark--cleanup))
      (when (and exitp (not (memq this-command
                                  '(ignore
                                    embark-undefined
