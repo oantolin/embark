@@ -1045,10 +1045,11 @@ keybinding for it.  Or alternatively you might want to enable
           (run-with-idle-timer
            embark-live-occur-delay nil
            (lambda ()
-             (while-no-input
-               (when (buffer-live-p occur-buffer) ; might be killed by now
-                 (with-current-buffer occur-buffer
-                   (revert-buffer)))))))))
+             (let ((non-essential t))
+               (while-no-input
+                 (when (buffer-live-p occur-buffer) ; might be killed by now
+                   (with-current-buffer occur-buffer
+                     (revert-buffer))))))))))
 
 (defun embark-occur--linked-buffer-is-live-p ()
   "Is this buffer linked to a live Embark Occur buffer?"
