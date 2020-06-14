@@ -258,6 +258,7 @@ These are used to fill an Embark Occur buffer."
 
 (defcustom embark-annotator-alist
   '((symbol . embark-first-line-of-docstring)
+    (command . embark-first-line-of-docstring)
     (buffer . embark-file-and-major-mode)
     (file . embark-size-and-modification-time)
     (unicode-name . embark-unicode-character)
