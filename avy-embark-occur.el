@@ -28,18 +28,21 @@
 
 (require 'avy)
 (require 'embark)
+(eval-when-compile (require 'subr-x))
+
+(defvar avy-embark-occur--initial-window nil
+  "Window that was selected before jumping.")
 
 (defun avy-action-embark-choose (pt)
   "Choose completion at PT."
   (goto-char pt)
   (embark-occur-choose (button-at pt)))
 
-(declare-function embark-act "embark")
-
 (defun avy-action-embark-act (pt)
   "Act on the completion at PT."
   (goto-char pt)
-  (embark-act))
+  (embark-act)
+  (select-window avy-embark-occur--initial-window))
 
 (defun avy-embark-occur--choose-window ()
   "Choose a window displaying an Embark Occur buffer to jump to.
@@ -64,24 +67,24 @@ The Embark Occur buffer to use is chosen in order of priority as:
 - the current buffer,
 - a linked Embark Occur buffer,
 - some visible Embark Occur buffer."
-  (let ((wnd (avy-embark-occur--choose-window)))
-    (if wnd
-        (with-current-buffer (window-buffer wnd)
-          (avy-with avy-completion
-            (let ((avy-action action)
-                  (avy-dispatch-alist dispatch-alist))
-              (avy-process
-               (save-excursion
-                 (goto-char (point-min))
-                 (let ((btns `((,(point) . ,wnd))))
-                   (forward-button 1 t)
-                   (while (not (bobp))
-                     (when (eq (button-type (button-at (point)))
-                               'embark-occur-entry) ; skip annotations
-                       (push (cons (point) wnd) btns))
-                     (forward-button 1 t))
-                   (nreverse btns)))))))
-      (user-error "No *Embark Occur* found"))))
+  (setq avy-embark-occur--initial-window (selected-window))
+  (if-let ((wnd (avy-embark-occur--choose-window)))
+      (with-current-buffer (window-buffer wnd)
+        (avy-with avy-completion
+          (let ((avy-action action)
+                (avy-dispatch-alist dispatch-alist))
+            (avy-process
+             (save-excursion
+               (goto-char (point-min))
+               (let ((btns `((,(point) . ,wnd))))
+                 (forward-button 1 t)
+                 (while (not (bobp))
+                   (when (eq (button-type (button-at (point)))
+                             'embark-occur-entry) ; skip annotations
+                     (push (cons (point) wnd) btns))
+                   (forward-button 1 t))
+                 (nreverse btns)))))))
+    (user-error "No *Embark Occur* found")))
 
 (defun avy-embark-occur-choose ()
   "Choose an Embark Occur candidate."
