@@ -485,7 +485,7 @@ return nil."
 (defun embark--act-inject ()
   "Inject embark action target into minibuffer prompt."
   (unless (and (or (string-match-p "M-x" (minibuffer-prompt))
-                   (eq this-command 'embark-prompt-for-action))
+                   (eq this-command 'embark-keymap-help))
                (not (memq real-this-command
                           '(embark-default-action
                             embark-action<embark-default-action>
@@ -505,7 +505,7 @@ return nil."
 (defun embark--become-inject ()
   "Inject embark becoming target into minibuffer prompt."
   (unless (or (string-match-p "M-x" (minibuffer-prompt))
-              (eq this-command 'embark-prompt-for-action))
+              (eq this-command 'embark-keymap-help))
     (when-let ((target (embark-target)))
       (insert target))))
 
@@ -1271,7 +1271,7 @@ buffer for each type of completion."
 
 ;;; custom actions
 
-(defun embark-prompt-for-action ()
+(defun embark-keymap-help ()
   "Prompt for an action and run it."
   (interactive)
   (let* ((arrow (propertize " → " 'face 'shadow))
@@ -1279,7 +1279,7 @@ buffer for each type of completion."
           (cl-loop
            for (key . cmd) in (cdr (keymap-canonicalize embark--keymap))
            unless (or (not (symbolp cmd))
-                      (memq cmd '(ignore embark-prompt-for-action))
+                      (memq cmd '(ignore embark-keymap-help))
                       (memq cmd embark--keep-alive-list))
            collect (cons (concat (propertize
                                   (if (numberp key)
@@ -1482,7 +1482,7 @@ and leaves the point to the left of it."
 
 (defvar embark-meta-map
   (embark-keymap
-   '(("C-h" . embark-prompt-for-action)
+   '(("C-h" . embark-keymap-help)
      ("C-u" . universal-argument)
      ("C-g" . ignore)
      ([remap self-insert-command] . embark-undefined))
