@@ -809,11 +809,15 @@ To be used as an annotation function for symbols in `embark-occur'."
 
 (defun embark-annotation-function-metadatum (cand)
   "Use the `annotation-function' metadatum to annotate CAND."
-  (when-let ((annot (or (completion-metadata-get (embark--metadata)
-                                                 'annotation-function)
-                        (plist-get completion-extra-properties
-                                   :annotation-function))))
-    (string-trim (funcall annot cand))))
+  (when-let ((annot-fn (or (completion-metadata-get (embark--metadata)
+                                                    'annotation-function)
+                           (plist-get completion-extra-properties
+                                      :annotation-function)))
+             (annot (string-trim (funcall annot-fn cand))))
+    (if (or (string-match-p "^(.*)$" annot)
+            (string-match-p "^<.*>$" annot))
+        (substring annot 1 -1)
+      annot)))
 
 (defun embark-minibuffer-candidates ()
   "Return all current completion candidates from the minibuffer."
