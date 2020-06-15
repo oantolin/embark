@@ -262,11 +262,14 @@ These are used to fill an Embark Occur buffer."
     (buffer . embark-file-and-major-mode)
     (file . embark-size-and-modification-time)
     (unicode-name . embark-unicode-character)
-    (package . embark-package-summary))
+    (package . embark-package-summary)
+    (t . embark-annotation-function-metadatum))
   "Alist associating completion types to annotation functions.
 Each function should take a candidate for an action as a string
 and return a string without newlines giving some extra
-information about the candidate."
+information about the candidate.  Additionally you can associate
+t to a default annotation function for types not mentioned
+separately."
   :type '(alist :key-type symbol :value-type function)
   :group 'embark)
 
@@ -804,6 +807,14 @@ To be used as an annotation function for symbols in `embark-occur'."
   (when-let ((char (gethash name (ucs-names))))
     (format "%c" char)))
 
+(defun embark-annotation-function-metadatum (cand)
+  "Use the `annotation-function' metadatum to annotate CAND."
+  (when-let ((annot (or (completion-metadata-get (embark--metadata)
+                                                 'annotation-function)
+                        (plist-get completion-extra-properties
+                                   :annotation-function))))
+    (string-trim (funcall annot cand))))
+
 (defun embark-minibuffer-candidates ()
   "Return all current completion candidates from the minibuffer."
   (when (minibufferp)
@@ -994,7 +1005,8 @@ keybinding for it.  Or alternatively you might want to enable
 
 (defun embark-occur--list-view ()
   "List view of candidates and annotations for Embark Occur buffer."
-  (let ((annotator (alist-get embark--type embark-annotator-alist)))
+  (let ((annotator (or (alist-get embark--type embark-annotator-alist)
+                       (alist-get t embark-annotator-alist))))
     (setq tabulated-list-format
           (if annotator
               (let ((width (embark-occur--max-width)))
