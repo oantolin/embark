@@ -1272,10 +1272,10 @@ buffer for each type of completion."
 ;;; custom actions
 
 (defun embark-keymap-help ()
-  "Prompt for an action and run it."
+  "Prompt for an action or command to become and run it."
   (interactive)
   (let* ((arrow (propertize " → " 'face 'shadow))
-         (actions
+         (commands
           (cl-loop
            for (key . cmd) in (cdr (keymap-canonicalize embark--keymap))
            unless (or (not (symbolp cmd))
@@ -1289,24 +1289,24 @@ buffer for each type of completion."
                                  arrow
                                  (symbol-name cmd))
                          cmd)))
-         (action (condition-case nil
-                     (completing-read
-                      (if (memq 'embark--become-inject minibuffer-setup-hook)
-                          "Become: "
-                        "Action: ")
-                      (lambda (s p a)
-                        (if (eq a 'metadata)
-                            `(metadata
-                              (annotation-function
-                               . ,(lambda (x)
-                                    (concat " "
-                                     (embark-first-line-of-docstring
-                                      (symbol-name (cdr (assoc x actions))))))))
-                            (complete-with-action a actions s p)))
-                      nil t)
-                   (quit nil))))
-    (when action
-      (setq this-command (cdr (assoc action actions)))
+         (annot-fn
+          (lambda (x)
+            (concat " " (embark-first-line-of-docstring
+                         (symbol-name (cdr (assoc x commands)))))))
+         (command
+          (condition-case nil
+              (completing-read
+               (if (memq 'embark--become-inject minibuffer-setup-hook)
+                   "Become: "
+                 "Action: ")
+               (lambda (s p a)
+                 (if (eq a 'metadata)
+                     `(metadata (annotation-function . ,annot-fn))
+                   (complete-with-action a commands s p)))
+               nil t)
+            (quit nil))))
+    (when command
+      (setq this-command (cdr (assoc command commands)))
       (call-interactively this-command))))
 
 (defun embark-undefined ()
