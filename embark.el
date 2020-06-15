@@ -1294,7 +1294,15 @@ buffer for each type of completion."
                       (if (memq 'embark--become-inject minibuffer-setup-hook)
                           "Become: "
                         "Action: ")
-                      actions nil t)
+                      (lambda (s p a)
+                        (if (eq a 'metadata)
+                            `(metadata
+                              (annotation-function
+                               . ,(lambda (x)
+                                    (embark-first-line-of-docstring
+                                     (symbol-name (cdr (assoc x actions)))))))
+                            (complete-with-action a actions s p)))
+                      nil t)
                    (quit nil))))
     (when action
       (setq this-command (cdr (assoc action actions)))
