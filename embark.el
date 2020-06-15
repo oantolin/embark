@@ -282,8 +282,9 @@ separately."
 This is an alist associating completion types to either `list' or
 `grid'.  Additionally you can associate t to a default initial
 view for types not mentioned separately."
-  :type '(choice (const :tag "List view" list)
-                 (const :tag "Grid view" grid))
+  :type '(alist :key-type symbol
+                :value-type (choice (const :tag "List view" list)
+                                    (const :tag "Grid view" grid)))
   :group 'embark)
 
 (defcustom embark-exporters-alist
