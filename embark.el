@@ -331,6 +331,21 @@ If you are using `embark-completing-read' as your
   :type 'boolean
   :group 'embark)
 
+(defcustom embark-keymap-help-docstrings t
+  "Should the items in the keymap help be annotated with docstrings?
+(Well, with the first line of the docstring, actually.)
+Possible values of this variable are:
+- t, annotate with the first line of the docstring,
+- nil, do not annotate, and
+- `truncate', truncate the docstring so the total width of the
+  item plus its annotation is at most half the width of the
+  current frame (users of the *Completions* buffer might want to
+  use this value)."
+  :type '(choice (const :tag "Annotate with docstrings" t)
+                 (const :tag "No annotations" nil)
+                 (const :tag "Truncate docstrings" truncate))
+  :group 'embark)
+
 ;;; stashing information for actions in buffer local variables
 
 (defvar-local embark--type nil
@@ -1290,20 +1305,32 @@ buffer for each type of completion."
                                  arrow
                                  (symbol-name cmd))
                          cmd)))
-         (annot-fn
+         (full-docstring
           (lambda (x)
             (concat " " (embark-first-line-of-docstring
                          (symbol-name (cdr (assoc x commands)))))))
+         (truncated-docstring
+          (lambda (x)
+            (let ((doc (funcall full-docstring x))
+                  (w (- (floor (frame-width) 2) (length x) 1)))
+              (if (> (length doc) w)
+                  (concat (substring doc 0 (1- w)) "…")
+                doc))))
+         (docstring (if (eq embark-keymap-help-docstrings 'truncate)
+                        truncated-docstring
+                      full-docstring))
          (command
           (condition-case nil
               (completing-read
                (if (memq 'embark--become-inject minibuffer-setup-hook)
                    "Become: "
                  "Action: ")
-               (lambda (s p a)
-                 (if (eq a 'metadata)
-                     `(metadata (annotation-function . ,annot-fn))
-                   (complete-with-action a commands s p)))
+               (if embark-keymap-help-docstrings
+                   (lambda (s p a)
+                     (if (eq a 'metadata)
+                         `(metadata (annotation-function . ,docstring))
+                       (complete-with-action a commands s p)))
+                 commands)
                nil t)
             (quit nil))))
     (when command
