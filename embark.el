@@ -1273,7 +1273,7 @@ buffer for each type of completion."
 ;;; custom actions
 
 (defun embark-keymap-help ()
-  "Prompt for an action or command to become and run it."
+  "Prompt for an action to perform or command to become and run it."
   (interactive)
   (let* ((arrow (propertize " → " 'face 'shadow))
          (commands
