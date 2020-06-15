@@ -162,7 +162,7 @@ conveniently become one another."
   :type '(repeat variable)
   :group 'embark)
 
-(defcustom embark-input-getters 'embark-minibuffer-input
+(defcustom embark-input-getters '(embark-minibuffer-input)
   "List of functions to get current input for `embark-become'.
 Each function should take no arguments and return either the
 current input string or nil (to indicate it is not applicable)."
