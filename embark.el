@@ -1128,7 +1128,7 @@ Argument BUFFER-NAME specifies the name of the created buffer."
                                          'annotation-function)
                 (plist-get completion-extra-properties
                            :annotation-function)))
-      (add-hook 'tabulated-list-revert-hook #'embark-occur--revert  nil t)
+      (add-hook 'tabulated-list-revert-hook #'embark-occur--revert nil t)
       (setq embark-occur-view
             (or initial-view
                 (alist-get embark--type embark-occur-initial-view-alist)
@@ -1148,8 +1148,7 @@ window placement."
   (let ((occur-window (display-buffer occur-buffer action)))
     (with-selected-window occur-window
       (run-mode-hooks)
-      (revert-buffer)
-      (tabulated-list-init-header))
+      (revert-buffer))
     occur-window))
 
 (defun embark-occur--initial-view-arg ()
