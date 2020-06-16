@@ -1036,6 +1036,7 @@ keybinding for it.  Or alternatively you might want to enable
               (let ((width (embark-occur--max-width)))
                 `[("Candidate" ,width t) ("Annotation" 0 nil)])
             [("Candidate" 0 t)]))
+    (when tabulated-list-use-header-line (tabulated-list-init-header))
     (setq tabulated-list-entries
           (mapcar (lambda (cand)
                     (if annotator
@@ -1051,6 +1052,7 @@ keybinding for it.  Or alternatively you might want to enable
          (columns (/ (window-width) width)))
     (setq tabulated-list-format
           (make-vector columns `("Candidate" ,width nil)))
+    (when tabulated-list-use-header-line (tabulated-list-init-header))
     (setq tabulated-list-entries
           (cl-loop with cands = (copy-tree embark-occur-candidates)
                    while cands
@@ -1121,7 +1123,8 @@ Argument BUFFER-NAME specifies the name of the created buffer."
     (with-current-buffer buffer
       (delay-mode-hooks (embark-occur-mode)) ; we'll run them when the
                                              ; buffer is displayed, so
-                                             ; they can use the window
+                                        ; they can use the window
+      (setq tabulated-list-use-header-line nil) ; default to no header
       (setq embark-occur-from from)
       (setq embark-occur-annotation-func
             (or (completion-metadata-get (embark--metadata)
