@@ -1148,7 +1148,8 @@ window placement."
   (let ((occur-window (display-buffer occur-buffer action)))
     (with-selected-window occur-window
       (run-mode-hooks)
-      (revert-buffer))
+      (revert-buffer)
+      (tabulated-list-init-header))
     occur-window))
 
 (defun embark-occur--initial-view-arg ()
