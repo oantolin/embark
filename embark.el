@@ -1108,24 +1108,30 @@ keybinding for it.  Or alternatively you might want to enable
   (when (embark-occur--linked-buffer-is-live-p)
     (kill-buffer embark-occur-linked-buffer)))
 
-(defun embark-occur--toggle (variable value1 value2)
-  "Toggle Embark Occur buffer's local VARIABLE between VALUE1 and VALUE2.
+(defun embark-occur--toggle (variable this that)
+  "Toggle Embark Occur buffer's local VARIABLE between THIS and THAT.
 Refresh the buffer afterwards."
   (when-let ((buffer (if (derived-mode-p 'embark-occur-mode)
                          (current-buffer)
                        embark-occur-linked-buffer)))
     (with-current-buffer buffer 
       (set variable
-           (if (eq (buffer-local-value variable buffer) value1) value2 value1))
+           (if (eq (buffer-local-value variable buffer) this) that this))
       (revert-buffer))))
 
 (defun embark-occur-toggle-view ()
-  "Toggle between list and grid views of Embark Occur buffer."
+  "Toggle between list and grid views of Embark Occur buffer.
+This command can be called either from the Embark Occur buffer
+itself, or, from any buffer (particularly a minibuffer) that has
+a linked Embark Live Occur buffer."
   (interactive)
   (embark-occur--toggle 'embark-occur-view 'list 'grid))
 
 (defun embark-occur-toggle-header ()
-  "Toggle the visibility of the header line of the Embark Occur buffer."
+  "Toggle the visibility of the header line of Embark Occur buffer.
+This command can be called either from the Embark Occur buffer
+itself, or, from any buffer (particularly a minibuffer) that has
+a linked Embark Live Occur buffer."
   (interactive)
   (embark-occur--toggle 'tabulated-list-use-header-line t nil))
 
