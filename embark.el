@@ -1036,7 +1036,9 @@ keybinding for it.  Or alternatively you might want to enable
               (let ((width (embark-occur--max-width)))
                 `[("Candidate" ,width t) ("Annotation" 0 nil)])
             [("Candidate" 0 t)]))
-    (when tabulated-list-use-header-line (tabulated-list-init-header))
+    (if tabulated-list-use-header-line
+        (tabulated-list-init-header)
+      (setq header-line-format nil))
     (setq tabulated-list-entries
           (mapcar (lambda (cand)
                     (if annotator
@@ -1052,7 +1054,9 @@ keybinding for it.  Or alternatively you might want to enable
          (columns (/ (window-width) width)))
     (setq tabulated-list-format
           (make-vector columns `("Candidate" ,width nil)))
-    (when tabulated-list-use-header-line (tabulated-list-init-header))
+    (if tabulated-list-use-header-line
+        (tabulated-list-init-header)
+      (setq header-line-format nil))
     (setq tabulated-list-entries
           (cl-loop with cands = (copy-tree embark-occur-candidates)
                    while cands
@@ -1104,12 +1108,26 @@ keybinding for it.  Or alternatively you might want to enable
   (when (embark-occur--linked-buffer-is-live-p)
     (kill-buffer embark-occur-linked-buffer)))
 
+(defun embark-occur--toggle (variable value1 value2)
+  "Toggle Embark Occur buffer's local VARIABLE between VALUE1 and VALUE2.
+Refresh the buffer afterwards."
+  (when-let ((buffer (if (derived-mode-p 'embark-occur-mode)
+                         (current-buffer)
+                       embark-occur-linked-buffer)))
+    (with-current-buffer buffer 
+      (set variable
+           (if (eq (buffer-local-value variable buffer) value1) value2 value1))
+      (revert-buffer))))
+
 (defun embark-occur-toggle-view ()
   "Toggle between list and grid views of Embark Occur buffer."
   (interactive)
-  (with-current-buffer (or embark-occur-linked-buffer (current-buffer))
-    (setq embark-occur-view (if (eq embark-occur-view 'list) 'grid 'list))
-    (revert-buffer)))
+  (embark-occur--toggle 'embark-occur-view 'list 'grid))
+
+(defun embark-occur-toggle-header ()
+  "Toggle the visibility of the header line of the Embark Occur buffer."
+  (interactive)
+  (embark-occur--toggle 'tabulated-list-use-header-line t nil))
 
 (defun embark-occur-noselect (buffer-name &optional initial-view)
   "Create and return a buffer of current candidates ready for action.
