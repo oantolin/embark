@@ -825,7 +825,8 @@ To be used as an annotation function for symbols in `embark-occur'."
 
 (defun embark-annotation-function-metadatum (cand)
   "Use the `annotation-function' metadatum to annotate CAND."
-  (when-let ((annot-fn (or (completion-metadata-get (embark--metadata)
+  (when-let ((annot-fn (or embark-occur-annotation-func
+                           (completion-metadata-get (embark--metadata)
                                                     'annotation-function)
                            (plist-get completion-extra-properties
                                       :annotation-function)))
@@ -991,6 +992,9 @@ If you are using `embark-completing-read' as your
 (defvar-local embark-occur-linked-buffer nil
   "Buffer local variable indicating which Embark Buffer to update.")
 
+(defvar-local embark-occur-annotation-func nil
+  "Annotation function of minibuffer session for this occur.")
+
 (defvar-local embark--live-occur--timer nil
   "Timer scheduled to update Embark Live Occur buffer.")
 
@@ -1119,6 +1123,11 @@ Argument BUFFER-NAME specifies the name of the created buffer."
                                              ; buffer is displayed, so
                                              ; they can use the window
       (setq embark-occur-from from)
+      (setq embark-occur-annotation-func
+            (or (completion-metadata-get (embark--metadata)
+                                         'annotation-function)
+                (plist-get completion-extra-properties
+                           :annotation-function)))
       (add-hook 'tabulated-list-revert-hook #'embark-occur--revert)
       (setq embark-occur-view
             (or initial-view
