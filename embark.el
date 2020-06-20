@@ -1040,11 +1040,12 @@ keybinding for it.  Or alternatively you might want to enable
         (tabulated-list-init-header)
       (setq header-line-format nil))
     (setq tabulated-list-entries
-          (mapcar (lambda (cand)
-                    (if annotator
+          (mapcar (if annotator
+                      (lambda (cand)
                         `(,cand [(,cand type embark-occur-entry)
                                  (,(or (funcall annotator cand) "")
-                                  face embark-occur-annotation)])
+                                  face embark-occur-annotation)]))
+                    (lambda (cand)
                       `(,cand [(,cand type embark-occur-entry)])))
                   embark-occur-candidates))))
 
