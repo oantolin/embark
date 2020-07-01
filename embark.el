@@ -169,6 +169,15 @@ current input string or nil (to indicate it is not applicable)."
   :type 'hook
   :group 'embark)
 
+(defcustom embark-prompt-style 'default
+  "Prompt style used to prompt the user for actions.
+
+The `default' style prompts for keys and makes use of
+`embark-action-indicator' and `embark-become-indicator'. There is
+also `completion' style which prompts with completion."
+  :type 'symbol
+  :group 'embark)
+
 (defcustom embark-action-indicator (propertize "Act" 'face 'highlight)
   "Indicator to use when embarking upon an action.
 
@@ -501,7 +510,7 @@ return nil."
 (defun embark--act-inject ()
   "Inject embark action target into minibuffer prompt."
   (unless (and (or (string-match-p "M-x" (minibuffer-prompt))
-                   (eq this-command 'embark-keymap-help))
+                   (eq this-command 'ignore))
                (not (memq real-this-command
                           '(embark-default-action
                             embark-action<embark-default-action>
@@ -521,7 +530,7 @@ return nil."
 (defun embark--become-inject ()
   "Inject embark becoming target into minibuffer prompt."
   (unless (or (string-match-p "M-x" (minibuffer-prompt))
-              (eq this-command 'embark-keymap-help))
+              (eq this-command 'ignore))
     (when-let ((target (embark-target)))
       (insert target))))
 
@@ -682,7 +691,33 @@ If EXITP is non-nil, exit all minibuffers too."
          (this-command prefix-arg embark--command embark--target-buffer)
          (command-execute this-command))))))
 
-(defun embark-act (&optional continuep)
+(defun embark--prompt (exitp ps)
+  "Prompt user for action and handle choice.
+If EXITP is non-nil exit all minibuffers. PS is the prompt style
+to use (see `embark-prompt-style')."
+  (cond ((eq ps 'default)
+         (let ((indicator
+                (cond ((memq 'embark--act-inject minibuffer-setup-hook)
+                       embark-action-indicator)
+                      ((memq 'embark--become-inject minibuffer-setup-hook)
+                       embark-become-indicator))))
+           (embark--activate-keymap exitp)
+           (embark--show-indicator indicator)))
+        ((eq ps 'completion)
+         (let ((cmd (embark--completing-read-map)))
+           (when (memq 'embark--act-inject minibuffer-setup-hook)
+             (if (not cmd)
+                 (embark--cleanup)
+               (run-hooks 'embark-pre-action-hook)
+               (setq embark--action cmd)
+               (advice-add cmd :after #'embark--cleanup)))
+           (when cmd
+             (if exitp
+                 (embark-after-exit (embark--target-buffer)
+                   (command-execute cmd))
+               (command-execute cmd)))))))
+
+(defun embark-act (&optional continuep ps)
   "Embark upon an action and exit from all minibuffers (if any).
 The target of the action is chosen by `embark-target-finders'.
 By default, if called from a minibuffer the target is the top
@@ -691,15 +726,17 @@ Completions buffer it is the candidate at point.
 
 If CONTINUEP is non-nil (interactively, if called with a prefix
 argument), don't actually exit.  The variant `embark-act-noexit'
-has the opposite behavior with respect to minibuffers."
+has the opposite behavior with respect to minibuffers.
+
+PS is the prompt style to use (defaults to
+`embark-prompt-style')."
   (interactive "P")
   (embark--setup-action)
   (setq continuep (or continuep (not (minibufferp)) (use-region-p)))
   (when continuep (setq-local enable-recursive-minibuffers t))
-  (embark--activate-keymap (not continuep))
-  (embark--show-indicator embark-action-indicator))
+  (embark--prompt (not continuep) (or ps embark-prompt-style)))
 
-(defun embark-act-noexit (&optional exitp)
+(defun embark-act-noexit (&optional exitp ps)
   "Embark upon an action.
 The target of the action is chosen by `embark-target-finders'.
 By default, if called from a minibuffer the target is the top
@@ -709,17 +746,23 @@ Completions buffer it is the candidate at point.
 This variant of `embark-act' differs from it only in that by
 default if called from a minibuffer it does not exit the
 minibuffer.  If EXITP is non-nil (interactively, if called with a
-prefix argument), then this command exits all minibuffers too."
-  (interactive "P")
-  (embark-act (not exitp)))
+prefix argument), then this command exits all minibuffers too.
 
-(defun embark-become ()
+PS is the prompt style to use (defaults to
+`embark-prompt-style')."
+  (interactive "P")
+  (embark-act (not exitp) (or ps embark-prompt-style)))
+
+(defun embark-become (&optional ps)
   "Make current command become a different command.
 Take the current minibuffer input as initial input for new
 command.  The new command can be run normally using keybindings or
 \\[execute-extended-command], but if the current command is found in a keymap in
 `embark-become-keymaps', that keymap is activated to provide
-convenient access to the other commands in it."
+convenient access to the other commands in it.
+
+PS is the prompt style to use and defaults to
+`embark-prompt-style'."
   (interactive)
   (when (minibufferp)
     (setq embark--target
@@ -730,8 +773,7 @@ convenient access to the other commands in it."
                    when (where-is-internal embark--command (list keymap))
                    return keymap))
     (add-hook 'minibuffer-setup-hook #'embark--become-inject)
-    (embark--activate-keymap t)
-    (embark--show-indicator embark-become-indicator)))
+    (embark--prompt t (or ps embark-prompt-style))))
 
 (defun embark-keymap (binding-alist &optional parent-map)
   "Return keymap with bindings given by BINDING-ALIST.
@@ -1324,9 +1366,9 @@ buffer for each type of completion."
 
 ;;; custom actions
 
-(defun embark-keymap-help ()
-  "Prompt for an action to perform or command to become and run it."
-  (interactive)
+(defun embark--completing-read-map ()
+  "Prompt for action or command to become via completion.
+Returns choosen command."
   (let* ((arrow (propertize " → " 'face 'shadow))
          (commands
           (cl-loop
@@ -1356,6 +1398,8 @@ buffer for each type of completion."
          (docstring (if (eq embark-keymap-help-docstrings 'truncate)
                         truncated-docstring
                       full-docstring))
+         ;; prevent injection
+         (this-command 'ignore)
          (command
           (condition-case nil
               (completing-read
@@ -1371,8 +1415,17 @@ buffer for each type of completion."
                nil t)
             (quit nil))))
     (when command
-      (setq this-command (cdr (assoc command commands)))
-      (call-interactively this-command))))
+      (cdr (assoc command commands)))))
+
+(defun embark-keymap-help ()
+  "Prompt for an action to perform or command to become and run it."
+  (interactive)
+  (let ((command (embark--completing-read-map)))
+    (cond ((and (memq 'embark--act-inject minibuffer-setup-hook)
+                (not command))
+           (embark--cleanup))
+          (command
+           (command-execute command)))))
 
 (defun embark-undefined ()
   "Cancel action and show an error message."
