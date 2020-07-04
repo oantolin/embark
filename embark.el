@@ -175,7 +175,8 @@ current input string or nil (to indicate it is not applicable)."
 The `default' style prompts for keys and makes use of
 `embark-action-indicator' and `embark-become-indicator'. There is
 also `completion' style which prompts with completion."
-  :type 'symbol
+  :type '(choice (const default)
+                 (const completion))
   :group 'embark)
 
 (defcustom embark-action-indicator (propertize "Act" 'face 'highlight)
