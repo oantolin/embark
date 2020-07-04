@@ -713,8 +713,12 @@ to use (see `embark-prompt-style')."
                (setq embark--action cmd)
                (advice-add cmd :after #'embark--cleanup)))
            (when cmd
+             (setq this-command cmd)
              (if exitp
-                 (embark-after-exit (embark--target-buffer)
+                 (embark-after-exit (this-command
+                                     prefix-arg
+                                     embark--command
+                                     embark--target-buffer)
                    (command-execute cmd))
                (command-execute cmd)))))))
 
