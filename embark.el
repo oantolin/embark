@@ -671,15 +671,20 @@ BODY."
        (setq inhibit-message t)
        (top-level))))
 
-(defun embark--activate-keymap (exitp)
+(defun embark--activate-keymap (exitp &optional arg)
   "Set transient keymap with bindings for type-specific actions.
-If EXITP is non-nil, exit all minibuffers too."
+If EXITP is non-nil, exit all minibuffers too. ARG is the prefix
+argument to use, if any."
   (set-transient-map
    embark--keymap
    (lambda () (memq this-command embark--keep-alive-list))
    (lambda ()
      (run-hooks 'embark-pre-action-hook)
      (setq embark--action this-command)
+     ;; Only set prefix if it was given, prefix can still be added after calling
+     ;; `embark-act', too.
+     (when arg
+       (setq prefix-arg arg))
      (unless (eq this-command 'embark-act-on-region-contents)
        ;; postpone cleanup; embark-act-on-region-contents runs
        ;; embark-act and cleanup is scheduled then
@@ -692,17 +697,18 @@ If EXITP is non-nil, exit all minibuffers too."
          (this-command prefix-arg embark--command embark--target-buffer)
          (command-execute this-command))))))
 
-(defun embark--prompt (exitp ps)
+(defun embark--prompt (exitp ps &optional arg)
   "Prompt user for action and handle choice.
 If EXITP is non-nil exit all minibuffers. PS is the prompt style
-to use (see `embark-prompt-style')."
+to use (see `embark-prompt-style'). ARG is the prefix argument to
+use for the action."
   (cond ((eq ps 'default)
          (let ((indicator
                 (cond ((memq 'embark--act-inject minibuffer-setup-hook)
                        embark-action-indicator)
                       ((memq 'embark--become-inject minibuffer-setup-hook)
                        embark-become-indicator))))
-           (embark--activate-keymap exitp)
+           (embark--activate-keymap exitp arg)
            (embark--show-indicator indicator)))
         ((eq ps 'completion)
          (let ((cmd (embark--completing-read-map)))
@@ -714,6 +720,7 @@ to use (see `embark-prompt-style')."
                (advice-add cmd :after #'embark--cleanup)))
            (when cmd
              (setq this-command cmd)
+             (setq prefix-arg arg)
              (if exitp
                  (embark-after-exit (this-command
                                      prefix-arg
@@ -722,43 +729,45 @@ to use (see `embark-prompt-style')."
                    (command-execute cmd))
                (command-execute cmd)))))))
 
-(defun embark-act (&optional continuep ps)
+(defun embark-act (&optional arg ps continuep)
   "Embark upon an action and exit from all minibuffers (if any).
 The target of the action is chosen by `embark-target-finders'.
 By default, if called from a minibuffer the target is the top
 completion candidate, if called from an Embark Occur or a
 Completions buffer it is the candidate at point.
 
-If CONTINUEP is non-nil (interactively, if called with a prefix
-argument), don't actually exit.  The variant `embark-act-noexit'
-has the opposite behavior with respect to minibuffers.
+ARG is passed as prefix argument to the action.
 
 PS is the prompt style to use (defaults to
-`embark-prompt-style')."
-  (interactive "P")
+`embark-prompt-style').
+
+If CONTINUEP is non-nil , don't actually exit."
+  (interactive
+   (list current-prefix-arg embark-prompt-style nil))
   (embark--setup-action)
   (setq continuep (or continuep (not (minibufferp)) (use-region-p)))
   (when continuep (setq-local enable-recursive-minibuffers t))
-  (embark--prompt (not continuep) (or ps embark-prompt-style)))
+  (embark--prompt (not continuep) (or ps embark-prompt-style) arg))
 
-(defun embark-act-noexit (&optional exitp ps)
+(defun embark-act-noexit (&optional arg ps)
   "Embark upon an action.
 The target of the action is chosen by `embark-target-finders'.
 By default, if called from a minibuffer the target is the top
 completion candidate, if called from an Embark Occur or a
 Completions buffer it is the candidate at point.
 
-This variant of `embark-act' differs from it only in that by
-default if called from a minibuffer it does not exit the
-minibuffer.  If EXITP is non-nil (interactively, if called with a
-prefix argument), then this command exits all minibuffers too.
+This command differs from `embark-act' only in that by default if
+called from a minibuffer it does not exit the minibuffer.
+
+ARG is passed as prefix argument to the action.
 
 PS is the prompt style to use (defaults to
 `embark-prompt-style')."
-  (interactive "P")
-  (embark-act (not exitp) (or ps embark-prompt-style)))
+  (interactive
+   (list current-prefix-arg embark-prompt-style))
+  (embark-act arg (or ps embark-prompt-style) t))
 
-(defun embark-become (&optional ps)
+(defun embark-become (&optional arg ps)
   "Make current command become a different command.
 Take the current minibuffer input as initial input for new
 command.  The new command can be run normally using keybindings or
@@ -766,9 +775,12 @@ command.  The new command can be run normally using keybindings or
 `embark-become-keymaps', that keymap is activated to provide
 convenient access to the other commands in it.
 
+ARG is the prefix argument for the command.
+
 PS is the prompt style to use and defaults to
 `embark-prompt-style'."
-  (interactive)
+  (interactive
+   (list current-prefix-arg embark-prompt-style))
   (when (minibufferp)
     (setq embark--target
           (run-hook-with-args-until-success 'embark-input-getters)
@@ -778,7 +790,7 @@ PS is the prompt style to use and defaults to
                    when (where-is-internal embark--command (list keymap))
                    return keymap))
     (add-hook 'minibuffer-setup-hook #'embark--become-inject)
-    (embark--prompt t (or ps embark-prompt-style))))
+    (embark--prompt t (or ps embark-prompt-style) arg)))
 
 (defun embark-keymap (binding-alist &optional parent-map)
   "Return keymap with bindings given by BINDING-ALIST.
