@@ -356,6 +356,14 @@ Possible values of this variable are:
                  (const :tag "Truncate docstrings" truncate))
   :group 'embark)
 
+(defcustom embark-keymap-help-format-function 'embark-keymap-help-format-default
+  "Function to format the keymap bindings.
+
+The function is called with two string arguments: The key and the
+command name. It should return the string used for completion."
+  :type 'function
+  :group 'embark)
+
 ;;; stashing information for actions in buffer local variables
 
 (defvar-local embark--type nil
@@ -1383,23 +1391,29 @@ buffer for each type of completion."
 
 ;;; custom actions
 
+(defun embark-keymap-help-format-default (key cmd)
+  "Format KEY and CMD for display.
+See `embark-keymap-help-format-function'."
+  (concat (propertize
+           key
+           'face 'success)
+          (propertize " → " 'face 'shadow)
+          cmd))
+
 (defun embark--completing-read-map ()
   "Prompt for action or command to become via completion.
 Returns choosen command."
-  (let* ((arrow (propertize " → " 'face 'shadow))
-         (commands
+  (let* ((commands
           (cl-loop
            for (key . cmd) in (cdr (keymap-canonicalize embark--keymap))
            unless (or (not (symbolp cmd))
                       (memq cmd '(ignore embark-keymap-help))
                       (memq cmd embark--keep-alive-list))
-           collect (cons (concat (propertize
+           collect (cons (funcall embark-keymap-help-format-function
                                   (if (numberp key)
                                       (single-key-description key)
                                     (key-description key))
-                                  'face 'success)
-                                 arrow
-                                 (symbol-name cmd))
+                                  (symbol-name cmd))
                          cmd)))
          (full-docstring
           (lambda (x)
