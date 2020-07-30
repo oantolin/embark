@@ -110,6 +110,10 @@
   :type '(alist :key-type symbol :value-type variable)
   :group 'embark)
 
+(defvar embark-overriding-keymap nil
+  "Can be bound to short circuit `embark-keymap-alist'.
+Embark will set the parent of this map to `embark-general-map'.")
+
 (defcustom embark-classifiers
   '(embark-category-type
     embark-package-type
@@ -313,6 +317,11 @@ value indicates the default function to use for other types.  The
 default is `embark-occur'."
   :type '(alist :key-type symbol :value-type function)
   :group 'embark)
+
+(defvar embark-overriding-export-function nil
+  "Can be bound to short circuit `embark-exporters-alist'.
+The expected format is the same as for functions in
+`embark-exporters-alist'.")
 
 (defcustom embark-live-occur-delay 0.15
   "Wait this long for more input before updating Embark Live Occur buffer."
@@ -623,7 +632,11 @@ relative path."
 (defun embark--setup-action ()
   "Setup for next action."
   (setq embark--keymap
-        (symbol-value (alist-get (embark-classify) embark-keymap-alist))
+        (or (and embark-overriding-keymap
+                 (let ((map (copy-keymap embark-overriding-keymap)))
+                   (set-keymap-parent map embark-general-map)
+                   map))
+            (symbol-value (alist-get (embark-classify) embark-keymap-alist)))
         embark--target
         (if (use-region-p)
             (when embark--target-region-p
@@ -1345,7 +1358,8 @@ The variable `embark-exporters-alist' controls how to make the
 buffer for each type of completion."
   (interactive)
   (let* ((type (embark-classify))
-         (exporter (or (alist-get type embark-exporters-alist)
+         (exporter (or embark-overriding-export-function
+                       (alist-get type embark-exporters-alist)
                        (alist-get t embark-exporters-alist))))
     (if (eq exporter 'embark-occur)
         ;; let embark-occur gather the candidates
