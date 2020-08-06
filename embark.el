@@ -828,7 +828,11 @@ To be used as an annotation function for symbols in `embark-occur'."
   (when-let* ((symbol (intern name))
               (docstring
                (if (fboundp symbol)
-                   (documentation symbol)
+                   ;; As per `describe-function-1' `documentation' might throw
+                   ;; an error for alias of a not yet defined function.
+                   (condition-case nil
+                       (documentation symbol)
+                     ((invalid-function void-function) nil))
                  (or
                   (documentation-property symbol 'variable-documentation)
                   (documentation-property symbol 'face-documentation)
