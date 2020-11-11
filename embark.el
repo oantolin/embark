@@ -100,6 +100,7 @@
 (defcustom embark-keymap-alist
   '((general . embark-general-map)
     (file . embark-file-map)
+    (url . embark-url-map)
     (buffer . embark-buffer-map)
     (command . embark-symbol-map)
     (unicode-name . embark-unicode-name-map)
@@ -129,7 +130,8 @@ context fallback to `embark-target-classifiers'."
   :group 'embark)
 
 (defcustom embark-target-classifiers
-  '(embark-file-target-type
+  '(embark-url-target-type
+    embark-file-target-type
     embark-symbol-target-type
     embark-buffer-target-type)
   "List of functions to classify current target.
@@ -141,11 +143,13 @@ fallback to the `general' type."
   :group 'embark)
 
 (autoload 'ffap-file-at-point "ffap")
+(autoload 'ffap-url-at-point "ffap")
 
 (defcustom embark-target-finders
   '(embark-top-minibuffer-completion
     embark-button-label
     embark-completion-at-point
+    ffap-url-at-point
     ffap-file-at-point
     embark-symbol-at-point)
   "List of functions to determine the target in current context.
@@ -492,6 +496,13 @@ command name. It should return the string used for completion."
   "Report file type if CAND is a file."
   (when (file-exists-p cand)
     'file))
+
+(defvar ffap-url-regexp)
+
+(defun embark-url-target-type (cand)
+  "Report url type if CAND is a URL"
+  (when (eql (string-match-p ffap-url-regexp cand) 0)
+    'url))
 
 (defun embark-symbol-target-type (cand)
   "Report symbol type if CAND is a known symbol."
@@ -1579,15 +1590,18 @@ with command output. For replacement behaviour see
 (defun embark-open-externally (file)
   "Open FILE using system's default application."
   (interactive "fOpen: ")
-  (if (and (eq system-type 'windows-nt)
-           (fboundp 'w32-shell-execute))
-      (w32-shell-execute "open" (expand-file-name file))
-    (call-process (pcase system-type
-                    ('darwin "open")
-                    ('cygwin "cygstart")
-                    (_ "xdg-open"))
-                  nil 0 nil
+  (let ((target (if (eql (string-match-p ffap-url-regexp file) 0)
+                    file
                   (expand-file-name file))))
+    (if (and (eq system-type 'windows-nt)
+             (fboundp 'w32-shell-execute))
+        (w32-shell-execute "open" target)
+      (call-process (pcase system-type
+                      ('darwin "open")
+                      ('cygwin "cygstart")
+                      (_ "xdg-open"))
+                    nil 0 nil
+                    target))))
 
 (defun embark-bury-buffer ()
   "Bury embark target buffer."
@@ -1708,6 +1722,14 @@ and leaves the point to the left of it."
      ("B" . byte-recompile-directory))
    embark-general-map)
   "Keymap for Embark file actions.")
+
+(defvar embark-url-map
+  (embark-keymap ; omar.antolin@gmail.com
+   '(("b" . browse-url)
+     ("e" . eww)
+     ("x" . embark-open-externally))
+   embark-general-map)
+  "Keymap for Embark url actions.")
 
 (defvar embark-buffer-map
   (embark-keymap
