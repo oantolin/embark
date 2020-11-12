@@ -872,7 +872,6 @@ To be used as an annotation function for symbols in `embark-occur'."
                     (embark-package-summary (substring name 9))))))))
     (car (split-string docstring "\n"))))
 
-(autoload 'package-desc-p "package")
 (autoload 'package--from-builtin "package")
 (autoload 'package-desc-extras "package")
 (autoload 'package-desc-summary "package")
