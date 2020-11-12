@@ -91,6 +91,8 @@
 
 (eval-when-compile (require 'subr-x))
 
+(require 'ffap) ; used it to recognize file and url targets
+
 ;;; user facing options
 
 (defgroup embark nil
@@ -141,9 +143,6 @@ current target. If the type isn't determined by current target
 fallback to the `general' type."
   :type 'hook
   :group 'embark)
-
-(autoload 'ffap-file-at-point "ffap")
-(autoload 'ffap-url-at-point "ffap")
 
 (defcustom embark-target-finders
   '(embark-top-minibuffer-completion
@@ -496,8 +495,6 @@ command name. It should return the string used for completion."
   "Report file type if CAND is a file."
   (when (file-exists-p cand)
     'file))
-
-(defvar ffap-url-regexp)
 
 (defun embark-url-target-type (cand)
   "Report url type if CAND is a URL"
