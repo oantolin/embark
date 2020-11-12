@@ -1692,6 +1692,7 @@ and leaves the point to the left of it."
      ("r" . rot13-region)
      ("=" . count-words-region)
      ("s" . whitespace-cleanup-region)
+     ("t" . transpose-regions)
      ("o" . org-table-convert-region)
      (";" . comment-or-uncomment-region)
      ("w" . write-region)
