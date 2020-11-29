@@ -939,6 +939,23 @@ To be used as an annotation function for symbols in `embark-occur'."
       (when last (setcdr last nil))
       all)))
 
+(defun embark-sorted-minibuffer-candidates ()
+  "Return a sorted list of current minibuffer completion candidates.
+This using the same sort order that `icomplete' and
+`minibuffer-force-complete' use. The intended usage is that you
+replace `embark-minibuffer-candidates' with this function in the
+list `embark-candidate-collectors', for example, by evaluating
+the following:
+
+(setq embark-candidate-collectors
+      (cons #'embark-sorted-minibuffer-candidates
+       (delq #'embark-minibuffer-candidates embark-candidate-collectors)))"
+  (when (minibufferp)
+    (let* ((all (completion-all-sorted-completions))
+           (last (last all)))
+      (when last (setcdr last nil))
+      all)))
+
 (autoload 'dired-get-filename "dired")
 
 (defun embark-dired-candidates ()
