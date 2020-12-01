@@ -866,8 +866,14 @@ To be used as an annotation function for symbols in `embark-occur'."
                     (documentation-property (intern (substring name 6))
                                             'face-documentation))
                    ((string-prefix-p "Packages/" name)
-                    (embark-package-summary (substring name 9))))))))
-    (car (split-string docstring "\n"))))
+                    (embark-package-summary (substring name 9)))))))
+              (first-line (car (split-string docstring "\n"))))
+    (if-let ((binding (when (commandp symbol)
+                        (with-current-buffer
+                            (or embark--target-buffer (current-buffer))
+                          (where-is-internal symbol nil t)))))
+        (format "{%s} %s" (key-description binding) first-line)
+      first-line)))
 
 (autoload 'package--from-builtin "package")
 (autoload 'package-desc-extras "package")
