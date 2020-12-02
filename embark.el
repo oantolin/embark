@@ -1829,7 +1829,8 @@ and leaves the point to the left of it."
   (embark-keymap
    '(("o" . occur)
      ("k" . keep-lines)
-     ("f" . flush-lines))
+     ("f" . flush-lines)
+     ("c" . count-matches))
    embark-meta-map))
 
 (provide 'embark)
