@@ -1156,9 +1156,13 @@ keybinding for it.  Or alternatively you might want to enable
     (setq tabulated-list-entries
           (mapcar (if annotator
                       (lambda (cand)
-                        `(,cand [(,cand type embark-occur-entry)
-                                 (,(or (funcall annotator cand) "")
-                                  face embark-occur-annotation)]))
+                        (let ((annotation (or (funcall annotator cand) "")))
+                          (font-lock-append-text-property
+                           0 (length annotation)
+                           'face 'embark-occur-annotation
+                           annotation)
+                          `(,cand [(,cand type embark-occur-entry)
+                                   ,annotation])))
                     (lambda (cand)
                       `(,cand [(,cand type embark-occur-entry)])))
                   embark-occur-candidates))))
