@@ -1157,12 +1157,13 @@ keybinding for it.  Or alternatively you might want to enable
           (mapcar (if annotator
                       (lambda (cand)
                         (let ((annotation (or (funcall annotator cand) "")))
-                          (font-lock-append-text-property
-                           0 (length annotation)
-                           'face 'embark-occur-annotation
-                           annotation)
                           `(,cand [(,cand type embark-occur-entry)
-                                   ,annotation])))
+                                   (,annotation
+                                    ,@(unless (text-property-not-all
+                                               0 (length annotation)
+                                               'face nil
+                                               annotation)
+                                        '(face embark-occur-annotation)))])))
                     (lambda (cand)
                       `(,cand [(,cand type embark-occur-entry)])))
                   embark-occur-candidates))))
