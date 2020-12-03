@@ -927,11 +927,8 @@ To be used as an annotation function for symbols in `embark-occur'."
                                                     'annotation-function)
                            (plist-get completion-extra-properties
                                       :annotation-function)))
-             (annot (string-trim (funcall annot-fn cand))))
-    (if (or (string-match-p "^(.*)$" annot)
-            (string-match-p "^<.*>$" annot))
-        (substring annot 1 -1)
-      annot)))
+             (annot (funcall annot-fn cand)))
+    (string-trim annot)))
 
 (defun embark-minibuffer-candidates ()
   "Return all current completion candidates from the minibuffer."
