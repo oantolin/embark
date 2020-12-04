@@ -724,7 +724,7 @@ argument to use, if any."
                                    embark-occur))))
        (embark-after-exit
          (this-command prefix-arg embark--command embark--target-buffer)
-         (command-execute this-command))))))
+         (let (use-dialog-box) (command-execute this-command)))))))
 
 (defun embark--prompt (exitp ps &optional arg)
   "Prompt user for action and handle choice.
