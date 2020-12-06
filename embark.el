@@ -1612,18 +1612,15 @@ with command output. For replacement behaviour see
 (defun embark-open-externally (file)
   "Open FILE using system's default application."
   (interactive "fOpen: ")
-  (let ((target (if (eql (string-match-p ffap-url-regexp file) 0)
-                    file
+  (if (and (eq system-type 'windows-nt)
+           (fboundp 'w32-shell-execute))
+      (w32-shell-execute "open" target)
+    (call-process (pcase system-type
+                    ('darwin "open")
+                    ('cygwin "cygstart")
+                    (_ "xdg-open"))
+                  nil 0 nil
                   (expand-file-name file))))
-    (if (and (eq system-type 'windows-nt)
-             (fboundp 'w32-shell-execute))
-        (w32-shell-execute "open" target)
-      (call-process (pcase system-type
-                      ('darwin "open")
-                      ('cygwin "cygstart")
-                      (_ "xdg-open"))
-                    nil 0 nil
-                    target))))
 
 (defun embark-bury-buffer ()
   "Bury embark target buffer."
@@ -1747,10 +1744,9 @@ and leaves the point to the left of it."
   "Keymap for Embark file actions.")
 
 (defvar embark-url-map
-  (embark-keymap ; omar.antolin@gmail.com
+  (embark-keymap
    '(("b" . browse-url)
-     ("e" . eww)
-     ("x" . embark-open-externally))
+     ("e" . eww))
    embark-general-map)
   "Keymap for Embark url actions.")
 
