@@ -1363,7 +1363,7 @@ with key \"Embark Occur\"."
           (setq embark-occur-candidates candidates)
           (when (minibufferp embark-occur-from)
             (setq embark-occur-from nil))
-          (when (eq embark--command 'imenu)
+          (when (memq embark--command '(imenu consult-line))
             (add-hook 'embark-pre-action-hook
                       #'embark--pop-to-target-buffer
                       nil t)))
