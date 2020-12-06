@@ -1614,7 +1614,7 @@ with command output. For replacement behaviour see
   (interactive "fOpen: ")
   (if (and (eq system-type 'windows-nt)
            (fboundp 'w32-shell-execute))
-      (w32-shell-execute "open" target)
+      (w32-shell-execute "open" file)
     (call-process (pcase system-type
                     ('darwin "open")
                     ('cygwin "cygstart")
