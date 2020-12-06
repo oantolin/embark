@@ -425,7 +425,7 @@ command name. It should return the string used for completion."
 
 (add-hook 'completion-setup-hook #'embark--cache-info t)
 
-;;; core functionality
+;;; internal variables
 
 (defvar embark--target nil "String the next action will operate on.")
 (defvar embark--keymap nil "Keymap to activate for next action.")
@@ -436,6 +436,26 @@ command name. It should return the string used for completion."
 
 (defvar embark--target-region-p nil
   "Should the active region's contents be put into `embark--target'?")
+
+(defvar-local embark-occur-candidates nil
+  "List of candidates in current occur buffer.")
+
+(defvar-local embark-occur-view 'list
+  "Type of view in occur buffer: `list' or `grid'.")
+
+(defvar-local embark-occur-from nil
+  "The buffer `embark-occur' was called from.")
+
+(defvar-local embark-occur-linked-buffer nil
+  "Buffer local variable indicating which Embark Buffer to update.")
+
+(defvar-local embark-occur-annotation-func nil
+  "Annotation function of minibuffer session for this occur.")
+
+(defvar-local embark--live-occur--timer nil
+  "Timer scheduled to update Embark Live Occur buffer.")
+
+;;; core functionality
 
 (defun embark--metadata ()
   "Return current minibuffer completion metadata."
@@ -636,6 +656,8 @@ relative path."
              (string-match-p "^\\([~=]\\).*\\1$" name))
         (substring name 1 -1)
       name)))
+
+(defvar embark-general-map)             ; forward declaration
 
 (defun embark--setup-action ()
   "Setup for next action."
@@ -1090,24 +1112,6 @@ If you are using `embark-completing-read' as your
     (run-hooks 'embark-pre-action-hook)
     (embark-default-action)
     (run-hooks 'embark-post-action-hook)))
-
-(defvar-local embark-occur-candidates nil
-  "List of candidates in current occur buffer.")
-
-(defvar-local embark-occur-view 'list
-  "Type of view in occur buffer: `list' or `grid'.")
-
-(defvar-local embark-occur-from nil
-  "The buffer `embark-occur' was called from.")
-
-(defvar-local embark-occur-linked-buffer nil
-  "Buffer local variable indicating which Embark Buffer to update.")
-
-(defvar-local embark-occur-annotation-func nil
-  "Annotation function of minibuffer session for this occur.")
-
-(defvar-local embark--live-occur--timer nil
-  "Timer scheduled to update Embark Live Occur buffer.")
 
 (define-derived-mode embark-occur-mode tabulated-list-mode "Embark Occur"
   "List of candidates to be acted on.
