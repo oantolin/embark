@@ -1585,14 +1585,14 @@ The insert path is relative to the previously selected buffer's
 `default-directory'."
   (interactive)
   (with-current-buffer embark--target-buffer
-    (insert (file-relative-name (embark-target)))))
+    (insert (file-relative-name (substitute-in-file-name (embark-target))))))
 
 (defun embark-save-relative-path ()
   "Save the relative path to embark target to kill ring.
 The insert path is relative to the previously selected buffer's
 `default-directory'."
   (interactive)
-  (kill-new (file-relative-name (embark-target))))
+  (kill-new (file-relative-name (substitute-in-file-name (embark-target)))))
 
 (defun embark-shell-command-on-buffer (buffer command &optional replace)
   "Run shell COMMAND on contents of BUFFER.
