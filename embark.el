@@ -1116,6 +1116,9 @@ If you are using `embark-completing-read' as your
     (goto-char entry)            ;; pretend RET was pressed even if
     (setq last-nonmenu-event 13) ;; mouse was clicked, to fool imenu
     (embark--setup-action)
+    (let ((ecmd embark--command))
+      (pop-to-buffer embark--target-buffer)
+      (setq embark--command ecmd))
     (run-hooks 'embark-pre-action-hook)
     (embark-default-action)
     (run-hooks 'embark-post-action-hook)))
@@ -1349,12 +1352,6 @@ with key \"Embark Live Occur\"."
                   nil t)
         (setq minibuffer-scroll-window occur-window)))))
 
-(defun embark--pop-to-target-buffer ()
-  "Pop to Embark target buffer."
-  (let ((ecmd embark--command))
-    (pop-to-buffer embark--target-buffer)
-    (setq embark--command ecmd)))
-
 (defun embark-occur (&optional initial-view)
   "Create an Embark Occur buffer and exit all minibuffers.
 Optionally start in INITIAL-VIEW (either `list' or `grid')
@@ -1374,11 +1371,7 @@ with key \"Embark Occur\"."
           (setq embark-occur-candidates candidates)
           (setq embark-occur-annotator annotator)
           (when (minibufferp embark-occur-from)
-            (setq embark-occur-from nil))
-          (when (or (eq embark--command 'imenu) (eq embark--type 'line))
-            (add-hook 'embark-pre-action-hook
-                      #'embark--pop-to-target-buffer
-                      nil t)))
+            (setq embark-occur-from nil)))
         (embark-after-exit ()
           (select-window
            (embark-occur--display occur-buffer))))
