@@ -1269,7 +1269,8 @@ Optionally start in INITIAL-VIEW (either `list' or `grid')
 instead of what `embark-occur-initial-view-alist' specifies.
 Argument BUFFER-NAME specifies the name of the created buffer."
   (let ((from (current-buffer))
-        (buffer (generate-new-buffer buffer-name)))
+        (buffer (generate-new-buffer buffer-name))
+        (type (embark-classify)))
     (embark-occur--kill-live-occur-buffer) ; live ones are ephemeral
     (setq embark-occur-linked-buffer buffer)
     (with-current-buffer buffer
@@ -1281,7 +1282,7 @@ Argument BUFFER-NAME specifies the name of the created buffer."
       (add-hook 'tabulated-list-revert-hook #'embark-occur--revert nil t)
       (setq embark-occur-view
             (or initial-view
-                (alist-get (embark-classify) embark-occur-initial-view-alist)
+                (alist-get type embark-occur-initial-view-alist)
                 (alist-get t embark-occur-initial-view-alist)
                 'list)))
     (embark--cache-info buffer)
