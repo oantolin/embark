@@ -100,16 +100,18 @@
   :group 'minibuffer)
 
 (defcustom embark-keymap-alist
-  '((general . embark-general-map)
-    (file . embark-file-map)
+  '((file . embark-file-map)
     (url . embark-url-map)
     (buffer . embark-buffer-map)
     (command . embark-symbol-map)
     (unicode-name . embark-unicode-name-map)
     (symbol . embark-symbol-map)
     (package . embark-package-map)
-    (region . embark-region-map))
-  "Alist of action types and corresponding keymaps."
+    (region . embark-region-map)
+    (t . embark-general-map))
+  "Alist of action types and corresponding keymaps.
+Additionally you can associate t to a default keymap for types
+not mentioned separately."
   :type '(alist :key-type symbol :value-type variable)
   :group 'embark)
 
@@ -666,7 +668,9 @@ relative path."
                  (let ((map (copy-keymap embark-overriding-keymap)))
                    (set-keymap-parent map embark-general-map)
                    map))
-            (symbol-value (alist-get (embark-classify) embark-keymap-alist)))
+            (symbol-value
+             (or (alist-get (embark-classify) embark-keymap-alist)
+                 (alist-get t embark-keymap-alist))))
         embark--target
         (if (use-region-p)
             (when embark--target-region-p
