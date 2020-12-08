@@ -1281,7 +1281,7 @@ Argument BUFFER-NAME specifies the name of the created buffer."
       (add-hook 'tabulated-list-revert-hook #'embark-occur--revert nil t)
       (setq embark-occur-view
             (or initial-view
-                (alist-get embark--type embark-occur-initial-view-alist)
+                (alist-get (embark-classify) embark-occur-initial-view-alist)
                 (alist-get t embark-occur-initial-view-alist)
                 'list)))
     (embark--cache-info buffer)
