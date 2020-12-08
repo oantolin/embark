@@ -449,7 +449,7 @@ command name. It should return the string used for completion."
 (defvar-local embark-occur-linked-buffer nil
   "Buffer local variable indicating which Embark Buffer to update.")
 
-(defvar-local embark-occur-annotation-func nil
+(defvar-local embark-occur-annotator nil
   "Annotation function of minibuffer session for this occur.")
 
 (defvar-local embark--live-occur--timer nil
@@ -942,13 +942,16 @@ To be used as an annotation function for symbols in `embark-occur'."
   (when-let ((char (gethash name (ucs-names))))
     (format "%c" char)))
 
+(defun embark--annotation-function ()
+  "Get current annotation-function."
+  (or (completion-metadata-get (embark--metadata) 'annotation-function)
+      (plist-get completion-extra-properties :annotation-function)))
+
 (defun embark-annotation-function-metadatum (cand)
   "Use the `annotation-function' metadatum to annotate CAND."
-  (when-let ((annot-fn (or embark-occur-annotation-func
-                           (completion-metadata-get (embark--metadata)
-                                                    'annotation-function)
-                           (plist-get completion-extra-properties
-                                      :annotation-function)))
+  (when-let ((annot-fn (if (derived-mode-p 'embark-occur-mode)
+                           embark-occur-annotator
+                         (embark--annotation-function)))
              (annot (funcall annot-fn cand)))
     (string-trim annot)))
 
@@ -1192,6 +1195,10 @@ keybinding for it.  Or alternatively you might want to enable
 (defun embark-occur--revert (&rest _)
   "Recalculate Embark Occur candidates if possible."
   (when (buffer-live-p embark-occur-from)
+    (when (minibufferp embark-occur-from)
+      (setq embark-occur-annotator
+            (with-current-buffer embark-occur-from
+              (embark--annotation-function))))
     (setq embark-occur-candidates
           (with-current-buffer embark-occur-from
             (run-hook-with-args-until-success
@@ -1271,11 +1278,6 @@ Argument BUFFER-NAME specifies the name of the created buffer."
                                         ; they can use the window
       (setq tabulated-list-use-header-line nil) ; default to no header
       (setq embark-occur-from from)
-      (setq embark-occur-annotation-func
-            (or (completion-metadata-get (embark--metadata)
-                                         'annotation-function)
-                (plist-get completion-extra-properties
-                           :annotation-function)))
       (add-hook 'tabulated-list-revert-hook #'embark-occur--revert nil t)
       (setq embark-occur-view
             (or initial-view
@@ -1362,9 +1364,10 @@ with key \"Embark Occur\"."
             (run-hook-with-args-until-success 'embark-candidate-collectors))
            (occur-buffer
             (embark-occur-noselect "*Embark Occur*" initial-view)))
-      (progn
+      (let ((annotator (embark--annotation-function)))
         (with-current-buffer occur-buffer
           (setq embark-occur-candidates candidates)
+          (setq embark-occur-annotator annotator)
           (when (minibufferp embark-occur-from)
             (setq embark-occur-from nil))
           (when (memq embark--command '(imenu consult-line))
