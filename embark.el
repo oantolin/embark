@@ -1375,7 +1375,7 @@ with key \"Embark Occur\"."
           (setq embark-occur-annotator annotator)
           (when (minibufferp embark-occur-from)
             (setq embark-occur-from nil))
-          (when (memq embark--command '(imenu consult-line))
+          (when (or (eq embark--command 'imenu) (eq embark--type 'line))
             (add-hook 'embark-pre-action-hook
                       #'embark--pop-to-target-buffer
                       nil t)))
