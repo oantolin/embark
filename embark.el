@@ -29,7 +29,7 @@
 ;; `embark-act-noexit') to execute actions on the top minibuffer
 ;; completion canidate: the one that would be chosen by
 ;; minibuffer-force-complete.  Additionally `embark-act' can act on
-;; the completion candidate at point in the completions buffer. You
+;; the completion candidate at point in the completions buffer.  You
 ;; should bind both of them in `minibuffer-local-completion-map' and
 ;; also bind `embark-act' in `completion-list-mode-map'.
 
@@ -128,7 +128,7 @@ Embark will set the parent of this map to `embark-general-map'.")
   "List of functions to classify current buffer context.
 Each function should take no arguments and return the type
 symbol, or nil to indicate it could not determine the type in
-current context. If the type is not determined by current buffer
+current context.  If the type is not determined by current buffer
 context fallback to `embark-target-classifiers'."
   :type 'hook
   :group 'embark)
@@ -141,7 +141,7 @@ context fallback to `embark-target-classifiers'."
   "List of functions to classify current target.
 Each function takes the target as argument and returns the type
 symbol, or nil to indicate it could not determine the type of
-current target. If the type isn't determined by current target
+current target.  If the type isn't determined by current target
 fallback to the `general' type."
   :type 'hook
   :group 'embark)
@@ -155,7 +155,7 @@ fallback to the `general' type."
     embark-symbol-at-point)
   "List of functions to determine the target in current context.
 Each function should take no arguments and return either a target
-string or nil (to indicate it found no target). If the region is
+string or nil (to indicate it found no target).  If the region is
 active the region content is used as current target."
   :type 'hook
   :group 'embark)
@@ -182,7 +182,7 @@ current input string or nil (to indicate it is not applicable)."
   "Prompt style used to prompt the user for actions.
 
 The `default' style prompts for keys and makes use of
-`embark-action-indicator' and `embark-become-indicator'. There is
+`embark-action-indicator' and `embark-become-indicator'.  There is
 also `completion' style which prompts with completion."
   :type '(choice (const default)
                  (const completion))
@@ -192,9 +192,9 @@ also `completion' style which prompts with completion."
   "Indicator to use when embarking upon an action.
 
 If set to a string prepend it to the minibuffer prompt or to the
-message in the echo area when outside of the minibuffer. When set
+message in the echo area when outside of the minibuffer.  When set
 to a function it is called with no arguments to indicate the
-pending action itself. For nil no indication is shown."
+pending action itself.  For nil no indication is shown."
   :type '(choice function string nil)
   :group 'embark)
 
@@ -202,9 +202,9 @@ pending action itself. For nil no indication is shown."
   "Indicator to use when using `embark-become'.
 
 If set to a string prepend it to the minibuffer prompt or to the
-message in the echo area when outside of the minibuffer. When set
+message in the echo area when outside of the minibuffer.  When set
 to a function it is called with no arguments to indicate the
-pending action itself. For nil no indication is shown."
+pending action itself.  For nil no indication is shown."
   :type '(choice function string nil)
   :group 'embark)
 
@@ -341,7 +341,7 @@ The expected format is the same as for functions in
 (defcustom embark-occur-minibuffer-completion nil
   "Should RET on an Embark Occur entry do minibuffer completion?
 By default, pressing RET or clicking the mouse on an entry in an
-Embark Occur buffer runs the default action on the entry. If this
+Embark Occur buffer runs the default action on the entry.  If this
 variable is non-nil, then when the Embark Occur buffer is
 associated to the active minibuffer and is live updating,
 pressing RET or clicking the mouse instead completes the
@@ -357,7 +357,7 @@ If you are using `embark-completing-read' as your
 
 (defcustom embark-keymap-help-docstrings t
   "Should the items in the keymap help be annotated with docstrings?
-(Well, with the first line of the docstring, actually.)
+\(Well, with the first line of the docstring, actually.)
 Possible values of this variable are:
 - t, annotate with the first line of the docstring,
 - nil, do not annotate, and
@@ -374,7 +374,7 @@ Possible values of this variable are:
   "Function to format the keymap bindings.
 
 The function is called with two string arguments: The key and the
-command name. It should return the string used for completion."
+command name.  It should return the string used for completion."
   :type 'function
   :group 'embark)
 
@@ -519,7 +519,7 @@ command name. It should return the string used for completion."
     'file))
 
 (defun embark-url-target-type (cand)
-  "Report url type if CAND is a URL"
+  "Report url type if CAND is a URL."
   (when (eql (string-match-p ffap-url-regexp cand) 0)
     'url))
 
@@ -691,7 +691,7 @@ relative path."
   "List of commands that can run without canceling the action keymap.")
 
 (defun embark--show-indicator (indicator)
-  "Show indicator for a pending action or a instance of becoming."
+  "Show INDICATOR for a pending action or a instance of becoming."
   (cond ((stringp indicator)
          (let ((mini (active-minibuffer-window)))
            (if (or (use-region-p) (not mini))
@@ -728,7 +728,7 @@ BODY."
 
 (defun embark--activate-keymap (exitp &optional arg)
   "Set transient keymap with bindings for type-specific actions.
-If EXITP is non-nil, exit all minibuffers too. ARG is the prefix
+If EXITP is non-nil, exit all minibuffers too.  ARG is the prefix
 argument to use, if any."
   (set-transient-map
    embark--keymap
@@ -754,8 +754,8 @@ argument to use, if any."
 
 (defun embark--prompt (exitp ps &optional arg)
   "Prompt user for action and handle choice.
-If EXITP is non-nil exit all minibuffers. PS is the prompt style
-to use (see `embark-prompt-style'). ARG is the prefix argument to
+If EXITP is non-nil exit all minibuffers.  PS is the prompt style
+to use (see `embark-prompt-style').  ARG is the prefix argument to
 use for the action."
   (cond ((eq ps 'default)
          (let ((indicator
@@ -974,14 +974,9 @@ To be used as an annotation function for symbols in `embark-occur'."
 (defun embark-sorted-minibuffer-candidates ()
   "Return a sorted list of current minibuffer completion candidates.
 This using the same sort order that `icomplete' and
-`minibuffer-force-complete' use. The intended usage is that you
+`minibuffer-force-complete' use.  The intended usage is that you
 replace `embark-minibuffer-candidates' with this function in the
-list `embark-candidate-collectors', for example, by evaluating
-the following:
-
-(setq embark-candidate-collectors
-      (cons #'embark-sorted-minibuffer-candidates
-       (delq #'embark-minibuffer-candidates embark-candidate-collectors)))"
+list `embark-candidate-collectors'."
   (when (minibufferp)
     (let* ((all (completion-all-sorted-completions))
            (last (last all)))
@@ -1170,11 +1165,13 @@ keybinding for it.  Or alternatively you might want to enable
                         (let ((annotation (or (funcall annotator cand) "")))
                           `(,cand [(,cand type embark-occur-entry)
                                    (,annotation
-                                    ,@(unless (text-property-not-all
-                                               0 (length annotation)
-                                               'face nil
-                                               annotation)
-                                        '(face embark-occur-annotation)))])))
+                                    face
+                                    ,(if (text-property-not-all
+                                          0 (length annotation)
+                                          'face nil
+                                          annotation)
+                                         '(:underline nil)
+                                         embark-occur-annotation))])))
                     (lambda (cand)
                       `(,cand [(,cand type embark-occur-entry)])))
                   embark-occur-candidates))))
@@ -1249,7 +1246,7 @@ Refresh the buffer afterwards."
   (when-let ((buffer (if (derived-mode-p 'embark-occur-mode)
                          (current-buffer)
                        embark-occur-linked-buffer)))
-    (with-current-buffer buffer 
+    (with-current-buffer buffer
       (set variable
            (if (eq (buffer-local-value variable buffer) this) that this))
       (revert-buffer))))
@@ -1298,7 +1295,7 @@ Argument BUFFER-NAME specifies the name of the created buffer."
 (defun embark-occur--display (occur-buffer &optional action)
   "Display the Embark OCCUR-BUFFER and run mode hooks.
 This is also when we initially fill the buffer with candidates,
-since the grid view needs to know the window width. Return the
+since the grid view needs to know the window width.  Return the
 window where the buffer is displayed.
 
 Optional argument ACTION is passed to `display-buffer' to control
@@ -1602,7 +1599,7 @@ The insert path is relative to the previously selected buffer's
 (defun embark-shell-command-on-buffer (buffer command &optional replace)
   "Run shell COMMAND on contents of BUFFER.
 Called with \\[universal-argument], replace contents of buffer
-with command output. For replacement behaviour see
+with command output.  For replacement behaviour see
 `shell-command-dont-erase-buffer' setting."
   (interactive
    (list
