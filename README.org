@@ -24,7 +24,7 @@ view in Embark Occur buffers.
 Other small changes:
 
 - If you have Consult installed and call =embark-occur= from
-  =consult-line,= =consult-mark= or =consult-outline=, you will notice the
+  =consult-line=, =consult-mark= or =consult-outline=, you will notice the
   Embark Occur buffer starts in list view by default.
 
 Work still left to do:
