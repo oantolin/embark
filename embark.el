@@ -428,7 +428,7 @@ If you are using `embark-completing-read' as your
    minibuffer-completion-predicate))
 
 (defun embark-category-type ()
-  "Return minibuffer completion category per metadata."
+  "Return minibuffer completion category metadatum."
   (completion-metadata-get (embark--metadata) 'category))
 
 (defun embark-symbol-completion-type ()
@@ -844,6 +844,7 @@ This is only used for annotation that are not already fontified."
    (if-let ((built-in (assq pkg package--builtins)))
            (package--from-builtin built-in)
            (car (alist-get pkg package-archive-contents)))))
+
 (defun embark--annotation-function ()
   "Get current annotation-function."
   (or (completion-metadata-get (embark--metadata) 'annotation-function)
