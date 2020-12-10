@@ -1459,19 +1459,6 @@ with command output.  For replacement behaviour see
                              command
                              (and replace (current-buffer)))))
 
-(defun embark-open-externally (file)
-  "Open FILE using system's default application."
-  (interactive "fOpen: ")
-  (if (and (eq system-type 'windows-nt)
-           (fboundp 'w32-shell-execute))
-      (w32-shell-execute "open" file)
-    (call-process (pcase system-type
-                    ('darwin "open")
-                    ('cygwin "cygstart")
-                    (_ "xdg-open"))
-                  nil 0 nil
-                  (expand-file-name file))))
-
 (defun embark-bury-buffer ()
   "Bury embark target buffer."
   (interactive)
@@ -1593,7 +1580,6 @@ and leaves the point to the left of it."
      ("+" . make-directory)
      ("I" . embark-insert-relative-path)
      ("W" . embark-save-relative-path)
-     ("x" . embark-open-externally)
      ("l" . load-file)
      ("b" . byte-compile-file)
      ("B" . byte-recompile-directory))
