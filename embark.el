@@ -280,7 +280,6 @@ These are used to fill an Embark Occur buffer."
     (command . embark-first-line-of-docstring)
     (buffer . embark-file-and-major-mode)
     (file . embark-size-and-modification-time)
-    (unicode-name . embark-unicode-character)
     (package . embark-package-summary)
     (t . embark-annotation-function-metadatum))
   "Alist associating completion types to annotation functions.
@@ -940,13 +939,6 @@ To be used as an annotation function for symbols in `embark-occur'."
             (file-size-human-readable (file-attribute-size attributes))
             (format-time-string "%b %e %k:%M"
              (file-attribute-modification-time attributes)))))
-
-(autoload 'ucs-names "mule-cmds")
-
-(defun embark-unicode-character (name)
-  "Return unicode character called NAME."
-  (when-let ((char (gethash name (ucs-names))))
-    (format "%c" char)))
 
 (defun embark--annotation-function ()
   "Get current annotation-function."
@@ -1641,6 +1633,13 @@ with command output.  For replacement behaviour see
   (when-let ((win (get-buffer-window (embark-target))))
     (with-selected-window win
       (kill-buffer-and-window))))
+
+(autoload 'ucs-names "mule-cmds")
+
+(defun embark-unicode-character (name)
+  "Return unicode character called NAME."
+  (when-let ((char (gethash name (ucs-names))))
+    (format "%c" char)))
 
 (defun embark-insert-unicode-character ()
   "Insert unicode character named by embark target to kill ring."
