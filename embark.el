@@ -296,6 +296,7 @@ separately."
   '((file . grid)
     (buffer . grid)
     (symbol . list)
+    (line . list)
     (t . list))
   "Initial views for Embark Occur buffers by type.
 This is an alist associating completion types to either `list' or
