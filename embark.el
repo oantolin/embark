@@ -847,11 +847,12 @@ This is only used for annotation that are not already fontified."
 
 (defun embark--annotation-function ()
   "Get current annotation-function."
-  (or (completion-metadata-get (embark--metadata) 'annotation-function)
-      (plist-get completion-extra-properties :annotation-function)
-      (when (boundp 'marginalia-annotators)
-        (alist-get (embark-classify)
-                   (symbol-value (car marginalia-annotators))))))
+  (cond
+   ((minibufferp)
+    (or (completion-metadata-get (embark--metadata) 'annotation-function)
+        (plist-get completion-extra-properties :annotation-function)))
+   ((boundp 'marginalia-annotators)
+    (alist-get (embark-classify) (symbol-value (car marginalia-annotators))))))
 
 (defun embark-minibuffer-candidates ()
   "Return all current completion candidates from the minibuffer."
