@@ -1166,9 +1166,8 @@ keybinding for it.  Or alternatively you might want to enable
                                (length (length annotation))
                                (facesp (text-property-not-all
                                         0 length 'face nil annotation)))
-                          (when facesp (font-lock-append-text-property
-                                        0 length 'face '(:underline nil)
-                                        annotation))
+                          (when facesp (add-face-text-property
+                                        0 length 'default t annotation))
                           `(,cand [(,cand type embark-occur-entry)
                                    (,annotation
                                     ,@(unless facesp
