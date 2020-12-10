@@ -831,6 +831,19 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
 This is only used for annotation that are not already fontified."
   :group 'embark)
 
+(autoload 'package--from-builtin "package")
+(autoload 'package-desc-extras "package")
+(defvar package--builtins)
+(defvar package-alist)
+(defvar package-archive-contents)
+
+(defun embark--package-desc (pkg)
+  "Return the description structure for package PKG."
+  (or ; found this in `describe-package-1'
+   (car (alist-get pkg package-alist))
+   (if-let ((built-in (assq pkg package--builtins)))
+           (package--from-builtin built-in)
+           (car (alist-get pkg package-archive-contents)))))
 (defun embark--annotation-function ()
   "Get current annotation-function."
   (or (completion-metadata-get (embark--metadata) 'annotation-function)
