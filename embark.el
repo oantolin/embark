@@ -275,20 +275,6 @@ These are used to fill an Embark Occur buffer."
   :type 'hook
   :group 'embark)
 
-(defcustom embark-annotator-alist
-  '((symbol . embark-first-line-of-docstring)
-    (command . embark-first-line-of-docstring)
-    (package . embark-package-summary)
-    (t . embark-annotation-function-metadatum))
-  "Alist associating completion types to annotation functions.
-Each function should take a candidate for an action as a string
-and return a string without newlines giving some extra
-information about the candidate.  Additionally you can associate
-t to a default annotation function for types not mentioned
-separately."
-  :type '(alist :key-type symbol :value-type function)
-  :group 'embark)
-
 (defcustom embark-occur-initial-view-alist
   '((file . grid)
     (buffer . grid)
@@ -351,29 +337,6 @@ If you are using `embark-completing-read' as your
 `completing-read-function' you might want to set
 `embark-occur-minibuffer-completion' to t."
   :type 'boolean
-  :group 'embark)
-
-(defcustom embark-keymap-help-docstrings t
-  "Should the items in the keymap help be annotated with docstrings?
-\(Well, with the first line of the docstring, actually.)
-Possible values of this variable are:
-- t, annotate with the first line of the docstring,
-- nil, do not annotate, and
-- `truncate', truncate the docstring so the total width of the
-  item plus its annotation is at most half the width of the
-  current frame (users of the *Completions* buffer might want to
-  use this value)."
-  :type '(choice (const :tag "Annotate with docstrings" t)
-                 (const :tag "No annotations" nil)
-                 (const :tag "Truncate docstrings" truncate))
-  :group 'embark)
-
-(defcustom embark-keymap-help-format-function 'embark-keymap-help-format-default
-  "Function to format the keymap bindings.
-
-The function is called with two string arguments: The key and the
-command name.  It should return the string used for completion."
-  :type 'function
   :group 'embark)
 
 ;;; stashing information for actions in buffer local variables
@@ -868,70 +831,13 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
 This is only used for annotation that are not already fontified."
   :group 'embark)
 
-(defun embark-first-line-of-docstring (name)
-  "Return the first line of the docstring of symbol called NAME.
-To be used as an annotation function for symbols in `embark-occur'."
-  (when-let* ((symbol (intern name))
-              (docstring
-               (if (fboundp symbol)
-                   ;; As per `describe-function-1' `documentation' might throw
-                   ;; an error for alias of a not yet defined function.
-                   (condition-case nil
-                       (documentation symbol)
-                     ((invalid-function void-function) nil))
-                 (or
-                  (documentation-property symbol 'variable-documentation)
-                  (documentation-property symbol 'face-documentation)
-                  ;; flimenu support
-                  (cond
-                   ((string-prefix-p "Variables/" name)
-                    (documentation-property (intern (substring name 10))
-                                            'variable-documentation))
-                   ((string-prefix-p "Types/" name)
-                    (documentation-property (intern (substring name 6))
-                                            'face-documentation))
-                   ((string-prefix-p "Packages/" name)
-                    (embark-package-summary (substring name 9)))))))
-              (first-line (car (split-string docstring "\n"))))
-    (if-let ((binding (when (commandp symbol)
-                        (with-current-buffer
-                            (or embark--target-buffer (current-buffer))
-                          (where-is-internal symbol nil t)))))
-        (format "{%s} %s" (key-description binding) first-line)
-      first-line)))
-
-(autoload 'package--from-builtin "package")
-(autoload 'package-desc-extras "package")
-(autoload 'package-desc-summary "package")
-(defvar package--builtins)
-(defvar package-alist)
-(defvar package-archive-contents)
-
-(defun embark--package-desc (pkg)
-  "Return the description structure for package PKG."
-  (or ; found this in `describe-package-1'
-   (car (alist-get pkg package-alist))
-   (if-let ((built-in (assq pkg package--builtins)))
-           (package--from-builtin built-in)
-           (car (alist-get pkg package-archive-contents)))))
-
-(defun embark-package-summary (pkg)
-  "Return summary of package PKG."
-  (when-let ((desc (embark--package-desc (intern pkg))))
-    (package-desc-summary desc)))
-
 (defun embark--annotation-function ()
   "Get current annotation-function."
   (or (completion-metadata-get (embark--metadata) 'annotation-function)
-      (plist-get completion-extra-properties :annotation-function)))
-
-(defun embark-annotation-function-metadatum (cand)
-  "Use the `annotation-function' metadatum to annotate CAND."
-  (when-let ((annot-fn (if (derived-mode-p 'embark-occur-mode)
-                           embark-occur-annotator
-                         (embark--annotation-function)))
-             (annot (funcall annot-fn cand)))
-    annot))
+      (plist-get completion-extra-properties :annotation-function)
+      (when (boundp 'marginalia-annotators)
+        (alist-get (embark-classify)
+                   (symbol-value (car marginalia-annotators))))))
 
 (defun embark-minibuffer-candidates ()
   "Return all current completion candidates from the minibuffer."
@@ -1123,32 +1029,31 @@ keybinding for it.  Or alternatively you might want to enable
 
 (defun embark-occur--list-view ()
   "List view of candidates and annotations for Embark Occur buffer."
-  (let ((annotator (or (alist-get embark--type embark-annotator-alist)
-                       (alist-get t embark-annotator-alist))))
-    (setq tabulated-list-format
-          (if annotator
-              (let ((width (embark-occur--max-width)))
-                `[("Candidate" ,width t) ("Annotation" 0 nil)])
-            [("Candidate" 0 t)]))
-    (if tabulated-list-use-header-line
-        (tabulated-list-init-header)
-      (setq header-line-format nil))
-    (setq tabulated-list-entries
-          (mapcar (if annotator
-                      (lambda (cand)
-                        (let* ((annotation (or (funcall annotator cand) ""))
-                               (length (length annotation))
-                               (facesp (text-property-not-all
-                                        0 length 'face nil annotation)))
-                          (when facesp (add-face-text-property
-                                        0 length 'default t annotation))
-                          `(,cand [(,cand type embark-occur-entry)
-                                   (,annotation
-                                    ,@(unless facesp
-                                        '(face embark-occur-annotation)))])))
+  (setq tabulated-list-format
+        (if embark-occur-annotator
+            (let ((width (embark-occur--max-width)))
+              `[("Candidate" ,width t) ("Annotation" 0 nil)])
+          [("Candidate" 0 t)]))
+  (if tabulated-list-use-header-line
+      (tabulated-list-init-header)
+    (setq header-line-format nil))
+  (setq tabulated-list-entries
+        (mapcar (if embark-occur-annotator
                     (lambda (cand)
-                      `(,cand [(,cand type embark-occur-entry)])))
-                  embark-occur-candidates))))
+                      (let* ((annotation
+                              (or (funcall embark-occur-annotator cand) ""))
+                             (length (length annotation))
+                             (facesp (text-property-not-all
+                                      0 length 'face nil annotation)))
+                        (when facesp (add-face-text-property
+                                      0 length 'default t annotation))
+                        `(,cand [(,cand type embark-occur-entry)
+                                 (,annotation
+                                  ,@(unless facesp
+                                      '(face embark-occur-annotation)))])))
+                  (lambda (cand)
+                    `(,cand [(,cand type embark-occur-entry)])))
+                embark-occur-candidates)))
 
 (defun embark-occur--grid-view ()
   "Grid view of candidates for Embark Occur buffer."
@@ -1417,58 +1322,36 @@ buffer for each type of completion."
 
 ;;; custom actions
 
-(defun embark-keymap-help-format-default (key cmd)
-  "Format KEY and CMD for display.
-See `embark-keymap-help-format-function'."
-  (concat (propertize
-           key
-           'face 'success)
-          (propertize " → " 'face 'shadow)
-          cmd))
-
 (defun embark--completing-read-map ()
   "Prompt for action or command to become via completion.
 Returns choosen command."
   (let* ((commands
           (cl-loop
            for (key . cmd) in (cdr (keymap-canonicalize embark--keymap))
-           unless (or (not (symbolp cmd))
+           unless (or (null cmd)
+                      (not (symbolp cmd))
                       (memq cmd '(ignore embark-keymap-help))
                       (memq cmd embark--keep-alive-list))
-           collect (cons (funcall embark-keymap-help-format-function
-                                  (if (numberp key)
-                                      (single-key-description key)
-                                    (key-description key))
-                                  (symbol-name cmd))
-                         cmd)))
-         (full-docstring
-          (lambda (x)
-            (concat " " (embark-first-line-of-docstring
-                         (symbol-name (cdr (assoc x commands)))))))
-         (truncated-docstring
-          (lambda (x)
-            (let ((doc (funcall full-docstring x))
-                  (w (- (floor (frame-width) 2) (length x) 1)))
-              (if (> (length doc) w)
-                  (concat (substring doc 0 (1- w)) "…")
-                doc))))
-         (docstring (if (eq embark-keymap-help-docstrings 'truncate)
-                        truncated-docstring
-                      full-docstring))
-         ;; prevent injection
-         (this-command 'ignore)
+           collect (let ((desc (if (numberp key)
+                                       (single-key-description key)
+                                     (key-description key)))
+                         (name (symbol-name cmd)))
+                     (propertize name
+                                 'display
+                                 (concat (propertize desc 'face 'success)
+                                         (propertize " → " 'face 'shadow)
+                                         name)))))
+         (this-command 'ignore) ; prevent injection
          (command
           (condition-case nil
               (completing-read
                (if (memq 'embark--become-inject minibuffer-setup-hook)
                    "Become: "
                  "Action: ")
-               (if embark-keymap-help-docstrings
-                   (lambda (s p a)
-                     (if (eq a 'metadata)
-                         `(metadata (annotation-function . ,docstring))
-                       (complete-with-action a commands s p)))
-                 commands)
+               (lambda (s p a)
+                 (if (eq a 'metadata)
+                     `(metadata (metadata . command))
+                   (complete-with-action a commands s p)))
                nil t)
             (quit nil))))
     (when command
