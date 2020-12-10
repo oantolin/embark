@@ -278,8 +278,6 @@ These are used to fill an Embark Occur buffer."
 (defcustom embark-annotator-alist
   '((symbol . embark-first-line-of-docstring)
     (command . embark-first-line-of-docstring)
-    (buffer . embark-file-and-major-mode)
-    (file . embark-size-and-modification-time)
     (package . embark-package-summary)
     (t . embark-annotation-function-metadatum))
   "Alist associating completion types to annotation functions.
@@ -921,24 +919,6 @@ To be used as an annotation function for symbols in `embark-occur'."
   "Return summary of package PKG."
   (when-let ((desc (embark--package-desc (intern pkg))))
     (package-desc-summary desc)))
-
-(defun embark-file-and-major-mode (name)
-  "Return string with file and major mode of buffer called NAME."
-  (when-let ((buffer (get-buffer name)))
-    (format "%s%s (%s)"
-            (if (buffer-modified-p buffer) "*" "")
-            (if-let ((file-name (buffer-file-name buffer)))
-                (abbreviate-file-name file-name)
-              "")
-            (buffer-local-value 'major-mode buffer))))
-
-(defun embark-size-and-modification-time (file)
-  "Return string with size and modification time of FILE."
-  (when-let ((attributes (file-attributes file)))
-    (format "%7s %s"
-            (file-size-human-readable (file-attribute-size attributes))
-            (format-time-string "%b %e %k:%M"
-             (file-attribute-modification-time attributes)))))
 
 (defun embark--annotation-function ()
   "Get current annotation-function."
