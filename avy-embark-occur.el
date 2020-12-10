@@ -41,8 +41,10 @@
 (defun avy-action-embark-act (pt)
   "Act on the completion at PT."
   (goto-char pt)
-  (embark-act)
-  (select-window avy-embark-occur--initial-window))
+  (add-hook 'embark-post-action-hook
+            (lambda () (select-window avy-embark-occur--initial-window))
+            nil t)
+  (embark-act))
 
 (defun avy-embark-occur--choose-window ()
   "Choose a window displaying an Embark Occur buffer to jump to.
