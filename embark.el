@@ -1354,21 +1354,19 @@ Returns choosen command."
                                  (concat (propertize desc 'face 'success)
                                          (propertize " → " 'face 'shadow)
                                          name)))))
-         (this-command 'ignore) ; prevent injection
-         (command
-          (condition-case nil
-              (completing-read
-               (if (memq 'embark--become-inject minibuffer-setup-hook)
-                   "Become: "
-                 "Action: ")
-               (lambda (s p a)
-                 (if (eq a 'metadata)
-                     `(metadata (metadata . command))
-                   (complete-with-action a commands s p)))
-               nil t)
-            (quit nil))))
-    (when command
-      (cdr (assoc command commands)))))
+         (this-command 'ignore)) ; prevent injection
+    (condition-case nil
+        (intern-soft
+         (completing-read
+          (if (memq 'embark--become-inject minibuffer-setup-hook)
+              "Become: "
+            "Action: ")
+          (lambda (s p a)
+            (if (eq a 'metadata)
+                `(metadata (metadata . command))
+              (complete-with-action a commands s p)))
+          nil t))
+      (quit nil))))
 
 (defun embark-keymap-help ()
   "Prompt for an action to perform or command to become and run it."
