@@ -121,8 +121,6 @@ Embark will set the parent of this map to `embark-general-map'.")
 
 (defcustom embark-classifiers
   '(embark-category-type
-    embark-package-type
-    embark-symbol-completion-type
     embark-dired-type
     embark-ibuffer-type)
   "List of functions to classify current buffer context.
@@ -430,26 +428,6 @@ If you are using `embark-completing-read' as your
 (defun embark-category-type ()
   "Return minibuffer completion category metadatum."
   (completion-metadata-get (embark--metadata) 'category))
-
-(defun embark-symbol-completion-type ()
-  "Determine if currently completing symbols."
-  (when-let ((mct minibuffer-completion-table))
-    (when (or (eq mct 'help--symbol-completion-table)
-              (vectorp mct)
-              (and (consp mct) (symbolp (car mct)))
-              (completion-metadata-get (embark--metadata) 'symbolsp)
-              ;; before Emacs 27, M-x does not have command category
-              (string-match-p "M-x" (minibuffer-prompt))
-              ;; imenu from an Emacs Lisp buffer produces symbols
-              (and (eq embark--command 'imenu)
-                   (with-selected-window (minibuffer-selected-window)
-                     (derived-mode-p 'emacs-lisp-mode))))
-      'symbol)))
-
-(defun embark-package-type ()
-  "Determine if currently completing package names."
-  (when (string-suffix-p "package: " (or (minibuffer-prompt) ""))
-    'package))
 
 (defun embark-dired-type ()
   "Report that dired buffers yield files."

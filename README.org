@@ -5,14 +5,30 @@ Some changes are being made to Embark, to better cooperate with the
 MELPA. You may wish to hold off on updating Embark, or, help me out by
 updating aggresively and filing issue reports here on GitHub.
 
-The current plan, subject to change, is to *not* make those packages
-dependencies of Embark, but rather silently provide added
-functionality if they are loaded.
+Niether of those packages is a dependency of Embark, but Marginalia is
+highly recommended, for reasons explained in the rest of this section
 
-The biggest change so far is that all annotation functions have been
-removed from Embark and moved to Marginalia (where they have been
-improved!). Embark used these old annotation functions for the list
-view in Embark Occur buffers.
+Embark comes with actions for symbols (commands, functions, variables
+with actions such as finding the definition, looking up the
+documentation, evaluating, etc.) in the =embark-symbol-map= keymap, and
+for packages (actions like install, delete, browse url, etc.) in the
+=embark-package-keymap=.
+
+Unfortunately Embark no longer automatically offers you these keymaps
+when relevant, because many built-in Emacs commands don't report
+accurate category metadata. For example, a command like
+=describe-package=, which reads a package name from the minibuffer, does
+not have metadata indicating so.
+
+Previously Embark had functions to supply this missing metadata, but
+they have been moved to Marginalia, which augments many Emacs command
+to report accurate category metadata. Simply activating
+=marginalia-mode= allows Embark to offer you the package and symbol
+actions when appropriate again.
+
+All annotation functions have been removed from Embark and moved to
+Marginalia (where they have been improved!). Embark used these old
+annotation functions for the list view in Embark Occur buffers.
 
 - If you install Marginalia and activate =marginalia-mode=, Embark Occur
   buffer will use the Marginalia annotations automatically.
