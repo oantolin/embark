@@ -1,3 +1,39 @@
+* News
+
+Some changes are being made to Embark, to better cooperate with the
+[[https://github.com/minad/marginalia][Marginalia]] and [[https://github.com/minad/consult][Consult]] packages, and prior to being submitted to
+MELPA. You may wish to hold off on updating Embark, or, help me out by
+updating aggresively and filing issue reports here on GitHub.
+
+The current plan, subject to change, is to *not* make those packages
+dependencies of Embark, but rather silently provide added
+functionality if they are loaded.
+
+The biggest change so far is that all annotation functions have been
+removed from Embark and moved to Marginalia (where they have been
+improved!). Embark used these old annotation functions for the list
+view in Embark Occur buffers.
+
+- If you install Marginalia and activate =marginalia-mode=, Embark Occur
+  buffer will use the Marginalia annotations automatically.
+
+- If you don't install Marginalia, you will see only the annotations
+  that come with Emacs (such as keybindings in =M-x=, or the unicode
+  characters in =C-x 8 RET=).
+
+Other small changes:
+
+- If you have Consult installed and call =embark-occur= from
+  =consult-line,= =consult-mark= or =consult-outline=, you will notice the
+  Embark Occur buffer starts in list view by default.
+
+Work still left to do:
+
+- Update this readme! It doesn't mention =embark-occur= or =embark-export=
+  at all!
+- Decide what to do about classifiers, which now duplicate some
+  functionality in marginalia.
+  
 * embark - Emacs Mini-Buffer Actions Rooted in Keymaps
 
 This package provides a command =embark-act= (and a variant
