@@ -867,7 +867,8 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
   :group 'embark)
 
 (defface embark-occur-annotation '((t :inherit completions-annotations))
-  "Face for annotations in Embark Occur."
+  "Face for annotations in Embark Occur.
+This is only used for annotation that are not already fontified."
   :group 'embark)
 
 (defun embark-first-line-of-docstring (name)
