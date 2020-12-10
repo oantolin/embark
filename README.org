@@ -42,13 +42,15 @@ Other small changes:
 - If you have Consult installed and call =embark-occur= from
   =consult-line=, =consult-mark= or =consult-outline=, you will notice the
   Embark Occur buffer starts in list view by default.
+- The function =embark-open-externally= has been removed following the
+  policy of avoiding overlap with Consult. If you used that action,
+  add [[https://github.com/minad/consult/blob/373498acb76b9395e5e590fb8e39f671a9363cd7/consult.el#L707][the small function]] to your configuration or install Consult and
+  use =consult-file-externally=.
 
 Work still left to do:
 
 - Update this readme! It doesn't mention =embark-occur= or =embark-export=
   at all!
-- Decide what to do about classifiers, which now duplicate some
-  functionality in marginalia.
   
 * embark - Emacs Mini-Buffer Actions Rooted in Keymaps
 
