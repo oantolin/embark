@@ -957,7 +957,7 @@ To be used as an annotation function for symbols in `embark-occur'."
                            embark-occur-annotator
                          (embark--annotation-function)))
              (annot (funcall annot-fn cand)))
-    (string-trim annot)))
+    annot))
 
 (defun embark-minibuffer-candidates ()
   "Return all current completion candidates from the minibuffer."
@@ -1162,13 +1162,16 @@ keybinding for it.  Or alternatively you might want to enable
     (setq tabulated-list-entries
           (mapcar (if annotator
                       (lambda (cand)
-                        (let ((annotation (or (funcall annotator cand) "")))
+                        (let* ((annotation (or (funcall annotator cand) ""))
+                               (length (length annotation))
+                               (facesp (text-property-not-all
+                                        0 length 'face nil annotation)))
+                          (when facesp (font-lock-append-text-property
+                                        0 length 'face '(:underline nil)
+                                        annotation))
                           `(,cand [(,cand type embark-occur-entry)
                                    (,annotation
-                                    ,@(unless (text-property-not-all
-                                               0 (length annotation)
-                                               'face nil
-                                               annotation)
+                                    ,@(unless facesp
                                         '(face embark-occur-annotation)))])))
                     (lambda (cand)
                       `(,cand [(,cand type embark-occur-entry)])))
