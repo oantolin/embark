@@ -4,7 +4,7 @@
  If you are already an Embark user and a recent update caused you to
  lose the package and symbol actions, install [[https://github.com/minad/marginalia][Marginalia]], activate
  =marginalia-mode= and you should be good to go. If you want to read more
- about these changes see [[*Embark, Marginalia and Consult][the last section]] 
+ about these changes see [[https://github.com/oantolin/embark#embark-marginalia-and-consult][the last section]]. 
 
 ** Overview
 *** Acting on targets
