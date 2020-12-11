@@ -1,4 +1,4 @@
-* News
+* Breaking news (that is, news about things breaking)
 
 Some changes are being made to Embark, to better cooperate with the
 [[https://github.com/minad/marginalia][Marginalia]] and [[https://github.com/minad/consult][Consult]] packages, and prior to being submitted to
@@ -53,33 +53,52 @@ Work still left to do:
   at all!
   
 * embark - Emacs Mini-Buffer Actions Rooted in Keymaps
+** Overview
+*** Acting on targets
 
-This package provides a command =embark-act= (and a variant
-=embark-act-noexit=), to execute actions on the top minibuffer
-completion canidate: the one that would be chosen by
-=minibuffer-force-complete=. Additionally, =embark-act= can act on the
-completion candidate at point in the completions buffer. You should
-bind both of them in =minibuffer-local-completion-map= and also bind
-=embark-act= in =completion-list-mode-map=.
+This package provides a sort of right-click contextual menu for Emacs,
+accessed through the =embark-act= command (which you should bind to a
+convenient key), offering you relevant /actions/ to use on a /target/
+determined by the context:
 
-You can use any command that reads from the minibuffer as an action
-and the target of the action will be inserted at the first minibuffer
-prompt.  After running =embark-act= all of your keybindings and even
-=execute-extended-command= can be used to run a command. 
+- In the minibuffer, the target is the current best completion
+ candidate.
+- In the =*Completions*= buffer the target is the completion at point.
+- In a regular buffer, the target is the region if active, or else the
+ file, symbol or url at point.
 
-But for additional convenience, =embark-act= also activates an extra
-keymap for you, where you can bind commonly used actions to single
-keys. There is a keymap for each "type" of completion. By default
-=embark= recognizes the following types of completion: file names,
-buffers and symbols (used for functions, variables and commands). The
-classification is configurable, see the variable =embark-classifiers=.
+The type of actions offered depend on the type of the target:
 
-For any given type there is a corresponding keymap as noted in
-=embark-keymap-alist=. For example, for the completion category =file=, by
-default the corresponding keymap is =embark-file-map=. In this keymap
-you can bind normal commands you might want to use on file names. For
-example, by default =embark-file-map= binds =delete-file= to "d",
-=rename-file= to "r" and =copy-file= to "c", among other bindings.
+- For files you get offered actions like deleting, copying,
+ renaming, visiting in another window, running a shell command on the
+ file, etc.
+- For buffers the actions include switching to or killing the buffer.
+- For package names the actions include installing, removing or
+ visiting the homepage.
+
+Everything is easily configurable: determining the current target,
+classifying it, and deciding with actions are offered for each type
+in the classification. The above introduction just mentions part of
+the default configuration.
+
+Configuring which act are offered for a type is particulary easy and
+requires no programming: the variable =embark-keymap-alist= associates
+target types with variable containing keymaps, and those keymaps
+containing binds for the actions. For example, in the default
+configuration the type =file= is associated with the symbol
+=embark-file-keymap=. That symbol names a keymap with single-letter
+keybindings for common Emacs file commands, for instance =c= is bound
+to =copy-file=. This means that if while you are in the minibuffer
+after running a command that prompts for a file, such as =find-file= or
+=rename-file=, you can copy a file by running =embark-act= and then
+pressing =c=.
+
+These action keymaps are very convenient but not strictly necessary
+when using =embark-act=: you can use any command that reads from the
+minibuffer as an action and the target of the action will be inserted
+at the first minibuffer prompt. After running =embark-act= all of your
+keybindings and even =execute-extended-command= can be used to run a
+command.
 
 The default keymaps that come with =embark= all set =embark-general-map=
 as their parent, so that the actions bound there are available no
@@ -92,78 +111,99 @@ opened up the minibuffer).
 You can read about the [[https://github.com/oantolin/embark/wiki/Default-Actions][default actions and their keybindings]]
 on the GitHub project wiki.
 
-** Allowing the target to be edited before acting on it
+*** Working with sets of possible targets
+ 
+Besides acting individually on targets, Embark lets you work
+collectively on a set of target /candidates/. For example, while you are
+in the minibuffer the candidates are simply the possible completions
+of your input. Embark provides two commands to work on candidate sets:
 
-By default, for most commands =embark= inserts the target of the action
-into the next minibuffer prompt and "presses =RET=" for you, accepting
-the target as is.
+- The =embark-occur= command produces a buffer listing all candidates,
+ for you to peruse and run actions on at your leisure. The
+ candidates can be viewed in a grid or as a list showing additional
+ annotations. The =embark-live-occur= variant produces "live" Embark
+ Occur buffer, meaning they autoupdate as the set of candidates
+ changes.
 
-For some commands this might be undesirable, either for safety
-(because a command is "hard to undo", like =delete-file= or
-=kill-buffer)=, or because further input is required next to the target
-(like when using =shell-command=: the target is the file and you still
-need to enter a shell command to run on it, at the same prompt). You
-can add such commands to the =embark-allow-edit-commands= variable
-(which by default already contains the examples mentioned, and a few
-others as well).
+- The =embark-export= command tries to open a buffer in an appropriate
+ major mode for the set of candidates. If the candidates are files
+ export produces a Dired buffer; if they are buffers, you get an
+ Ibuffer buffer; and if they are packages you get a buffer in
+ package menu mode.
+ 
+** Configuration
+*** Allowing the target to be edited before acting on it
 
-Now, automatically pressing =RET= for most commands is only the default.
-If you set the variable =embark-allow-edit-default= to =t=, then =embark=
-will instead give you a chance to edit the target before acting upon
-it, for all commands except those listed in =embark-skip-edit-commands=.
+ By default, for most commands =embark= inserts the target of the action
+ into the next minibuffer prompt and "presses =RET=" for you, accepting
+ the target as is.
 
-** Running some setup after injecting the target
+ For some commands this might be undesirable, either for safety
+ (because a command is "hard to undo", like =delete-file= or
+ =kill-buffer)=, or because further input is required next to the target
+ (like when using =shell-command=: the target is the file and you still
+ need to enter a shell command to run on it, at the same prompt). You
+ can add such commands to the =embark-allow-edit-commands= variable
+ (which by default already contains the examples mentioned, and a few
+ others as well).
 
-You can customize what happens after the target is inserted at the
-minibuffer prompt of an action. There is a hook, =embark-setup-hook=,
-that is run by default after injecting the target into the minibuffer.
-This hook can be overidden for specific action commands by associating
-the command to the desired overriding hook in =embark-setup-overrides=.
+ Now, automatically pressing =RET= for most commands is only the default.
+ If you set the variable =embark-allow-edit-default= to =t=, then =embark=
+ will instead give you a chance to edit the target before acting upon
+ it, for all commands except those listed in =embark-skip-edit-commands=.
 
-For example, consider using =shell-command= as an action during file
-completion. It would be useful to insert a space before the target
-file name and to leave the point at the beginning, so you can
-immediately type the shell command. That's why in =embark='s default
-configuration there is an entry in =embark-setup-overrides= associating
-=shell-command= to =embark--shell-prep=, a simple helper command that
-quotes all the spaces in the file name, inserts an extra space at the
-beginning of the line and leaves point to the left of it.
+*** Running some setup after injecting the target
 
-** Actions that do not read from the minibuffer
+ You can customize what happens after the target is inserted at the
+ minibuffer prompt of an action. There is a hook, =embark-setup-hook=,
+ that is run by default after injecting the target into the minibuffer.
+ This hook can be overidden for specific action commands by associating
+ the command to the desired overriding hook in =embark-setup-overrides=.
 
-You can also write your own commands that do not read from the
-minibuffer but act on the current target anyway: just use the
-=embark-target= function (exactly once!: it "self-destructs") to
-retrieve the current target. See the definitions of =embark-insert= or
-=embark-save= for examples.
+ For example, consider using =shell-command= as an action during file
+ completion. It would be useful to insert a space before the target
+ file name and to leave the point at the beginning, so you can
+ immediately type the shell command. That's why in =embark='s default
+ configuration there is an entry in =embark-setup-overrides= associating
+ =shell-command= to =embark--shell-prep=, a simple helper command that
+ quotes all the spaces in the file name, inserts an extra space at the
+ beginning of the line and leaves point to the left of it.
 
-** Showing a reminder of available actions
+*** Actions that do not read from the minibuffer
 
-If you wish to see a reminder of which actions are available, you can
-install [[https://github.com/justbur/emacs-which-key][which-key]] and use =which-key-mode= with the
-=which-key-show-transient-maps= variable set to =t=. You may want to
-unclutter the display by removing all of the keybindings for the
-universal prefix arguments, namely =C-u= and the digits and minus (as
-well as their numeric keypad counterparts):
+ You can also write your own commands that do not read from the
+ minibuffer but act on the current target anyway: just use the
+ =embark-target= function (exactly once!: it "self-destructs") to
+ retrieve the current target. See the definitions of =embark-insert= or
+ =embark-save= for examples.
 
-#+begin_src emacs-lisp
-  (push '(("^[0-9-]\\|kp-[0-9]\\|kp-subtract\\|C-u$" . nil) . ignore)
-        which-key-replacement-alist)
-#+end_src
+*** Showing a reminder of available actions
+   
+ If you wish to see a reminder of which actions are available, you can
+ install [[https://github.com/justbur/emacs-which-key][which-key]] and use =which-key-mode= with the
+ =which-key-show-transient-maps= variable set to =t=. You may want to
+ unclutter the display by removing all of the keybindings for the
+ universal prefix arguments, namely =C-u= and the digits and minus (as
+ well as their numeric keypad counterparts):
 
-** Creating your own keymaps
+ #+begin_src emacs-lisp
+   (push '(("^[0-9-]\\|kp-[0-9]\\|kp-subtract\\|C-u$" . nil) . ignore)
+         which-key-replacement-alist)
+ #+end_src
 
-All internal keymaps are generated by a helper function =embark-keymap=
-that you can use it to generate keymaps for new categories in
-=embark-keymap-alist= or for any other purpose! For example a simple
-version of the file action keymap coud be defined as follows:
+*** Creating your own keymaps
 
-#+BEGIN_SRC emacs-lisp
-(defvar embark-file-map
-  (embark-keymap
-   '(("d" . delete-file)
-     ("r" . rename-file)
-     ("c" . copy-file))
-   embark-general-map))
-#+END_SRC
+ All internal keymaps are generated by a helper function =embark-keymap=
+ that you can use it to generate keymaps for new categories in
+ =embark-keymap-alist= or for any other purpose! For example a simple
+ version of the file action keymap coud be defined as follows:
+
+ #+BEGIN_SRC emacs-lisp
+ (defvar embark-file-map
+   (embark-keymap
+    '(("d" . delete-file)
+      ("r" . rename-file)
+      ("c" . copy-file))
+    embark-general-map))
+ #+END_SRC
 
