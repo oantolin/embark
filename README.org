@@ -1,137 +1,112 @@
-* Breaking news (that is, news about things breaking)
-
-Some changes are being made to Embark, to better cooperate with the
-[[https://github.com/minad/marginalia][Marginalia]] and [[https://github.com/minad/consult][Consult]] packages, and prior to being submitted to
-MELPA. You may wish to hold off on updating Embark, or, help me out by
-updating aggresively and filing issue reports here on GitHub.
-
-Niether of those packages is a dependency of Embark, but Marginalia is
-highly recommended, for reasons explained in the rest of this section
-
-Embark comes with actions for symbols (commands, functions, variables
-with actions such as finding the definition, looking up the
-documentation, evaluating, etc.) in the =embark-symbol-map= keymap, and
-for packages (actions like install, delete, browse url, etc.) in the
-=embark-package-keymap=.
-
-Unfortunately Embark no longer automatically offers you these keymaps
-when relevant, because many built-in Emacs commands don't report
-accurate category metadata. For example, a command like
-=describe-package=, which reads a package name from the minibuffer, does
-not have metadata indicating so.
-
-Previously Embark had functions to supply this missing metadata, but
-they have been moved to Marginalia, which augments many Emacs command
-to report accurate category metadata. Simply activating
-=marginalia-mode= allows Embark to offer you the package and symbol
-actions when appropriate again.
-
-All annotation functions have been removed from Embark and moved to
-Marginalia (where they have been improved!). Embark used these old
-annotation functions for the list view in Embark Occur buffers.
-
-- If you install Marginalia and activate =marginalia-mode=, Embark Occur
-  buffer will use the Marginalia annotations automatically.
-
-- If you don't install Marginalia, you will see only the annotations
-  that come with Emacs (such as keybindings in =M-x=, or the unicode
-  characters in =C-x 8 RET=).
-
-Other small changes:
-
-- If you have Consult installed and call =embark-occur= from
-  =consult-line=, =consult-mark= or =consult-outline=, you will notice the
-  Embark Occur buffer starts in list view by default.
-- The function =embark-open-externally= has been removed following the
-  policy of avoiding overlap with Consult. If you used that action,
-  add [[https://github.com/minad/consult/blob/373498acb76b9395e5e590fb8e39f671a9363cd7/consult.el#L707][the small function]] to your configuration or install Consult and
-  use =consult-file-externally=.
-
-Work still left to do:
-
-- Update this readme! It doesn't mention =embark-occur= or =embark-export=
-  at all!
-  
 * embark - Emacs Mini-Buffer Actions Rooted in Keymaps
+** Breaking news (that is, news about things breaking)
+
+ If you are already an Embark user and a recent update caused you to
+ lose the package and symbol actions, install [[https://github.com/minad/marginalia][Marginalia]], activate
+ =marginalia-mode= and you should be good to go. If you want to read more
+ about these changes see [[*Embark, Marginalia and Consult][the last section]] 
+
 ** Overview
 *** Acting on targets
 
-This package provides a sort of right-click contextual menu for Emacs,
-accessed through the =embark-act= command (which you should bind to a
-convenient key), offering you relevant /actions/ to use on a /target/
-determined by the context:
+ This package provides a sort of right-click contextual menu for Emacs,
+ accessed through the =embark-act= command (which you should bind to a
+ convenient key), offering you relevant /actions/ to use on a /target/
+ determined by the context:
 
-- In the minibuffer, the target is the current best completion
- candidate.
-- In the =*Completions*= buffer the target is the completion at point.
-- In a regular buffer, the target is the region if active, or else the
- file, symbol or url at point.
+ - In the minibuffer, the target is the current best completion
+  candidate.
+ - In the =*Completions*= buffer the target is the completion at point.
+ - In a regular buffer, the target is the region if active, or else the
+  file, symbol or url at point.
 
-The type of actions offered depend on the type of the target:
+ The type of actions offered depend on the type of the target:
 
-- For files you get offered actions like deleting, copying,
- renaming, visiting in another window, running a shell command on the
- file, etc.
-- For buffers the actions include switching to or killing the buffer.
-- For package names the actions include installing, removing or
- visiting the homepage.
+ - For files you get offered actions like deleting, copying,
+  renaming, visiting in another window, running a shell command on the
+  file, etc.
+ - For buffers the actions include switching to or killing the buffer.
+ - For package names the actions include installing, removing or
+  visiting the homepage.
 
-Everything is easily configurable: determining the current target,
-classifying it, and deciding with actions are offered for each type
-in the classification. The above introduction just mentions part of
-the default configuration.
+ If you want a reminder of which actions are available after running
+ =embark-act= type =C-h= which will prompt you for an action with
+ completion, and remind you of the keybindings.
+ 
+ Everything is easily configurable: determining the current target,
+ classifying it, and deciding with actions are offered for each type
+ in the classification. The above introduction just mentions part of
+ the default configuration.
 
-Configuring which act are offered for a type is particulary easy and
-requires no programming: the variable =embark-keymap-alist= associates
-target types with variable containing keymaps, and those keymaps
-containing binds for the actions. For example, in the default
-configuration the type =file= is associated with the symbol
-=embark-file-keymap=. That symbol names a keymap with single-letter
-keybindings for common Emacs file commands, for instance =c= is bound
-to =copy-file=. This means that if while you are in the minibuffer
-after running a command that prompts for a file, such as =find-file= or
-=rename-file=, you can copy a file by running =embark-act= and then
-pressing =c=.
+ Configuring which act are offered for a type is particulary easy and
+ requires no programming: the variable =embark-keymap-alist= associates
+ target types with variable containing keymaps, and those keymaps
+ containing binds for the actions. For example, in the default
+ configuration the type =file= is associated with the symbol
+ =embark-file-keymap=. That symbol names a keymap with single-letter
+ keybindings for common Emacs file commands, for instance =c= is bound
+ to =copy-file=. This means that if while you are in the minibuffer
+ after running a command that prompts for a file, such as =find-file= or
+ =rename-file=, you can copy a file by running =embark-act= and then
+ pressing =c=.
 
-These action keymaps are very convenient but not strictly necessary
-when using =embark-act=: you can use any command that reads from the
-minibuffer as an action and the target of the action will be inserted
-at the first minibuffer prompt. After running =embark-act= all of your
-keybindings and even =execute-extended-command= can be used to run a
-command.
+ These action keymaps are very convenient but not strictly necessary
+ when using =embark-act=: you can use any command that reads from the
+ minibuffer as an action and the target of the action will be inserted
+ at the first minibuffer prompt. After running =embark-act= all of your
+ keybindings and even =execute-extended-command= can be used to run a
+ command.
 
-The default keymaps that come with =embark= all set =embark-general-map=
-as their parent, so that the actions bound there are available no
-matter what type of completion you are in the middle of. By default
-this includes bindings to save the current candidate in the kill
-ring and to insert the current candidate in the previously selected
-buffer (the buffer that was current when you executed a command that
-opened up the minibuffer).
+ The default keymaps that come with =embark= all set =embark-general-map=
+ as their parent, so that the actions bound there are available no
+ matter what type of completion you are in the middle of. By default
+ this includes bindings to save the current candidate in the kill
+ ring and to insert the current candidate in the previously selected
+ buffer (the buffer that was current when you executed a command that
+ opened up the minibuffer).
 
-You can read about the [[https://github.com/oantolin/embark/wiki/Default-Actions][default actions and their keybindings]]
-on the GitHub project wiki.
+ You can read about the [[https://github.com/oantolin/embark/wiki/Default-Actions][default actions and their keybindings]]
+ on the GitHub project wiki.
 
 *** Working with sets of possible targets
  
-Besides acting individually on targets, Embark lets you work
-collectively on a set of target /candidates/. For example, while you are
-in the minibuffer the candidates are simply the possible completions
-of your input. Embark provides two commands to work on candidate sets:
+ Besides acting individually on targets, Embark lets you work
+ collectively on a set of target /candidates/. For example, while you are
+ in the minibuffer the candidates are simply the possible completions
+ of your input. Embark provides two commands to work on candidate sets:
 
-- The =embark-occur= command produces a buffer listing all candidates,
- for you to peruse and run actions on at your leisure. The
- candidates can be viewed in a grid or as a list showing additional
- annotations. The =embark-live-occur= variant produces "live" Embark
- Occur buffer, meaning they autoupdate as the set of candidates
- changes.
+ - The =embark-occur= command produces a buffer listing all candidates,
+  for you to peruse and run actions on at your leisure. The
+  candidates can be viewed in a grid or as a list showing additional
+  annotations. The =embark-live-occur= variant produces "live" Embark
+  Occur buffer, meaning they autoupdate as the set of candidates
+  changes.
 
-- The =embark-export= command tries to open a buffer in an appropriate
- major mode for the set of candidates. If the candidates are files
- export produces a Dired buffer; if they are buffers, you get an
- Ibuffer buffer; and if they are packages you get a buffer in
- package menu mode.
+ - The =embark-export= command tries to open a buffer in an appropriate
+  major mode for the set of candidates. If the candidates are files
+  export produces a Dired buffer; if they are buffers, you get an
+  Ibuffer buffer; and if they are packages you get a buffer in
+  package menu mode.
  
 ** Configuration
+*** Showing a reminder of available actions
+
+ If you want a reminder of which actions are available after running
+ =embark-act=, use =embark-heymap-help=, which is bound to =C-h= in all of
+ embarks actions keymaps. That command will prompt you for the name of
+ an action with completion (but feel free to enter a command not among
+ the offered candidates!), and will also remind you of the
+ keybindings.
+
+ If you find you prefer entering actions that way, you can configure
+ embark to always prompt you for actions with the =embark-prompt-style=
+ to the symbol =completion=.
+
+ If you want to see the actions and their key bindings, but want to
+ use the keybindings rather than completing the command name, you can
+ read how to [[https://github.com/oantolin/embark/wiki/Additional-Configuration#use-which-key-like-a-key-menu-prompt][configure which-key to show embark actions]] on the project
+ wiki.
+ 
 *** Allowing the target to be edited before acting on it
 
  By default, for most commands =embark= inserts the target of the action
@@ -177,20 +152,6 @@ of your input. Embark provides two commands to work on candidate sets:
  retrieve the current target. See the definitions of =embark-insert= or
  =embark-save= for examples.
 
-*** Showing a reminder of available actions
-   
- If you wish to see a reminder of which actions are available, you can
- install [[https://github.com/justbur/emacs-which-key][which-key]] and use =which-key-mode= with the
- =which-key-show-transient-maps= variable set to =t=. You may want to
- unclutter the display by removing all of the keybindings for the
- universal prefix arguments, namely =C-u= and the digits and minus (as
- well as their numeric keypad counterparts):
-
- #+begin_src emacs-lisp
-   (push '(("^[0-9-]\\|kp-[0-9]\\|kp-subtract\\|C-u$" . nil) . ignore)
-         which-key-replacement-alist)
- #+end_src
-
 *** Creating your own keymaps
 
  All internal keymaps are generated by a helper function =embark-keymap=
@@ -207,3 +168,51 @@ of your input. Embark provides two commands to work on candidate sets:
     embark-general-map))
  #+END_SRC
 
+** Embark, Marginalia and Consult
+  
+ Some changes are being made to Embark, to better cooperate with the
+ [[https://github.com/minad/marginalia][Marginalia]] and [[https://github.com/minad/consult][Consult]] packages, and prior to being submitted to
+ MELPA. You may wish to hold off on updating Embark, or, help me out by
+ updating aggresively and filing issue reports here on GitHub.
+
+ Niether of those packages is a dependency of Embark, but Marginalia is
+ highly recommended, for reasons explained in the rest of this section
+
+ Embark comes with actions for symbols (commands, functions, variables
+ with actions such as finding the definition, looking up the
+ documentation, evaluating, etc.) in the =embark-symbol-map= keymap, and
+ for packages (actions like install, delete, browse url, etc.) in the
+ =embark-package-keymap=.
+
+ Unfortunately Embark no longer automatically offers you these keymaps
+ when relevant, because many built-in Emacs commands don't report
+ accurate category metadata. For example, a command like
+ =describe-package=, which reads a package name from the minibuffer, does
+ not have metadata indicating so.
+
+ Previously Embark had functions to supply this missing metadata, but
+ they have been moved to Marginalia, which augments many Emacs command
+ to report accurate category metadata. Simply activating
+ =marginalia-mode= allows Embark to offer you the package and symbol
+ actions when appropriate again.
+
+ All annotation functions have been removed from Embark and moved to
+ Marginalia (where they have been improved!). Embark used these old
+ annotation functions for the list view in Embark Occur buffers.
+
+ - If you install Marginalia and activate =marginalia-mode=, Embark Occur
+   buffer will use the Marginalia annotations automatically.
+
+ - If you don't install Marginalia, you will see only the annotations
+   that come with Emacs (such as keybindings in =M-x=, or the unicode
+   characters in =C-x 8 RET=).
+
+ Other small changes:
+
+ - If you have Consult installed and call =embark-occur= from
+   =consult-line=, =consult-mark= or =consult-outline=, you will notice the
+   Embark Occur buffer starts in list view by default.
+ - The function =embark-open-externally= has been removed following the
+   policy of avoiding overlap with Consult. If you used that action,
+   add [[https://github.com/minad/consult/blob/373498acb76b9395e5e590fb8e39f671a9363cd7/consult.el#L707][the small function]] to your configuration or install Consult and
+   use =consult-file-externally=.
