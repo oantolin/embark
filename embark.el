@@ -67,13 +67,12 @@
 ;; keybindings and even `execute-extended-command' can be used to run a
 ;; command.
 
-;; The default keymaps that come with `embark' all set `embark-general-map'
-;; as their parent, so that the actions bound there are available no
-;; matter what type of completion you are in the middle of. By default
-;; this includes bindings to save the current candidate in the kill
-;; ring and to insert the current candidate in the previously selected
-;; buffer (the buffer that was current when you executed a command that
-;; opened up the minibuffer).
+;; The actions in `embark-general-map' are available no matter what
+;; type of completion you are in the middle of. By default this
+;; includes bindings to save the current candidate in the kill ring
+;; and to insert the current candidate in the previously selected
+;; buffer (the buffer that was current when you executed a command
+;; that opened up the minibuffer).
 
 ;; You can read about the Embark GitHub project wiki:
 ;; https://github.com/oantolin/embark/wiki/Default-Actions
@@ -116,11 +115,10 @@
     (unicode-name . embark-unicode-name-map)
     (symbol . embark-symbol-map)
     (package . embark-package-map)
-    (region . embark-region-map)
-    (t . embark-general-map))
+    (region . embark-region-map))
   "Alist of action types and corresponding keymaps.
-Additionally you can associate t to a default keymap for types
-not mentioned separately."
+For any type not listed here, `embark-act' will use
+`embark-general-map'."
   :type '(alist :key-type symbol :value-type variable)
   :group 'embark)
 
@@ -612,18 +610,18 @@ relative path."
 (defun embark--setup-action ()
   "Setup for next action."
   (setq embark--keymap
-        (or (and embark-overriding-keymap
-                 (let ((map (copy-keymap embark-overriding-keymap)))
-                   (set-keymap-parent map embark-general-map)
-                   map))
-            (symbol-value
-             (or (alist-get (embark-classify) embark-keymap-alist)
-                 (alist-get t embark-keymap-alist))))
+        (or embark-overriding-keymap
+            (symbol-value (alist-get (embark-classify) embark-keymap-alist)))
         embark--target
         (if (use-region-p)
             (when embark--target-region-p
               (buffer-substring (region-beginning) (region-end)))
           (run-hook-with-args-until-success 'embark-target-finders)))
+  (if (null embark--keymap)
+      (setq embark--keymap embark-general-map)
+    ;; non-destructively set embark-general-map as parent
+    (setq embark--keymap (copy-keymap embark--keymap))
+    (set-keymap-parent embark--keymap embark-general-map))
   (when (minibufferp)
     (setq embark--target-buffer
           (window-buffer (minibuffer-selected-window))))
@@ -803,8 +801,7 @@ If PARENT-MAP is non-nil, set it as the parent keymap."
       (pcase-let ((`(,key . ,fn) key-fn))
         (when (stringp key) (setq key (kbd key)))
         (define-key map key fn)))
-    (when parent-map
-      (set-keymap-parent map parent-map))
+    (set-keymap-parent map parent-map)
     map))
 
 ;;; embark occur
@@ -1591,15 +1588,13 @@ and leaves the point to the left of it."
      ("W" . embark-save-relative-path)
      ("l" . load-file)
      ("b" . byte-compile-file)
-     ("B" . byte-recompile-directory))
-   embark-general-map)
+     ("B" . byte-recompile-directory)))
   "Keymap for Embark file actions.")
 
 (defvar embark-url-map
   (embark-keymap
    '(("b" . browse-url)
-     ("e" . eww))
-   embark-general-map)
+     ("e" . eww)))
   "Keymap for Embark url actions.")
 
 (defvar embark-buffer-map
@@ -1611,8 +1606,7 @@ and leaves the point to the left of it."
      ("q" . embark-kill-buffer-and-window)
      ("r" . embark-rename-buffer)
      ("=" . ediff-buffers)
-     ("|" . embark-shell-command-on-buffer))
-   embark-general-map)
+     ("|" . embark-shell-command-on-buffer)))
   "Keymap for Embark buffer actions.")
 
 (defvar embark-symbol-map
@@ -1622,8 +1616,7 @@ and leaves the point to the left of it."
      ("s" . embark-info-lookup-symbol)
      ("d" . embark-find-definition)
      ("b" . where-is)
-     ("e" . eval-expression))
-   embark-general-map)
+     ("e" . eval-expression)))
   "Keymap for Embark symbol actions.")
 
 (defvar embark-package-map
@@ -1634,15 +1627,13 @@ and leaves the point to the left of it."
      ("r" . package-reinstall)
      ("u" . embark-browse-package-url)
      ("a" . package-autoremove)
-     ("g" . package-refresh-contents))
-   embark-general-map)
+     ("g" . package-refresh-contents)))
   "Keymap for Embark package actions.")
 
 (defvar embark-unicode-name-map
   (embark-keymap
    '(("I" . embark-insert-unicode-character)
-     ("W" . embark-save-unicode-character))
-   embark-general-map)
+     ("W" . embark-save-unicode-character)))
   "Keymap for Embark unicode name actions.")
 
 (defvar embark-become-help-map

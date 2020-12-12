@@ -57,13 +57,12 @@
  keybindings and even =execute-extended-command= can be used to run a
  command.
 
- The default keymaps that come with =embark= all set =embark-general-map=
- as their parent, so that the actions bound there are available no
- matter what type of completion you are in the middle of. By default
- this includes bindings to save the current candidate in the kill
- ring and to insert the current candidate in the previously selected
- buffer (the buffer that was current when you executed a command that
- opened up the minibuffer).
+ The actions in =embark-general-map= are available no matter what type
+ of completion you are in the middle of. By default this includes
+ bindings to save the current candidate in the kill ring and to insert
+ the current candidate in the previously selected buffer (the buffer
+ that was current when you executed a command that opened up the
+ minibuffer).
 
  You can read about the [[https://github.com/oantolin/embark/wiki/Default-Actions][default actions and their keybindings]]
  on the GitHub project wiki.
