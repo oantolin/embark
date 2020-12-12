@@ -768,6 +768,8 @@ PS is the prompt style to use (defaults to
    (list current-prefix-arg embark-prompt-style))
   (embark-act arg (or ps embark-prompt-style) t))
 
+(defvar embark-meta-map) ; forward declaration
+
 (defun embark-become (&optional arg ps)
   "Make current command become a different command.
 Take the current minibuffer input as initial input for new
@@ -790,18 +792,20 @@ PS is the prompt style to use and defaults to
                    for keymap = (symbol-value keymap-name)
                    when (where-is-internal embark--command (list keymap))
                    return keymap))
+    (when embark--keymap
+      ;; non-destructively set embark-meta-map as parent
+      (setq embark--keymap (copy-keymap embark--keymap))
+      (set-keymap-parent embark--keymap embark-meta-map))
     (add-hook 'minibuffer-setup-hook #'embark--become-inject)
     (embark--prompt t (or ps embark-prompt-style) arg)))
 
-(defun embark-keymap (binding-alist &optional parent-map)
-  "Return keymap with bindings given by BINDING-ALIST.
-If PARENT-MAP is non-nil, set it as the parent keymap."
+(defun embark-keymap (binding-alist)
+  "Return keymap with bindings given by BINDING-ALIST."
   (let ((map (make-sparse-keymap)))
     (dolist (key-fn binding-alist)
       (pcase-let ((`(,key . ,fn) key-fn))
         (when (stringp key) (setq key (kbd key)))
         (define-key map key fn)))
-    (set-keymap-parent map parent-map)
     map))
 
 ;;; embark occur
@@ -931,8 +935,10 @@ Returns the name of the command."
   (when embark-occur-direct-action-minor-mode
     ;; must mutate keymap, not make new one
     (let ((action-map
-           (keymap-canonicalize
+           (copy-keymap
             (symbol-value (alist-get embark--type embark-keymap-alist)))))
+      (set-keymap-parent action-map embark-general-map)
+      (setq action-map (keymap-canonicalize action-map))
       (dolist (binding (cdr action-map))
         (setcdr binding (embark--action-command (cdr binding))))
       (setcdr embark-occur-direct-action-minor-mode-map
@@ -1535,17 +1541,19 @@ and leaves the point to the left of it."
    '(("C-h" . embark-keymap-help)
      ("C-u" . universal-argument)
      ("C-g" . ignore)
-     ([remap self-insert-command] . embark-undefined))
-   universal-argument-map)
+     ([remap self-insert-command] . embark-undefined)))
   "Keymap for non-action Embark functions.")
+
+(set-keymap-parent embark-meta-map universal-argument-map)
 
 (defvar embark-general-map
   (embark-keymap
    '(("i" . embark-insert)
      ("w" . embark-save)
-     ("RET" . embark-default-action))
-   embark-meta-map)
+     ("RET" . embark-default-action)))
   "Keymap for Embark general actions.")
+
+(set-keymap-parent embark-general-map embark-meta-map)
 
 (defvar embark-region-map
   (embark-keymap
@@ -1567,8 +1575,7 @@ and leaves the point to the left of it."
      ("w" . write-region)
      ("m" . apply-macro-to-region-lines)
      ("n" . narrow-to-region)
-     ("RET" . embark-act-on-region-contents))
-   embark-meta-map)
+     ("RET" . embark-act-on-region-contents)))
   "Keymap for Embark actions on the active region.")
 
 (defvar embark-file-map
@@ -1646,8 +1653,7 @@ and leaves the point to the left of it."
      ("s" . describe-symbol)
      ("F" . describe-face)
      ("p" . describe-package)
-     ("i" . describe-input-method))
-   embark-meta-map))
+     ("i" . describe-input-method))))
 
 (defvar embark-become-file+buffer-map
   (embark-keymap
@@ -1656,24 +1662,21 @@ and leaves the point to the left of it."
      ("r" . recentf-open-files)
      ("b" . switch-to-buffer)
      ("l" . locate)
-     ("L" . find-library))
-   embark-meta-map))
+     ("L" . find-library))))
 
 (defvar embark-become-shell-command-map
   (embark-keymap
    '(("!" . shell-command)
      ("&" . async-shell-command)
      ("c" . comint-run)
-     ("t" . term))
-   embark-meta-map))
+     ("t" . term))))
 
 (defvar embark-become-match-map
   (embark-keymap
    '(("o" . occur)
      ("k" . keep-lines)
      ("f" . flush-lines)
-     ("c" . count-matches))
-   embark-meta-map))
+     ("c" . count-matches))))
 
 (provide 'embark)
 ;;; embark.el ends here
