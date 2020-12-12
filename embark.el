@@ -610,18 +610,15 @@ relative path."
 (defun embark--setup-action ()
   "Setup for next action."
   (setq embark--keymap
-        (or embark-overriding-keymap
-            (symbol-value (alist-get (embark-classify) embark-keymap-alist)))
+        (make-composed-keymap
+         (or embark-overriding-keymap
+             (symbol-value (alist-get (embark-classify) embark-keymap-alist)))
+         embark-general-map)
         embark--target
         (if (use-region-p)
             (when embark--target-region-p
               (buffer-substring (region-beginning) (region-end)))
           (run-hook-with-args-until-success 'embark-target-finders)))
-  (if (null embark--keymap)
-      (setq embark--keymap embark-general-map)
-    ;; non-destructively set embark-general-map as parent
-    (setq embark--keymap (copy-keymap embark--keymap))
-    (set-keymap-parent embark--keymap embark-general-map))
   (when (minibufferp)
     (setq embark--target-buffer
           (window-buffer (minibuffer-selected-window))))
@@ -794,8 +791,8 @@ PS is the prompt style to use and defaults to
                    return keymap))
     (when embark--keymap
       ;; non-destructively set embark-meta-map as parent
-      (setq embark--keymap (copy-keymap embark--keymap))
-      (set-keymap-parent embark--keymap embark-meta-map))
+      (setq embark--keymap
+            (make-composed-keymap embark--keymap embark-meta-map)))
     (add-hook 'minibuffer-setup-hook #'embark--become-inject)
     (embark--prompt t (or ps embark-prompt-style) arg)))
 
@@ -924,6 +921,16 @@ Returns the name of the command."
            (documentation action)))
     name))
 
+(defun embark--omit-binding-p (cmd)
+  "Should this binding be hidden from the user?
+Return non-nil if this is a key binding that should not be bound
+in `embark-occur-direct-action-minor-mode' nor mentioned by
+`embark-keymap-help'."
+  (or (null cmd)
+      (not (symbolp cmd))
+      (eq cmd 'ignore)
+      (memq cmd embark--keep-alive-list)))
+
 (defvar embark-occur-direct-action-minor-mode-map (make-sparse-keymap)
   "Keymap for direct bindings to embark actions.")
 
@@ -934,15 +941,15 @@ Returns the name of the command."
   :keymap embark-occur-direct-action-minor-mode-map
   (when embark-occur-direct-action-minor-mode
     ;; must mutate keymap, not make new one
-    (let ((action-map
-           (copy-keymap
-            (symbol-value (alist-get embark--type embark-keymap-alist)))))
-      (set-keymap-parent action-map embark-general-map)
-      (setq action-map (keymap-canonicalize action-map))
-      (dolist (binding (cdr action-map))
-        (setcdr binding (embark--action-command (cdr binding))))
-      (setcdr embark-occur-direct-action-minor-mode-map
-              (cdr action-map)))))
+    (let ((map embark-occur-direct-action-minor-mode-map))
+      (setcdr map nil)
+      (map-keymap
+       (lambda (key cmd)
+         (unless (embark--omit-binding-p cmd)
+           (define-key map (vector key) (embark--action-command cmd))))
+       (make-composed-keymap
+        (symbol-value (alist-get embark--type embark-keymap-alist))
+        embark-general-map)))))
 
 (define-button-type 'embark-occur-entry
   'face 'embark-occur-candidate
@@ -1333,10 +1340,8 @@ Returns choosen command."
   (let* ((commands
           (cl-loop
            for (key . cmd) in (cdr (keymap-canonicalize embark--keymap))
-           unless (or (null cmd)
-                      (not (symbolp cmd))
-                      (memq cmd '(ignore embark-keymap-help))
-                      (memq cmd embark--keep-alive-list))
+           unless (or (embark--omit-binding-p cmd)
+                      (eq cmd 'embark-keymap-help))
            collect (let ((desc (if (numberp key)
                                        (single-key-description key)
                                      (key-description key)))
@@ -1537,23 +1542,23 @@ and leaves the point to the left of it."
 ;;; keymaps
 
 (defvar embark-meta-map
-  (embark-keymap
-   '(("C-h" . embark-keymap-help)
-     ("C-u" . universal-argument)
-     ("C-g" . ignore)
-     ([remap self-insert-command] . embark-undefined)))
+  (make-composed-keymap
+   (embark-keymap
+    '(("C-h" . embark-keymap-help)
+      ("C-u" . universal-argument)
+      ("C-g" . ignore)
+      ([remap self-insert-command] . embark-undefined)))
+   universal-argument-map)
   "Keymap for non-action Embark functions.")
 
-(set-keymap-parent embark-meta-map universal-argument-map)
-
 (defvar embark-general-map
-  (embark-keymap
-   '(("i" . embark-insert)
-     ("w" . embark-save)
-     ("RET" . embark-default-action)))
+  (make-composed-keymap
+   (embark-keymap
+    '(("i" . embark-insert)
+      ("w" . embark-save)
+      ("RET" . embark-default-action)))
+   embark-meta-map)
   "Keymap for Embark general actions.")
-
-(set-keymap-parent embark-general-map embark-meta-map)
 
 (defvar embark-region-map
   (embark-keymap
