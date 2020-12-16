@@ -1569,7 +1569,8 @@ and leaves the point to the left of it."
       ("w" . embark-save)
       ("RET" . embark-default-action)
       ("E" . embark-export)
-      ("O" . embark-occur)))
+      ("O" . embark-occur)
+      ("L" . embark-live-occur)))
    embark-meta-map)
   "Keymap for Embark general actions.")
 
