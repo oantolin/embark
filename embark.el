@@ -95,6 +95,14 @@
 ;;  Ibuffer buffer; and if they are packages you get a buffer in
 ;;  package menu mode.
 
+;; These are always available as "actions" (although they do not act
+;; on just the current target but on all candidates) for embark-act and
+;; are bound to O, L and E, respectively, in embark-general-map. This
+;; means that you do not have to bind your own key bindings for these
+;; (although you can, of course), just a key binding for `embark-act'
+;; or `embark-act-noexit'.
+ 
+
 ;;; Code:
 
 (eval-when-compile (require 'subr-x))
@@ -690,7 +698,8 @@ argument to use, if any."
      (when (and exitp (not (memq this-command
                                  '(ignore
                                    embark-undefined
-                                   embark-occur))))
+                                   embark-occur
+                                   embark-export))))
        (embark-after-exit
          (this-command prefix-arg embark--command embark--target-buffer)
          (let (use-dialog-box) (command-execute this-command)))))))
@@ -1250,6 +1259,7 @@ argument of 1 means list view.
 To control the display, add an entry to `display-buffer-alist'
 with key \"Embark Occur\"."
   (interactive (embark-occur--initial-view-arg))
+  (ignore (embark-target)) ; enable use as action
   (if-let ((candidates
             (run-hook-with-args-until-success 'embark-candidate-collectors))
            (occur-buffer
@@ -1286,6 +1296,7 @@ For the supported ARGS and their meaning see `completing-read'."
 The variable `embark-exporters-alist' controls how to make the
 buffer for each type of completion."
   (interactive)
+  (ignore (embark-target)) ; enable use as action
   (let* ((type (embark-classify))
          (exporter (or embark-overriding-export-function
                        (alist-get type embark-exporters-alist)
@@ -1556,7 +1567,9 @@ and leaves the point to the left of it."
    (embark-keymap
     '(("i" . embark-insert)
       ("w" . embark-save)
-      ("RET" . embark-default-action)))
+      ("RET" . embark-default-action)
+      ("E" . embark-export)
+      ("O" . embark-occur)))
    embark-meta-map)
   "Keymap for Embark general actions.")
 
@@ -1651,7 +1664,7 @@ and leaves the point to the left of it."
 (defvar embark-become-help-map
   (embark-keymap
    '(("V" . apropos-variable)
-     ("O" . apropos-user-option)
+     ("U" . apropos-user-option)
      ("C" . apropos-command)
      ("v" . describe-variable)
      ("f" . describe-function)

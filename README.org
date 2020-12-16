@@ -70,9 +70,10 @@
 *** Working with sets of possible targets
  
  Besides acting individually on targets, Embark lets you work
- collectively on a set of target /candidates/. For example, while you are
- in the minibuffer the candidates are simply the possible completions
- of your input. Embark provides two commands to work on candidate sets:
+ collectively on a set of target /candidates/. For example, while you
+ are in the minibuffer the candidates are simply the possible
+ completions of your input. Embark provides two commands to work on
+ candidate sets:
 
  - The =embark-occur= command produces a buffer listing all candidates,
    for you to peruse and run actions on at your leisure. The
@@ -86,6 +87,13 @@
    export produces a Dired buffer; if they are buffers, you get an
    Ibuffer buffer; and if they are packages you get a buffer in
    package menu mode.
+
+ These are always available as "actions" (although they do not act on
+ just the current target but on all candidates) for =embark-act= and are
+ bound to =O=, =L= and =E=, respectively, in =embark-general-map=. This means
+ that you do not have to bind your own key bindings for these
+ (although you can, of course), just a key binding for =embark-act= or
+ =embark-act-noexit=.
  
 ** Configuration
 *** Showing a reminder of available actions
