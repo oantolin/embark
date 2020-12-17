@@ -76,7 +76,7 @@
 
 ;; You can read about the Embark GitHub project wiki:
 ;; https://github.com/oantolin/embark/wiki/Default-Actions
- 
+
 ;; Besides acting individually on targets, Embark lets you work
 ;; collectively on a set of target /candidates/. For example, while you are
 ;; in the minibuffer the candidates are simply the possible completions
@@ -101,7 +101,7 @@
 ;; means that you do not have to bind your own key bindings for these
 ;; (although you can, of course), just a key binding for `embark-act'
 ;; or `embark-act-noexit'.
- 
+
 
 ;;; Code:
 
@@ -1419,28 +1419,17 @@ This is whatever command opened the minibuffer in the first place."
                (embark-target))))))
     (eshell '(4))))
 
-(defun embark-describe-symbol ()
-  "Describe embark target as a symbol."
-  (interactive)
-  (describe-symbol (intern (embark-target))))
+(defun embark-find-definition (symbol)
+  "Find definition of SYMBOL."
+  (interactive "SSymbol: ")
+  (cond
+   ((fboundp symbol) (find-function symbol))
+   ((boundp symbol) (find-variable symbol))))
 
-(defun embark-find-definition ()
-  "Find definition of embark target."
-  (interactive)
-  (let ((symbol (intern (embark-target))))
-    (cond
-     ((fboundp symbol) (find-function symbol))
-     ((boundp symbol) (find-variable symbol)))))
-
-(defun embark-info-emacs-command ()
-  "Go to the Info node in the Emacs manual for embark target."
-  (interactive)
-  (Info-goto-emacs-command-node (embark-target)))
-
-(defun embark-info-lookup-symbol ()
-  "Display the definition of embark target, from the relevant manual."
-  (interactive)
-  (info-lookup-symbol (intern (embark-target)) 'emacs-lisp-mode))
+(defun embark-info-lookup-symbol (symbol)
+  "Display the definition of SYMBOL, from the relevant manual."
+  (interactive "SSymbol: ")
+  (info-lookup-symbol symbol 'emacs-lisp-mode))
 
 (defun embark-rename-buffer ()
   "Rename embark target buffer."
@@ -1637,8 +1626,8 @@ and leaves the point to the left of it."
 
 (defvar embark-symbol-map
   (embark-keymap
-   '(("h" . embark-describe-symbol)
-     ("c" . embark-info-emacs-command)
+   '(("h" . describe-symbol)
+     ("c" . Info-goto-emacs-command-node)
      ("s" . embark-info-lookup-symbol)
      ("d" . embark-find-definition)
      ("b" . where-is)
