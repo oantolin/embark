@@ -1427,7 +1427,7 @@ This is whatever command opened the minibuffer in the first place."
    ((boundp symbol) (find-variable symbol))))
 
 (defun embark-info-lookup-symbol (symbol)
-  "Display the definition of SYMBOL, from the relevant manual."
+  "Display the definition of SYMBOL, from the Elisp manual."
   (interactive "SSymbol: ")
   (info-lookup-symbol symbol 'emacs-lisp-mode))
 
