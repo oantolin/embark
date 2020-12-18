@@ -517,7 +517,7 @@ return nil."
                    (eq this-command 'ignore))
                (not (memq real-this-command
                           '(embark-default-action
-                            embark-action<embark-default-action>
+                            embark-action--embark-default-action
                             push-button))))
     (when-let ((target (embark-target)))
       (delete-minibuffer-contents)
@@ -932,7 +932,7 @@ This makes `embark-export' work in Embark Occur buffers."
 (defun embark--action-command (action)
   "Turn an ACTION into a command to perform the action.
 Returns the name of the command."
-  (let ((name (intern (format "embark-action<%s>" action)))
+  (let ((name (intern (format "embark-action--%s" action)))
         (fn (lambda ()
               (interactive)
               (setq this-command action)
