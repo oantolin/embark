@@ -293,6 +293,7 @@ These are used to fill an Embark Occur buffer."
     (buffer . grid)
     (symbol . list)
     (line . list)
+    (kill-ring . list)
     (t . list))
   "Initial views for Embark Occur buffers by type.
 This is an alist associating completion types to either `list' or
