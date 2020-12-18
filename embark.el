@@ -678,9 +678,9 @@ BODY."
        (setq inhibit-message t)
        (top-level))))
 
-(defun embark--activate-keymap (exitp &optional arg)
+(defun embark--activate-keymap (continuep &optional arg)
   "Set transient keymap with bindings for type-specific actions.
-If EXITP is non-nil, exit all minibuffers too.  ARG is the prefix
+If CONTINUEP is nil, exit all minibuffers too.  ARG is the prefix
 argument to use, if any."
   (set-transient-map
    embark--keymap
@@ -696,18 +696,18 @@ argument to use, if any."
        ;; postpone cleanup; embark-act-on-region-contents runs
        ;; embark-act and cleanup is scheduled then
        (advice-add this-command :after #'embark--cleanup))
-     (when (and exitp (not (memq this-command
+     (unless (or continuep (memq this-command
                                  '(ignore
                                    embark-undefined
                                    embark-occur
-                                   embark-export))))
+                                   embark-export)))
        (embark-after-exit
          (this-command prefix-arg embark--command embark--target-buffer)
          (let (use-dialog-box) (command-execute this-command)))))))
 
-(defun embark--prompt (exitp ps &optional arg)
+(defun embark--prompt (continuep ps &optional arg)
   "Prompt user for action and handle choice.
-If EXITP is non-nil exit all minibuffers.  PS is the prompt style
+If CONTINUEP is nil exit all minibuffers.  PS is the prompt style
 to use (see `embark-prompt-style').  ARG is the prefix argument to
 use for the action."
   (cond ((eq ps 'default)
@@ -716,7 +716,7 @@ use for the action."
                        embark-action-indicator)
                       ((memq 'embark--become-inject minibuffer-setup-hook)
                        embark-become-indicator))))
-           (embark--activate-keymap exitp arg)
+           (embark--activate-keymap continuep arg)
            (embark--show-indicator indicator)))
         ((eq ps 'completion)
          (let ((cmd (embark--completing-read-map)))
@@ -729,13 +729,13 @@ use for the action."
            (when cmd
              (setq this-command cmd)
              (setq prefix-arg arg)
-             (if exitp
-                 (embark-after-exit (this-command
-                                     prefix-arg
-                                     embark--command
-                                     embark--target-buffer)
-                   (command-execute cmd))
-               (command-execute cmd)))))))
+             (if continuep
+                 (command-execute cmd)
+               (embark-after-exit (this-command
+                                   prefix-arg
+                                   embark--command
+                                   embark--target-buffer)
+                 (command-execute cmd))))))))
 
 (defun embark-act (&optional arg ps continuep)
   "Embark upon an action and exit from all minibuffers (if any).
@@ -755,7 +755,7 @@ If CONTINUEP is non-nil , don't actually exit."
   (embark--setup-action)
   (setq continuep (or continuep (not (minibufferp)) (use-region-p)))
   (when continuep (setq-local enable-recursive-minibuffers t))
-  (embark--prompt (not continuep) (or ps embark-prompt-style) arg))
+  (embark--prompt continuep (or ps embark-prompt-style) arg))
 
 (defun embark-act-noexit (&optional arg ps)
   "Embark upon an action.
@@ -804,7 +804,7 @@ PS is the prompt style to use and defaults to
       (setq embark--keymap
             (make-composed-keymap embark--keymap embark-meta-map)))
     (add-hook 'minibuffer-setup-hook #'embark--become-inject)
-    (embark--prompt t (or ps embark-prompt-style) arg)))
+    (embark--prompt nil (or ps embark-prompt-style) arg)))
 
 (defmacro embark-define-keymap (name doc &rest bindings)
   "Define keymap variable NAME.
