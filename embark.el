@@ -808,13 +808,15 @@ PS is the prompt style to use and defaults to
 
 (defmacro embark-make-keymap (&rest bindings)
   "Return keymap with bindings given by BINDINGS."
-  (let ((map (make-symbol "map")))
+  (let* ((map (make-symbol "map"))
+         (parent (if (eq :parent (car bindings)) (cadr bindings)))
+         (bindings (if parent (cddr bindings) bindings)))
     `(let ((,map (make-sparse-keymap)))
        ,@(mapcar (pcase-lambda (`(,key ,fn))
                    (when (stringp key) (setq key (kbd key)))
                    `(define-key ,map ,key ,(if (symbolp fn) `#',fn fn)))
                  bindings)
-       ,map)))
+       ,(if parent `(make-composed-keymap ,map ,parent) map))))
 
 (defmacro embark-define-keymap (name doc &rest bindings)
   "Define keymap variable NAME.
@@ -1568,27 +1570,23 @@ and leaves the point to the left of it."
 
 ;;; keymaps
 
-(defvar embark-meta-map
-  (make-composed-keymap
-   (embark-make-keymap
-    ("C-h" embark-keymap-help)
-    ("C-u" universal-argument)
-    ("C-g" ignore)
-    ([remap self-insert-command] embark-undefined))
-   universal-argument-map)
-  "Keymap for non-action Embark functions.")
+(embark-define-keymap embark-meta-map
+  "Keymap for non-action Embark functions."
+  :parent universal-argument-map
+  ("C-h" embark-keymap-help)
+  ("C-u" universal-argument)
+  ("C-g" ignore)
+  ([remap self-insert-command] embark-undefined))
 
-(defvar embark-general-map
-  (make-composed-keymap
-   (embark-make-keymap
-    ("i" embark-insert)
-    ("w" embark-save)
-    ("RET" embark-default-action)
-    ("E" embark-export)
-    ("O" embark-occur)
-    ("L" embark-live-occur))
-   embark-meta-map)
-  "Keymap for Embark general actions.")
+(embark-define-keymap embark-general-map
+  "Keymap for Embark general actions."
+  :parent embark-meta-map
+  ("i" embark-insert)
+  ("w" embark-save)
+  ("RET" embark-default-action)
+  ("E" embark-export)
+  ("O" embark-occur)
+  ("L" embark-live-occur))
 
 (embark-define-keymap embark-region-map
   "Keymap for Embark actions on the active region."
