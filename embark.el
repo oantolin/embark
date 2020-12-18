@@ -806,25 +806,23 @@ PS is the prompt style to use and defaults to
     (add-hook 'minibuffer-setup-hook #'embark--become-inject)
     (embark--prompt t (or ps embark-prompt-style) arg)))
 
-(defmacro embark-make-keymap (&rest bindings)
-  "Return keymap with bindings given by BINDINGS."
-  (let* ((map (make-symbol "map"))
-         (parent (if (eq :parent (car bindings)) (cadr bindings)))
-         (bindings (if parent (cddr bindings) bindings)))
-    `(let ((,map (make-sparse-keymap)))
-       ,@(mapcar (pcase-lambda (`(,key ,fn))
-                   (when (stringp key) (setq key (kbd key)))
-                   `(define-key ,map ,key ,(if (symbolp fn) `#',fn fn)))
-                 bindings)
-       ,(if parent `(make-composed-keymap ,map ,parent) map))))
-
 (defmacro embark-define-keymap (name doc &rest bindings)
   "Define keymap variable NAME.
 
 DOC is the documentation string.
 BINDINGS is the list of bindings."
   (declare (indent 1))
-  `(defvar ,name (embark-make-keymap ,@bindings) ,doc))
+  (let* ((map (make-symbol "map"))
+         (parent (if (eq :parent (car bindings)) (cadr bindings)))
+         (bindings (if parent (cddr bindings) bindings)))
+    `(defvar ,name
+       (let ((,map (make-sparse-keymap)))
+         ,@(mapcar (pcase-lambda (`(,key ,fn))
+                     (when (stringp key) (setq key (kbd key)))
+                     `(define-key ,map ,key ,(if (symbolp fn) `#',fn fn)))
+                   bindings)
+         ,(if parent `(make-composed-keymap ,map ,parent) map))
+       ,doc)))
 
 ;;; embark occur
 
