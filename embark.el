@@ -1431,15 +1431,14 @@ This is whatever command opened the minibuffer in the first place."
   (setq this-command embark--command)   ; so the proper hooks apply
   (call-interactively embark--command))
 
-(defun embark-insert ()
-  "Insert embark target at point into the previously selected buffer."
-  (interactive)
-  (with-current-buffer embark--target-buffer
-    (insert (substring-no-properties (embark-target)))))
+(defun embark-insert (string)
+  "Insert STRING at point."
+  (interactive "sInsert: ")
+  (insert (substring-no-properties string)))
 
 (defun embark-save (str)
   "Save STR in the kill ring."
-  (interactive "sString: ")
+  (interactive "sSave: ")
   (kill-new str))
 
 (defun embark-eshell (file)
@@ -1477,20 +1476,17 @@ This is whatever command opened the minibuffer in the first place."
       (browse-url url)
     (message "No homepage found for `%s'" pkg)))
 
-(defun embark-insert-relative-path ()
+(defun embark-insert-relative-path (file)
   "Insert relative path to embark target.
-The insert path is relative to the previously selected buffer's
-`default-directory'."
-  (interactive)
-  (with-current-buffer embark--target-buffer
-    (insert (file-relative-name (substitute-in-file-name (embark-target))))))
+The insert path is relative to `default-directory'."
+  (interactive "FFile: ")
+  (insert (file-relative-name (substitute-in-file-name file))))
 
-(defun embark-save-relative-path ()
-  "Save the relative path to embark target to kill ring.
-The insert path is relative to the previously selected buffer's
-`default-directory'."
-  (interactive)
-  (kill-new (file-relative-name (substitute-in-file-name (embark-target)))))
+(defun embark-save-relative-path (file)
+  "Save the relative path to FILE in the kill ring.
+The insert path is relative to `default-directory'."
+  (interactive "FFile: ")
+  (kill-new (file-relative-name (substitute-in-file-name file))))
 
 (defun embark-shell-command-on-buffer (buffer command &optional replace)
   "Run shell COMMAND on contents of BUFFER.
@@ -1523,13 +1519,6 @@ with command output.  For replacement behaviour see
         (with-selected-window win
           (kill-buffer-and-window))
       (kill-buffer buf))))
-
-(defun embark-insert-unicode-character ()
-  "Insert unicode character named by embark target."
-  (interactive)
-  (let ((char (read-char-by-name "Insert character  (Unicode name or hex): ")))
-    (with-current-buffer embark--target-buffer
-      (insert-char char))))
 
 (defun embark-save-unicode-character (char)
   "Save unicode character CHAR to kill ring."
@@ -1675,7 +1664,7 @@ and leaves the point to the left of it."
 
 (embark-define-keymap embark-unicode-name-map
   "Keymap for Embark unicode name actions."
-  ("I" embark-insert-unicode-character)
+  ("I" insert-char)
   ("W" embark-save-unicode-character))
 
 (embark-define-keymap embark-become-help-map
