@@ -1413,10 +1413,10 @@ This is whatever command opened the minibuffer in the first place."
   "Run eshell in directory of embark target."
   (interactive)
   (let ((default-directory
-            (file-name-directory
-             (expand-file-name
-              (substitute-in-file-name
-               (embark-target))))))
+          (file-name-directory
+           (expand-file-name
+            (substitute-in-file-name
+             (embark-target))))))
     (eshell '(4))))
 
 (defun embark-find-definition (symbol)
