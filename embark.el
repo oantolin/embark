@@ -1639,6 +1639,7 @@ and leaves the point to the left of it."
   (embark-keymap
    '(("h" . describe-package)
      ("i" . package-install)
+     ("I" . embark-insert)
      ("d" . package-delete)
      ("r" . package-reinstall)
      ("u" . embark-browse-package-url)
