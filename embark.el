@@ -837,6 +837,7 @@ BINDINGS is the list of bindings."
 This is only used for annotation that are not already fontified."
   :group 'embark)
 
+(autoload 'package-delete "package")
 (autoload 'package--from-builtin "package")
 (autoload 'package-desc-extras "package")
 (defvar package--builtins)
@@ -1588,6 +1589,8 @@ and leaves the point to the left of it."
   ("O" embark-occur)
   ("L" embark-live-occur))
 
+(autoload 'org-table-convert-region "org-table")
+
 (embark-define-keymap embark-region-map
   "Keymap for Embark actions on the active region."
   ("u" upcase-region)
@@ -1614,7 +1617,6 @@ and leaves the point to the left of it."
   "Keymap for Embark file actions."
   ("f" find-file)
   ("o" find-file-other-window)
-  ("d" delete-auto-save-files)
   ("D" delete-directory)
   ("r" rename-file)
   ("c" copy-file)
@@ -1681,6 +1683,8 @@ and leaves the point to the left of it."
   ("F" describe-face)
   ("p" describe-package)
   ("i" describe-input-method))
+
+(autoload 'recentf-open-files "recentf")
 
 (embark-define-keymap embark-become-file+buffer-map
   "Embark become keymap for files and buffers."
