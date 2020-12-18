@@ -1519,25 +1519,17 @@ with command output.  For replacement behaviour see
           (kill-buffer-and-window))
       (kill-buffer buf))))
 
-(autoload 'ucs-names "mule-cmds")
-
-(defun embark-unicode-character (name)
-  "Return unicode character called NAME."
-  (when-let ((char (gethash name (ucs-names))))
-    (format "%c" char)))
-
 (defun embark-insert-unicode-character ()
-  "Insert unicode character named by embark target to kill ring."
+  "Insert unicode character named by embark target."
   (interactive)
-  (when-let ((char (embark-unicode-character (embark-target))))
+  (let ((char (read-char-by-name "Insert character  (Unicode name or hex): ")))
     (with-current-buffer embark--target-buffer
-      (insert char))))
+      (insert-char char))))
 
-(defun embark-save-unicode-character ()
-  "Save unicode character named by embark target to kill ring."
-  (interactive)
-  (when-let ((char (embark-unicode-character (embark-target))))
-     (kill-new char)))
+(defun embark-save-unicode-character (char)
+  "Save unicode character CHAR to kill ring."
+  (interactive (list (read-char-by-name "Insert character  (Unicode name or hex): ")))
+  (kill-new (format "%c" char)))
 
 (defun embark-act-on-region-contents ()
   "Act on contents of active region."
