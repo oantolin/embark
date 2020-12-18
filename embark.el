@@ -678,9 +678,9 @@ BODY."
        (setq inhibit-message t)
        (top-level))))
 
-(defun embark--activate-keymap (exitp &optional arg)
+(defun embark--activate-keymap (continuep &optional arg)
   "Set transient keymap with bindings for type-specific actions.
-If EXITP is non-nil, exit all minibuffers too.  ARG is the prefix
+If CONTINUEP is nil, exit all minibuffers too.  ARG is the prefix
 argument to use, if any."
   (set-transient-map
    embark--keymap
@@ -696,18 +696,18 @@ argument to use, if any."
        ;; postpone cleanup; embark-act-on-region-contents runs
        ;; embark-act and cleanup is scheduled then
        (advice-add this-command :after #'embark--cleanup))
-     (when (and exitp (not (memq this-command
+     (unless (or continuep (memq this-command
                                  '(ignore
                                    embark-undefined
                                    embark-occur
-                                   embark-export))))
+                                   embark-export)))
        (embark-after-exit
          (this-command prefix-arg embark--command embark--target-buffer)
          (let (use-dialog-box) (command-execute this-command)))))))
 
-(defun embark--prompt (exitp ps &optional arg)
+(defun embark--prompt (continuep ps &optional arg)
   "Prompt user for action and handle choice.
-If EXITP is non-nil exit all minibuffers.  PS is the prompt style
+If CONTINUEP is nil exit all minibuffers.  PS is the prompt style
 to use (see `embark-prompt-style').  ARG is the prefix argument to
 use for the action."
   (cond ((eq ps 'default)
@@ -716,7 +716,7 @@ use for the action."
                        embark-action-indicator)
                       ((memq 'embark--become-inject minibuffer-setup-hook)
                        embark-become-indicator))))
-           (embark--activate-keymap exitp arg)
+           (embark--activate-keymap continuep arg)
            (embark--show-indicator indicator)))
         ((eq ps 'completion)
          (let ((cmd (embark--completing-read-map)))
@@ -729,13 +729,13 @@ use for the action."
            (when cmd
              (setq this-command cmd)
              (setq prefix-arg arg)
-             (if exitp
-                 (embark-after-exit (this-command
-                                     prefix-arg
-                                     embark--command
-                                     embark--target-buffer)
-                   (command-execute cmd))
-               (command-execute cmd)))))))
+             (if continuep
+                 (command-execute cmd)
+               (embark-after-exit (this-command
+                                   prefix-arg
+                                   embark--command
+                                   embark--target-buffer)
+                 (command-execute cmd))))))))
 
 (defun embark-act (&optional arg ps continuep)
   "Embark upon an action and exit from all minibuffers (if any).
@@ -755,7 +755,7 @@ If CONTINUEP is non-nil , don't actually exit."
   (embark--setup-action)
   (setq continuep (or continuep (not (minibufferp)) (use-region-p)))
   (when continuep (setq-local enable-recursive-minibuffers t))
-  (embark--prompt (not continuep) (or ps embark-prompt-style) arg))
+  (embark--prompt continuep (or ps embark-prompt-style) arg))
 
 (defun embark-act-noexit (&optional arg ps)
   "Embark upon an action.
@@ -804,16 +804,25 @@ PS is the prompt style to use and defaults to
       (setq embark--keymap
             (make-composed-keymap embark--keymap embark-meta-map)))
     (add-hook 'minibuffer-setup-hook #'embark--become-inject)
-    (embark--prompt t (or ps embark-prompt-style) arg)))
+    (embark--prompt nil (or ps embark-prompt-style) arg)))
 
-(defun embark-keymap (binding-alist)
-  "Return keymap with bindings given by BINDING-ALIST."
-  (let ((map (make-sparse-keymap)))
-    (dolist (key-fn binding-alist)
-      (pcase-let ((`(,key . ,fn) key-fn))
-        (when (stringp key) (setq key (kbd key)))
-        (define-key map key fn)))
-    map))
+(defmacro embark-define-keymap (name doc &rest bindings)
+  "Define keymap variable NAME.
+
+DOC is the documentation string.
+BINDINGS is the list of bindings."
+  (declare (indent 1))
+  (let* ((map (make-symbol "map"))
+         (parent (if (eq :parent (car bindings)) (cadr bindings)))
+         (bindings (if parent (cddr bindings) bindings)))
+    `(defvar ,name
+       (let ((,map (make-sparse-keymap)))
+         ,@(mapcar (pcase-lambda (`(,key ,fn))
+                     (when (stringp key) (setq key (kbd key)))
+                     `(define-key ,map ,key ,(if (symbolp fn) `#',fn fn)))
+                   bindings)
+         ,(if parent `(make-composed-keymap ,map ,parent) map))
+       ,doc)))
 
 ;;; embark occur
 
@@ -826,6 +835,7 @@ PS is the prompt style to use and defaults to
 This is only used for annotation that are not already fontified."
   :group 'embark)
 
+(autoload 'package-delete "package")
 (autoload 'package--from-builtin "package")
 (autoload 'package-desc-extras "package")
 (defvar package--builtins)
@@ -932,7 +942,7 @@ Returns the name of the command."
     name))
 
 (defun embark--omit-binding-p (cmd)
-  "Should this binding be hidden from the user?
+  "Should CMD binding be hidden from the user?
 Return non-nil if this is a key binding that should not be bound
 in `embark-occur-direct-action-minor-mode' nor mentioned by
 `embark-keymap-help'."
@@ -1020,6 +1030,21 @@ If you are using `embark-completing-read' as your
     (embark-default-action)
     (run-hooks 'embark-post-action-hook)))
 
+(embark-define-keymap embark-occur-mode-map
+  "Keymap for Embark occur mode."
+  ("a" embark-act)
+  ("A" embark-occur-direct-action-minor-mode)
+  ("M-q" embark-occur-toggle-view)
+  ("v" embark-occur-toggle-view)
+  ("e" embark-export)
+  ("s" isearch-forward)
+  ("n" next-line)
+  ("p" previous-line)
+  ("f" forward-button)
+  ("b" backward-button)
+  ("<right>" forward-button)
+  ("<left>" backward-button))
+
 (define-derived-mode embark-occur-mode tabulated-list-mode "Embark Occur"
   "List of candidates to be acted on.
 The command `embark-act' is bound `embark-occur-mode-map', but
@@ -1027,21 +1052,6 @@ you might prefer to change the keybinding to match your other
 keybinding for it.  Or alternatively you might want to enable
 `embark-occur-direct-action-minor-mode' in
 `embark-occur-mode-hook'.")
-
-(setq embark-occur-mode-map
-      (embark-keymap
-       '(("a" . embark-act)
-         ("A" . embark-occur-direct-action-minor-mode)
-         ("M-q" . embark-occur-toggle-view)
-         ("v" . embark-occur-toggle-view)
-         ("e" . embark-export)
-         ("s" . isearch-forward)
-         ("n" . next-line)
-         ("p" . previous-line)
-         ("f" . forward-button)
-         ("b" . backward-button)
-         ("<right>" . forward-button)
-         ("<left>" . backward-button))))
 
 (defun embark-occur--max-width ()
   "Maximum width of any Embark Occur candidate."
@@ -1424,19 +1434,18 @@ This is whatever command opened the minibuffer in the first place."
   (with-current-buffer embark--target-buffer
     (insert (substring-no-properties (embark-target)))))
 
-(defun embark-save ()
-  "Save embark target in the kill ring."
-  (interactive)
-  (kill-new (substring-no-properties (embark-target))))
+(defun embark-save (str)
+  "Save STR in the kill ring."
+  (interactive "sString: ")
+  (kill-new str))
 
-(defun embark-eshell-in-directory ()
-  "Run eshell in directory of embark target."
-  (interactive)
+(defun embark-eshell (file)
+  "Run eshell in directory of FILE."
+  (interactive "GDirectory: ")
   (let ((default-directory
           (file-name-directory
            (expand-file-name
-            (substitute-in-file-name
-             (embark-target))))))
+            (substitute-in-file-name file)))))
     (eshell '(4))))
 
 (defun embark-find-definition (symbol)
@@ -1451,17 +1460,16 @@ This is whatever command opened the minibuffer in the first place."
   (interactive "SSymbol: ")
   (info-lookup-symbol symbol 'emacs-lisp-mode))
 
-(defun embark-rename-buffer ()
-  "Rename embark target buffer."
-  (interactive)
-  (with-current-buffer (embark-target)
+(defun embark-rename-buffer (buf)
+  "Rename buffer BUF."
+  (interactive "bBuffer: ")
+  (with-current-buffer buf
     (call-interactively #'rename-buffer)))
 
-(defun embark-browse-package-url ()
-  "Open homepage for embark target package with `browse-url'."
-  (interactive)
-  (if-let ((pkg (intern (embark-target)))
-           (desc (embark--package-desc pkg))
+(defun embark-browse-package-url (pkg)
+  "Open homepage for package PKG with `browse-url'."
+  (interactive "SPackage: ")
+  (if-let ((desc (embark--package-desc pkg))
            (url (alist-get :url (package-desc-extras desc))))
       (browse-url url)
     (message "No homepage found for `%s'" pkg)))
@@ -1496,41 +1504,34 @@ with command output.  For replacement behaviour see
                              command
                              (and replace (current-buffer)))))
 
-(defun embark-bury-buffer ()
-  "Bury embark target buffer."
-  (interactive)
-  (if-let ((buf (embark-target))
-           (win (get-buffer-window buf)))
+(defun embark-bury-buffer (buf)
+  "Bury buffer BUF."
+  (interactive "bBuffer: ")
+  (if-let (win (get-buffer-window buf))
       (with-selected-window win
         (bury-buffer))
     (bury-buffer)))
 
-(defun embark-kill-buffer-and-window ()
-  "Kill embark target buffer and delete its window."
-  (interactive)
-  (when-let ((win (get-buffer-window (embark-target))))
-    (with-selected-window win
-      (kill-buffer-and-window))))
-
-(autoload 'ucs-names "mule-cmds")
-
-(defun embark-unicode-character (name)
-  "Return unicode character called NAME."
-  (when-let ((char (gethash name (ucs-names))))
-    (format "%c" char)))
+(defun embark-kill-buffer-and-window (buf)
+  "Kill buffer BUF and delete its window."
+  (interactive "bBuffer: ")
+  (when-let (buf (get-buffer buf))
+    (if-let (win (get-buffer-window buf))
+        (with-selected-window win
+          (kill-buffer-and-window))
+      (kill-buffer buf))))
 
 (defun embark-insert-unicode-character ()
-  "Insert unicode character named by embark target to kill ring."
+  "Insert unicode character named by embark target."
   (interactive)
-  (when-let ((char (embark-unicode-character (embark-target))))
+  (let ((char (read-char-by-name "Insert character  (Unicode name or hex): ")))
     (with-current-buffer embark--target-buffer
-      (insert char))))
+      (insert-char char))))
 
-(defun embark-save-unicode-character ()
-  "Save unicode character named by embark target to kill ring."
-  (interactive)
-  (when-let ((char (embark-unicode-character (embark-target))))
-     (kill-new char)))
+(defun embark-save-unicode-character (char)
+  "Save unicode character CHAR to kill ring."
+  (interactive (list (read-char-by-name "Insert character  (Unicode name or hex): ")))
+  (kill-new (format "%c" char)))
 
 (defun embark-act-on-region-contents ()
   "Act on contents of active region."
@@ -1561,151 +1562,143 @@ and leaves the point to the left of it."
 
 ;;; keymaps
 
-(defvar embark-meta-map
-  (make-composed-keymap
-   (embark-keymap
-    '(("C-h" . embark-keymap-help)
-      ("C-u" . universal-argument)
-      ("C-g" . ignore)
-      ([remap self-insert-command] . embark-undefined)))
-   universal-argument-map)
-  "Keymap for non-action Embark functions.")
+(embark-define-keymap embark-meta-map
+  "Keymap for non-action Embark functions."
+  :parent universal-argument-map
+  ("C-h" embark-keymap-help)
+  ("C-u" universal-argument)
+  ("C-g" ignore)
+  ([remap self-insert-command] embark-undefined))
 
-(defvar embark-general-map
-  (make-composed-keymap
-   (embark-keymap
-    '(("i" . embark-insert)
-      ("w" . embark-save)
-      ("RET" . embark-default-action)
-      ("E" . embark-export)
-      ("O" . embark-occur)
-      ("L" . embark-live-occur)))
-   embark-meta-map)
-  "Keymap for Embark general actions.")
+(embark-define-keymap embark-general-map
+  "Keymap for Embark general actions."
+  :parent embark-meta-map
+  ("i" embark-insert)
+  ("w" embark-save)
+  ("RET" embark-default-action)
+  ("E" embark-export)
+  ("O" embark-occur)
+  ("L" embark-live-occur))
 
-(defvar embark-region-map
-  (embark-keymap
-   '(("u" . upcase-region)
-     ("l" . downcase-region)
-     ("c" . capitalize-region)
-     ("|" . shell-command-on-region)
-     ("e" . eval-region)
-     ("i" . indent-rigidly)
-     ("TAB" . indent-region)
-     ("f" . fill-region)
-     ("p" . fill-region-as-paragraph)
-     ("r" . rot13-region)
-     ("=" . count-words-region)
-     ("s" . whitespace-cleanup-region)
-     ("t" . transpose-regions)
-     ("o" . org-table-convert-region)
-     (";" . comment-or-uncomment-region)
-     ("w" . write-region)
-     ("m" . apply-macro-to-region-lines)
-     ("n" . narrow-to-region)
-     ("RET" . embark-act-on-region-contents)))
-  "Keymap for Embark actions on the active region.")
+(autoload 'org-table-convert-region "org-table")
 
-(defvar embark-file-map
-  (embark-keymap
-   '(("f" . find-file)
-     ("o" . find-file-other-window)
-     ("d" . delete-file)
-     ("D" . delete-directory)
-     ("r" . rename-file)
-     ("c" . copy-file)
-     ("!" . shell-command)
-     ("&" . async-shell-command)
-     ("=" . ediff-files)
-     ("e" . embark-eshell-in-directory)
-     ("+" . make-directory)
-     ("I" . embark-insert-relative-path)
-     ("W" . embark-save-relative-path)
-     ("l" . load-file)
-     ("b" . byte-compile-file)
-     ("B" . byte-recompile-directory)))
-  "Keymap for Embark file actions.")
+(embark-define-keymap embark-region-map
+  "Keymap for Embark actions on the active region."
+  ("u" upcase-region)
+  ("l" downcase-region)
+  ("c" capitalize-region)
+  ("|" shell-command-on-region)
+  ("e" eval-region)
+  ("i" indent-rigidly)
+  ("TAB" indent-region)
+  ("f" fill-region)
+  ("p" fill-region-as-paragraph)
+  ("r" rot13-region)
+  ("=" count-words-region)
+  ("s" whitespace-cleanup-region)
+  ("t" transpose-regions)
+  ("o" org-table-convert-region)
+  (";" comment-or-uncomment-region)
+  ("w" write-region)
+  ("m" apply-macro-to-region-lines)
+  ("n" narrow-to-region)
+  ("RET" embark-act-on-region-contents))
 
-(defvar embark-url-map
-  (embark-keymap
-   '(("b" . browse-url)
-     ("e" . eww)))
-  "Keymap for Embark url actions.")
+(embark-define-keymap embark-file-map
+  "Keymap for Embark file actions."
+  ("f" find-file)
+  ("o" find-file-other-window)
+  ("D" delete-directory)
+  ("r" rename-file)
+  ("c" copy-file)
+  ("!" shell-command)
+  ("&" async-shell-command)
+  ("=" ediff-files)
+  ("e" embark-eshell)
+  ("+" make-directory)
+  ("I" embark-insert-relative-path)
+  ("W" embark-save-relative-path)
+  ("l" load-file)
+  ("b" byte-compile-file)
+  ("B" byte-recompile-directory))
 
-(defvar embark-buffer-map
-  (embark-keymap
-   '(("k" . kill-buffer)
-     ("b" . switch-to-buffer)
-     ("o" . switch-to-buffer-other-window)
-     ("z" . embark-bury-buffer)
-     ("q" . embark-kill-buffer-and-window)
-     ("r" . embark-rename-buffer)
-     ("=" . ediff-buffers)
-     ("|" . embark-shell-command-on-buffer)))
-  "Keymap for Embark buffer actions.")
+(embark-define-keymap embark-url-map
+  "Keymap for Embark url actions."
+  ("b" browse-url)
+  ("e" eww))
 
-(defvar embark-symbol-map
-  (embark-keymap
-   '(("h" . describe-symbol)
-     ("c" . Info-goto-emacs-command-node)
-     ("s" . embark-info-lookup-symbol)
-     ("d" . embark-find-definition)
-     ("b" . where-is)
-     ("e" . eval-expression)))
-  "Keymap for Embark symbol actions.")
+(embark-define-keymap embark-buffer-map
+  "Keymap for Embark buffer actions."
+  ("k" kill-buffer)
+  ("b" switch-to-buffer)
+  ("o" switch-to-buffer-other-window)
+  ("z" embark-bury-buffer)
+  ("q" embark-kill-buffer-and-window)
+  ("r" embark-rename-buffer)
+  ("=" ediff-buffers)
+  ("|" embark-shell-command-on-buffer))
 
-(defvar embark-package-map
-  (embark-keymap
-   '(("h" . describe-package)
-     ("i" . package-install)
-     ("I" . embark-insert)
-     ("d" . package-delete)
-     ("r" . package-reinstall)
-     ("u" . embark-browse-package-url)
-     ("a" . package-autoremove)
-     ("g" . package-refresh-contents)))
-  "Keymap for Embark package actions.")
+(embark-define-keymap embark-symbol-map
+  "Keymap for Embark symbol actions."
+  ("h" describe-symbol)
+  ("c" Info-goto-emacs-command-node)
+  ("s" embark-info-lookup-symbol)
+  ("d" embark-find-definition)
+  ("b" where-is)
+  ("e" eval-expression))
 
-(defvar embark-unicode-name-map
-  (embark-keymap
-   '(("I" . embark-insert-unicode-character)
-     ("W" . embark-save-unicode-character)))
-  "Keymap for Embark unicode name actions.")
+(embark-define-keymap embark-package-map
+  "Keymap for Embark package actions."
+  ("h" describe-package)
+  ("i" package-install)
+  ("I" embark-insert)
+  ("d" package-delete)
+  ("r" package-reinstall)
+  ("u" embark-browse-package-url)
+  ("a" package-autoremove)
+  ("g" package-refresh-contents))
 
-(defvar embark-become-help-map
-  (embark-keymap
-   '(("V" . apropos-variable)
-     ("U" . apropos-user-option)
-     ("C" . apropos-command)
-     ("v" . describe-variable)
-     ("f" . describe-function)
-     ("s" . describe-symbol)
-     ("F" . describe-face)
-     ("p" . describe-package)
-     ("i" . describe-input-method))))
+(embark-define-keymap embark-unicode-name-map
+  "Keymap for Embark unicode name actions."
+  ("I" embark-insert-unicode-character)
+  ("W" embark-save-unicode-character))
 
-(defvar embark-become-file+buffer-map
-  (embark-keymap
-   '(("f" . find-file)
-     ("p" . project-find-file)
-     ("r" . recentf-open-files)
-     ("b" . switch-to-buffer)
-     ("l" . locate)
-     ("L" . find-library))))
+(embark-define-keymap embark-become-help-map
+  "Keymap for Embark help actions."
+  ("V" apropos-variable)
+  ("U" apropos-user-option)
+  ("C" apropos-command)
+  ("v" describe-variable)
+  ("f" describe-function)
+  ("s" describe-symbol)
+  ("F" describe-face)
+  ("p" describe-package)
+  ("i" describe-input-method))
 
-(defvar embark-become-shell-command-map
-  (embark-keymap
-   '(("!" . shell-command)
-     ("&" . async-shell-command)
-     ("c" . comint-run)
-     ("t" . term))))
+(autoload 'recentf-open-files "recentf")
 
-(defvar embark-become-match-map
-  (embark-keymap
-   '(("o" . occur)
-     ("k" . keep-lines)
-     ("f" . flush-lines)
-     ("c" . count-matches))))
+(embark-define-keymap embark-become-file+buffer-map
+  "Embark become keymap for files and buffers."
+  ("f" find-file)
+  ("p" project-find-file)
+  ("r" recentf-open-files)
+  ("b" switch-to-buffer)
+  ("l" locate)
+  ("L" find-library))
+
+(embark-define-keymap embark-become-shell-command-map
+  "Embark become keymap for shell commands."
+  ("!" shell-command)
+  ("&" async-shell-command)
+  ("c" comint-run)
+  ("t" term))
+
+(embark-define-keymap embark-become-match-map
+  "Embark become keymap for search."
+  ("o" occur)
+  ("k" keep-lines)
+  ("f" flush-lines)
+  ("c" count-matches))
 
 (provide 'embark)
 ;;; embark.el ends here
