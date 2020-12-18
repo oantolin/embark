@@ -48,7 +48,7 @@
 ;; in the classification. The above introduction just mentions part of
 ;; the default configuration.
 
-;; Configuring which act are offered for a type is particulary easy and
+;; Configuring which act are offered for a type is particularly easy and
 ;; requires no programming: the variable `embark-keymap-alist' associates
 ;; target types with variable containing keymaps, and those keymaps
 ;; containing binds for the actions. For example, in the default
@@ -1380,7 +1380,7 @@ buffer for each type of completion."
 
 (defun embark--completing-read-map ()
   "Prompt for action or command to become via completion.
-Returns choosen command."
+Returns the chosen command."
   (let* ((commands
           (cl-loop
            for (key . cmd) in (cdr (keymap-canonicalize embark--keymap))
