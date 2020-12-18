@@ -942,7 +942,7 @@ Returns the name of the command."
     name))
 
 (defun embark--omit-binding-p (cmd)
-  "Should this binding be hidden from the user?
+  "Should CMD binding be hidden from the user?
 Return non-nil if this is a key binding that should not be bound
 in `embark-occur-direct-action-minor-mode' nor mentioned by
 `embark-keymap-help'."
@@ -1459,17 +1459,16 @@ This is whatever command opened the minibuffer in the first place."
   (interactive "SSymbol: ")
   (info-lookup-symbol symbol 'emacs-lisp-mode))
 
-(defun embark-rename-buffer ()
-  "Rename embark target buffer."
-  (interactive)
-  (with-current-buffer (embark-target)
+(defun embark-rename-buffer (buf)
+  "Rename buffer BUF."
+  (interactive "bBuffer:")
+  (with-current-buffer buf
     (call-interactively #'rename-buffer)))
 
-(defun embark-browse-package-url ()
-  "Open homepage for embark target package with `browse-url'."
-  (interactive)
-  (if-let ((pkg (intern (embark-target)))
-           (desc (embark--package-desc pkg))
+(defun embark-browse-package-url (pkg)
+  "Open homepage for package PKG with `browse-url'."
+  (interactive "SPackage:")
+  (if-let ((desc (embark--package-desc pkg))
            (url (alist-get :url (package-desc-extras desc))))
       (browse-url url)
     (message "No homepage found for `%s'" pkg)))
