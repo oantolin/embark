@@ -326,12 +326,12 @@ default is `embark-occur'."
 The expected format is the same as for functions in
 `embark-exporters-alist'.")
 
-(defcustom embark-live-occur-delay 0.15
+(defcustom embark-live-occur-update-delay 0.15
   "Wait this long for more input before updating Embark Live Occur buffer."
   :type 'number
   :group 'embark)
 
-(defcustom embark-completing-read-delay 0.3
+(defcustom embark-live-occur-initial-delay 0.3
   "Wait this long for input before popping up Embark Live Occur buffer."
   :type 'number
   :group 'embark)
@@ -1122,7 +1122,7 @@ keybinding for it.  Or alternatively you might want to enable
       (cancel-timer embark--live-occur--timer))
     (setq embark--live-occur--timer
           (run-with-idle-timer
-           embark-live-occur-delay nil
+           embark-live-occur-update-delay nil
            (lambda ()
              (let ((non-essential t))
                (while-no-input
@@ -1276,12 +1276,29 @@ with key \"Embark Occur\"."
            (embark-occur--display occur-buffer))))
     (minibuffer-message "No candidates for occur")))
 
-(defun embark-completing-read (&rest args)
-  "A completing read function using `embark-live-occur'.
-For the supported ARGS and their meaning see `completing-read'."
-  (run-with-idle-timer embark-completing-read-delay nil
-   (lambda () (when (minibufferp) (embark-live-occur))))
-  (apply #'completing-read-default args))
+(defun embark-live-occur-after-delay ()
+  "Start `embark-live-occur' after `embark-live-occur-initial-delay'.
+Add this function to `minibuffer-setup-hook' to have an Embark
+Live Occur buffer popup every time you use the minibuffer."
+  (run-with-idle-timer
+   embark-live-occur-initial-delay nil
+   (lambda () (when (minibufferp) (embark-live-occur)))))
+
+(defun embark--wait-for-input (_beg _end _len)
+  "After input in the minibuffer, wait briefly and run `embark-live-occur'.
+This is meant to be added to `after-change-functions' in the
+minibuffer by the function `embark-live-occur-after-input', you
+probably shouldn't use this function directly."
+  (remove-hook 'after-change-functions 'embark--wait-for-input t)
+  (embark-live-occur-after-delay))
+
+(defun embark-live-occur-after-input ()
+  "Start `embark-live-occur' shortly after the minibuffer receives some input.
+Add this function to `minibuffer-setup-hook' to have an Embark
+Live Occur buffer popup soon after you type something in the
+minibuffer; the length of the delay after typing is given by
+`embark-live-occur-initial-delay'."
+  (add-hook 'after-change-functions #'embark--wait-for-input nil t))
 
 (defun embark-switch-to-live-occur ()
   "Switch to the Embark Live Occur buffer."
