@@ -1502,11 +1502,10 @@ with command output.  For replacement behaviour see
                              command
                              (and replace (current-buffer)))))
 
-(defun embark-bury-buffer ()
-  "Bury embark target buffer."
-  (interactive)
-  (if-let ((buf (embark-target))
-           (win (get-buffer-window buf)))
+(defun embark-bury-buffer (buf)
+  "Bury buffer BUF."
+  (interactive "bBuffer: ")
+  (if-let (win (get-buffer-window buf))
       (with-selected-window win
         (bury-buffer))
     (bury-buffer)))
