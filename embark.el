@@ -1432,10 +1432,10 @@ This is whatever command opened the minibuffer in the first place."
   (with-current-buffer embark--target-buffer
     (insert (substring-no-properties (embark-target)))))
 
-(defun embark-save ()
-  "Save embark target in the kill ring."
-  (interactive)
-  (kill-new (substring-no-properties (embark-target))))
+(defun embark-save (str)
+  "Save STR in the kill ring."
+  (interactive "sString: ")
+  (kill-new str))
 
 (defun embark-eshell (file)
   "Run eshell in directory of FILE."
