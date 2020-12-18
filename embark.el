@@ -617,8 +617,8 @@ relative path."
 
 (defvar embark-general-map)             ; forward declaration
 
-(defun embark--setup-action ()
-  "Setup for next action."
+(defun embark--gather-target-info ()
+  "Determine target, target buffer and action keymap for next action."
   (setq embark--keymap
         (make-composed-keymap
          (or embark-overriding-keymap
@@ -679,66 +679,52 @@ BODY."
        (setq inhibit-message t)
        (top-level))))
 
-(defun embark--activate-keymap (continuep &optional arg)
-  "Set transient keymap with bindings for type-specific actions.
-If CONTINUEP is nil, exit all minibuffers too.  ARG is the prefix
-argument to use, if any."
-  (set-transient-map
-   embark--keymap
-   (lambda () (memq this-command embark--keep-alive-list))
-   (lambda ()
-     (run-hooks 'embark-pre-action-hook)
-     (setq embark--action this-command)
-     ;; Only set prefix if it was given, prefix can still be added after calling
-     ;; `embark-act', too.
-     (when arg
-       (setq prefix-arg arg))
-     (unless (eq this-command 'embark-act-on-region-contents)
-       ;; postpone cleanup; embark-act-on-region-contents runs
-       ;; embark-act and cleanup is scheduled then
-       (advice-add this-command :after #'embark--cleanup))
-     (unless (or continuep (memq this-command
-                                 '(ignore
-                                   embark-undefined
-                                   embark-occur
-                                   embark-export)))
-       (embark-after-exit
-         (this-command prefix-arg embark--command embark--target-buffer)
-         (let ((last-nonmenu-event 13))
-           ;; pretend RET was pressed so the mouse menu doesn't appear
-           (command-execute this-command)))))))
+(defun embark--setup-action (continuep)
+  (run-hooks 'embark-pre-action-hook)
+  (setq embark--action this-command)
+  ;; Only set prefix if it was given, prefix can still be added after calling
+  ;; `embark-act', too.
+  (unless (eq this-command 'embark-act-on-region-contents)
+    ;; postpone cleanup; embark-act-on-region-contents runs
+    ;; embark-act and cleanup is scheduled then
+    (advice-add this-command :after #'embark--cleanup))
+  (let ((want-current-buffer
+         (memq this-command
+               '(ignore embark-undefined embark-occur embark-export))))
+    (setf (buffer-local-value 'embark--command embark--target-buffer)
+          embark--command)
+    (unless want-current-buffer (set-buffer embark--target-buffer))
+    (unless (or continuep want-current-buffer)
+      (embark-after-exit
+        (this-command prefix-arg embark--command embark--target-buffer)
+        (let ((last-nonmenu-event 13))
+          ;; pretend RET was pressed so the mouse menu doesn't appear
+          (command-execute this-command))))))
 
 (defun embark--prompt (continuep ps &optional arg)
   "Prompt user for action and handle choice.
 If CONTINUEP is nil exit all minibuffers.  PS is the prompt style
 to use (see `embark-prompt-style').  ARG is the prefix argument to
 use for the action."
+  (when arg (setq prefix-arg arg))
   (cond ((eq ps 'default)
          (let ((indicator
                 (cond ((memq 'embark--act-inject minibuffer-setup-hook)
                        embark-action-indicator)
                       ((memq 'embark--become-inject minibuffer-setup-hook)
                        embark-become-indicator))))
-           (embark--activate-keymap continuep arg)
+           (set-transient-map
+            embark--keymap
+            (lambda () (memq this-command embark--keep-alive-list))
+            (lambda () (embark--setup-action continuep)))
            (embark--show-indicator indicator)))
         ((eq ps 'completion)
          (let ((cmd (embark--completing-read-map)))
-           (when (memq 'embark--act-inject minibuffer-setup-hook)
-             (if (not cmd)
-                 (embark--cleanup)
-               (run-hooks 'embark-pre-action-hook)
-               (setq embark--action cmd)
-               (advice-add cmd :after #'embark--cleanup)))
-           (when cmd
+           (if (not cmd)
+               (embark--cleanup)
              (setq this-command cmd)
-             (setq prefix-arg arg)
-             (if continuep
-                 (command-execute cmd)
-               (embark-after-exit (this-command
-                                   prefix-arg
-                                   embark--command
-                                   embark--target-buffer)
-                 (command-execute cmd))))))))
+             (embark--setup-action continuep)
+             (when continuep (command-execute this-command)))))))
 
 (defun embark-act (&optional arg ps continuep)
   "Embark upon an action and exit from all minibuffers (if any).
@@ -755,7 +741,7 @@ PS is the prompt style to use (defaults to
 If CONTINUEP is non-nil , don't actually exit."
   (interactive
    (list current-prefix-arg embark-prompt-style nil))
-  (embark--setup-action)
+  (embark--gather-target-info)
   (setq continuep (or continuep (not (minibufferp)) (use-region-p)))
   (when continuep (setq-local enable-recursive-minibuffers t))
   (embark--prompt continuep (or ps embark-prompt-style) arg))
@@ -811,7 +797,6 @@ PS is the prompt style to use and defaults to
 
 (defmacro embark-define-keymap (name doc &rest bindings)
   "Define keymap variable NAME.
-
 DOC is the documentation string.
 BINDINGS is the list of bindings."
   (declare (indent 1))
@@ -936,7 +921,7 @@ Returns the name of the command."
         (fn (lambda ()
               (interactive)
               (setq this-command action)
-              (embark--setup-action)
+              (embark--gather-target-info)
               (call-interactively action))))
     (fset name fn)
     (when (symbolp action)
@@ -1025,7 +1010,7 @@ If you are using `embark-completing-read' as your
           (exit-minibuffer)))
     (goto-char entry)            ;; pretend RET was pressed even if
     (setq last-nonmenu-event 13) ;; mouse was clicked, to fool imenu
-    (embark--setup-action)
+    (embark--gather-target-info)
     (let ((ecmd embark--command))
       (pop-to-buffer embark--target-buffer)
       (setq embark--command ecmd))
