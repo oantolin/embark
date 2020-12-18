@@ -1663,8 +1663,13 @@ and leaves the point to the left of it."
   "Keymap for Embark bookmark actions."
   ("d" bookmark-delete)
   ("r" bookmark-rename)
+  ("R" bookmark-relocate)
   ("l" bookmark-locate)
-  ("i" bookmark-insert))
+  ("i" bookmark-insert)
+  ("I" embark-insert)
+  ("j" bookmark-jump)
+  ("o" bookmark-jump-other-window)
+  ("f" bookmark-jump-other-frame))
 
 (embark-define-keymap embark-unicode-name-map
   "Keymap for Embark unicode name actions."
