@@ -806,7 +806,7 @@ PS is the prompt style to use and defaults to
     (add-hook 'minibuffer-setup-hook #'embark--become-inject)
     (embark--prompt t (or ps embark-prompt-style) arg)))
 
-(defmacro embark-keymap (&rest bindings)
+(defmacro embark-make-keymap (&rest bindings)
   "Return keymap with bindings given by BINDINGS."
   (let ((map (make-symbol "map")))
     `(let ((,map (make-sparse-keymap)))
@@ -815,6 +815,14 @@ PS is the prompt style to use and defaults to
                    `(define-key ,map ,key ,(if (symbolp fn) `#',fn fn)))
                  bindings)
        ,map)))
+
+(defmacro embark-define-keymap (name doc &rest bindings)
+  "Define keymap variable NAME.
+
+DOC is the documentation string.
+BINDINGS is the list of bindings."
+  (declare (indent 1))
+  `(defvar ,name (embark-make-keymap ,@bindings) ,doc))
 
 ;;; embark occur
 
@@ -1030,7 +1038,7 @@ keybinding for it.  Or alternatively you might want to enable
 `embark-occur-mode-hook'.")
 
 (setq embark-occur-mode-map
-      (embark-keymap
+      (embark-make-keymap
        ("a" embark-act)
        ("A" embark-occur-direct-action-minor-mode)
        ("M-q" embark-occur-toggle-view)
@@ -1562,7 +1570,7 @@ and leaves the point to the left of it."
 
 (defvar embark-meta-map
   (make-composed-keymap
-   (embark-keymap
+   (embark-make-keymap
     ("C-h" embark-keymap-help)
     ("C-u" universal-argument)
     ("C-g" ignore)
@@ -1572,7 +1580,7 @@ and leaves the point to the left of it."
 
 (defvar embark-general-map
   (make-composed-keymap
-   (embark-keymap
+   (embark-make-keymap
     ("i" embark-insert)
     ("w" embark-save)
     ("RET" embark-default-action)
@@ -1582,129 +1590,122 @@ and leaves the point to the left of it."
    embark-meta-map)
   "Keymap for Embark general actions.")
 
-(defvar embark-region-map
-  (embark-keymap
-   ("u" upcase-region)
-   ("l" downcase-region)
-   ("c" capitalize-region)
-   ("|" shell-command-on-region)
-   ("e" eval-region)
-   ("i" indent-rigidly)
-   ("TAB" indent-region)
-   ("f" fill-region)
-   ("p" fill-region-as-paragraph)
-   ("r" rot13-region)
-   ("=" count-words-region)
-   ("s" whitespace-cleanup-region)
-   ("t" transpose-regions)
-   ("o" org-table-convert-region)
-   (";" comment-or-uncomment-region)
-   ("w" write-region)
-   ("m" apply-macro-to-region-lines)
-   ("n" narrow-to-region)
-   ("RET" embark-act-on-region-contents))
-  "Keymap for Embark actions on the active region.")
+(embark-define-keymap embark-region-map
+  "Keymap for Embark actions on the active region."
+  ("u" upcase-region)
+  ("l" downcase-region)
+  ("c" capitalize-region)
+  ("|" shell-command-on-region)
+  ("e" eval-region)
+  ("i" indent-rigidly)
+  ("TAB" indent-region)
+  ("f" fill-region)
+  ("p" fill-region-as-paragraph)
+  ("r" rot13-region)
+  ("=" count-words-region)
+  ("s" whitespace-cleanup-region)
+  ("t" transpose-regions)
+  ("o" org-table-convert-region)
+  (";" comment-or-uncomment-region)
+  ("w" write-region)
+  ("m" apply-macro-to-region-lines)
+  ("n" narrow-to-region)
+  ("RET" embark-act-on-region-contents))
 
-(defvar embark-file-map
-  (embark-keymap
-   ("f" find-file)
-   ("o" find-file-other-window)
-   ("d" delete-file)
-   ("D" delete-directory)
-   ("r" rename-file)
-   ("c" copy-file)
-   ("!" shell-command)
-   ("&" async-shell-command)
-   ("=" ediff-files)
-   ("e" embark-eshell-in-directory)
-   ("+" make-directory)
-   ("I" embark-insert-relative-path)
-   ("W" embark-save-relative-path)
-   ("l" load-file)
-   ("b" byte-compile-file)
-   ("B" byte-recompile-directory))
-  "Keymap for Embark file actions.")
+(embark-define-keymap embark-file-map
+  "Keymap for Embark file actions."
+  ("f" find-file)
+  ("o" find-file-other-window)
+  ("d" delete-auto-save-files)
+  ("D" delete-directory)
+  ("r" rename-file)
+  ("c" copy-file)
+  ("!" shell-command)
+  ("&" async-shell-command)
+  ("=" ediff-files)
+  ("e" embark-eshell-in-directory)
+  ("+" make-directory)
+  ("I" embark-insert-relative-path)
+  ("W" embark-save-relative-path)
+  ("l" load-file)
+  ("b" byte-compile-file)
+  ("B" byte-recompile-directory))
 
-(defvar embark-url-map
-  (embark-keymap
-   ("b" browse-url)
-   ("e" eww))
-  "Keymap for Embark url actions.")
+(embark-define-keymap embark-url-map
+  "Keymap for Embark url actions."
+  ("b" browse-url)
+  ("e" eww))
 
-(defvar embark-buffer-map
-  (embark-keymap
-   ("k" kill-buffer)
-   ("b" switch-to-buffer)
-   ("o" switch-to-buffer-other-window)
-   ("z" embark-bury-buffer)
-   ("q" embark-kill-buffer-and-window)
-   ("r" embark-rename-buffer)
-   ("=" ediff-buffers)
-   ("|" embark-shell-command-on-buffer))
-  "Keymap for Embark buffer actions.")
+(embark-define-keymap embark-buffer-map
+  "Keymap for Embark buffer actions."
+  ("k" kill-buffer)
+  ("b" switch-to-buffer)
+  ("o" switch-to-buffer-other-window)
+  ("z" embark-bury-buffer)
+  ("q" embark-kill-buffer-and-window)
+  ("r" embark-rename-buffer)
+  ("=" ediff-buffers)
+  ("|" embark-shell-command-on-buffer))
 
-(defvar embark-symbol-map
-  (embark-keymap
-   ("h" describe-symbol)
-   ("c" Info-goto-emacs-command-node)
-   ("s" embark-info-lookup-symbol)
-   ("d" embark-find-definition)
-   ("b" where-is)
-   ("e" eval-expression))
-  "Keymap for Embark symbol actions.")
+(embark-define-keymap embark-symbol-map
+  "Keymap for Embark symbol actions."
+  ("h" describe-symbol)
+  ("c" Info-goto-emacs-command-node)
+  ("s" embark-info-lookup-symbol)
+  ("d" embark-find-definition)
+  ("b" where-is)
+  ("e" eval-expression))
 
-(defvar embark-package-map
-  (embark-keymap
-   ("h" describe-package)
-   ("i" package-install)
-   ("I" embark-insert)
-   ("d" package-delete)
-   ("r" package-reinstall)
-   ("u" embark-browse-package-url)
-   ("a" package-autoremove)
-   ("g" package-refresh-contents))
-  "Keymap for Embark package actions.")
+(embark-define-keymap embark-package-map
+  "Keymap for Embark package actions."
+  ("h" describe-package)
+  ("i" package-install)
+  ("I" embark-insert)
+  ("d" package-delete)
+  ("r" package-reinstall)
+  ("u" embark-browse-package-url)
+  ("a" package-autoremove)
+  ("g" package-refresh-contents))
 
-(defvar embark-unicode-name-map
-  (embark-keymap
-   ("I" embark-insert-unicode-character)
-   ("W" embark-save-unicode-character))
-  "Keymap for Embark unicode name actions.")
+(embark-define-keymap embark-unicode-name-map
+  "Keymap for Embark unicode name actions."
+  ("I" embark-insert-unicode-character)
+  ("W" embark-save-unicode-character))
 
-(defvar embark-become-help-map
-  (embark-keymap
-   ("V" apropos-variable)
-   ("U" apropos-user-option)
-   ("C" apropos-command)
-   ("v" describe-variable)
-   ("f" describe-function)
-   ("s" describe-symbol)
-   ("F" describe-face)
-   ("p" describe-package)
-   ("i" describe-input-method)))
+(embark-define-keymap embark-become-help-map
+  "Keymap for Embark help actions."
+  ("V" apropos-variable)
+  ("U" apropos-user-option)
+  ("C" apropos-command)
+  ("v" describe-variable)
+  ("f" describe-function)
+  ("s" describe-symbol)
+  ("F" describe-face)
+  ("p" describe-package)
+  ("i" describe-input-method))
 
-(defvar embark-become-file+buffer-map
-  (embark-keymap
-   ("f" find-file)
-   ("p" project-find-file)
-   ("r" recentf-open-files)
-   ("b" switch-to-buffer)
-   ("l" locate)
-   ("L" find-library)))
+(embark-define-keymap embark-become-file+buffer-map
+  "Embark become keymap for files and buffers."
+  ("f" find-file)
+  ("p" project-find-file)
+  ("r" recentf-open-files)
+  ("b" switch-to-buffer)
+  ("l" locate)
+  ("L" find-library))
 
-(defvar embark-become-shell-command-map
-  (embark-keymap
-   ("!" shell-command)
-   ("&" async-shell-command)
-   ("c" comint-run)
-   ("t" term)))
+(embark-define-keymap embark-become-shell-command-map
+  "Embark become keymap for shell commands."
+  ("!" shell-command)
+  ("&" async-shell-command)
+  ("c" comint-run)
+  ("t" term))
 
-(defvar embark-become-match-map
-  (embark-keymap
-   ("o" occur)
-   ("k" keep-lines)
-   ("f" flush-lines)
-   ("c" count-matches)))
+(embark-define-keymap embark-become-match-map
+  "Embark become keymap for search."
+  ("o" occur)
+  ("k" keep-lines)
+  ("f" flush-lines)
+  ("c" count-matches))
 
 (provide 'embark)
 ;;; embark.el ends here
