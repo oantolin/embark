@@ -1280,9 +1280,10 @@ with key \"Embark Occur\"."
   "Start `embark-live-occur' after `embark-live-occur-initial-delay'.
 Add this function to `minibuffer-setup-hook' to have an Embark
 Live Occur buffer popup every time you use the minibuffer."
-  (run-with-idle-timer
-   embark-live-occur-initial-delay nil
-   (lambda () (when (minibufferp) (embark-live-occur)))))
+  (when minibuffer-completion-table
+    (run-with-idle-timer
+     embark-live-occur-initial-delay nil
+     (lambda () (when (minibufferp) (embark-live-occur))))))
 
 (defun embark--wait-for-input (_beg _end _len)
   "After input in the minibuffer, wait briefly and run `embark-live-occur'.
@@ -1298,7 +1299,8 @@ Add this function to `minibuffer-setup-hook' to have an Embark
 Live Occur buffer popup soon after you type something in the
 minibuffer; the length of the delay after typing is given by
 `embark-live-occur-initial-delay'."
-  (add-hook 'after-change-functions #'embark--wait-for-input nil t))
+  (when minibuffer-completion-table
+   (add-hook 'after-change-functions #'embark--wait-for-input nil t)))
 
 (defun embark-switch-to-live-occur ()
   "Switch to the Embark Live Occur buffer."
