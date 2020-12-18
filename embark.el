@@ -1437,14 +1437,13 @@ This is whatever command opened the minibuffer in the first place."
   (interactive)
   (kill-new (substring-no-properties (embark-target))))
 
-(defun embark-eshell-in-directory ()
-  "Run eshell in directory of embark target."
-  (interactive)
+(defun embark-eshell (file)
+  "Run eshell in directory of FILE."
+  (interactive "GDirectory: ")
   (let ((default-directory
           (file-name-directory
            (expand-file-name
-            (substitute-in-file-name
-             (embark-target))))))
+            (substitute-in-file-name file)))))
     (eshell '(4))))
 
 (defun embark-find-definition (symbol)
@@ -1620,7 +1619,7 @@ and leaves the point to the left of it."
   ("!" shell-command)
   ("&" async-shell-command)
   ("=" ediff-files)
-  ("e" embark-eshell-in-directory)
+  ("e" embark-eshell)
   ("+" make-directory)
   ("I" embark-insert-relative-path)
   ("W" embark-save-relative-path)
