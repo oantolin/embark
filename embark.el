@@ -1460,13 +1460,13 @@ This is whatever command opened the minibuffer in the first place."
 
 (defun embark-rename-buffer (buf)
   "Rename buffer BUF."
-  (interactive "bBuffer:")
+  (interactive "bBuffer: ")
   (with-current-buffer buf
     (call-interactively #'rename-buffer)))
 
 (defun embark-browse-package-url (pkg)
   "Open homepage for package PKG with `browse-url'."
-  (interactive "SPackage:")
+  (interactive "SPackage: ")
   (if-let ((desc (embark--package-desc pkg))
            (url (alist-get :url (package-desc-extras desc))))
       (browse-url url)
@@ -1511,12 +1511,14 @@ with command output.  For replacement behaviour see
         (bury-buffer))
     (bury-buffer)))
 
-(defun embark-kill-buffer-and-window ()
-  "Kill embark target buffer and delete its window."
-  (interactive)
-  (when-let ((win (get-buffer-window (embark-target))))
-    (with-selected-window win
-      (kill-buffer-and-window))))
+(defun embark-kill-buffer-and-window (buf)
+  "Kill buffer BUF and delete its window."
+  (interactive "bBuffer: ")
+  (when-let (buf (get-buffer buf))
+    (if-let (win (get-buffer-window buf))
+        (with-selected-window win
+          (kill-buffer-and-window))
+      (kill-buffer buf))))
 
 (autoload 'ucs-names "mule-cmds")
 
