@@ -704,7 +704,9 @@ argument to use, if any."
                                    embark-export)))
        (embark-after-exit
          (this-command prefix-arg embark--command embark--target-buffer)
-         (let (use-dialog-box) (command-execute this-command)))))))
+         (let ((last-nonmenu-event 13))
+           ;; pretend RET was pressed so the mouse menu doesn't appear
+           (command-execute this-command)))))))
 
 (defun embark--prompt (continuep ps &optional arg)
   "Prompt user for action and handle choice.
