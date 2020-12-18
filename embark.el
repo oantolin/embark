@@ -1031,6 +1031,21 @@ If you are using `embark-completing-read' as your
     (embark-default-action)
     (run-hooks 'embark-post-action-hook)))
 
+(embark-define-keymap embark-occur-mode-map
+  "Keymap for Embark occur mode."
+  ("a" embark-act)
+  ("A" embark-occur-direct-action-minor-mode)
+  ("M-q" embark-occur-toggle-view)
+  ("v" embark-occur-toggle-view)
+  ("e" embark-export)
+  ("s" isearch-forward)
+  ("n" next-line)
+  ("p" previous-line)
+  ("f" forward-button)
+  ("b" backward-button)
+  ("<right>" forward-button)
+  ("<left>" backward-button))
+
 (define-derived-mode embark-occur-mode tabulated-list-mode "Embark Occur"
   "List of candidates to be acted on.
 The command `embark-act' is bound `embark-occur-mode-map', but
@@ -1038,21 +1053,6 @@ you might prefer to change the keybinding to match your other
 keybinding for it.  Or alternatively you might want to enable
 `embark-occur-direct-action-minor-mode' in
 `embark-occur-mode-hook'.")
-
-(setq embark-occur-mode-map
-      (embark-make-keymap
-       ("a" embark-act)
-       ("A" embark-occur-direct-action-minor-mode)
-       ("M-q" embark-occur-toggle-view)
-       ("v" embark-occur-toggle-view)
-       ("e" embark-export)
-       ("s" isearch-forward)
-       ("n" next-line)
-       ("p" previous-line)
-       ("f" forward-button)
-       ("b" backward-button)
-       ("<right>" forward-button)
-       ("<left>" backward-button)))
 
 (defun embark-occur--max-width ()
   "Maximum width of any Embark Occur candidate."
