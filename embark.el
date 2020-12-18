@@ -123,6 +123,7 @@
     (unicode-name . embark-unicode-name-map)
     (symbol . embark-symbol-map)
     (package . embark-package-map)
+    (bookmark . embark-bookmark-map)
     (region . embark-region-map))
   "Alist of action types and corresponding keymaps.
 For any type not listed here, `embark-act' will use
@@ -1657,6 +1658,13 @@ and leaves the point to the left of it."
   ("u" embark-browse-package-url)
   ("a" package-autoremove)
   ("g" package-refresh-contents))
+
+(embark-define-keymap embark-bookmark-map
+  "Keymap for Embark bookmark actions."
+  ("d" bookmark-delete)
+  ("r" bookmark-rename)
+  ("l" bookmark-locate)
+  ("i" bookmark-insert))
 
 (embark-define-keymap embark-unicode-name-map
   "Keymap for Embark unicode name actions."
