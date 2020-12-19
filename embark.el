@@ -681,6 +681,8 @@ BODY."
        (top-level))))
 
 (defun embark--setup-action (continuep)
+  "Setup Embark action when exiting the transient keymap.
+If CONTINUEP is nil exit all minibuffers."
   (run-hooks 'embark-pre-action-hook)
   (setq embark--action this-command)
   ;; Only set prefix if it was given, prefix can still be added after calling
@@ -690,8 +692,7 @@ BODY."
     ;; embark-act and cleanup is scheduled then
     (advice-add this-command :after #'embark--cleanup))
   (let ((want-current-buffer
-         (memq this-command '(ignore embark-undefined embark-occur
-                                     embark-live-occur embark-export))))
+         (memq this-command '(ignore embark-occur embark-live-occur embark-export))))
     (setf (buffer-local-value 'embark--command embark--target-buffer)
           embark--command)
     (unless want-current-buffer (set-buffer embark--target-buffer))
@@ -716,7 +717,17 @@ use for the action."
                        embark-become-indicator))))
            (set-transient-map
             embark--keymap
-            (lambda () (memq this-command embark--keep-alive-list))
+            (lambda ()
+              (cond
+               ;; Embark action from the keymap
+               ((eq this-command (lookup-key embark--keymap (this-single-command-keys)))
+                (memq this-command embark--keep-alive-list))
+               ;; Prevent self-insert
+               ((eq this-command #'self-insert-command)
+                (minibuffer-message "Not an action")
+                (setq this-command #'ignore))
+               ;; But keep the freedom!
+               (t t)))
             (lambda () (embark--setup-action continuep)))
            (embark--show-indicator indicator)))
         ((eq ps 'completion)
@@ -1462,11 +1473,6 @@ Returns the chosen command."
           (command
            (command-execute command)))))
 
-(defun embark-undefined ()
-  "Cancel action and show an error message."
-  (interactive)
-  (minibuffer-message "Not an action"))
-
 (defun embark-default-action ()
   "Default action.
 This is whatever command opened the minibuffer in the first place."
@@ -1520,7 +1526,7 @@ This is whatever command opened the minibuffer in the first place."
     (message "No homepage found for `%s'" pkg)))
 
 (defun embark-insert-relative-path (file)
-  "Insert relative path to embark target.
+  "Insert relative path to FILE.
 The insert path is relative to `default-directory'."
   (interactive "FFile: ")
   (insert (file-relative-name (substitute-in-file-name file))))
@@ -1602,8 +1608,7 @@ and leaves the point to the left of it."
   :parent universal-argument-map
   ("C-h" embark-keymap-help)
   ("C-u" universal-argument)
-  ("C-g" ignore)
-  ([remap self-insert-command] embark-undefined))
+  ("C-g" ignore))
 
 (embark-define-keymap embark-general-map
   "Keymap for Embark general actions."
