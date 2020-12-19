@@ -1557,6 +1557,8 @@ and leaves the point to the left of it."
   ("O" embark-occur)
   ("L" embark-live-occur))
 
+(autoload 'org-table-convert-region "org-table")
+
 (embark-define-keymap embark-region-map
   "Keymap for Embark actions on the active region."
   ("u" upcase-region)
