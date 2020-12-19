@@ -689,19 +689,21 @@ BODY."
   ;; Only set prefix if it was given, prefix can still be added after calling
   ;; `embark-act', too.
   (unless continuep (embark-occur--kill-live-occur-buffer))
-  (let ((want-current-buffer
+  (let ((win (selected-window))
+        (want-current-buffer
          (memq this-command
                '(ignore embark-occur embark-live-occur embark-export))))
     (when embark--target-buffer
       (setf (buffer-local-value 'embark--command embark--target-buffer)
             embark--command)
-      (unless want-current-buffer (set-buffer embark--target-buffer)))
+      (unless want-current-buffer (pop-to-buffer embark--target-buffer)))
     (unless (or continuep want-current-buffer)
       (embark-after-exit
         (this-command prefix-arg embark--command embark--target-buffer)
         (let ((last-nonmenu-event 13))
           ;; pretend RET was pressed so the mouse menu doesn't appear
-          (command-execute this-command)))))
+          (command-execute this-command))))
+    (run-at-time 0 nil (lambda () (select-window win))))
   (run-at-time 0 nil #'embark--cleanup))
 
 (defun embark--prompt (continuep ps &optional arg)
