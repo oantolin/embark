@@ -382,12 +382,14 @@ If you are using `embark-completing-read' as your
 (defun embark--target-buffer ()
   "Get target buffer for insert actions."
   (cond
+   (embark--target-buffer embark--target-buffer)
    ((minibufferp) (window-buffer (minibuffer-selected-window)))
    ((derived-mode-p 'completion-list-mode)
     (if (minibufferp completion-reference-buffer)
         (with-current-buffer completion-reference-buffer
           (window-buffer (minibuffer-selected-window)))
-      completion-reference-buffer))))
+      completion-reference-buffer))
+   (t (current-buffer))))
 
 (defun embark--cache-info (&optional buffer)
   "Cache information needed for actions in variables local to BUFFER."
@@ -629,9 +631,7 @@ relative path."
             (when embark--target-region-p
               (buffer-substring (region-beginning) (region-end)))
           (run-hook-with-args-until-success 'embark-target-finders)))
-  (when (minibufferp)
-    (setq embark--target-buffer
-          (window-buffer (minibuffer-selected-window))))
+  (setq embark--target-buffer (embark--target-buffer))
   (add-hook 'minibuffer-setup-hook #'embark--act-inject))
 
 (defvar embark--keep-alive-list
