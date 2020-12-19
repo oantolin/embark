@@ -692,9 +692,10 @@ BODY."
   (let ((want-current-buffer
          (memq this-command
                '(ignore embark-occur embark-live-occur embark-export))))
-    (setf (buffer-local-value 'embark--command embark--target-buffer)
-          embark--command)
-    (unless want-current-buffer (set-buffer embark--target-buffer))
+    (when embark--target-buffer
+      (setf (buffer-local-value 'embark--command embark--target-buffer)
+            embark--command)
+      (unless want-current-buffer (set-buffer embark--target-buffer)))
     (unless (or continuep want-current-buffer)
       (embark-after-exit
         (this-command prefix-arg embark--command embark--target-buffer)
