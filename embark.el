@@ -294,12 +294,13 @@ These are used to fill an Embark Occur buffer."
     (buffer . grid)
     (symbol . list)
     (line . list)
-    (kill-ring . list)
+    (kill-ring . zebra)
     (t . list))
   "Initial views for Embark Occur buffers by type.
-This is an alist associating completion types to either `list' or
-`grid'.  Additionally you can associate t to a default initial
-view for types not mentioned separately."
+This is an alist associating completion types to either `list',
+`grid' or `zebra' (which means list view together with
+`embark-occur-zebra-minor-mode').  Additionally you can associate
+t to a default initial view for types not mentioned separately."
   :type '(alist :key-type symbol
                 :value-type (choice (const :tag "List view" list)
                                     (const :tag "Grid view" grid)))
@@ -818,10 +819,27 @@ BINDINGS is the list of bindings."
   "Face for candidates in Embark Occur."
   :group 'embark)
 
+(defface embark-occur-zebra-highlight '((t :inherit highlight :extend t))
+  "Face to highlight alternate rows in `embark-occur-zebra-minor-mode'"
+  :group 'embark)
+
 (defface embark-occur-annotation '((t :inherit completions-annotations))
   "Face for annotations in Embark Occur.
 This is only used for annotation that are not already fontified."
   :group 'embark)
+
+(defcustom embark-occur-post-revert-hook nil
+  "Hook run after an Embark Occur buffer is updated."
+  :type 'hook
+  :group 'embark)
+
+(defun embark-occur--post-revert (&rest _)
+  "Run `embark-occur-post-revert-hook'.
+This function is used as :after advice for `tabulated-list-revert'."
+  (when (derived-mode-p 'embark-occur-mode)
+    (run-hooks 'embark-occur-post-revert-hook)))
+
+(advice-add 'tabulated-list-revert :after #'embark-occur--post-revert)
 
 (autoload 'package-delete "package")
 (autoload 'package--from-builtin "package")
@@ -1022,12 +1040,11 @@ If you are using `embark-completing-read' as your
   "Keymap for Embark occur mode."
   ("a" embark-act)
   ("A" embark-occur-direct-action-minor-mode)
+  ("z" embark-occur-zebra-minor-mode)
   ("M-q" embark-occur-toggle-view)
   ("v" embark-occur-toggle-view)
   ("e" embark-export)
   ("s" isearch-forward)
-  ("n" next-line)
-  ("p" previous-line)
   ("f" forward-button)
   ("b" backward-button)
   ("<right>" forward-button)
@@ -1074,6 +1091,43 @@ keybinding for it.  Or alternatively you might want to enable
                   (lambda (cand)
                     `(,cand [(,cand type embark-occur-entry)])))
                 embark-occur-candidates)))
+
+(defun embark-occur--remove-zebra-stripes ()
+  "Remove highlighting of alternate rows."
+  (remove-overlays nil nil 'face 'embark-occur-zebra-highlight))
+
+(defun embark-occur--add-zebra-stripes ()
+  "Highlight alternate rows with the `embark-occur-highlight-row' face."
+  (embark-occur--remove-zebra-stripes)
+  (save-excursion
+    (goto-char (point-min))
+    (when (tabulated-list-header-overlay-p) (forward-line))
+    (let ((columns (length tabulated-list-format)))
+      (while (not (eobp))
+        (condition-case nil
+            (forward-button columns)
+          (user-error (goto-char (point-max))))
+        (unless (eobp)
+          (let ((pt (point)))
+            (condition-case nil
+                (forward-button columns)
+              (user-error (goto-char (point-max))))
+            (overlay-put (make-overlay pt (point))
+                         'face 'embark-occur-zebra-highlight)))))))
+
+(define-minor-mode embark-occur-zebra-minor-mode
+  "Minor mode to highlight alternate rows in an Embark Occur buffer.
+This is specially useful to tell where multi-line entries begin and end."
+  :init-value nil
+  :lighter " Zebra"
+  (if embark-occur-zebra-minor-mode
+      (progn
+        (add-hook 'embark-occur-post-revert-hook
+                  #'embark-occur--add-zebra-stripes nil t)
+        (embark-occur--add-zebra-stripes))
+    (remove-hook 'embark-occur-post-revert-hook
+                 #'embark-occur--add-zebra-stripes t)
+    (embark-occur--remove-zebra-stripes)))
 
 (defun embark-occur--grid-view ()
   "Grid view of candidates for Embark Occur buffer."
@@ -1187,7 +1241,11 @@ Argument BUFFER-NAME specifies the name of the created buffer."
             (or initial-view
                 (alist-get type embark-occur-initial-view-alist)
                 (alist-get t embark-occur-initial-view-alist)
-                'list)))
+                'list))
+      (when (eq embark-occur-view 'zebra)
+        (setq embark-occur-view 'list)
+        (add-hook 'embark-occur-mode-hook
+                  #'embark-occur-zebra-minor-mode nil t)))
     (embark--cache-info buffer)
     buffer))
 
