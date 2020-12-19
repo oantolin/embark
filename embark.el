@@ -1520,7 +1520,7 @@ This is whatever command opened the minibuffer in the first place."
     (message "No homepage found for `%s'" pkg)))
 
 (defun embark-insert-relative-path (file)
-  "Insert relative path to embark target.
+  "Insert relative path to FILE.
 The insert path is relative to `default-directory'."
   (interactive "FFile: ")
   (insert (file-relative-name (substitute-in-file-name file))))
