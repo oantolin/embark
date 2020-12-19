@@ -689,8 +689,8 @@ BODY."
     ;; embark-act and cleanup is scheduled then
     (advice-add this-command :after #'embark--cleanup))
   (let ((want-current-buffer
-         (memq this-command
-               '(ignore embark-undefined embark-occur embark-export))))
+         (memq this-command '(ignore embark-undefined embark-occur
+                                     embark-live-occur embark-export))))
     (setf (buffer-local-value 'embark--command embark--target-buffer)
           embark--command)
     (unless want-current-buffer (set-buffer embark--target-buffer))
