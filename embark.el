@@ -543,15 +543,18 @@ return nil."
 
 (defun embark--cleanup (&rest _)
   "Remove all hooks and modifications."
-  (advice-remove embark--action #'embark--cleanup)
-  (setq embark--target nil embark--keymap nil)
-  (remove-hook 'minibuffer-setup-hook #'embark--act-inject)
-  (remove-hook 'minibuffer-setup-hook #'embark--become-inject)
-  (when embark--overlay
-    (delete-overlay embark--overlay)
-    (setq embark--overlay nil))
-  (setq embark--target-region-p nil)
-  (run-at-time 0 nil #'run-hooks 'embark-post-action-hook))
+  (if (or (eq this-command 'embark-act-on-region-contents)
+          (and (minibuffer-prompt)
+               (string-match-p "M-x" (minibuffer-prompt))))
+      (run-at-time 0 nil #'embark--cleanup) ; postpone
+    (setq embark--target nil embark--keymap nil)
+    (remove-hook 'minibuffer-setup-hook #'embark--act-inject)
+    (remove-hook 'minibuffer-setup-hook #'embark--become-inject)
+    (when embark--overlay
+      (delete-overlay embark--overlay)
+      (setq embark--overlay nil))
+    (setq embark--target-region-p nil)
+    (run-at-time 0 nil #'run-hooks 'embark-post-action-hook)))
 
 (defun embark-minibuffer-input ()
   "Return the current input string in the minibuffer.
@@ -685,10 +688,7 @@ BODY."
   (setq embark--action this-command)
   ;; Only set prefix if it was given, prefix can still be added after calling
   ;; `embark-act', too.
-  (unless (eq this-command 'embark-act-on-region-contents)
-    ;; postpone cleanup; embark-act-on-region-contents runs
-    ;; embark-act and cleanup is scheduled then
-    (advice-add this-command :after #'embark--cleanup))
+  (unless continuep (embark-occur--kill-live-occur-buffer))
   (let ((want-current-buffer
          (memq this-command
                '(ignore embark-occur embark-live-occur embark-export))))
@@ -701,7 +701,8 @@ BODY."
         (this-command prefix-arg embark--command embark--target-buffer)
         (let ((last-nonmenu-event 13))
           ;; pretend RET was pressed so the mouse menu doesn't appear
-          (command-execute this-command))))))
+          (command-execute this-command)))))
+  (run-at-time 0 nil #'embark--cleanup))
 
 (defun embark--prompt (continuep ps &optional arg)
   "Prompt user for action and handle choice.
