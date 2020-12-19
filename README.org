@@ -1,4 +1,7 @@
 * embark - Emacs Mini-Buffer Actions Rooted in Keymaps
+
+[[https://melpa.org/#/embark][file:https://melpa.org/packages/embark-badge.svg]]
+
 ** Breaking news (that is, news about things breaking)
 
  If you are already an Embark user and a recent update caused you to
