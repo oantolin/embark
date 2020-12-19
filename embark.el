@@ -1648,6 +1648,7 @@ and leaves the point to the left of it."
   "Keymap for Embark file actions."
   ("f" find-file)
   ("o" find-file-other-window)
+  ("d" delete-file)
   ("D" delete-directory)
   ("r" rename-file)
   ("c" copy-file)
