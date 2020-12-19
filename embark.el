@@ -532,7 +532,7 @@ return nil."
         (when (if embark-allow-edit-default
                   (memq this-command embark-skip-edit-commands)
                 (not (memq this-command embark-allow-edit-commands)))
-          (setq unread-command-events '(13)))))))
+          (run-at-time 0 nil #'exit-minibuffer))))))
 
 (defun embark--become-inject ()
   "Inject embark becoming target into minibuffer prompt."
@@ -1591,7 +1591,7 @@ and leaves the point to the left of it."
 (defun embark--eval-prep ()
   "If target is: a variable, skip edit; a function, wrap in parens."
   (if (not (fboundp (intern (minibuffer-contents))))
-      (setq unread-command-events '(13))
+      (run-at-time 0 nil #'exit-minibuffer)
     (beginning-of-line)
     (insert "(")
     (end-of-line)
