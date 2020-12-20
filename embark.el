@@ -523,18 +523,16 @@ return nil."
                             embark-action--embark-default-action
                             push-button))))
     (when-let ((target (embark-target)))
-      (let ((inhibit-modification-hooks t)
-            (post-command-hook nil))
-        (delete-minibuffer-contents)
-        (insert target)
-        (let ((embark-setup-hook
-               (or (alist-get this-command embark-setup-overrides)
-                   embark-setup-hook)))
-          (run-hooks 'embark-setup-hook)
-          (when (if embark-allow-edit-default
-                    (memq this-command embark-skip-edit-commands)
-                  (not (memq this-command embark-allow-edit-commands)))
-            (run-at-time 0 nil #'exit-minibuffer)))))))
+      (delete-minibuffer-contents)
+      (insert target)
+      (let ((embark-setup-hook
+             (or (alist-get this-command embark-setup-overrides)
+                 embark-setup-hook)))
+        (run-hooks 'embark-setup-hook)
+        (when (if embark-allow-edit-default
+                  (memq this-command embark-skip-edit-commands)
+                (not (memq this-command embark-allow-edit-commands)))
+          (run-at-time 0 nil #'exit-minibuffer))))))
 
 (defun embark--become-inject ()
   "Inject embark becoming target into minibuffer prompt."
