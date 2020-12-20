@@ -1326,7 +1326,6 @@ argument of 1 means list view.
 To control the display, add an entry to `display-buffer-alist'
 with key \"Embark Occur\"."
   (interactive (embark-occur--initial-view-arg))
-  (ignore (embark-target)) ; enable use as action
   (if-let ((candidates
             (run-hook-with-args-until-success 'embark-candidate-collectors))
            (occur-buffer
@@ -1382,7 +1381,6 @@ minibuffer; the length of the delay after typing is given by
 The variable `embark-exporters-alist' controls how to make the
 buffer for each type of completion."
   (interactive)
-  (ignore (embark-target)) ; enable use as action
   (let* ((type (embark-classify))
          (exporter (or embark-overriding-export-function
                        (alist-get type embark-exporters-alist)
