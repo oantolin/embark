@@ -831,7 +831,12 @@ BINDINGS is the list of bindings."
   "Face for candidates in Embark Occur."
   :group 'embark)
 
-(defface embark-occur-zebra-highlight '((t :inherit highlight :extend t))
+(defface embark-occur-zebra-highlight
+  '((default :extend t)
+    (((class color) (min-colors 88) (background light))
+     :background "#efefef")
+    (((class color) (min-colors 88) (background dark))
+     :background "#242424"))
   "Face to highlight alternate rows in `embark-occur-zebra-minor-mode'"
   :group 'embark)
 
