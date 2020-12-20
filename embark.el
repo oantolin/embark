@@ -705,7 +705,7 @@ BODY."
         (let ((last-nonmenu-event 13))
           ;; pretend RET was pressed so the mouse menu doesn't appear
           (command-execute this-command))))
-    (run-at-time 0 nil (lambda () (select-window win))))
+    (run-at-time 0 nil #'select-window win))
   (run-at-time 0 nil #'embark--cleanup))
 
 (defun embark--prompt (continuep ps &optional arg)
