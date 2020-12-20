@@ -543,7 +543,7 @@ return nil."
     (when-let ((target (embark-target)))
       (insert target))))
 
-(defun embark--cleanup (&rest _)
+(defun embark--cleanup ()
   "Remove all hooks and modifications."
   (if (or (eq this-command 'embark-act-on-region-contents)
           (and (minibuffer-prompt)
