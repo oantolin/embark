@@ -541,7 +541,8 @@ return nil."
   (unless (or (string-match-p "M-x" (minibuffer-prompt))
               (eq this-command 'ignore))
     (when-let ((target (embark-target)))
-      (insert target))))
+      (insert target))
+    (embark--cleanup)))
 
 (defun embark--cleanup ()
   "Remove all hooks and modifications."
@@ -727,11 +728,14 @@ use for the action."
                   (memq this-command embark--keep-alive-list)
                 (minibuffer-message "Not an action")
                 (setq this-command #'ignore)))
-            (lambda () (embark--setup-action continuep)))
+            (lambda ()
+              (if (eq this-command 'embark-become)
+                  (embark--cleanup)
+                (embark--setup-action continuep))))
            (embark--show-indicator indicator)))
         ((eq ps 'completion)
          (let ((cmd (embark--completing-read-map)))
-           (if (not cmd)
+           (if (or (null cmd) (eq this-command 'embark-become))
                (embark--cleanup)
              (setq this-command cmd)
              (embark--setup-action continuep)
@@ -1615,7 +1619,8 @@ and leaves the point to the left of it."
   ("RET" embark-default-action)
   ("E" embark-export)
   ("O" embark-occur)
-  ("L" embark-live-occur))
+  ("L" embark-live-occur)
+  ("B" embark-become))
 
 (autoload 'org-table-convert-region "org-table")
 
@@ -1658,7 +1663,7 @@ and leaves the point to the left of it."
   ("W" embark-save-relative-path)
   ("l" load-file)
   ("b" byte-compile-file)
-  ("B" byte-recompile-directory))
+  ("R" byte-recompile-directory))
 
 (embark-define-keymap embark-url-map
   "Keymap for Embark url actions."
