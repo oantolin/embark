@@ -547,7 +547,14 @@ return nil."
   (if (or (eq this-command 'embark-act-on-region-contents)
           (and (minibuffer-prompt)
                (string-match-p "M-x" (minibuffer-prompt))))
-      (run-at-time 0.1 nil #'embark--cleanup) ; postpone
+      ;; Since the action hasn't been even specified yet, we postpone
+      ;; cleanup. The timeout below cannot be 0 since that would run
+      ;; right after this function exits and we don't given the event
+      ;; loop time to make progress (that didn't completely freeze
+      ;; Emacs up, probably due to user input having higher priority
+      ;; than the timers, but it did slow things down a lot). Even
+      ;; just 0.1 seems to be enough to let other processing happen.
+      (run-at-time 0.1 nil #'embark--cleanup)
     (setq embark--target nil embark--keymap nil)
     (remove-hook 'minibuffer-setup-hook #'embark--act-inject)
     (remove-hook 'minibuffer-setup-hook #'embark--become-inject)
