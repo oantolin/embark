@@ -547,7 +547,7 @@ return nil."
   (if (or (eq this-command 'embark-act-on-region-contents)
           (and (minibuffer-prompt)
                (string-match-p "M-x" (minibuffer-prompt))))
-      (run-at-time 0 nil #'embark--cleanup) ; postpone
+      (run-at-time 0.1 nil #'embark--cleanup) ; postpone
     (setq embark--target nil embark--keymap nil)
     (remove-hook 'minibuffer-setup-hook #'embark--act-inject)
     (remove-hook 'minibuffer-setup-hook #'embark--become-inject)
