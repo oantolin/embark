@@ -612,7 +612,7 @@ BODY."
                       (let (,@binds)
                         ,@body))
                     ,@vars)
-       (setq inhibit-message t)
+       (setq-local inhibit-message t)
        (top-level))))
 
 (defun embark--show-indicator (indicator)
@@ -688,8 +688,8 @@ Completions buffer it is the candidate at point."
   (interactive)
   (embark-act-noexit)
   (when (minibufferp)
-    (let ((inhibit-message t))
-      (top-level))))
+    (run-at-time 0 nil #'message nil)
+    (top-level)))
 
 (defun embark--with-indicator (indicator prompter &rest args)
   "Display INDICATOR while calling PROMPTER with ARGS."
