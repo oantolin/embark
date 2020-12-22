@@ -575,19 +575,19 @@ relative path."
 
 (defvar embark-general-map)             ; forward declaration
 
-(defun embark--gather-target-info ()
-  "Determine target, target buffer and action keymap for next action."
-  (setq embark--keymap
-        (make-composed-keymap
-         (or embark-overriding-keymap
-             (symbol-value (alist-get (embark-classify) embark-keymap-alist)))
-         embark-general-map)
-        embark--target
-        (if (use-region-p)
-            (when embark--target-region-p
-              (buffer-substring (region-beginning) (region-end)))
-          (run-hook-with-args-until-success 'embark-target-finders)))
-  (setq embark--target-buffer (embark--target-buffer)))
+(defun embark--action-keymap ()
+  "Return action keymap for current target."
+  (make-composed-keymap
+   (or embark-overriding-keymap
+       (symbol-value (alist-get (embark-classify) embark-keymap-alist)))
+   embark-general-map))
+
+(defun embark--target ()
+  "Return target for action."
+  (if (use-region-p)
+      (when embark--target-region-p
+        (buffer-substring (region-beginning) (region-end)))
+    (run-hook-with-args-until-success 'embark-target-finders)))
 
 (defvar embark--keep-alive-list
   '(universal-argument
@@ -623,31 +623,32 @@ indicator is no longer needed.  If it is a function, this
 function is called.  The function should return either nil, an
 overlay to be deleted later, or a function to be called when the
 indicator is no longer needed."
-  (cond ((stringp indicator)
-         (let ((mini (active-minibuffer-window)))
-           (if (or (use-region-p) (not mini))
-               (let (minibuffer-message-timeout)
-                 (minibuffer-message "%s on %s"
-                                     indicator
-                                     (if embark--target
-                                         (format "'%s'" embark--target)
-                                       "region")))
-             (let ((indicator-overlay
-                    (make-overlay (point-min) (point-min)
-                                  (window-buffer mini) t t)))
-               (overlay-put indicator-overlay 'before-string
-                            (concat indicator " "))
-               indicator-overlay))))
-        ((functionp indicator)
-         (funcall indicator))))
+  (cond
+   ((stringp indicator)
+    (let ((mini (active-minibuffer-window)))
+      (if (or (use-region-p) (not mini))
+          (let (minibuffer-message-timeout)
+            (minibuffer-message "%s on %s"
+                                indicator
+                                (if embark--target
+                                    (format "'%s'" embark--target)
+                                  "region")))
+        (let ((indicator-overlay
+               (make-overlay (point-min) (point-min)
+                             (window-buffer mini) t t)))
+          (overlay-put indicator-overlay 'before-string
+                       (concat indicator " "))
+          indicator-overlay))))
+   ((functionp indicator)
+    (funcall indicator))))
 
 (defun embark-keymap-prompter (keymap)
   "Let the user choose an action using the bindings in KEYMAP.
 Besides the bindings in KEYMAP, the user is free to use all their
 keybindings and even \\[execute-extended-command] to select a command."
-  (let* ((key (let ((overriding-terminal-local-map keymap))
-                (read-key-sequence nil)))
-         (cmd (key-binding key)))
+  (let ((cmd (let* ((overriding-terminal-local-map keymap)
+                    (key (read-key-sequence nil)))
+               (key-binding key))))
     (when (eq cmd 'execute-extended-command)
       (setq cmd (condition-case nil (read-extended-command) (quit nil))))
     (when (eq cmd 'embark-keymap-help)
@@ -688,7 +689,7 @@ Completions buffer it is the candidate at point."
   (interactive)
   (embark-act-noexit)
   (when (minibufferp)
-    (run-at-time 0 nil #'message nil)
+    (run-at-time 0 nil #'message (current-message))
     (top-level)))
 
 (defun embark--with-indicator (indicator prompter &rest args)
@@ -712,14 +713,13 @@ called from a minibuffer it does not exit the minibuffer.
 
 ARG is passed as prefix argument to the action."
   (interactive)
-  (embark--gather-target-info)
-  (let ((action (embark--with-indicator embark-action-indicator
-                                        embark-prompter
-                                        (make-composed-keymap
-                                         embark--keymap
-                                         embark-general-map)))
-        (recursive-minibuffers enable-recursive-minibuffers)
-        (target (run-hook-with-args-until-success 'embark-target-finders)))
+  (let* ((keymap (make-composed-keymap (embark--action-keymap)
+                                       embark-general-map))
+         (action (embark--with-indicator embark-action-indicator
+                                         embark-prompter
+                                         keymap))
+         (target (embark--target))
+         (recursive-minibuffers enable-recursive-minibuffers))
     (if (null action)
         (minibuffer-message "Canceled")
       (setq-local enable-recursive-minibuffers t)
@@ -736,7 +736,7 @@ ARG is passed as prefix argument to the action."
                       (not (memq this-command embark-allow-edit-commands)))
                 (run-at-time 0 nil #'exit-minibuffer))))
         (run-hooks 'embark-pre-action-hook)
-        (with-current-buffer embark--target-buffer
+        (with-current-buffer (embark--target-buffer)
           (command-execute action))
         (run-hooks 'embark-post-action-hook)
         (setq-local enable-recursive-minibuffers recursive-minibuffers)))))
@@ -1011,7 +1011,7 @@ If you are using `embark-completing-read' as your
     (setq last-nonmenu-event 13) ;; mouse was clicked, to fool imenu
     (embark--gather-target-info)
     (let ((ecmd embark--command))
-      (pop-to-buffer embark--target-buffer)
+      (pop-to-buffer (embark--target-buffer))
       (setq embark--command ecmd))
     (run-hooks 'embark-pre-action-hook)
     (embark-default-action)
