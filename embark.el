@@ -696,7 +696,8 @@ keybindings and even \\[execute-extended-command] to select a command."
 This uses `embark-prompter' to ask the user to specify an action
 and returns a function that executes the chosen command, in the
 correct target window, injecting the target at the first
-minibuffer prompt."
+minibuffer prompt.  If the user cancels the action selection,
+return nil instead of a function."
   (let* ((keymap (make-composed-keymap (embark--action-keymap)
                                        embark-general-map))
          (action (embark--with-indicator embark-action-indicator
