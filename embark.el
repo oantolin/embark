@@ -704,8 +704,7 @@ return nil instead of a function."
                                          embark-prompter
                                          keymap))
          (target (embark--target))
-         (command embark--command)
-         (recursive-minibuffers enable-recursive-minibuffers))
+         (command embark--command))
     (if (null action)
         (progn (minibuffer-message "Canceled") nil)
       (lambda ()
@@ -721,13 +720,12 @@ return nil instead of a function."
                           (memq this-command embark-skip-edit-commands)
                         (not (memq this-command embark-allow-edit-commands)))
                   (run-at-time 0 nil #'exit-minibuffer))))
-          (setq-local enable-recursive-minibuffers t)
           (run-hooks 'embark-pre-action-hook)
           (with-selected-window (embark--target-window)
-            (let ((embark--command command))
+            (let ((enable-recursive-minibuffers t)
+                  (embark--command command))
               (command-execute action)))
-          (run-hooks 'embark-post-action-hook)
-          (setq-local enable-recursive-minibuffers recursive-minibuffers))))))
+          (run-hooks 'embark-post-action-hook))))))
 
 (defun embark-act-noexit ()
   "Embark upon an action.
