@@ -964,7 +964,7 @@ in `embark-occur-direct-action-minor-mode' nor mentioned by
 `embark-keymap-help'."
   (or (null cmd)
       (not (symbolp cmd))
-      (eq cmd 'ignore)
+      (memq cmd '(ignore embark-keymap-help))
       (memq cmd embark--keep-alive-list)))
 
 (defvar embark-occur-direct-action-minor-mode-map (make-sparse-keymap)
