@@ -1074,22 +1074,27 @@ keybinding for it.  Or alternatively you might want to enable
       (tabulated-list-init-header)
     (setq header-line-format nil))
   (setq tabulated-list-entries
-        (mapcar (if embark-occur-annotator
-                    (lambda (cand)
-                      (let* ((annotation
-                              (or (funcall embark-occur-annotator cand) ""))
-                             (length (length annotation))
-                             (facesp (text-property-not-all
-                                      0 length 'face nil annotation)))
-                        (when facesp (add-face-text-property
-                                      0 length 'default t annotation))
-                        `(,cand [(,cand type embark-occur-entry)
-                                 (,annotation
-                                  ,@(unless facesp
-                                      '(face embark-occur-annotation)))])))
-                  (lambda (cand)
-                    `(,cand [(,cand type embark-occur-entry)])))
-                embark-occur-candidates)))
+        (if embark-occur-annotator
+            (let ((annotator embark-occur-annotator)
+                  (candidates embark-occur-candidates))
+              (with-selected-window (embark--target-window)
+                (mapcar
+                 (lambda (cand)
+                   (let* ((annotation (or (funcall annotator cand) ""))
+                          (length (length annotation))
+                          (facesp (text-property-not-all
+                                   0 length 'face nil annotation)))
+                     (when facesp (add-face-text-property
+                                   0 length 'default t annotation))
+                     `(,cand [(,cand type embark-occur-entry)
+                              (,annotation
+                               ,@(unless facesp
+                                   '(face embark-occur-annotation)))])))
+                 candidates)))
+          (mapcar
+           (lambda (cand)
+             `(,cand [(,cand type embark-occur-entry)]))
+           embark-occur-candidates))))
 
 (defun embark-occur--remove-zebra-stripes ()
   "Remove highlighting of alternate rows."
