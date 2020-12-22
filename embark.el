@@ -658,6 +658,7 @@ keybindings and even \\[execute-extended-command] to select a command."
   (let* ((commands
           (cl-loop
            for (key . cmd) in (cdr (keymap-canonicalize keymap))
+           unless (embark--omit-binding-p cmd)
            collect (let ((desc (if (numberp key)
                                        (single-key-description key)
                                      (key-description key)))
