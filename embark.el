@@ -413,7 +413,7 @@ If you are using `embark-completing-read' as your
 
 ;;; internal variables
 
-(defvar embark--target-region-p nil
+(defvar embark--target-region nil
   "Should the active region's contents be the embark target?")
 
 (defvar-local embark-occur-candidates nil
@@ -496,7 +496,7 @@ If you are using `embark-completing-read' as your
 (defun embark-classify ()
   "Classify current context."
   (or (if (use-region-p)
-          (if embark--target-region-p
+          (if embark--target-region
               (embark-active-region-type)
             'region))
       embark--type ; cached?
@@ -581,7 +581,7 @@ relative path."
 (defun embark--target ()
   "Return target for action."
   (if (use-region-p)
-      (when embark--target-region-p
+      (when embark--target-region
         (buffer-substring (region-beginning) (region-end)))
     (run-hook-with-args-until-success 'embark-target-finders)))
 
@@ -626,8 +626,8 @@ indicator is no longer needed."
           (let (minibuffer-message-timeout)
             (minibuffer-message "%s on %s"
                                 indicator
-                                (if embark--target
-                                    (format "'%s'" embark--target)
+                                (if-let ((target (embark--target)))
+                                    (format "'%s'" target)
                                   "region")))
         (let ((indicator-overlay
                (make-overlay (point-min) (point-min)
@@ -705,28 +705,30 @@ return nil instead of a function."
                                          keymap)))
     (if (null action)
         (progn (minibuffer-message "Canceled") nil)
-      (let ((target (embark--target))
-            (command embark--command)
-            (action-window (if (memq action '(embark-become
-                                              embark-live-occur
-                                              embark-occur
-                                              embark-export))
-                               (selected-window)
-                             (embark--target-window)))
-            (setup-hook (or (alist-get action embark-setup-overrides)
-                            embark-setup-hook))
-            (allow-edit (if embark-allow-edit-default
-                            (not (memq action embark-skip-edit-commands))
-                          (memq action embark-allow-edit-commands))))
+      (let* ((target (embark--target))
+             (command embark--command)
+             (action-window (if (memq action '(embark-become
+                                               embark-live-occur
+                                               embark-occur
+                                               embark-export))
+                                (selected-window)
+                              (embark--target-window)))
+             (setup-hook (or (alist-get action embark-setup-overrides)
+                             embark-setup-hook))
+             (allow-edit (if embark-allow-edit-default
+                             (not (memq action embark-skip-edit-commands))
+                           (memq action embark-allow-edit-commands)))
+             (inject (if (null target) ; for region actions target is nil
+                         #'ignore
+                       (lambda ()
+                         (delete-minibuffer-contents)
+                         (insert target)
+                         (let ((embark-setup-hook setup-hook))
+                           (run-hooks 'embark-setup-hook))
+                         (unless allow-edit
+                           (run-at-time 0 nil #'exit-minibuffer))))))
         (lambda ()
-          (minibuffer-with-setup-hook
-              (lambda ()
-                (delete-minibuffer-contents)
-                (insert target)
-                (let ((embark-setup-hook setup-hook))
-                  (run-hooks 'embark-setup-hook))
-                (unless allow-edit
-                  (run-at-time 0 nil #'exit-minibuffer)))
+          (minibuffer-with-setup-hook inject
             (with-selected-window action-window
               (run-hooks 'embark-pre-action-hook)
               (let ((enable-recursive-minibuffers t)
@@ -1527,8 +1529,8 @@ with command output.  For replacement behaviour see
 (defun embark-act-on-region-contents ()
   "Act on contents of active region."
   (interactive)
-  (setq embark--target-region-p t)
-  (embark-act))
+  (let ((embark--target-region t))
+    (embark-act-noexit)))
 
 ;;; setup hooks for actions
 
