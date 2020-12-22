@@ -569,14 +569,18 @@ relative path."
         (substring name 1 -1)
       name)))
 
-(defvar embark-general-map)             ; forward declaration
+(defvar embark-general-map)             ; forward declarations
+(defvar embark-meta-map)
 
 (defun embark--action-keymap ()
   "Return action keymap for current target."
-  (make-composed-keymap
-   (or embark-overriding-keymap
-       (symbol-value (alist-get (embark-classify) embark-keymap-alist)))
-   embark-general-map))
+  (let ((class (embark-classify)))
+    (make-composed-keymap
+     (or embark-overriding-keymap
+         (symbol-value (alist-get class embark-keymap-alist)))
+     (if (eq class 'region)
+         embark-meta-map
+       embark-general-map))))
 
 (defun embark--target ()
   "Return target for action."
@@ -698,8 +702,7 @@ and returns a function that executes the chosen command, in the
 correct target window, injecting the target at the first
 minibuffer prompt.  If the user cancels the action selection,
 return nil instead of a function."
-  (let* ((keymap (make-composed-keymap (embark--action-keymap)
-                                       embark-general-map))
+  (let* ((keymap (embark--action-keymap))
          (action (embark--with-indicator embark-action-indicator
                                          embark-prompter
                                          keymap)))
@@ -759,8 +762,6 @@ Completions buffer it ixs the candidate at point."
           (run-at-time 0 nil action)
           (top-level))
       (funcall action))))
-
-(defvar embark-meta-map) ; forward declaration
 
 (defun embark-become ()
   "Make current command become a different command.
@@ -974,9 +975,8 @@ in `embark-occur-direct-action-minor-mode' nor mentioned by
        (lambda (key cmd)
          (unless (embark--omit-binding-p cmd)
            (define-key map (vector key) (embark--action-command cmd))))
-       (make-composed-keymap
-        (symbol-value (alist-get embark--type embark-keymap-alist))
-        embark-general-map)))))
+       (let (transient-mark-mode) ; don't want the region map by accident
+         (embark--action-keymap))))))
 
 (define-button-type 'embark-occur-entry
   'face 'embark-occur-candidate
