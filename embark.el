@@ -678,18 +678,6 @@ keybindings and even \\[execute-extended-command] to select a command."
           nil t))
       (quit nil))))
 
-(defun embark-act ()
-  "Embark upon an action and exit from all minibuffers (if any).
-The target of the action is chosen by `embark-target-finders'.
-By default, if called from a minibuffer the target is the top
-completion candidate, if called from an Embark Occur or a
-Completions buffer it is the candidate at point."
-  (interactive)
-  (embark-act-noexit)
-  (when (minibufferp)
-    (run-at-time 0 nil #'message nil)
-    (top-level)))
-
 (defun embark--with-indicator (indicator prompter &rest args)
   "Display INDICATOR while calling PROMPTER with ARGS."
   (let ((indicator (embark--show-indicator indicator))
@@ -699,18 +687,13 @@ Completions buffer it is the candidate at point."
      ((functionp indicator) (funcall indicator)))
     cmd))
 
-(defun embark-act-noexit ()
-  "Embark upon an action.
-The target of the action is chosen by `embark-target-finders'.
-By default, if called from a minibuffer the target is the top
-completion candidate, if called from an Embark Occur or a
-Completions buffer it is the candidate at point.
+(defun embark--action ()
+  "Prompt the user for an action and return a function that carries it out.
 
-This command differs from `embark-act' only in that by default if
-called from a minibuffer it does not exit the minibuffer.
-
-ARG is passed as prefix argument to the action."
-  (interactive)
+This uses `embark-prompter' to ask the user to specify an action
+and returns a function that executes the chosen command, in the
+correct target window, injecting the target at the first
+minibuffer prompt."
   (let* ((keymap (make-composed-keymap (embark--action-keymap)
                                        embark-general-map))
          (action (embark--with-indicator embark-action-indicator
@@ -719,25 +702,50 @@ ARG is passed as prefix argument to the action."
          (target (embark--target))
          (recursive-minibuffers enable-recursive-minibuffers))
     (if (null action)
-        (minibuffer-message "Canceled")
-      (setq-local enable-recursive-minibuffers t)
-      (minibuffer-with-setup-hook
-          (lambda ()
-            (delete-minibuffer-contents)
-            (insert target)
-            (let ((embark-setup-hook
-                   (or (alist-get this-command embark-setup-overrides)
-                       embark-setup-hook)))
-              (run-hooks 'embark-setup-hook)
-              (when (if embark-allow-edit-default
-                        (memq this-command embark-skip-edit-commands)
-                      (not (memq this-command embark-allow-edit-commands)))
-                (run-at-time 0 nil #'exit-minibuffer))))
-        (run-hooks 'embark-pre-action-hook)
-        (with-current-buffer (embark--target-buffer)
-          (command-execute action))
-        (run-hooks 'embark-post-action-hook)
-        (setq-local enable-recursive-minibuffers recursive-minibuffers)))))
+        (progn (minibuffer-message "Canceled") nil)
+      (lambda ()
+        (minibuffer-with-setup-hook
+            (lambda ()
+              (delete-minibuffer-contents)
+              (insert target)
+              (let ((embark-setup-hook
+                     (or (alist-get this-command embark-setup-overrides)
+                         embark-setup-hook)))
+                (run-hooks 'embark-setup-hook)
+                (when (if embark-allow-edit-default
+                          (memq this-command embark-skip-edit-commands)
+                        (not (memq this-command embark-allow-edit-commands)))
+                  (run-at-time 0 nil #'exit-minibuffer))))
+          (setq-local enable-recursive-minibuffers t)
+          (run-hooks 'embark-pre-action-hook)
+          (with-selected-window (embark--target-window)
+            (command-execute action))
+          (run-hooks 'embark-post-action-hook)
+          (setq-local enable-recursive-minibuffers recursive-minibuffers))))))
+
+(defun embark-act-noexit ()
+  "Embark upon an action.
+The target of the action is chosen by `embark-target-finders'.
+By default, if called from a minibuffer the target is the top
+completion candidate, if called from an Embark Occur or a
+Completions buffer it is the candidate at point."
+  (interactive)
+  (when-let ((action (embark--action)))
+    (funcall action)))
+
+(defun embark-act ()
+  "Embark upon an action and exit from all minibuffers (if any).
+The target of the action is chosen by `embark-target-finders'.
+By default, if called from a minibuffer the target is the top
+completion candidate, if called from an Embark Occur or a
+Completions buffer it ixs the candidate at point."
+  (interactive)
+  (when-let ((action (embark--action)))
+    (if (minibufferp)
+        (progn
+          (run-at-time 0 nil action)
+          (top-level))
+      (funcall action))))
 
 (defvar embark-meta-map) ; forward declaration
 
