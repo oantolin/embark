@@ -365,8 +365,8 @@ If you are using `embark-completing-read' as your
 (defvar-local embark--type nil
   "Cache for the completion type, meant to be set buffer-locally.")
 
-(defvar-local embark--target-buffer nil
-  "Cache for the previous buffer, meant to be set buffer-locally.")
+(defvar-local embark--target-window nil
+  "Cache for the previous window, meant to be set buffer-locally.")
 
 (defvar-local embark--command nil
   "Command that started the completion session.")
@@ -385,29 +385,29 @@ If you are using `embark-completing-read' as your
         (buffer-substring (minibuffer-prompt-end) (point))))
     default-directory))
 
-(defun embark--target-buffer ()
+(defun embark--target-window ()
   "Get target buffer for insert actions."
   (cond
-   (embark--target-buffer embark--target-buffer)
-   ((minibufferp) (window-buffer (minibuffer-selected-window)))
+   (embark--target-window embark--target-window)
+   ((minibufferp) (minibuffer-selected-window))
    ((derived-mode-p 'completion-list-mode)
     (if (minibufferp completion-reference-buffer)
         (with-current-buffer completion-reference-buffer
-          (window-buffer (minibuffer-selected-window)))
-      completion-reference-buffer))
-   (t (current-buffer))))
+          (minibuffer-selected-window))
+      (get-buffer-window completion-reference-buffer)))
+   (t (selected-window))))
 
 (defun embark--cache-info (&optional buffer)
   "Cache information needed for actions in variables local to BUFFER."
   (let ((type (embark-classify))
         (cmd embark--command)
         (dir (embark--default-directory))
-        (target-buffer (embark--target-buffer)))
+        (target-window (embark--target-window)))
     (with-current-buffer (or buffer standard-output)
       (setq embark--command cmd)
       (setq embark--type type)
       (setq-local default-directory dir)
-      (setq embark--target-buffer target-buffer))))
+      (setq embark--target-window target-window))))
 
 (add-hook 'completion-setup-hook #'embark--cache-info t)
 
@@ -1011,7 +1011,7 @@ If you are using `embark-completing-read' as your
     (setq last-nonmenu-event 13) ;; mouse was clicked, to fool imenu
     (embark--gather-target-info)
     (let ((ecmd embark--command))
-      (pop-to-buffer (embark--target-buffer))
+      (select-window (embark--target-window))
       (setq embark--command ecmd))
     (run-hooks 'embark-pre-action-hook)
     (embark-default-action)
