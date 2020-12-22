@@ -694,14 +694,17 @@ keybindings and even \\[execute-extended-command] to select a command."
      ((functionp indicator) (funcall indicator)))
     cmd))
 
-(defun embark--action ()
+(defun embark--action (&optional exit)
   "Prompt the user for an action and return a function that carries it out.
 
 This uses `embark-prompter' to ask the user to specify an action
 and returns a function that executes the chosen command, in the
 correct target window, injecting the target at the first
-minibuffer prompt.  If the user cancels the action selection,
-return nil instead of a function."
+minibuffer prompt.  The optional argument EXIT controls whether
+the function returned exits the minibuffer.
+
+If the user cancels the action selection, return nil instead of a
+function."
   (let* ((keymap (embark--action-keymap))
          (action (embark--with-indicator embark-action-indicator
                                          embark-prompter
@@ -710,10 +713,11 @@ return nil instead of a function."
         (progn (minibuffer-message "Canceled") nil)
       (let* ((target (embark--target))
              (command embark--command)
-             (action-window (if (memq action '(embark-become
-                                               embark-live-occur
-                                               embark-occur
-                                               embark-export))
+             (special (memq action '(embark-become     ; these actions handle
+                                     embark-live-occur ; exiting on their own
+                                     embark-occur      ; and should not be run
+                                     embark-export)))  ; in the target window
+             (action-window (if special
                                 (selected-window)
                               (embark--target-window)))
              (setup-hook (or (alist-get action embark-setup-overrides)
@@ -729,15 +733,23 @@ return nil instead of a function."
                          (let ((embark-setup-hook setup-hook))
                            (run-hooks 'embark-setup-hook))
                          (unless allow-edit
-                           (run-at-time 0 nil #'exit-minibuffer))))))
-        (lambda ()
-          (minibuffer-with-setup-hook inject
-            (with-selected-window action-window
-              (run-hooks 'embark-pre-action-hook)
-              (let ((enable-recursive-minibuffers t)
-                    (embark--command command))
-                (command-execute action))
-              (run-hooks 'embark-post-action-hook))))))))
+                           (run-at-time 0 nil #'exit-minibuffer)))))
+             (run-action (lambda ()
+                           (minibuffer-with-setup-hook inject
+                             (with-selected-window action-window
+                               (run-hooks 'embark-pre-action-hook)
+                               (let ((enable-recursive-minibuffers t)
+                                     (embark--command command))
+                                 (command-execute action))
+                               (run-hooks 'embark-post-action-hook))))))
+        (if (or (not exit) special)
+            run-action
+          (lambda ()
+            (if (minibufferp)
+                (progn
+                  (run-at-time 0 nil run-action)
+                  (top-level))
+              (funcall run-action))))))))
 
 (defun embark-act-noexit ()
   "Embark upon an action.
@@ -756,12 +768,8 @@ By default, if called from a minibuffer the target is the top
 completion candidate, if called from an Embark Occur or a
 Completions buffer it ixs the candidate at point."
   (interactive)
-  (when-let ((action (embark--action)))
-    (if (minibufferp)
-        (progn
-          (run-at-time 0 nil action)
-          (top-level))
-      (funcall action))))
+  (when-let ((action (embark--action 'exit)))
+    (funcall action)))
 
 (defun embark-become ()
   "Make current command become a different command.
