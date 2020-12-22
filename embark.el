@@ -769,14 +769,15 @@ convenient access to the other commands in it."
                                            (make-composed-keymap
                                             keymap
                                             embark-meta-map))))
-      (if become
-          (run-at-time 0 nil (lambda ()
+      (if (null become)
+          (minibuffer-message "Canceled")
+        (run-at-time 0 nil (lambda ()
                                (minibuffer-with-setup-hook
                                    (lambda ()
                                      (delete-minibuffer-contents)
                                      (insert target))
                                  (command-execute become))))
-        (minibuffer-message "Canceled")))))
+        (top-level)))))
 
 (defmacro embark-define-keymap (name doc &rest bindings)
   "Define keymap variable NAME.
