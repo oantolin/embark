@@ -705,11 +705,17 @@ return nil instead of a function."
                                          keymap))
          (target (embark--target))
          (command embark--command)
-         (action-window
-          (if (memq action
-               '(embark-become embark-live-occur embark-occur embark-export))
-              (selected-window)
-            (embark--target-window))))
+         (action-window (if (memq action '(embark-become
+                                           embark-live-occur
+                                           embark-occur
+                                           embark-export))
+                            (selected-window)
+                          (embark--target-window)))
+         (setup-hook (or (alist-get action embark-setup-overrides)
+                         embark-setup-hook))
+         (allow-edit (if embark-allow-edit-default
+                         (not (memq action embark-skip-edit-commands))
+                       (memq action embark-allow-edit-commands))))
     (if (null action)
         (progn (minibuffer-message "Canceled") nil)
       (lambda ()
@@ -717,14 +723,10 @@ return nil instead of a function."
             (lambda ()
               (delete-minibuffer-contents)
               (insert target)
-              (let ((embark-setup-hook
-                     (or (alist-get this-command embark-setup-overrides)
-                         embark-setup-hook)))
-                (run-hooks 'embark-setup-hook)
-                (when (if embark-allow-edit-default
-                          (memq this-command embark-skip-edit-commands)
-                        (not (memq this-command embark-allow-edit-commands)))
-                  (run-at-time 0 nil #'exit-minibuffer))))
+              (let ((embark-setup-hook setup-hook))
+                (run-hooks 'embark-setup-hook))
+              (unless allow-edit
+                (run-at-time 0 nil #'exit-minibuffer)))
           (run-hooks 'embark-pre-action-hook)
           (with-selected-window action-window
             (let ((enable-recursive-minibuffers t)
