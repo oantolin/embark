@@ -705,6 +705,7 @@ minibuffer prompt."
                                          embark-prompter
                                          keymap))
          (target (embark--target))
+         (command embark--command)
          (recursive-minibuffers enable-recursive-minibuffers))
     (if (null action)
         (progn (minibuffer-message "Canceled") nil)
@@ -724,7 +725,8 @@ minibuffer prompt."
           (setq-local enable-recursive-minibuffers t)
           (run-hooks 'embark-pre-action-hook)
           (with-selected-window (embark--target-window)
-            (command-execute action))
+            (let ((embark--command command))
+              (command-execute action)))
           (run-hooks 'embark-post-action-hook)
           (setq-local enable-recursive-minibuffers recursive-minibuffers))))))
 
