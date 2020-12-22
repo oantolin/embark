@@ -685,7 +685,49 @@ keybindings and even \\[execute-extended-command] to select a command."
      ((functionp indicator) (funcall indicator)))
     cmd))
 
-(defun embark--action (&optional exit)
+(defun embark--action-function (action &optional exit)
+  "Return function to perform ACTION injecting the target."
+  (let* ((target (embark--target))
+         (command embark--command)
+         (special (memq action '(embark-become ; these actions handle
+                                 embark-live-occur ; exiting on their own
+                                 embark-occur ; and should not be run
+                                 embark-export))) ; in the target window
+         (action-window (if special
+                            (selected-window)
+                          (embark--target-window)))
+         (setup-hook (or (alist-get action embark-setup-overrides)
+                         embark-setup-hook))
+         (allow-edit (if embark-allow-edit-default
+                         (not (memq action embark-skip-edit-commands))
+                       (memq action embark-allow-edit-commands)))
+         (inject (if (null target)  ; for region actions target is nil
+                     #'ignore
+                   (lambda ()
+                     (delete-minibuffer-contents)
+                     (insert target)
+                     (let ((embark-setup-hook setup-hook))
+                       (run-hooks 'embark-setup-hook))
+                     (unless allow-edit
+                       (run-at-time 0 nil #'exit-minibuffer)))))
+         (run-action (lambda ()
+                       (minibuffer-with-setup-hook inject
+                         (with-selected-window action-window
+                           (run-hooks 'embark-pre-action-hook)
+                           (let ((enable-recursive-minibuffers t)
+                                 (embark--command command))
+                             (command-execute action))
+                           (run-hooks 'embark-post-action-hook))))))
+    (if (or (not exit) special)
+        run-action
+      (lambda ()
+        (if (minibufferp)
+            (progn
+              (run-at-time 0 nil run-action)
+              (top-level))
+          (funcall run-action))))))
+
+(defun embark--prompt-for-action (&optional exit)
   "Prompt the user for an action and return a function that carries it out.
 
 This uses `embark-prompter' to ask the user to specify an action
@@ -702,45 +744,7 @@ function."
                                          keymap)))
     (if (null action)
         (progn (minibuffer-message "Canceled") nil)
-      (let* ((target (embark--target))
-             (command embark--command)
-             (special (memq action '(embark-become     ; these actions handle
-                                     embark-live-occur ; exiting on their own
-                                     embark-occur      ; and should not be run
-                                     embark-export)))  ; in the target window
-             (action-window (if special
-                                (selected-window)
-                              (embark--target-window)))
-             (setup-hook (or (alist-get action embark-setup-overrides)
-                             embark-setup-hook))
-             (allow-edit (if embark-allow-edit-default
-                             (not (memq action embark-skip-edit-commands))
-                           (memq action embark-allow-edit-commands)))
-             (inject (if (null target) ; for region actions target is nil
-                         #'ignore
-                       (lambda ()
-                         (delete-minibuffer-contents)
-                         (insert target)
-                         (let ((embark-setup-hook setup-hook))
-                           (run-hooks 'embark-setup-hook))
-                         (unless allow-edit
-                           (run-at-time 0 nil #'exit-minibuffer)))))
-             (run-action (lambda ()
-                           (minibuffer-with-setup-hook inject
-                             (with-selected-window action-window
-                               (run-hooks 'embark-pre-action-hook)
-                               (let ((enable-recursive-minibuffers t)
-                                     (embark--command command))
-                                 (command-execute action))
-                               (run-hooks 'embark-post-action-hook))))))
-        (if (or (not exit) special)
-            run-action
-          (lambda ()
-            (if (minibufferp)
-                (progn
-                  (run-at-time 0 nil run-action)
-                  (top-level))
-              (funcall run-action))))))))
+      (embark--action-function action exit))))
 
 (defun embark-act-noexit ()
   "Embark upon an action.
@@ -749,7 +753,7 @@ By default, if called from a minibuffer the target is the top
 completion candidate, if called from an Embark Occur or a
 Completions buffer it is the candidate at point."
   (interactive)
-  (when-let ((action (embark--action)))
+  (when-let ((action (embark--prompt-for-action)))
     (funcall action)))
 
 (defun embark-act ()
@@ -759,7 +763,7 @@ By default, if called from a minibuffer the target is the top
 completion candidate, if called from an Embark Occur or a
 Completions buffer it ixs the candidate at point."
   (interactive)
-  (when-let ((action (embark--action 'exit)))
+  (when-let ((action (embark--prompt-for-action 'exit)))
     (funcall action)))
 
 (defun embark-become ()
@@ -937,12 +941,9 @@ This makes `embark-export' work in Embark Occur buffers."
   "Turn an ACTION into a command to perform the action.
 Returns the name of the command."
   (let ((name (intern (format "embark-action--%s" action)))
-        (fn (lambda ()
-              (interactive)
-              (setq this-command action)
-              (embark--gather-target-info)
-              (call-interactively action))))
+        (fn (embark--action-function action)))
     (fset name fn)
+    (put name 'interactive-form '(interactive))
     (when (symbolp action)
       (put name 'function-documentation
            (documentation action)))
@@ -1027,13 +1028,7 @@ If you are using `embark-completing-read' as your
           (exit-minibuffer)))
     (goto-char entry)            ;; pretend RET was pressed even if
     (setq last-nonmenu-event 13) ;; mouse was clicked, to fool imenu
-    (embark--gather-target-info)
-    (let ((ecmd embark--command))
-      (select-window (embark--target-window))
-      (setq embark--command ecmd))
-    (run-hooks 'embark-pre-action-hook)
-    (embark-default-action)
-    (run-hooks 'embark-post-action-hook)))
+    (funcall (embark--action-function #'embark-default-action))))
 
 (embark-define-keymap embark-occur-mode-map
   "Keymap for Embark occur mode."
