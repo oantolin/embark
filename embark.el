@@ -589,15 +589,6 @@ relative path."
         (buffer-substring (region-beginning) (region-end)))
     (run-hook-with-args-until-success 'embark-target-finders)))
 
-(defvar embark--keep-alive-list
-  '(universal-argument
-    universal-argument-more
-    digit-argument
-    negative-argument
-    scroll-other-window
-    scroll-other-window-down)
-  "List of commands that can run without canceling the action keymap.")
-
 (defmacro embark-after-exit (vars &rest body)
   "Run BODY after exiting all minibuffers.
 Make sure the current values of VARS are still valid when running
@@ -964,8 +955,7 @@ in `embark-occur-direct-action-minor-mode' nor mentioned by
 `embark-keymap-help'."
   (or (null cmd)
       (not (symbolp cmd))
-      (memq cmd '(ignore embark-keymap-help))
-      (memq cmd embark--keep-alive-list)))
+      (memq cmd '(ignore embark-keymap-help))))
 
 (defvar embark-occur-direct-action-minor-mode-map (make-sparse-keymap)
   "Keymap for direct bindings to embark actions.")
@@ -1565,9 +1555,7 @@ and leaves the point to the left of it."
 
 (embark-define-keymap embark-meta-map
   "Keymap for non-action Embark functions."
-  :parent universal-argument-map
-  ("C-h" embark-keymap-help)
-  ("C-u" universal-argument))
+  ("C-h" embark-keymap-help))
 
 (embark-define-keymap embark-general-map
   "Keymap for Embark general actions."
