@@ -646,7 +646,7 @@ keybindings and even \\[execute-extended-command] to select a command."
                     (key (read-key-sequence nil)))
                (key-binding key))))
     (when (eq cmd 'execute-extended-command)
-      (setq cmd (read-extended-command)))
+      (setq cmd (intern-soft (read-extended-command))))
     (when (eq cmd 'embark-keymap-help)
       (setq cmd (embark-completing-read-prompter keymap)))
     cmd))
