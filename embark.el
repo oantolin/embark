@@ -702,37 +702,37 @@ return nil instead of a function."
                                        embark-general-map))
          (action (embark--with-indicator embark-action-indicator
                                          embark-prompter
-                                         keymap))
-         (target (embark--target))
-         (command embark--command)
-         (action-window (if (memq action '(embark-become
-                                           embark-live-occur
-                                           embark-occur
-                                           embark-export))
-                            (selected-window)
-                          (embark--target-window)))
-         (setup-hook (or (alist-get action embark-setup-overrides)
-                         embark-setup-hook))
-         (allow-edit (if embark-allow-edit-default
-                         (not (memq action embark-skip-edit-commands))
-                       (memq action embark-allow-edit-commands))))
+                                         keymap)))
     (if (null action)
         (progn (minibuffer-message "Canceled") nil)
-      (lambda ()
-        (minibuffer-with-setup-hook
-            (lambda ()
-              (delete-minibuffer-contents)
-              (insert target)
-              (let ((embark-setup-hook setup-hook))
-                (run-hooks 'embark-setup-hook))
-              (unless allow-edit
-                (run-at-time 0 nil #'exit-minibuffer)))
-          (run-hooks 'embark-pre-action-hook)
-          (with-selected-window action-window
-            (let ((enable-recursive-minibuffers t)
-                  (embark--command command))
-              (command-execute action)))
-          (run-hooks 'embark-post-action-hook))))))
+      (let ((target (embark--target))
+            (command embark--command)
+            (action-window (if (memq action '(embark-become
+                                              embark-live-occur
+                                              embark-occur
+                                              embark-export))
+                               (selected-window)
+                             (embark--target-window)))
+            (setup-hook (or (alist-get action embark-setup-overrides)
+                            embark-setup-hook))
+            (allow-edit (if embark-allow-edit-default
+                            (not (memq action embark-skip-edit-commands))
+                          (memq action embark-allow-edit-commands))))
+        (lambda ()
+          (minibuffer-with-setup-hook
+              (lambda ()
+                (delete-minibuffer-contents)
+                (insert target)
+                (let ((embark-setup-hook setup-hook))
+                  (run-hooks 'embark-setup-hook))
+                (unless allow-edit
+                  (run-at-time 0 nil #'exit-minibuffer)))
+            (run-hooks 'embark-pre-action-hook)
+            (with-selected-window action-window
+              (let ((enable-recursive-minibuffers t)
+                    (embark--command command))
+                (command-execute action)))
+            (run-hooks 'embark-post-action-hook)))))))
 
 (defun embark-act-noexit ()
   "Embark upon an action.
