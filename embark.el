@@ -648,7 +648,7 @@ keybindings and even \\[execute-extended-command] to select a command."
                     (key (read-key-sequence nil)))
                (key-binding key))))
     (when (eq cmd 'execute-extended-command)
-      (setq cmd (condition-case nil (read-extended-command) (quit nil))))
+      (setq cmd (read-extended-command)))
     (when (eq cmd 'embark-keymap-help)
       (setq cmd (embark-completing-read-prompter keymap)))
     cmd))
@@ -668,16 +668,14 @@ keybindings and even \\[execute-extended-command] to select a command."
                                  (concat (propertize desc 'face 'success)
                                          (propertize " → " 'face 'shadow)
                                          name))))))
-    (condition-case nil
-        (intern-soft
-         (completing-read
-          "Command: "
-          (lambda (s p a)
-            (if (eq a 'metadata)
-                `(metadata (metadata . command))
-              (complete-with-action a commands s p)))
-          nil t))
-      (quit nil))))
+    (intern-soft
+     (completing-read
+      "Command: "
+      (lambda (s p a)
+        (if (eq a 'metadata)
+            `(metadata (metadata . command))
+          (complete-with-action a commands s p)))
+      nil t))))
 
 (defun embark--with-indicator (indicator prompter &rest args)
   "Display INDICATOR while calling PROMPTER with ARGS."
