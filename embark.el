@@ -689,7 +689,7 @@ Completions buffer it is the candidate at point."
   (interactive)
   (embark-act-noexit)
   (when (minibufferp)
-    (run-at-time 0 nil #'message (current-message))
+    (run-at-time 0 nil #'message nil)
     (top-level)))
 
 (defun embark--with-indicator (indicator prompter &rest args)
