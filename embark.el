@@ -680,7 +680,13 @@ keybindings and even \\[execute-extended-command] to select a command."
 (defun embark--with-indicator (indicator prompter &rest args)
   "Display INDICATOR while calling PROMPTER with ARGS."
   (let ((indicator (embark--show-indicator indicator))
-        (cmd (condition-case nil (apply prompter args) (quit nil))))
+        (cmd (condition-case nil
+                 (minibuffer-with-setup-hook
+                     ;; if the prompter opens its own minibuffer, show
+                     ;; the indicator there too
+                     (lambda () (embark--show-indicator indicator))
+                   (apply prompter args))
+               (quit nil))))
     (cond
      ((overlayp indicator) (delete-overlay indicator))
      ((functionp indicator) (funcall indicator)))
