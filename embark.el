@@ -727,12 +727,12 @@ return nil instead of a function."
                   (run-hooks 'embark-setup-hook))
                 (unless allow-edit
                   (run-at-time 0 nil #'exit-minibuffer)))
-            (run-hooks 'embark-pre-action-hook)
             (with-selected-window action-window
+              (run-hooks 'embark-pre-action-hook)
               (let ((enable-recursive-minibuffers t)
                     (embark--command command))
-                (command-execute action)))
-            (run-hooks 'embark-post-action-hook)))))))
+                (command-execute action))
+              (run-hooks 'embark-post-action-hook))))))))
 
 (defun embark-act-noexit ()
   "Embark upon an action.
