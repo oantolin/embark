@@ -414,8 +414,6 @@ If you are using `embark-completing-read' as your
 ;;; internal variables
 
 (defvar embark--target nil "String the next action will operate on.")
-(defvar embark--keymap nil "Keymap to activate for next action.")
-(defvar embark--action nil "Action command.")
 
 (defvar embark--target-region-p nil
   "Should the active region's contents be put into `embark--target'?")
