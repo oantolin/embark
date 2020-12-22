@@ -940,9 +940,11 @@ This makes `embark-export' work in Embark Occur buffers."
 (defun embark--action-command (action)
   "Turn an ACTION into a command to perform the action.
 Returns the name of the command."
-  (let ((name (intern (format "embark-action--%s" action))))
-    (fset name (embark--action-function action))
-    (put name 'interactive-form '(interactive))
+  (let ((name (intern (format "embark-action--%s" action)))
+        (fn (lambda ()
+              (interactive)
+              (funcall (embark--action-function action)))))
+    (fset name fn)
     (when (symbolp action)
       (put name 'function-documentation
            (documentation action)))
