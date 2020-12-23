@@ -643,10 +643,20 @@ keybindings and even \\[execute-extended-command] to select a command."
   (let ((cmd (let* ((overriding-terminal-local-map keymap)
                     (key (read-key-sequence nil)))
                (key-binding key))))
-    (when (eq cmd 'execute-extended-command)
-      (setq cmd (intern-soft (read-extended-command))))
-    (when (eq cmd 'embark-keymap-help)
-      (setq cmd (embark-completing-read-prompter keymap)))
+    (setq cmd
+          (pcase cmd
+            ('abort-recursive-edit nil)
+            ('self-insert-command
+             (minibuffer-message "Not an action")
+             (embark-keymap-prompter keymap))
+            ((or 'universal-argument 'negative-argument)
+             (command-execute cmd)
+             (embark-keymap-prompter keymap))
+            ('execute-extended-command
+             (intern-soft (read-extended-command)))
+            ('embark-keymap-help
+             (embark-completing-read-prompter keymap))
+            (_ cmd)))
     cmd))
 
 (defun embark-completing-read-prompter (keymap)
@@ -742,7 +752,7 @@ to exit the minibuffer."
                                          embark-prompter
                                          keymap)))
     (if (null action)
-        (progn (minibuffer-message "Canceled") nil)
+        (minibuffer-message "Canceled")
       (embark--act action exit))))
 
 ;;;###autoload
