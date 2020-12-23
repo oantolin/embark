@@ -744,6 +744,7 @@ to exit the minibuffer."
         (progn (minibuffer-message "Canceled") nil)
       (embark--act action exit))))
 
+;;;###autoload
 (defun embark-act-noexit ()
   "Embark upon an action.
 The target of the action is chosen by `embark-target-finders'.
@@ -753,6 +754,7 @@ Completions buffer it is the candidate at point."
   (interactive)
   (embark--prompt-for-action))
 
+;;;###autoload
 (defun embark-act ()
   "Embark upon an action and exit from all minibuffers (if any).
 The target of the action is chosen by `embark-target-finders'.
@@ -762,6 +764,7 @@ Completions buffer it ixs the candidate at point."
   (interactive)
   (embark--prompt-for-action 'exit))
 
+;;;###autoload
 (defun embark-become ()
   "Make current command become a different command.
 Take the current minibuffer input as initial input for new
@@ -1277,6 +1280,7 @@ ALIST comes from the action argument of `display-buffer'."
                      (string-match-p "Embark Live Occur" name))
            return (window--display-buffer buffer window 'reuse alist)))
 
+;;;###autoload
 (defun embark-live-occur (&optional initial-view)
   "Create a live-updating Embark Occur buffer.
 Optionally start in INITIAL-VIEW (either `list' or `grid')
@@ -1302,6 +1306,7 @@ with key \"Embark Live Occur\"."
                   nil t)
         (setq minibuffer-scroll-window occur-window)))))
 
+;;;###autoload
 (defun embark-occur (&optional initial-view)
   "Create an Embark Occur buffer and exit all minibuffers.
 Optionally start in INITIAL-VIEW (either `list' or `grid')
@@ -1362,6 +1367,7 @@ minibuffer; the length of the delay after typing is given by
       (switch-to-buffer buffer)
     (user-error "No Embark Live Occur buffer")))
 
+;;;###autoload
 (defun embark-export ()
   "Create a type-specific buffer to manage current candidates.
 The variable `embark-exporters-alist' controls how to make the
