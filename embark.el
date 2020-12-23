@@ -214,8 +214,10 @@ prompts for an action with completion."
 
 If set to a string prepend it to the minibuffer prompt or to the
 message in the echo area when outside of the minibuffer.  When
-set to a function it is called with the action keymap.  If this
-variable is set to nil no indication is shown."
+set to a function it is called with the action keymap.  The
+function should return either nil or a function to be called when
+the indicator is no longer needed.  Finally, if this variable is
+set to nil no indication is shown."
   :type '(choice function string nil)
   :group 'embark)
 
@@ -223,11 +225,13 @@ variable is set to nil no indication is shown."
   "Indicator to use when using `embark-become'.
 
 If set to a string prepend it to the minibuffer prompt or to the
-message in the echo area when outside of the minibuffer.  When
-set to a function it is called with the keymap listed in
+message in the echo area when outside of the minibuffer.  If set
+to a function it will be called with one of the keymaps listed in
 `embark-become-keymaps' containing the currently executing
-command (or nil, if no such keymap exists).  If this variable is
-set to nil no indication is shown."
+command (or nil, if no such keymap exists).  The function should
+return either nil or a function to be called when the indicator
+is no longer needed.  Finally, if this variable is set to nil no
+indication is shown."
   :type '(choice function string nil)
   :group 'embark)
 
@@ -617,8 +621,8 @@ If INDICATOR is a string, it is put in an overlay in the
 minibuffer; the overlay is returned so it can be deleted when the
 indicator is no longer needed.  If it is a function, this
 function is called with the KEYMAP.  The function should return
-either nil, an overlay to be deleted later, or a function to be
-called when the indicator is no longer needed."
+either nil, or a function to be called when the indicator is no
+longer needed."
   (cond
    ((stringp indicator)
     (let ((mini (active-minibuffer-window)))
@@ -687,17 +691,19 @@ keybindings and even \\[execute-extended-command] to select a command."
 
 (defun embark--with-indicator (indicator prompter keymap)
   "Display INDICATOR while calling PROMPTER with KEYMAP."
-  (let ((indicator (embark--show-indicator indicator keymap))
+  (let ((remove-indicator (embark--show-indicator indicator keymap))
         (cmd (condition-case nil
                  (minibuffer-with-setup-hook
                      ;; if the prompter opens its own minibuffer, show
-                     ;; the indicator there too
+                     ;; the indicator there too (don't bother with
+                     ;; removing it since the whole recursive
+                     ;; minibuffer disappears)
                      (lambda () (embark--show-indicator indicator keymap))
-                   (funcall prompter keymap))
+                   (let ((enable-recursive-minibuffers t))
+                     (funcall prompter keymap)))
                (quit nil))))
-    (cond
-     ((overlayp indicator) (delete-overlay indicator))
-     ((functionp indicator) (funcall indicator)))
+    (when (functionp remove-indicator)
+      (funcall remove-indicator))
     cmd))
 
 (defun embark--act (action &optional exit)
