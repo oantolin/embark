@@ -685,14 +685,14 @@ keybindings and even \\[execute-extended-command] to select a command."
      ((functionp indicator) (funcall indicator)))
     cmd))
 
-(defun embark--action-function (action &optional exit)
-  "Return function to perform ACTION injecting the target."
+(defun embark--act (action &optional exit)
+  "Perform ACTION injecting the target, optionally EXIT to top-level."
   (let* ((target (embark--target))
          (command embark--command)
-         (special (memq action '(embark-become ; these actions handle
+         (special (memq action '(embark-become     ; these actions handle
                                  embark-live-occur ; exiting on their own
-                                 embark-occur ; and should not be run
-                                 embark-export))) ; in the target window
+                                 embark-occur      ; and should not be run
+                                 embark-export)))  ; in the target window
          (action-window (if special
                             (selected-window)
                           (embark--target-window)))
@@ -719,32 +719,28 @@ keybindings and even \\[execute-extended-command] to select a command."
                              (command-execute action))
                            (run-hooks 'embark-post-action-hook))))))
     (if (or (not exit) special)
-        run-action
-      (lambda ()
-        (if (minibufferp)
-            (progn
-              (run-at-time 0 nil run-action)
-              (top-level))
-          (funcall run-action))))))
+        (funcall run-action)
+      (if (minibufferp)
+          (progn
+            (run-at-time 0 nil run-action)
+            (top-level))
+        (funcall run-action)))))
 
 (defun embark--prompt-for-action (&optional exit)
-  "Prompt the user for an action and return a function that carries it out.
+  "Prompt the user for an action and perform it.
 
 This uses `embark-prompter' to ask the user to specify an action
 and returns a function that executes the chosen command, in the
 correct target window, injecting the target at the first
 minibuffer prompt.  The optional argument EXIT controls whether
-the function returned exits the minibuffer.
-
-If the user cancels the action selection, return nil instead of a
-function."
+to exit the minibuffer."
   (let* ((keymap (embark--action-keymap))
          (action (embark--with-indicator embark-action-indicator
                                          embark-prompter
                                          keymap)))
     (if (null action)
         (progn (minibuffer-message "Canceled") nil)
-      (embark--action-function action exit))))
+      (embark--act action exit))))
 
 (defun embark-act-noexit ()
   "Embark upon an action.
@@ -753,8 +749,7 @@ By default, if called from a minibuffer the target is the top
 completion candidate, if called from an Embark Occur or a
 Completions buffer it is the candidate at point."
   (interactive)
-  (when-let ((action (embark--prompt-for-action)))
-    (funcall action)))
+  (embark--prompt-for-action))
 
 (defun embark-act ()
   "Embark upon an action and exit from all minibuffers (if any).
@@ -763,8 +758,7 @@ By default, if called from a minibuffer the target is the top
 completion candidate, if called from an Embark Occur or a
 Completions buffer it ixs the candidate at point."
   (interactive)
-  (when-let ((action (embark--prompt-for-action 'exit)))
-    (funcall action)))
+  (embark--prompt-for-action 'exit))
 
 (defun embark-become ()
   "Make current command become a different command.
@@ -943,7 +937,7 @@ Returns the name of the command."
   (let ((name (intern (format "embark-action--%s" action)))
         (fn (lambda ()
               (interactive)
-              (funcall (embark--action-function action)))))
+              (embark--act action))))
     (fset name fn)
     (when (symbolp action)
       (put name 'function-documentation
@@ -1029,7 +1023,7 @@ If you are using `embark-completing-read' as your
           (exit-minibuffer)))
     (goto-char entry)            ;; pretend RET was pressed even if
     (setq last-nonmenu-event 13) ;; mouse was clicked, to fool imenu
-    (funcall (embark--action-function #'embark-default-action))))
+    (embark--act #'embark-default-action)))
 
 (embark-define-keymap embark-occur-mode-map
   "Keymap for Embark occur mode."
