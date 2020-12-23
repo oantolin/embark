@@ -123,6 +123,7 @@
     (unicode-name . embark-unicode-name-map)
     (symbol . embark-symbol-map)
     (variable . embark-symbol-map)
+    (minor-mode . embark-symbol-map)
     (package . embark-package-map)
     (bookmark . embark-bookmark-map)
     (region . embark-region-map))
