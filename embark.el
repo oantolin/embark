@@ -236,7 +236,8 @@ It can be overriden by the `embark-setup-overrides' alist."
 (defcustom embark-setup-overrides
   '((async-shell-command embark--shell-prep)
     (shell-command embark--shell-prep)
-    (eval-expression embark--eval-prep))
+    (eval-expression embark--eval-prep)
+    (package-delete minibuffer-force-complete))
   "Alist associating commands with post-injection setup hooks.
 For commands appearing as keys in this alist, run the
 corresponding value as a setup hook (instead of
