@@ -395,9 +395,9 @@ If you are using `embark-completing-read' as your
     default-directory))
 
 (defun embark--target-window ()
-  "Get target buffer for insert actions."
+  "Get target window for insert actions."
   (cond
-   (embark--target-window embark--target-window)
+   ((window-live-p embark--target-window) embark--target-window)
    ((minibufferp) (minibuffer-selected-window))
    ((derived-mode-p 'completion-list-mode)
     (if (minibufferp completion-reference-buffer)
@@ -418,7 +418,7 @@ If you are using `embark-completing-read' as your
       (setq-local default-directory dir)
       (setq embark--target-window target-window))))
 
-(add-hook 'completion-setup-hook #'embark--cache-info t)
+(add-hook 'completion-setup-hook #'embark--cache-info)
 
 ;;; internal variables
 
