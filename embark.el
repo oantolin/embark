@@ -640,17 +640,19 @@ longer needed."
   "Let the user choose an action using the bindings in KEYMAP.
 Besides the bindings in KEYMAP, the user is free to use all their
 keybindings and even \\[execute-extended-command] to select a command."
-  (let ((cmd (let* ((overriding-terminal-local-map keymap)
-                    (key (read-key-sequence nil)))
-               (key-binding key))))
+  (let* ((key (let ((overriding-terminal-local-map keymap))
+                (read-key-sequence nil)))
+         (cmd (let ((overriding-terminal-local-map keymap))
+                (key-binding key))))
     (setq cmd
           (pcase cmd
             ('abort-recursive-edit nil)
             ('self-insert-command
              (minibuffer-message "Not an action")
              (embark-keymap-prompter keymap))
-            ((or 'universal-argument 'negative-argument)
-             (command-execute cmd)
+            ((or 'universal-argument 'negative-argument 'digit-argument)
+             (let ((last-command-event (aref key 0)))
+               (command-execute cmd))
              (embark-keymap-prompter keymap))
             ('execute-extended-command
              (intern-soft (read-extended-command)))
