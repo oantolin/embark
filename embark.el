@@ -374,12 +374,8 @@ If you are using `embark-completing-read' as your
 (defvar-local embark--type nil
   "Cache for the completion type, meant to be set buffer-locally.")
 
-(defvar-local embark--target-window nil
-  "Cache for the previous window, meant to be set buffer-locally.")
-
 (defvar-local embark--target-buffer nil
-  "Cache for the previous buffer, meant to be set buffer-locally.
-This is used in case `embark--target-window' dies.")
+  "Cache for the previous buffer, meant to be set buffer-locally.")
 
 (defvar-local embark--command nil
   "Command that started the completion session.")
@@ -392,42 +388,25 @@ This is used in case `embark--target-window' dies.")
         (buffer-substring (minibuffer-prompt-end) (point))))
     default-directory))
 
-(defun embark--target-window ()
-  "Get target window for insert actions."
-  (cond
-   ((window-live-p embark--target-window) embark--target-window)
-   ((buffer-live-p embark--target-buffer)
-    (get-buffer-window embark--target-buffer)) ; if nil, so be it
-   ((minibufferp) (minibuffer-selected-window))
-   (t (selected-window))))
-
-(defun embark--target-buffer ()
-  "Get target buffer for insert actions."
-  (if (buffer-live-p embark--target-buffer) ; cached?
-      embark--target-buffer
-    (let ((target-window (embark--target-window)))
-      (if (window-live-p target-window)
-          (window-buffer target-window)
-        (current-buffer)))))
-
 (defun embark--cache-info (&optional buffer)
   "Cache information needed for actions in variables local to BUFFER.
 BUFFER defaults to the current buffer."
   (let ((type (embark-classify))
         (cmd (or embark--command this-command))
         (dir (embark--default-directory))
-        (target-window (embark--target-window))
-        (target-buffer (embark--target-buffer)))
+        (target-buffer (if (minibufferp)
+                           (window-buffer (minibuffer-selected-window))
+                         (or embark--target-buffer
+                             (current-buffer)))))
     (with-current-buffer (or buffer (current-buffer))
-      (setq embark--command cmd)
-      (setq embark--type type)
+      (setq-local embark--command cmd)
+      (setq-local embark--type type)
       (setq-local default-directory dir)
-      (setq embark--target-window target-window)
-      (setq embark--target-buffer target-buffer))))
+      (setq-local embark--target-buffer target-buffer))))
 
 (defun embark--cache-info--completion-list ()
   "Cache information needed for actions in a *Completions* buffer.
-Meant to be be add to `completion-setup-hook'."
+Meant to be be added to `completion-setup-hook'."
   ;; when completion-setup-hook hook runs, the *Completions* buffer is
   ;; available in the variable standard-output
   (embark--cache-info standard-output))
@@ -729,9 +708,10 @@ keybindings and even \\[execute-extended-command] to select a command."
                                  embark-live-occur ; exiting on their own
                                  embark-occur      ; and should not be run
                                  embark-export)))  ; in the target window
-         (action-window (if special
-                            (selected-window)
-                          (embark--target-window)))
+         (action-window (if (and (not special)
+                                 (buffer-live-p embark--target-buffer))
+                            (display-buffer embark--target-buffer)
+                          (selected-window)))
          (setup-hook (or (alist-get action embark-setup-overrides)
                          embark-setup-hook))
          (allow-edit (if embark-allow-edit-default
@@ -1107,7 +1087,7 @@ keybinding for it.  Or alternatively you might want to enable
             (let ((dir default-directory) ; smuggle to the target window
                   (annotator embark-occur-annotator)
                   (candidates embark-occur-candidates))
-              (with-selected-window (embark--target-window)
+              (with-current-buffer embark--target-buffer
                 (let ((default-directory dir)) ; for marginalia's file annotator
                   (mapcar
                    (lambda (cand)
