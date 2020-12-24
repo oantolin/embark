@@ -1088,7 +1088,10 @@ keybinding for it.  Or alternatively you might want to enable
             (let ((dir default-directory) ; smuggle to the target window
                   (annotator embark-occur-annotator)
                   (candidates embark-occur-candidates))
-              (with-current-buffer embark--target-buffer
+              (with-current-buffer
+                  (if (buffer-live-p embark--target-buffer)
+                      embark--target-buffer
+                    (current-buffer))
                 (let ((default-directory dir)) ; for marginalia's file annotator
                   (mapcar
                    (lambda (cand)
