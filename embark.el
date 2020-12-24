@@ -751,7 +751,9 @@ keybindings and even \\[execute-extended-command] to select a command."
                          (with-selected-window action-window
                            (run-hooks 'embark-pre-action-hook)
                            (let ((enable-recursive-minibuffers t)
-                                 (embark--command command))
+                                 (embark--command command)
+                                 (use-dialog-box nil)     ; avoid mouse dialogs
+                                 (last-nonmenu-event 13)) ; avoid mouse dialogs
                              (command-execute action))
                            (run-hooks 'embark-post-action-hook))))))
     (if (or (not exit) special)
@@ -1060,8 +1062,6 @@ If you are using `embark-completing-read' as your
                     (= (car (embark--boundaries))
                        (- (point) (minibuffer-prompt-end))))
           (exit-minibuffer)))
-    (goto-char entry)            ;; pretend RET was pressed even if
-    (setq last-nonmenu-event 13) ;; mouse was clicked, to fool imenu
     (embark--act #'embark-default-action)))
 
 (embark-define-keymap embark-occur-mode-map
