@@ -45,30 +45,30 @@
 
 ;; Everything is easily configurable: determining the current target,
 ;; classifying it, and deciding with actions are offered for each type
-;; in the classification. The above introduction just mentions part of
+;; in the classification.  The above introduction just mentions part of
 ;; the default configuration.
 
-;; Configuring which act are offered for a type is particularly easy and
-;; requires no programming: the variable `embark-keymap-alist' associates
-;; target types with variable containing keymaps, and those keymaps
-;; containing binds for the actions. For example, in the default
-;; configuration the type `file' is associated with the symbol
-;; `embark-file-keymap'. That symbol names a keymap with single-letter
-;; keybindings for common Emacs file commands, for instance `c' is bound
-;; to `copy-file'. This means that if while you are in the minibuffer
-;; after running a command that prompts for a file, such as `find-file' or
-;; `rename-file', you can copy a file by running `embark-act' and then
-;; pressing `c'.
+;; Configuring which actions are offered for a type is particularly
+;; easy and requires no programming: the `embark-keymap-alist'
+;; variable associates target types with variable containing keymaps,
+;; and those keymaps containing binds for the actions.  For example,
+;; in the default configuration the type `file' is associated with the
+;; symbol `embark-file-keymap'.  That symbol names a keymap with
+;; single-letter keybindings for common Emacs file commands, for
+;; instance `c' is bound to `copy-file'.  This means that if while you
+;; are in the minibuffer after running a command that prompts for a
+;; file, such as `find-file' or `rename-file', you can copy a file by
+;; running `embark-act' and then pressing `c'.
 
 ;; These action keymaps are very convenient but not strictly necessary
 ;; when using `embark-act': you can use any command that reads from the
 ;; minibuffer as an action and the target of the action will be inserted
-;; at the first minibuffer prompt. After running `embark-act' all of your
+;; at the first minibuffer prompt.  After running `embark-act' all of your
 ;; keybindings and even `execute-extended-command' can be used to run a
 ;; command.
 
 ;; The actions in `embark-general-map' are available no matter what
-;; type of completion you are in the middle of. By default this
+;; type of completion you are in the middle of.  By default this
 ;; includes bindings to save the current candidate in the kill ring
 ;; and to insert the current candidate in the previously selected
 ;; buffer (the buffer that was current when you executed a command
@@ -78,26 +78,26 @@
 ;; https://github.com/oantolin/embark/wiki/Default-Actions
 
 ;; Besides acting individually on targets, Embark lets you work
-;; collectively on a set of target /candidates/. For example, while you are
+;; collectively on a set of target /candidates/.  For example, while you are
 ;; in the minibuffer the candidates are simply the possible completions
-;; of your input. Embark provides two commands to work on candidate sets:
+;; of your input.  Embark provides two commands to work on candidate sets:
 
 ;; - The `embark-occur' command produces a buffer listing all candidates,
-;;  for you to peruse and run actions on at your leisure. The
+;;  for you to peruse and run actions on at your leisure.  The
 ;;  candidates can be viewed in a grid or as a list showing additional
-;;  annotations. The `embark-live-occur' variant produces "live" Embark
+;;  annotations.  The `embark-live-occur' variant produces "live" Embark
 ;;  Occur buffer, meaning they autoupdate as the set of candidates
 ;;  changes.
 
 ;; - The `embark-export' command tries to open a buffer in an appropriate
-;;  major mode for the set of candidates. If the candidates are files
+;;  major mode for the set of candidates.  If the candidates are files
 ;;  export produces a Dired buffer; if they are buffers, you get an
 ;;  Ibuffer buffer; and if they are packages you get a buffer in
 ;;  package menu mode.
 
 ;; These are always available as "actions" (although they do not act
 ;; on just the current target but on all candidates) for embark-act and
-;; are bound to O, L and E, respectively, in embark-general-map. This
+;; are bound to O, L and E, respectively, in embark-general-map.  This
 ;; means that you do not have to bind your own key bindings for these
 ;; (although you can, of course), just a key binding for `embark-act'
 ;; or `embark-act-noexit'.
@@ -312,9 +312,9 @@ These are used to fill an Embark Occur buffer."
     (t . list))
   "Initial views for Embark Occur buffers by type.
 This is an alist associating completion types to either `list',
-`grid' or `zebra' (which means list view together with
-`embark-occur-zebra-minor-mode').  Additionally you can associate
-t to a default initial view for types not mentioned separately."
+`grid' or `zebra' (which means list view the Embark Occur Zebra
+minor mode activated).  Additionally you can associate t to a
+default initial view for types not mentioned separately."
   :type '(alist :key-type symbol
                 :value-type (choice (const :tag "List view" list)
                                     (const :tag "Grid view" grid)))
@@ -702,7 +702,7 @@ keybindings and even \\[execute-extended-command] to select a command."
     cmd))
 
 (defun embark--act (action &optional exit)
-  "Perform ACTION injecting the target, optionally EXIT to top-level."
+  "Perform ACTION injecting the target, optionally EXIT to top level."
   (let* ((target (embark--target))
          (command embark--command)
          (special (memq action '(embark-become     ; these actions handle
@@ -969,7 +969,7 @@ Returns the name of the command."
 (defun embark--omit-binding-p (cmd)
   "Should CMD binding be hidden from the user?
 Return non-nil if this is a key binding that should not be bound
-in `embark-occur-direct-action-minor-mode' nor mentioned by
+in `embark-occur-direct-action-minor-mode-map' nor mentioned by
 `embark-keymap-help'."
   (or (null cmd)
       (not (symbolp cmd))
@@ -1120,7 +1120,7 @@ keybinding for it.  Or alternatively you might want to enable
   (embark-occur--remove-zebra-stripes)
   (save-excursion
     (goto-char (point-min))
-    (when (tabulated-list-header-overlay-p) (forward-line))
+    (when (overlays-at (point)) (forward-line))
     (let ((columns (length tabulated-list-format)))
       (while (not (eobp))
         (condition-case nil
@@ -1444,7 +1444,7 @@ buffer for each type of completion."
 (defun embark-keymap-help ()
   "Prompt for an action to perform or command to become and run it."
   (interactive)
-  (user-error "Not meant to be called directly."))
+  (user-error "Not meant to be called directly"))
 
 (defun embark-default-action ()
   "Default action.
