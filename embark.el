@@ -755,10 +755,9 @@ and returns a function that executes the chosen command, in the
 correct target window, injecting the target at the first
 minibuffer prompt.  The optional argument EXIT controls whether
 to exit the minibuffer."
-  (let* ((keymap (embark--action-keymap))
-         (action (embark--with-indicator embark-action-indicator
-                                         embark-prompter
-                                         keymap)))
+  (let ((action (embark--with-indicator embark-action-indicator
+                                        embark-prompter
+                                        (embark--action-keymap))))
     (if (null action)
         (minibuffer-message "Canceled")
       (embark--act action exit))))
@@ -783,6 +782,15 @@ Completions buffer it ixs the candidate at point."
   (interactive)
   (embark--prompt-for-action 'exit))
 
+(defun embark--become-keymap ()
+  "Return keymap of commands to become for current command."
+  (make-composed-keymap
+   (cl-loop for keymap-name in embark-become-keymaps
+            for keymap = (symbol-value keymap-name)
+            when (where-is-internal embark--command (list keymap))
+            collect keymap)
+   embark-meta-map))
+
 ;;;###autoload
 (defun embark-become ()
   "Make current command become a different command.
@@ -793,17 +801,10 @@ command.  The new command can be run normally using keybindings or
 convenient access to the other commands in it."
   (interactive)
   (when (minibufferp)
-    (let* ((keymap
-            (cl-loop for keymap-name in embark-become-keymaps
-                     for keymap = (symbol-value keymap-name)
-                     when (where-is-internal embark--command (list keymap))
-                     return keymap))
-           (target (run-hook-with-args-until-success 'embark-input-getters))
-           (become (embark--with-indicator embark-become-indicator
-                                           embark-prompter
-                                           (make-composed-keymap
-                                            keymap
-                                            embark-meta-map))))
+    (let ((target (run-hook-with-args-until-success 'embark-input-getters))
+          (become (embark--with-indicator embark-become-indicator
+                                          embark-prompter
+                                          (embark--become-keymap))))
       (if (null become)
           (minibuffer-message "Canceled")
         (run-at-time 0 nil (lambda ()
