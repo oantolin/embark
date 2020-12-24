@@ -377,14 +377,12 @@ If you are using `embark-completing-read' as your
 (defvar-local embark--target-window nil
   "Cache for the previous window, meant to be set buffer-locally.")
 
+(defvar-local embark--target-buffer nil
+  "Cache for the previous buffer, meant to be set buffer-locally.
+This is used in case `embark--target-window' dies.")
+
 (defvar-local embark--command nil
   "Command that started the completion session.")
-
-(defun embark--record-command ()
-  "Record the command that opened the minibuffer."
-  (setq embark--command this-command))
-
-(add-hook 'minibuffer-setup-hook #'embark--record-command)
 
 (defun embark--default-directory ()
   "Guess a reasonable default directory for the current candidates."
@@ -398,27 +396,44 @@ If you are using `embark-completing-read' as your
   "Get target window for insert actions."
   (cond
    ((window-live-p embark--target-window) embark--target-window)
+   ((buffer-live-p embark--target-buffer)
+    (get-buffer-window embark--target-buffer)) ; if nil, so be it
    ((minibufferp) (minibuffer-selected-window))
-   ((derived-mode-p 'completion-list-mode)
-    (if (minibufferp completion-reference-buffer)
-        (with-current-buffer completion-reference-buffer
-          (minibuffer-selected-window))
-      (get-buffer-window completion-reference-buffer)))
    (t (selected-window))))
 
+(defun embark--target-buffer ()
+  "Get target buffer for insert actions."
+  (if (buffer-live-p embark--target-buffer) ; cached?
+      embark--target-buffer
+    (let ((target-window (embark--target-window)))
+      (if (window-live-p target-window)
+          (window-buffer target-window)
+        (current-buffer)))))
+
 (defun embark--cache-info (&optional buffer)
-  "Cache information needed for actions in variables local to BUFFER."
+  "Cache information needed for actions in variables local to BUFFER.
+BUFFER defaults to the current buffer."
   (let ((type (embark-classify))
-        (cmd embark--command)
+        (cmd (or embark--command this-command))
         (dir (embark--default-directory))
-        (target-window (embark--target-window)))
-    (with-current-buffer (or buffer standard-output)
+        (target-window (embark--target-window))
+        (target-buffer (embark--target-buffer)))
+    (with-current-buffer (or buffer (current-buffer))
       (setq embark--command cmd)
       (setq embark--type type)
       (setq-local default-directory dir)
-      (setq embark--target-window target-window))))
+      (setq embark--target-window target-window)
+      (setq embark--target-buffer target-buffer))))
 
-(add-hook 'completion-setup-hook #'embark--cache-info)
+(defun embark--cache-info--completion-list ()
+  "Cache information needed for actions in a *Completions* buffer.
+Meant to be be add to `completion-setup-hook'."
+  ;; when completion-setup-hook hook runs, the *Completions* buffer is
+  ;; available in the variable standard-output
+  (embark--cache-info standard-output))
+
+(add-hook 'completion-setup-hook #'embark--cache-info--completion-list)
+(add-hook 'minibuffer-setup-hook #'embark--cache-info)
 
 ;;; internal variables
 
