@@ -696,8 +696,9 @@ keybindings and even \\[execute-extended-command] to select a command."
                    (let ((enable-recursive-minibuffers t))
                      (funcall prompter keymap)))
                (quit nil))))
-    (when (functionp remove-indicator)
-      (funcall remove-indicator))
+    (cond
+     ((overlayp remove-indicator) (delete-overlay remove-indicator))
+     ((functionp remove-indicator) (funcall remove-indicator)))
     cmd))
 
 (defun embark--act (action &optional exit)
