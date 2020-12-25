@@ -1491,7 +1491,11 @@ This is whatever command opened the minibuffer in the first place."
   "Rename buffer BUF."
   (interactive "bBuffer: ")
   (with-current-buffer buf
-    (call-interactively #'rename-buffer)))
+    (minibuffer-with-setup-hook
+        (lambda ()
+          (let ((prompt (make-overlay (point-min) (minibuffer-prompt-end))))
+            (overlay-put prompt 'display (format "Rename %s to: " buf))))
+      (call-interactively #'rename-buffer))))
 
 (defun embark-browse-package-url (pkg)
   "Open homepage for package PKG with `browse-url'."
