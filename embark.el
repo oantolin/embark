@@ -679,10 +679,10 @@ keybindings and even \\[execute-extended-command] to select a command."
     (intern-soft
      (completing-read
       "Command: "
-      (lambda (s p a)
-        (if (eq a 'metadata)
-            `(metadata (metadata . command))
-          (complete-with-action a commands s p)))
+      (lambda (string predicate action)
+        (if (eq action 'metadata)
+            `(metadata (category . command))
+          (complete-with-action action commands string predicate)))
       nil t))))
 
 (defun embark--with-indicator (indicator prompter keymap)
