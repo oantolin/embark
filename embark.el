@@ -117,6 +117,7 @@
 
 (defcustom embark-keymap-alist
   '((file . embark-file-map)
+    (environment-variables . embark-file-map) ; they come up in file completion
     (url . embark-url-map)
     (buffer . embark-buffer-map)
     (command . embark-symbol-map)
