@@ -131,8 +131,7 @@
   "Alist of action types and corresponding keymaps.
 For any type not listed here, `embark-act' will use
 `embark-general-map'."
-  :type '(alist :key-type symbol :value-type variable)
-  :group 'embark)
+  :type '(alist :key-type symbol :value-type variable))
 
 (defvar embark-overriding-keymap nil
   "Can be bound to short circuit `embark-keymap-alist'.
@@ -147,8 +146,7 @@ Each function should take no arguments and return the type
 symbol, or nil to indicate it could not determine the type in
 current context.  If the type is not determined by current buffer
 context fallback to `embark-target-classifiers'."
-  :type 'hook
-  :group 'embark)
+  :type 'hook)
 
 (defcustom embark-target-classifiers
   '(embark-url-target-type
@@ -160,8 +158,7 @@ Each function takes the target as argument and returns the type
 symbol, or nil to indicate it could not determine the type of
 current target.  If the type isn't determined by current target
 fallback to the `general' type."
-  :type 'hook
-  :group 'embark)
+  :type 'hook)
 
 (defcustom embark-target-finders
   '(embark-top-minibuffer-completion
@@ -174,8 +171,7 @@ fallback to the `general' type."
 Each function should take no arguments and return either a target
 string or nil (to indicate it found no target).  If the region is
 active the region content is used as current target."
-  :type 'hook
-  :group 'embark)
+  :type 'hook)
 
 (defcustom embark-become-keymaps
   '(embark-become-help-map
@@ -185,15 +181,13 @@ active the region content is used as current target."
   "List of keymaps for `embark-become'.
 Each keymap groups a set of related commands that can
 conveniently become one another."
-  :type '(repeat variable)
-  :group 'embark)
+  :type '(repeat variable))
 
 (defcustom embark-input-getters '(embark-minibuffer-input)
   "List of functions to get current input for `embark-become'.
 Each function should take no arguments and return either the
 current input string or nil (to indicate it is not applicable)."
-  :type 'hook
-  :group 'embark)
+  :type 'hook)
 
 (defcustom embark-prompter 'embark-keymap-prompter
   "Function used to prompt the user for actions.
@@ -207,8 +201,7 @@ prompts for an action with completion."
   :type '(choice (const :tag "Use action keymaps" embark-keymap-prompter)
                  (const :tag "Read action with completion"
                         embark-completing-read-prompter)
-                 (function :tag "Other"))
-  :group 'embark)
+                 (function :tag "Other")))
 
 (defcustom embark-action-indicator (propertize "Act" 'face 'highlight)
   "Indicator to use when embarking upon an action.
@@ -219,8 +212,7 @@ set to a function it is called with the action keymap.  The
 function should return either nil or a function to be called when
 the indicator is no longer needed.  Finally, if this variable is
 set to nil no indication is shown."
-  :type '(choice function string nil)
-  :group 'embark)
+  :type '(choice function string nil))
 
 (defcustom embark-become-indicator (propertize "Become" 'face 'highlight)
   "Indicator to use when using `embark-become'.
@@ -233,14 +225,12 @@ command (or nil, if no such keymap exists).  The function should
 return either nil or a function to be called when the indicator
 is no longer needed.  Finally, if this variable is set to nil no
 indication is shown."
-  :type '(choice function string nil)
-  :group 'embark)
+  :type '(choice function string nil))
 
 (defcustom embark-setup-hook nil
   "Hook to run after injecting target into minibuffer.
 It can be overriden by the `embark-setup-overrides' alist."
-  :type 'hook
-  :group 'embark)
+  :type 'hook)
 
 (defcustom embark-setup-overrides
   '((async-shell-command embark--shell-prep)
@@ -252,8 +242,7 @@ For commands appearing as keys in this alist, run the
 corresponding value as a setup hook (instead of
 `embark-setup-hook') after injecting the target into in the
 minibuffer and before acting on it."
-  :type '(alist :key-type function :value-type hook)
-  :group 'embark)
+  :type '(alist :key-type function :value-type hook))
 
 (defcustom embark-allow-edit-default nil
   "Is the user allowed to edit the target before acting on it?
@@ -261,8 +250,7 @@ This variable sets the default policy, and can be overidden.
 When this variable is nil, it is overridden by
 `embark-allow-edit-commands'; when it is t, it is overidden by
 `embark-skip-edit-commands'."
-  :type 'boolean
-  :group 'embark)
+  :type 'boolean)
 
 (defcustom embark-allow-edit-commands
   '(delete-file
@@ -274,101 +262,20 @@ When this variable is nil, it is overridden by
     eval-expression)
   "Allowing editing of target prior to acting for these commands.
 This list is used only when `embark-allow-edit-default' is nil."
-  :type 'hook
-  :group 'embark)
+  :type 'hook)
 
 (defcustom embark-skip-edit-commands nil
   "Skip editing of target prior to acting for these commands.
 This list is used only when `embark-allow-edit-default' is t."
-  :type 'hook
-  :group 'embark)
+  :type 'hook)
 
 (defcustom embark-pre-action-hook nil
   "Hook run right before an action is embarked upon."
-  :type 'hook
-  :group 'embark)
+  :type 'hook)
 
 (defcustom embark-post-action-hook nil
   "Hook run after an embarked upon action concludes."
-  :type 'hook
-  :group 'embark)
-
-(defcustom embark-candidate-collectors
-  '(embark-minibuffer-candidates
-    embark-completions-buffer-candidates
-    embark-dired-candidates
-    embark-ibuffer-candidates
-    embark-embark-occur-candidates)
-  "List of functions that collect all candidates in a given context.
-These are used to fill an Embark Occur buffer."
-  :type 'hook
-  :group 'embark)
-
-(defcustom embark-occur-initial-view-alist
-  '((file . grid)
-    (buffer . grid)
-    (symbol . list)
-    (line . list)
-    (kill-ring . zebra)
-    (t . list))
-  "Initial views for Embark Occur buffers by type.
-This is an alist associating completion types to either `list',
-`grid' or `zebra' (which means list view the Embark Occur Zebra
-minor mode activated).  Additionally you can associate t to a
-default initial view for types not mentioned separately."
-  :type '(alist :key-type symbol
-                :value-type (choice (const :tag "List view" list)
-                                    (const :tag "Grid view" grid)))
-  :group 'embark)
-
-(defcustom embark-exporters-alist
-  '((buffer . embark-export-ibuffer)
-    (file . embark-export-dired)
-    (package . embark-export-list-packages)
-    (t . embark-occur))
-  "Alist associating completion types to export functions.
-Each function should take a list of strings which are candidates
-for actions and make a buffer appropriate to manage them.  For
-example, the default is to make a dired buffer for files, and an
-ibuffer for buffers.
-
-The key t is also allowed in the alist, and the corresponding
-value indicates the default function to use for other types.  The
-default is `embark-occur'."
-  :type '(alist :key-type symbol :value-type function)
-  :group 'embark)
-
-(defvar embark-overriding-export-function nil
-  "Can be bound to short circuit `embark-exporters-alist'.
-The expected format is the same as for functions in
-`embark-exporters-alist'.")
-
-(defcustom embark-live-occur-update-delay 0.15
-  "Wait this long for more input before updating Embark Live Occur buffer."
-  :type 'number
-  :group 'embark)
-
-(defcustom embark-live-occur-initial-delay 0.3
-  "Wait this long for input before popping up Embark Live Occur buffer."
-  :type 'number
-  :group 'embark)
-
-(defcustom embark-occur-minibuffer-completion nil
-  "Should RET on an Embark Occur entry do minibuffer completion?
-By default, pressing RET or clicking the mouse on an entry in an
-Embark Occur buffer runs the default action on the entry.  If this
-variable is non-nil, then when the Embark Occur buffer is
-associated to the active minibuffer and is live updating,
-pressing RET or clicking the mouse instead completes the
-minibuffer input to the chosen entry and, unless this leads to
-new completion candidates (for example, when entering a directory
-in `find-file'), exits the minibuffer.
-
-If you are using `embark-completing-read' as your
-`completing-read-function' you might want to set
-`embark-occur-minibuffer-completion' to t."
-  :type 'boolean
-  :group 'embark)
+  :type 'hook)
 
 ;;; stashing information for actions in buffer local variables
 
@@ -818,9 +725,83 @@ BINDINGS is the list of bindings."
 
 ;;; embark occur
 
-(defface embark-occur-candidate '((t :inherit default))
-  "Face for candidates in Embark Occur."
+(defgroup embark-occur nil
+  "Buffers for acting on collected Embark targets"
   :group 'embark)
+
+(defcustom embark-candidate-collectors
+  '(embark-minibuffer-candidates
+    embark-completions-buffer-candidates
+    embark-dired-candidates
+    embark-ibuffer-candidates
+    embark-embark-occur-candidates)
+  "List of functions that collect all candidates in a given context.
+These are used to fill an Embark Occur buffer."
+  :type 'hook)
+
+(defcustom embark-occur-initial-view-alist
+  '((file . grid)
+    (buffer . grid)
+    (symbol . list)
+    (line . list)
+    (kill-ring . zebra)
+    (t . list))
+  "Initial views for Embark Occur buffers by type.
+This is an alist associating completion types to either `list',
+`grid' or `zebra' (which means list view the Embark Occur Zebra
+minor mode activated).  Additionally you can associate t to a
+default initial view for types not mentioned separately."
+  :type '(alist :key-type symbol
+                :value-type (choice (const :tag "List view" list)
+                                    (const :tag "Grid view" grid))))
+
+(defcustom embark-exporters-alist
+  '((buffer . embark-export-ibuffer)
+    (file . embark-export-dired)
+    (package . embark-export-list-packages)
+    (t . embark-occur))
+  "Alist associating completion types to export functions.
+Each function should take a list of strings which are candidates
+for actions and make a buffer appropriate to manage them.  For
+example, the default is to make a dired buffer for files, and an
+ibuffer for buffers.
+
+The key t is also allowed in the alist, and the corresponding
+value indicates the default function to use for other types.  The
+default is `embark-occur'."
+  :type '(alist :key-type symbol :value-type function))
+
+(defvar embark-overriding-export-function nil
+  "Can be bound to short circuit `embark-exporters-alist'.
+The expected format is the same as for functions in
+`embark-exporters-alist'.")
+
+(defcustom embark-live-occur-update-delay 0.15
+  "Wait this long for more input before updating Embark Live Occur buffer."
+  :type 'number)
+
+(defcustom embark-live-occur-initial-delay 0.3
+  "Wait this long for input before popping up Embark Live Occur buffer."
+  :type 'number)
+
+(defcustom embark-occur-minibuffer-completion nil
+  "Should RET on an Embark Occur entry do minibuffer completion?
+By default, pressing RET or clicking the mouse on an entry in an
+Embark Occur buffer runs the default action on the entry.  If this
+variable is non-nil, then when the Embark Occur buffer is
+associated to the active minibuffer and is live updating,
+pressing RET or clicking the mouse instead completes the
+minibuffer input to the chosen entry and, unless this leads to
+new completion candidates (for example, when entering a directory
+in `find-file'), exits the minibuffer.
+
+If you are using `embark-completing-read' as your
+`completing-read-function' you might want to set
+`embark-occur-minibuffer-completion' to t."
+  :type 'boolean)
+
+(defface embark-occur-candidate '((t :inherit default))
+  "Face for candidates in Embark Occur.")
 
 (defface embark-occur-zebra-highlight
   '((default :extend t)
@@ -828,18 +809,15 @@ BINDINGS is the list of bindings."
      :background "#efefef")
     (((class color) (min-colors 88) (background dark))
      :background "#242424"))
-  "Face to highlight alternate rows in `embark-occur-zebra-minor-mode'"
-  :group 'embark)
+  "Face to highlight alternate rows in `embark-occur-zebra-minor-mode'")
 
 (defface embark-occur-annotation '((t :inherit completions-annotations))
   "Face for annotations in Embark Occur.
-This is only used for annotation that are not already fontified."
-  :group 'embark)
+This is only used for annotation that are not already fontified.")
 
 (defcustom embark-occur-post-revert-hook nil
   "Hook run after an Embark Occur buffer is updated."
-  :type 'hook
-  :group 'embark)
+  :type 'hook)
 
 (defun embark-occur--post-revert (&rest _)
   "Run `embark-occur-post-revert-hook'.
