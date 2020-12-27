@@ -1238,7 +1238,7 @@ Argument BUFFER-NAME specifies the name of the created buffer."
     (with-current-buffer buffer
       (delay-mode-hooks (embark-occur-mode)) ; we'll run them when the
                                              ; buffer is displayed, so
-                                        ; they can use the window
+                                             ; they can use the window
       (setq tabulated-list-use-header-line nil) ; default to no header
       (setq embark-occur-from from)
       (add-hook 'tabulated-list-revert-hook #'embark-occur--revert nil t)
