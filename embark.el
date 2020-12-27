@@ -592,23 +592,6 @@ relative path."
         (buffer-substring (region-beginning) (region-end)))
     (run-hook-with-args-until-success 'embark-target-finders)))
 
-(defmacro embark-after-exit (vars &rest body)
-  "Run BODY after exiting all minibuffers.
-Make sure the current values of VARS are still valid when running
-BODY."
-  (declare (indent defun))
-  (let ((binds (cl-loop for var in vars collect
-                        (list var (make-symbol (symbol-name var))))))
-    `(progn
-       (run-at-time 0 nil
-                    (lambda ,(mapcar #'cadr binds)
-                      (setq inhibit-message nil)
-                      (let (,@binds)
-                        ,@body))
-                    ,@vars)
-       (setq-local inhibit-message t)
-       (top-level))))
-
 (defun embark--show-indicator (indicator keymap)
   "Show INDICATOR for a pending action or a instance of becoming.
 If INDICATOR is a string, it is put in an overlay in the
@@ -1339,20 +1322,16 @@ argument of 1 means list view.
 To control the display, add an entry to `display-buffer-alist'
 with key \"Embark Occur\"."
   (interactive (embark-occur--initial-view-arg))
-  (if-let ((candidates
-            (run-hook-with-args-until-success 'embark-candidate-collectors))
-           (occur-buffer
-            (embark-occur-noselect "*Embark Occur*" initial-view)))
-      (let ((annotator (embark--annotation-function)))
-        (with-current-buffer occur-buffer
-          (setq embark-occur-candidates candidates)
-          (setq embark-occur-annotator annotator)
-          (when (minibufferp embark-occur-from)
-            (setq embark-occur-from nil)))
-        (embark-after-exit ()
-          (select-window
-           (embark-occur--display occur-buffer))))
-    (minibuffer-message "No candidates for occur")))
+  (let ((occur-buffer
+         (embark-occur-noselect "*Embark Occur*" initial-view)))
+    (with-current-buffer occur-buffer
+      (tabulated-list-revert))
+    (when (minibufferp) ; sever the link since we are about to exit
+      (setf (buffer-local-value 'embark-occur-from occur-buffer) nil))
+    (run-at-time 0 nil (lambda ()
+                         (message nil)
+                         (select-window (embark-occur--display occur-buffer))))
+    (top-level)))
 
 (defun embark-live-occur-after-delay ()
   "Start `embark-live-occur' after `embark-live-occur-initial-delay'.
@@ -1405,9 +1384,12 @@ buffer for each type of completion."
       (let ((candidates (run-hook-with-args-until-success
                          'embark-candidate-collectors))
             (dir (embark--default-directory)))
-        (embark-after-exit ()
-          (let ((default-directory dir)) ; dired needs this info
-            (funcall exporter candidates)))))))
+        (run-at-time 0 nil
+                     (lambda ()
+                       (message nil)
+                       (let ((default-directory dir)) ; dired needs this info
+                         (funcall exporter candidates))))
+        (top-level)))))
 
 (defun embark-export-ibuffer (buffers)
   "Create an ibuffer buffer listing BUFFERS."
