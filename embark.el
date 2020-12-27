@@ -646,7 +646,7 @@ keybindings and even \\[execute-extended-command] to select a command."
                 (key-binding key))))
     (setq cmd
           (pcase cmd
-            ('abort-recursive-edit nil)
+            ((or 'minibuffer-keyboard-quit 'abort-recursive-edit) nil)
             ('self-insert-command
              (minibuffer-message "Not an action")
              (embark-keymap-prompter keymap))
