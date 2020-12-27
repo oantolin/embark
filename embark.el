@@ -1266,8 +1266,7 @@ Argument BUFFER-NAME specifies the name of the created buffer."
                 'list))
       (when (eq embark-occur-view 'zebra)
         (setq embark-occur-view 'list)
-        (add-hook 'embark-occur-mode-hook
-                  #'embark-occur-zebra-minor-mode nil t)))
+        (embark-occur-zebra-minor-mode)))
     (embark--cache-info buffer)
     buffer))
 
