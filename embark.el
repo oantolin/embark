@@ -842,15 +842,6 @@ This function is used as :after advice for `tabulated-list-revert'."
            (package--from-builtin built-in)
            (car (alist-get pkg package-archive-contents)))))
 
-(defun embark--annotation-function ()
-  "Get current annotation-function."
-  (cond
-   ((minibufferp)
-    (or (completion-metadata-get (embark--metadata) 'annotation-function)
-        (plist-get completion-extra-properties :annotation-function)))
-   ((boundp 'marginalia-annotators)
-    (alist-get (embark-classify) (symbol-value (car marginalia-annotators))))))
-
 (defun embark-minibuffer-candidates ()
   "Return all current completion candidates from the minibuffer."
   (when (minibufferp)
@@ -1133,13 +1124,22 @@ This is specially useful to tell where multi-line entries begin and end."
                                          `(,(or (pop cands) "")
                                            type embark-occur-entry))))))))
 
-(defun embark-occur--revert (&rest _)
+(defun embark-occur--revert ()
   "Recalculate Embark Occur candidates if possible."
+  (setq embark-occur-annotator
+        (or
+         ;; for the active minibuffer, get annotation-function metadatum
+         (when-let ((miniwin (active-minibuffer-window)))
+           (when (eq (window-buffer miniwin) embark-occur-from)
+             (or (completion-metadata-get (embark--metadata)
+                                          'annotation-function)
+                 (plist-get completion-extra-properties
+                            :annotation-function))))
+         ;; fallback on Marginalia if loaded
+         (when (boundp 'marginalia-annotators)
+           (alist-get embark--type (symbol-value
+                                    (car marginalia-annotators))))))
   (when (buffer-live-p embark-occur-from)
-    (when (minibufferp embark-occur-from)
-      (setq embark-occur-annotator
-            (with-current-buffer embark-occur-from
-              (embark--annotation-function))))
     (setq embark-occur-candidates
           (with-current-buffer embark-occur-from
             (run-hook-with-args-until-success
@@ -1305,7 +1305,8 @@ with key \"Embark Occur\"."
          (embark-occur-noselect "*Embark Occur*" initial-view)))
     (with-current-buffer occur-buffer
       (tabulated-list-revert))
-    (when (minibufferp) ; sever the link since we are about to exit
+    (when (minibufferp)
+      ;; sever the link since minibuffers stay live and get recycled
       (setf (buffer-local-value 'embark-occur-from occur-buffer) nil))
     (run-at-time 0 nil (lambda ()
                          (message nil)
