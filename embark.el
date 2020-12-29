@@ -760,6 +760,7 @@ default initial view for types not mentioned separately."
   '((buffer . embark-export-ibuffer)
     (file . embark-export-dired)
     (package . embark-export-list-packages)
+    (grep . embark-export-grep)
     (t . embark-occur))
   "Alist associating completion types to export functions.
 Each function should take a list of strings which are candidates
@@ -1402,6 +1403,16 @@ buffer for each type of completion."
     (with-current-buffer buf
       (package-menu-mode)
       (package-menu--generate nil (mapcar #'intern packages)))
+    (switch-to-buffer buf)))
+
+(defun embark-export-grep (lines)
+  "Create a grep mode buffer listing LINES."
+  (interactive)
+  (let ((buf (get-buffer-create "*Embark Export Grep*")))
+    (with-current-buffer buf
+      (dolist (line lines)
+        (insert line "\n"))
+      (grep-mode))
     (switch-to-buffer buf)))
 
 ;;; custom actions
