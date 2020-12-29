@@ -1405,6 +1405,8 @@ buffer for each type of completion."
       (package-menu--generate nil (mapcar #'intern packages)))
     (switch-to-buffer buf)))
 
+(defvar wgrep-header/footer-parser)
+
 (defun embark-export-grep (lines)
   "Create a grep mode buffer listing LINES."
   (interactive)
