@@ -744,6 +744,7 @@ These are used to fill an Embark Occur buffer."
     (buffer . grid)
     (symbol . list)
     (line . list)
+    (grep . list)
     (kill-ring . zebra)
     (t . list))
   "Initial views for Embark Occur buffers by type.
