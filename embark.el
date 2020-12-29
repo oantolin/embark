@@ -744,7 +744,7 @@ These are used to fill an Embark Occur buffer."
     (buffer . grid)
     (symbol . list)
     (line . list)
-    (grep . list)
+    (xref-location . list)
     (kill-ring . zebra)
     (t . list))
   "Initial views for Embark Occur buffers by type.
@@ -760,7 +760,7 @@ default initial view for types not mentioned separately."
   '((buffer . embark-export-ibuffer)
     (file . embark-export-dired)
     (package . embark-export-list-packages)
-    (grep . embark-export-grep)
+    (xref-location . embark-export-grep)
     (t . embark-occur))
   "Alist associating completion types to export functions.
 Each function should take a list of strings which are candidates
