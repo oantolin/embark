@@ -1410,9 +1410,10 @@ buffer for each type of completion."
   (interactive)
   (let ((buf (get-buffer-create "*Embark Export Grep*")))
     (with-current-buffer buf
-      (dolist (line lines)
-        (insert line "\n"))
-      (grep-mode))
+      (insert (propertize "Exported grep results:\n\n" 'wgrep-header t))
+      (dolist (line lines) (insert line "\n"))
+      (grep-mode)
+      (setq-local wgrep-header/footer-parser #'ignore))
     (switch-to-buffer buf)))
 
 ;;; custom actions
