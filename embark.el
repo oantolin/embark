@@ -596,47 +596,47 @@ keybindings and even \\[execute-extended-command] to select a command."
 
 (defun embark--act (action &optional exit)
   "Perform ACTION injecting the target, optionally EXIT to top level."
-  (let* ((target (embark--target))
-         (command embark--command)
-         (special (memq action '(embark-become     ; these actions handle
-                                 embark-live-occur ; exiting on their own
-                                 embark-occur      ; and should not be run
-                                 embark-export)))  ; in the target window
-         (action-window (if (and (not special)
-                                 (buffer-live-p embark--target-buffer))
-                            (display-buffer embark--target-buffer)
-                          (selected-window)))
-         (setup-hook (or (alist-get action embark-setup-overrides)
-                         embark-setup-hook))
-         (allow-edit (if embark-allow-edit-default
-                         (not (memq action embark-skip-edit-commands))
-                       (memq action embark-allow-edit-commands)))
-         (inject (if (null target)  ; for region actions target is nil
-                     #'ignore
-                   (lambda ()
-                     (delete-minibuffer-contents)
-                     (insert target)
-                     (let ((embark-setup-hook setup-hook))
-                       (run-hooks 'embark-setup-hook))
-                     (unless allow-edit
-                       (run-at-time 0 nil #'exit-minibuffer)))))
-         (run-action (lambda ()
-                       (minibuffer-with-setup-hook inject
-                         (with-selected-window action-window
-                           (run-hooks 'embark-pre-action-hook)
-                           (let ((enable-recursive-minibuffers t)
-                                 (embark--command command)
-                                 (use-dialog-box nil)     ; avoid mouse dialogs
-                                 (last-nonmenu-event 13)) ; avoid mouse dialogs
-                             (command-execute action))
-                           (run-hooks 'embark-post-action-hook))))))
-    (if (or (not exit) special)
-        (funcall run-action)
-      (if (minibufferp)
-          (progn
-            (run-at-time 0 nil run-action)
-            (top-level))
-        (funcall run-action)))))
+  (if (memq action '(embark-become      ; these actions handle
+                     embark-live-occur  ; exiting on their own
+                     embark-occur       ; and should not be run
+                     embark-export))    ; in the target window
+      (command-execute action)
+    (let* ((target (embark--target))
+           (command embark--command)
+           (action-window (if (buffer-live-p embark--target-buffer)
+                              (display-buffer embark--target-buffer)
+                            (selected-window)))
+           (setup-hook (or (alist-get action embark-setup-overrides)
+                           embark-setup-hook))
+           (allow-edit (if embark-allow-edit-default
+                           (not (memq action embark-skip-edit-commands))
+                         (memq action embark-allow-edit-commands)))
+           (inject (if (null target) ; for region actions target is nil
+                       #'ignore
+                     (lambda ()
+                       (delete-minibuffer-contents)
+                       (insert target)
+                       (let ((embark-setup-hook setup-hook))
+                         (run-hooks 'embark-setup-hook))
+                       (unless allow-edit
+                         (run-at-time 0 nil #'exit-minibuffer)))))
+           (run-action (lambda ()
+                         (minibuffer-with-setup-hook inject
+                           (with-selected-window action-window
+                             (run-hooks 'embark-pre-action-hook)
+                             (let ((enable-recursive-minibuffers t)
+                                   (embark--command command)
+                                   (use-dialog-box nil) ; avoid mouse dialogs
+                                   (last-nonmenu-event 13)) ; avoid mouse dialogs
+                               (command-execute action))
+                             (run-hooks 'embark-post-action-hook))))))
+      (if (not exit)
+          (funcall run-action)
+        (if (minibufferp)
+            (progn
+              (run-at-time 0 nil run-action)
+              (top-level))
+          (funcall run-action))))))
 
 (defun embark--prompt-for-action (&optional exit)
   "Prompt the user for an action and perform it.
