@@ -216,8 +216,8 @@
  targets, either in the minibuffer or outside it. I present below two
  very detailed examples of how to do this. At several points I'll
  explain more than one way to proceed, typically with the easiest
- option first. Since there will be similar situations where that easy
- option is not available, I'll explain alternatives too.
+ option first. I include the alternative options since there will be
+ similar situations where the easiest option is not available.
 
 **** New minibuffer target example: tab-bar tabs
 
@@ -305,8 +305,8 @@
     (add-to-list 'embark-keymap-alist '(tab . embark-tab-actions))
   #+end_src
 
-  Say that after using this for a while you feel closing the tab
-  without confirmation is dangerous. You have a couple of options:
+  What if after using this for a while you feel closing the tab
+  without confirmation is dangerous? You have a couple of options:
 
   1. You can keep using the =tab-bar-close-tab-by-name= command, but no
      longer let Embark press =RET= for you:
