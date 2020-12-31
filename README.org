@@ -142,8 +142,15 @@
 
  If you want to see the actions and their key bindings, but want to
  use the keybindings rather than completing the command name, you can
- read how to [[https://github.com/oantolin/embark/wiki/Additional-Configuration#use-which-key-like-a-key-menu-prompt][configure which-key to show embark actions]] on the project
- wiki.
+ install [[https://github.com/justbur/emacs-which-key][which-key]] and configure Embark as follows:
+
+ #+begin_src emacs-lisp
+   (setq embark-action-indicator
+         (lambda (map)
+           (which-key--show-keymap "Embark" map nil nil 'no-paging)
+           #'which-key--hide-popup-ignore-command)
+         embark-become-indicator embark-action-indicator)
+ #+end_src
  
 *** Allowing the target to be edited before acting on it
 
