@@ -4,10 +4,16 @@
 
 ** Breaking news (that is, news about things breaking)
 
- If you are already an Embark user and a recent update caused you to
- lose the package and symbol actions, install [[https://github.com/minad/marginalia][Marginalia]], activate
- =marginalia-mode= and you should be good to go. If you want to read more
- about these changes see [[https://github.com/oantolin/embark#embark-marginalia-and-consult][the last section]]. 
+   - The system for configuring targets and candidate collections has
+     been greatly simplified, so if you wrote your own target finders
+     or candidate collectors, you will need to tweak them to
+     return =(cons category previous-return-value)=. This change means
+     separate classifiers are no longer needed.
+   - If you are already an Embark user and a relatively recent update
+     caused you to lose the package and symbol actions, install
+     [[https://github.com/minad/marginalia][Marginalia]], activate =marginalia-mode= and you should be good to
+     go. If you want to read more about these changes see [[https://github.com/oantolin/embark#embark-marginalia-and-consult][the last
+     section]].
 
 ** Overview
 *** Acting on targets
@@ -154,14 +160,6 @@
  quotes all the spaces in the file name, inserts an extra space at the
  beginning of the line and leaves point to the left of it.
 
-*** Actions that do not read from the minibuffer
-
- You can also write your own commands that do not read from the
- minibuffer but act on the current target anyway: just use the
- =embark-target= function (exactly once!: it "self-destructs") to
- retrieve the current target. See the definitions of =embark-insert= or
- =embark-save= for examples.
-
 *** Creating your own keymaps
 
  All internal keymaps are defined with a helper macro
@@ -180,14 +178,11 @@
 
 ** Embark, Marginalia and Consult
   
- Some changes are being made to Embark, to better cooperate with the
+ Some changes were made to Embark, to better cooperate with the
  [[https://github.com/minad/marginalia][Marginalia]] and [[https://github.com/minad/consult][Consult]] packages, and prior to being submitted to
- MELPA. You may wish to hold off on updating Embark, or, help me out by
- updating aggresively and filing issue reports here on GitHub.
-
- Neither of those packages is a dependency of Embark, but Marginalia
- is highly recommended, for reasons explained in the rest of this
- section
+ MELPA. Neither of those packages is a dependency of Embark, but
+ Marginalia is highly recommended, for reasons explained in the rest
+ of this section
 
  Embark comes with actions for symbols (commands, functions, variables
  with actions such as finding the definition, looking up the
