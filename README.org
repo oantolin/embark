@@ -107,6 +107,26 @@
  =embark-act-noexit=.
  
 ** Configuration
+*** Quick start
+
+ The easiest way to install Embark is from Melpa. It is highly
+ recommended to also install [[https://github.com/minad/marginalia][Marginalia]], so that Embark can offer you
+ preconfigured actions in more contexts. For =use-package= users that
+ add Melpa to their =package-archives=, the following is a very
+ reasonable starting configuration:
+
+ #+begin_src emacs-lisp
+   (use-package marginalia
+     :ensure t
+     :config
+     (marginalia-mode))
+
+   (use-package embark
+     :ensure t
+     :bind
+     ("C-S-a" . embark-act)) ; pick some comfortable binding
+ #+end_src
+
 *** Showing a reminder of available actions
 
  If you want a reminder of which actions are available after running
