@@ -65,7 +65,8 @@
 ;; minibuffer as an action and the target of the action will be inserted
 ;; at the first minibuffer prompt.  After running `embark-act' all of your
 ;; keybindings and even `execute-extended-command' can be used to run a
-;; command.
+;; command.  The action keymaps are normal Emacs keymaps and you should
+;; feel free to bind in them whatever commands you find useful as actions.
 
 ;; The actions in `embark-general-map' are available no matter what
 ;; type of completion you are in the middle of.  By default this

@@ -64,7 +64,9 @@
  minibuffer as an action and the target of the action will be inserted
  at the first minibuffer prompt. After running =embark-act= all of your
  keybindings and even =execute-extended-command= can be used to run a
- command.
+ command. The action keymaps are normal Emacs keymaps and you should
+ feel free to bind in them whatever commands you find useful as
+ actions.
 
  The actions in =embark-general-map= are available no matter what type
  of completion you are in the middle of. By default this includes
@@ -176,6 +178,11 @@
      ("c" copy-file))
  #+END_SRC
 
+ Remember also that these action keymaps are perfectly normal Emacs
+ keymaps, and do not need to be created with this helper macro. You
+ can use the built-in =define-key=, or your favorite external package
+ such as =bind-key= or =general.el= to manage them.
+ 
 ** Embark, Marginalia and Consult
   
  Some changes were made to Embark, to better cooperate with the
