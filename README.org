@@ -210,6 +210,155 @@
  can use the built-in =define-key=, or your favorite external package
  such as =bind-key= or =general.el= to manage them.
  
+*** Defining actions for new categories of targets
+
+ It is easy to configure Embark to provide actions for new types of
+ targets, either in the minibuffer or outside it. I present below two
+ very detailed examples of how to do this. At several points I'll
+ explain more than one way to proceed, typically with the easiest
+ option first. Since there will be similar situations where that easy
+ option is not available, I'll explain alternatives too.
+
+**** New minibuffer target example: tab-bar tabs
+
+ Say you use the new [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Tab-Bars.html][tab bars]] from Emacs 27 and you want Embark to
+ offer tab-specific actions when you use the tab-bar-mode commands
+ that mention tabs by name. You would need to: (1) make sure Embark
+ knows those commands deal with tabs, (2) define a keymap for tab
+ actions and configure Embark so it knows that's the keymap you want.
+
+***** Telling Embark about commands that prompt for tabs by name
+
+ For step (1), it would be great if the =tab-bar-mode= commands reported
+ the completion category =tab= when asking you for a tab with
+ completion. (All built-in Emacs commands that prompt for file names,
+ for example, do have metadata indicating that they want a =file=.) They
+ do not, unfortunately, and I will describe a couple of ways to deal
+ with this.
+
+ Maybe the easiest thing is to configure [[https://github.com/minad/marginalia][Marginalia]] to enhance those
+ commands. All of the =tab-bar-*-tab-by-name= commands have the words
+ "tab by name" in the minibuffer prompt, so you can use:
+
+ #+begin_src emacs-lisp
+   (add-to-list 'marginalia-prompt-categories '("tab by name" . tab))
+ #+end_src
+
+ That's it! But in case you are ever in a situation were you don't
+ already have commands that prompt for the targets you want, I'll
+ describe how writing your own command with appropriate =category=
+ metadata looks:
+ 
+ #+begin_src emacs-lisp
+   (defun my-select-tab-by-name (tab)
+     (interactive
+      (list
+       (let ((tab-list (or (mapcar #'(lambda (tab) (cdr (assq 'name tab)))
+                                   (tab-bar-tabs))
+                           (user-error "No tabs found"))))
+         (completing-read
+          "Tabs: "
+          (lambda (string predicate action)
+            (if (eq action 'metadata)
+                '(metadata (category . tab))
+              (complete-with-action action tab-list string predicate)))))))
+     (tab-bar-select-tab-by-name tab))
+ #+end_src
+
+ As you can see, the built-in support for setting the category
+ metadatum is not very easy to use or pretty to look at. To help with
+ this I recommend the =consult--read= function from the excellent
+ [[https://github.com/minad/consult/][Consult]] package. With that function we can rewrite the command as
+ follows:
+ 
+ #+begin_src emacs-lisp
+   (defun my-select-tab-by-name (tab)
+     (interactive
+      (list
+       (let ((tab-list (or (mapcar #'(lambda (tab) (cdr (assq 'name tab)))
+                                   (tab-bar-tabs))
+                           (user-error "No tabs found"))))
+         (consult--read "Tabs: " tab-list
+                        :category 'tab))))
+     (tab-bar-select-tab-by-name tab))
+ #+end_src
+
+ Much nicer! No matter how you define the =my-select-tab-by-name=
+ command, the first approach with Marginalia and prompt detection has
+ the following advantages: you get the =tab= category for all the
+ =tab-bar-*-bar-by-name= commands at once, also, you enhance built-in
+ commands, instead of defining new ones.
+ 
+***** Defining and configuring a keymap for tab actions
+
+  Let's say we want to offer select, rename and close actions for tabs
+  (in addition to Embark general actions, such as saving the tab name to
+  the kill-ring, which you get for free). Then this will do:
+
+  #+begin_src emacs-lisp
+    (embark-define-keymap embark-tab-actions
+      "Keymap for actions for tab-bar tabs (when mentioned by name)."
+      ("s" . tab-bar-select-tab-by-name)
+      ("r" . tab-bar-rename-tab-by-name)
+      ("k" . tab-bar-close-tab-by-name))
+
+    (add-to-list 'embark-keymap-alist '(tab . embark-tab-actions))
+  #+end_src
+
+  Say that after using this for a while you feel closing the tab
+  without confirmation is dangerous. You have a couple of options:
+
+  1. You can keep using the =tab-bar-close-tab-by-name= command, but no
+     longer let Embark press =RET= for you:
+     #+begin_src emacs-lisp
+       (add-to-list 'embark-allow-edit-commands 'tab-bar-close-tab-by-name)
+     #+end_src
+
+  2. You can write your own command that prompts for confirmation and
+     use that instead of =tab-bar-close-tab-by-name= in the above keymap:
+     #+begin_src emacs-lisp
+       (defun my-confirm-close-tab-by-name (tab)
+         (interactive "sTab to close: ")
+         (when (y-or-n-p (format "Close tab '%s'? " tab))
+           (tab-bar-close-tab-by-name tab)))
+     #+end_src
+
+     Notice that this is a command you can also use directly from =M-x=
+     independently of Embark. Using it from =M-x= leaves something to be
+     desired, though, since you don't get completion for the tab names.
+     You can fix this if you wish as described in the previous section.
+    
+**** New target example in regular buffers: short wikipedia links
+
+ Say you want to teach embark to treat text of the form
+ =wikipedia:Gary_Kasparov= in any regular buffer as a link to Wikipedia,
+ with actions to open the Wikipedia page in eww or an external browser
+ or to save the URL of the page in the kill-ring. We can take
+ advantage of the actions that Embark has preconfigured for URLs, so
+ all we need to do is teach Embark that =wikipedia:Gary_Kasparov= stands
+ for the URL =https://en.wikipedia.org/wiki/Garry_Kasparov=.
+
+ You can be as fancy as you want with the recognized syntax. Here, to
+ keep the example simple, I'll assume the link matches the regexp
+ =wikipedia:[[:alnum:]_]+=. We will write a function that looks for a
+ match surrounding point, and returns the pair =(cons 'url
+ actual-url-of-the-page)=.
+ 
+ #+begin_src emacs-lisp
+   (defun my-short-wikipedia-link ()
+     "Target a link at point of the form wikipedia:Page_Name."
+     (save-excursion
+       (let* ((beg (progn (skip-chars-backward "[:alnum:]_:") (point)))
+              (end (progn (skip-chars-forward "[:alnum:]_:") (point)))
+              (str (buffer-substring-no-properties beg end)))
+         (save-match-data
+           (when (string-match "wikipedia:\\([[:alnum:]_]+\\)" str)
+             (cons 'url (format "https://en.wikipedia.org/wiki/%s"
+                                (match-string 1 str))))))))
+
+   (add-to-list 'embark-target-finders 'my-short-wikipedia-link)
+ #+end_src
+
 ** Embark, Marginalia and Consult
   
  Some changes were made to Embark, to better cooperate with the
