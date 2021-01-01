@@ -50,7 +50,9 @@
  Configuring which actions are offered for a type is particulary easy
  and requires no programming: the variable =embark-keymap-alist=
  associates target types with variables containing keymaps, and those
- keymaps containing bindings for the actions. For example, in the
+ keymaps containing bindings for the actions. (To examine the
+ available categories and their associated keymaps, you can use =C-h v
+ embark-keymap-alist= or customize that variable.) For example, in the
  default configuration the type =file= is associated with the symbol
  =embark-file-keymap=. That symbol names a keymap with single-letter
  keybindings for common Emacs file commands, for instance =c= is bound
@@ -75,8 +77,18 @@
  that was current when you executed a command that opened up the
  minibuffer).
 
- You can read about the [[https://github.com/oantolin/embark/wiki/Default-Actions][default actions and their keybindings]]
- on the GitHub project wiki.
+ There is a variant of =embark-act= called =embark-act-noexit=. They
+ behave the same way if used outside the minibuffer, but if called
+ from the minibuffer =embark-act= will exit the minibuffer and the other
+ command won't. For example, you can use =embark-act-noexit= to perform
+ a sequence of file actions without loosing your place in the file
+ system, turning =find-file= into a mini-file manager.
+
+ Embark's default configuration has actions for the following
+ categories: files, buffers, symbols, packages, urls, bookmarks, and
+ as a somewhat special case, actions for when the region is active.
+ You can read about the [[https://github.com/oantolin/embark/wiki/Default-Actions][default actions and their keybindings]] on the
+ GitHub project wiki.
 
 *** Working with sets of possible targets
  
@@ -99,6 +111,18 @@
    Ibuffer buffer; and if they are packages you get a buffer in
    package menu mode.
 
+   There is also support for exporting a list of grep results to an
+   honest grep-mode buffer, on which you can even use [[https://github.com/mhayashi1120/Emacs-wgrep][wgrep]] if you
+   wish. In order to make use of this exporter you will need a command
+   that prompts you in the minibuffer for a grep result line. In the
+   near future you will be able to configure Emacs 28 to use
+   =xref-show-definitions-completing-read= as the value of
+   =xref-show-xrefs-function= and =xref-show-definitions-function=. With
+   that configuration, =project-find-regexp=, for example, with use the
+   minibuffer to offers search results. Additionally, today, you can
+   use the grepping commands from the [[https://github.com/minad/consult/][Consult]] package, =consult-grep=,
+   =consult-git-grep= or =consult-ripgrep=.
+
  These are always available as "actions" (although they do not act on
  just the current target but on all candidates) for =embark-act= and are
  bound to =O=, =L= and =E=, respectively, in =embark-general-map=. This means
@@ -106,6 +130,40 @@
  (although you can, of course), just a key binding for =embark-act= or
  =embark-act-noexit=.
  
+*** Switching to a different command without losing what you've typed
+
+ Embark also has the =embark-become= command which is useful for when
+ you run a command, start typing at the minibuffer and realize you
+ meant a different command. The most common case for me is that I run
+ =switch-to-buffer,= start typing a buffer name and realize I haven't
+ opened the file I had in mind yet! I'll use this situation as a
+ running example to illustrate =embark-become=. When this happens I can,
+ of course, press =C-g= and then run =find-file= and open the file, but
+ this requires retyping the portion of the file name you already
+ typed. This process can be streamlined with =embark-become=: will still
+ in the =switch-to-buffer= you can run =embark-become= and effectively
+ make the =switch-to-buffer= command become =find-file= for this run.
+
+ You can bind =embark-become= to a key in =minibuffer-local-map=, but it
+ is also available as an action under the letter =B= (uppercase), so you
+ don't need a binding if you already have one for =embark-act= or
+ =embark-act-noexit=. So, assuming I have =embark-act= bound to, say,
+ =C-S-a=, once I realize I haven't open the file I can type =C-S-a B C-x
+ C-f= to have =switch-to-buffer= become =find-file= without losing what I
+ have already typed in the minibuffer.
+
+ But for even more convenience, =embark-become= offers shorter key
+ bindings for command you are likely to want a command to become. The
+ way this works is that there is a variable =embark-become-keymaps=
+ containing a list of names of keymaps. When you use =embark-become= it
+ activates the keymaps in that list which contain the current command.
+ For example, the default value of =embark-become-keymaps= contains a
+ keymap =embark-become-file+buffer-map= with bindings for several
+ commands related to files and buffers, in particular, it binds
+ =find-file= to =f=. So when I accidentally try to switch to a buffer for
+ a file I haven't opened yet, I can type =C-S-a B f= to switch to
+ =find-file=.
+
 ** Configuration
 *** Quick start
 
@@ -127,18 +185,29 @@
      ("C-S-a" . embark-act)) ; pick some comfortable binding
  #+end_src
 
+ The other command you may want a binding for is =embark-act-noexit=, if
+ so put it in =minibuffer-local-map=.
+
+ Other Embark commands such as =embark-become=, =embark-occur=,
+ =embark-live-occur=, =embark-export= can be run through =embark-act= as
+ actions bound to =B=, =O=, =L=, =E= respectively, and thus don't really need
+ a dedicated key binding, but feel free to bind them directly if you
+ so wish. If you do choose to bind them directly, you'll probably want
+ to bind them in =minibuffer-local-map=, since they are most useful in
+ the minibuffer (in fact, =embark-become= only works in the minibuffer).
+
 *** Showing a reminder of available actions
 
  If you want a reminder of which actions are available after running
- =embark-act=, use =embark-heymap-help=, which is bound to =C-h= in all of
+ =embark-act=, use =embark-keymap-help=, which is bound to =C-h= in all of
  embark's action keymaps. That command will prompt you for the name of
  an action with completion (but feel free to enter a command not among
  the offered candidates!), and will also remind you of the
  keybindings.
 
  If you find you prefer entering actions that way, you can configure
- embark to always prompt you for actions with the =embark-prompt-style=
- to the symbol =completion=.
+ embark to always prompt you for actions by setting the variable
+ =embark-prompter= to =embark-completing-read-prompter=.
 
  If you want to see the actions and their key bindings, but want to
  use the keybindings rather than completing the command name, you can
