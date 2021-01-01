@@ -81,7 +81,7 @@
  behave the same way if used outside the minibuffer, but if called
  from the minibuffer =embark-act= will exit the minibuffer and the other
  command won't. For example, you can use =embark-act-noexit= to perform
- a sequence of file actions without loosing your place in the file
+ a sequence of file actions without losing your place in the file
  system, turning =find-file= into a mini-file manager.
 
  Embark's default configuration has actions for the following
