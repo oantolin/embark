@@ -47,7 +47,7 @@
  in the classification. The above introduction just mentions part of
  the default configuration.
 
- Configuring which actions are offered for a type is particulary easy
+ Configuring which actions are offered for a type is particularly easy
  and requires no programming: the variable =embark-keymap-alist=
  associates target types with variables containing keymaps, and those
  keymaps containing bindings for the actions. (To examine the
@@ -102,7 +102,7 @@
    for you to peruse and run actions on at your leisure. The
    candidates can be viewed in a grid or as a list showing additional
    annotations. The =embark-live-occur= variant produces "live" Embark
-   Occur buffers, meaning they autoupdate as the set of candidates
+   Occur buffers, meaning they auto-update as the set of candidates
    changes.
 
  - The =embark-export= command tries to open a buffer in an appropriate
@@ -200,7 +200,7 @@
 
  If you want a reminder of which actions are available after running
  =embark-act=, use =embark-keymap-help=, which is bound to =C-h= in all of
- embark's action keymaps. That command will prompt you for the name of
+ Embark's action keymaps. That command will prompt you for the name of
  an action with completion (but feel free to enter a command not among
  the offered candidates!), and will also remind you of the
  keybindings.
@@ -246,7 +246,7 @@
  You can customize what happens after the target is inserted at the
  minibuffer prompt of an action. There is a hook, =embark-setup-hook=,
  that is run by default after injecting the target into the minibuffer.
- This hook can be overidden for specific action commands by associating
+ This hook can be overridden for specific action commands by associating
  the command to the desired overriding hook in =embark-setup-overrides=.
 
  For example, consider using =shell-command= as an action during file
@@ -264,7 +264,7 @@
  =embark-define-keymap= that you can use to define your own keymaps,
  whether they are for new categories in =embark-keymap-alist= or for any
  other purpose! For example a simple version of the file action keymap
- coud be defined as follows:
+ could be defined as follows:
 
  #+BEGIN_SRC emacs-lisp
    (embark-define-keymap embark-file-map
@@ -397,7 +397,7 @@
      desired, though, since you don't get completion for the tab names.
      You can fix this if you wish as described in the previous section.
     
-**** New target example in regular buffers: short wikipedia links
+**** New target example in regular buffers: short Wikipedia links
 
  Say you want to teach embark to treat text of the form
  =wikipedia:Gary_Kasparov= in any regular buffer as a link to Wikipedia,
@@ -473,7 +473,7 @@
    Embark Occur buffer starts in list view by default. Similarly,
    you'll notice that the =consult-yank= family of commands start out in
    list view with zebra stripes, so you can easily tell where
-   multiline kill-ring entries start and end.
+   multi-line kill-ring entries start and end.
  - The function =embark-open-externally= has been removed following the
    policy of avoiding overlap with Consult. If you used that action,
    add [[https://github.com/minad/consult/blob/373498acb76b9395e5e590fb8e39f671a9363cd7/consult.el#L707][the small function]] to your configuration or install Consult and
