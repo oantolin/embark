@@ -1285,14 +1285,15 @@ minibuffer; the length of the delay after typing is given by
   (when minibuffer-completion-table
    (add-hook 'after-change-functions #'embark--wait-for-input nil t)))
 
+;;;###autoload
 (defun embark-switch-to-live-occur ()
-  "Switch to the Embark Live Occur buffer."
+  "Switch to the Embark Live Occur buffer, creating it if necessary."
   (interactive)
-  (if-let ((buffer (if (embark-occur--linked-buffer-is-live-p)
-                       embark-occur-linked-buffer
-                     (get-buffer "*Embark Live Occur*"))))
-      (switch-to-buffer buffer)
-    (user-error "No Embark Live Occur buffer")))
+  (switch-to-buffer
+   (if (embark-occur--linked-buffer-is-live-p)
+       embark-occur-linked-buffer
+     (or (get-buffer "*Embark Live Occur*")
+         (progn (embark-live-occur) embark-occur-linked-buffer)))))
 
 ;;;###autoload
 (defun embark-export ()
