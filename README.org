@@ -135,7 +135,7 @@
  Embark also has the =embark-become= command which is useful for when
  you run a command, start typing at the minibuffer and realize you
  meant a different command. The most common case for me is that I run
- =switch-to-buffer,= start typing a buffer name and realize I haven't
+ =switch-to-buffer=, start typing a buffer name and realize I haven't
  opened the file I had in mind yet! I'll use this situation as a
  running example to illustrate =embark-become=. When this happens I can,
  of course, press =C-g= and then run =find-file= and open the file, but
@@ -153,16 +153,16 @@
  have already typed in the minibuffer.
 
  But for even more convenience, =embark-become= offers shorter key
- bindings for command you are likely to want a command to become. The
- way this works is that there is a variable =embark-become-keymaps=
- containing a list of names of keymaps. When you use =embark-become= it
- activates the keymaps in that list which contain the current command.
- For example, the default value of =embark-become-keymaps= contains a
- keymap =embark-become-file+buffer-map= with bindings for several
- commands related to files and buffers, in particular, it binds
- =find-file= to =f=. So when I accidentally try to switch to a buffer for
- a file I haven't opened yet, I can type =C-S-a B f= to switch to
- =find-file=.
+ bindings for commands you are likely to want the current command to
+ become. The way this works is that there is a variable
+ =embark-become-keymaps= containing a list of names of keymaps. When you
+ use =embark-become= it activates those keymaps in that list which
+ contain the current command. For example, the default value of
+ =embark-become-keymaps= contains a keymap =embark-become-file+buffer-map=
+ with bindings for several commands related to files and buffers, in
+ particular, it binds =switch-to-buffer= to =b= and =find-file= to =f=. So
+ when I accidentally try to switch to a buffer for a file I haven't
+ opened yet, I can type =C-S-a B f= to switch to =find-file=.
 
 ** Configuration
 *** Quick start
