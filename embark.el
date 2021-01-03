@@ -128,7 +128,8 @@
     (minor-mode . embark-symbol-map)
     (package . embark-package-map)
     (bookmark . embark-bookmark-map)
-    (region . embark-region-map))
+    (region . embark-region-map)
+    (line . embark-line-map))
   "Alist of action types and corresponding keymaps.
 For any type not listed here, `embark-act' will use
 `embark-general-map'."
@@ -1398,10 +1399,32 @@ This is whatever command opened the minibuffer in the first place."
   (interactive "sInsert: ")
   (insert (substring-no-properties string)))
 
-(defun embark-save (str)
-  "Save STR in the kill ring."
+(defun embark-save (string)
+  "Save STRING in the kill ring."
   (interactive "sSave: ")
-  (kill-new str))
+  (kill-new string))
+
+(defun embark--split-line (string)
+  "Split a Consult line into its line number and contents."
+  (let ((i 0) (l (length string)) (n 0))
+    (while (and (< i l) (<= #x100000 (aref string i) #x10fffd))
+      (setq n (+ (* n #xfffe) (- (aref string i) #x100000)) i (1+ i)))
+    (cons n (substring-no-properties string i))))
+
+(defun embark-insert-line (line)
+  "Insert LINE at point."
+  (interactive "sInsert line: ")
+  (insert (cdr (embark--split-line line))))
+
+(defun embark-save-line (line)
+  "Save LINE in the kill ring."
+  (interactive "sSave line: ")
+  (kill-new (cdr (embark--split-line line))))
+
+(defun embark-save-line-number (line)
+  "Save the line number of LINE in the kill ring."
+  (interactive "sSave line number of line: ")
+  (kill-new (number-to-string (car (embark--split-line line)))))
 
 (defun embark-eshell (file)
   "Run eshell in directory of FILE."
@@ -1606,6 +1629,12 @@ and leaves the point to the left of it."
   ("u" embark-browse-package-url)
   ("a" package-autoremove)
   ("g" package-refresh-contents))
+
+(embark-define-keymap embark-line-map
+  "Keymap of Embark actions for Consult lines."
+  ("i" embark-insert-line)
+  ("w" embark-save-line)
+  ("n" embark-save-line-number))
 
 (embark-define-keymap embark-bookmark-map
   "Keymap for Embark bookmark actions."
