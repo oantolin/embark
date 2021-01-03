@@ -566,14 +566,10 @@ minibuffer."
 (defun embark--target ()
   "Retrieve current target.
 
-This function also performs two tranformations for targets from
-the Consult package:
-
-- `virtual-buffer' targets get transformed to their actual type,
-  `buffer', `file' or `bookmark', and their prefix typing
-  character is removed.
-
-- `line' targets get their unicode line number prefix stripped.
+This function also transforms `virtual-buffer' targets from
+Consult's `consult-buffer' command to their actual type, whether
+`buffer', `file' or `bookmark', and their prefix typing character
+is removed.
 
 If more useful cases of transformation arise, a general mechanism
 for registering transformers will be added to Embark."
@@ -587,11 +583,6 @@ for registering transformers will be added to Embark."
                (?m 'bookmark)
                (_ 'general))
              (substring target 1)))
-      ('line
-       (let ((i 0) (l (length target)))
-         (while (and (< i l) (<= #x100000 (aref target i) #x10fffd))
-           (setq i (1+ i)))
-         (cons 'line (substring target i))))
       (_ (cons type target)))))
 
 (defun embark--prompt-for-action (&optional exit)
@@ -886,8 +877,7 @@ Returns the name of the command."
   (let ((name (intern (format "embark-action--%s" action)))
         (fn (lambda ()
               (interactive)
-              (pcase-let ((`(_ . ,target) (embark--target)))
-                (embark--act action target)))))
+              (embark--act action (cdr (embark--target))))))
     (fset name fn)
     (when (symbolp action)
       (put name 'function-documentation
