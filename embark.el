@@ -573,17 +573,17 @@ is removed.
 
 If more useful cases of transformation arise, a general mechanism
 for registering transformers will be added to Embark."
-  (pcase-let ((`(,type . ,target)
-               (run-hook-with-args-until-success 'embark-target-finders)))
-    (pcase type
-      ('virtual-buffer
-       (cons (pcase (- (elt target 0) #x100000)
+  (let ((typed-target
+         (run-hook-with-args-until-success 'embark-target-finders)))
+    (pcase typed-target
+      (`(virtual-buffer . ,target)
+       (cons (pcase (- (aref target 0) #x100000)
                ((or ?b ?p) 'buffer)
                ((or ?f ?q) 'file)
                (?m 'bookmark)
                (_ 'general))
              (substring target 1)))
-      (_ (cons type target)))))
+      (_ typed-target))))
 
 (defun embark--prompt-for-action (&optional exit)
   "Prompt the user for an action and perform it.
