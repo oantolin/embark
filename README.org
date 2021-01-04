@@ -1,3 +1,8 @@
+#+EXPORT_FILE_NAME: embark.texi
+#+TEXINFO_DIR_CATEGORY: Emacs
+#+TEXINFO_DIR_TITLE: Embark: (embark).
+#+TEXINFO_DIR_DESC: Emacs Mini-Buffer Actions Rooted in Keymaps
+
 * embark - Emacs Mini-Buffer Actions Rooted in Keymaps
 
 [[https://melpa.org/#/embark][file:https://melpa.org/packages/embark-badge.svg]]
