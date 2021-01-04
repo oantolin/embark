@@ -579,23 +579,25 @@ removed.
 
 If more useful cases of transformation arise, a general mechanism
 for registering transformers will be added to Embark."
-  (let ((typed-target
-         (run-hook-with-args-until-success 'embark-target-finders)))
-    (pcase typed-target
-      (`(virtual-buffer . ,target)
+  (pcase-let ((`(,type . ,target)
+               (run-hook-with-args-until-success 'embark-target-finders)))
+    (pcase type
+      ('virtual-buffer
        (cons (pcase (- (aref target 0) #x100000)
                ((or ?b ?p) 'buffer)
                ((or ?f ?q) 'file)
                (?m 'bookmark)
                (_ 'general))
              (substring target 1)))
-      (`(minor-mode . ,target)
+      ('minor-mode
        (cons 'minor-mode
              (let ((symbol (intern-soft target)))
                (if (and symbol (boundp symbol))
                    target
                  (symbol-name (lookup-minor-mode-from-indicator target))))))
-      (_ typed-target))))
+      (_ (when (eq type 'xref-location)
+           (setq embark--command 'embark-goto-location))
+         (cons type target)))))
 
 (defun embark--prompt-for-action (&optional exit)
   "Prompt the user for an action and perform it.
@@ -1391,6 +1393,17 @@ buffer for each type of completion."
   "Prompt for an action to perform or command to become and run it."
   (interactive)
   (user-error "Not meant to be called directly"))
+
+(declare-function 'compile-goto-error "compile")
+
+(defun embark-goto-location (location)
+  "Go to LOCATION, which should be a string with a grep match."
+  (interactive "sLocation: ")
+  (with-temp-buffer
+    (insert location "\n")
+    (grep-mode)
+    (goto-char (point-min))
+    (compile-goto-error)))
 
 (defun embark-default-action ()
   "Default action.
