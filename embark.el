@@ -567,10 +567,15 @@ minibuffer."
 (defun embark--target ()
   "Retrieve current target.
 
-This function also transforms `virtual-buffer' targets from
-Consult's `consult-buffer' command to their actual type, whether
-`buffer', `file' or `bookmark', and their prefix typing character
-is removed.
+This function also performs a couple of transformations meant to
+have actions work in more cases.
+
+1. It transforms `virtual-buffer' targets from Consult's
+`consult-buffer' command to their actual type, whether `buffer',
+`file' or `bookmark', and their prefix typing character is
+removed.
+
+2. It transforms minor mode lighters to the minor mode name.
 
 If more useful cases of transformation arise, a general mechanism
 for registering transformers will be added to Embark."
@@ -584,6 +589,12 @@ for registering transformers will be added to Embark."
                (?m 'bookmark)
                (_ 'general))
              (substring target 1)))
+      (`(minor-mode . ,target)
+       (cons 'minor-mode
+             (let ((symbol (intern-soft target)))
+               (if (and symbol (boundp symbol))
+                   target
+                 (symbol-name (lookup-minor-mode-from-indicator target))))))
       (_ typed-target))))
 
 (defun embark--prompt-for-action (&optional exit)
