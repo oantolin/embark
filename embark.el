@@ -1137,11 +1137,6 @@ This is specially useful to tell where multi-line entries begin and end."
              (name (buffer-name linked)))
     (string-match-p "Embark Live Occur" name)))
 
-(defun embark-occur--kill-live-occur-buffer ()
-  "Kill linked Embark Live Occur buffer."
-  (when (embark-occur--linked-buffer-is-live-p)
-    (kill-buffer embark-occur-linked-buffer)))
-
 (defun embark-occur--toggle (variable this that)
   "Toggle Embark Occur buffer's local VARIABLE between THIS and THAT.
 Refresh the buffer afterwards."
@@ -1178,7 +1173,6 @@ Argument BUFFER-NAME specifies the name of the created buffer."
               (buffer (generate-new-buffer buffer-name))
               (`(,type . ,candidates)
                (run-hook-with-args-until-success 'embark-candidate-collectors)))
-    (embark-occur--kill-live-occur-buffer) ; live ones are ephemeral
     (setq embark-occur-linked-buffer buffer)
     (with-current-buffer buffer
       ;; we'll run the mode hooks once the buffer is displayed, so
@@ -1253,7 +1247,7 @@ with key \"Embark Live Occur\"."
       (set-window-dedicated-p occur-window t)
       (when (minibufferp)
         (add-hook 'minibuffer-exit-hook
-                  #'embark-occur--kill-live-occur-buffer
+                  (lambda () (kill-buffer occur-buffer))
                   nil t)
         (setq minibuffer-scroll-window occur-window)))))
 
