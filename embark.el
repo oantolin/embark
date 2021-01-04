@@ -153,6 +153,15 @@ of the form (type . target) where type is a symbol and target is
 a string, or nil to indicate it found no target."
   :type 'hook)
 
+(defcustom embark-transformer-alist
+  '((virtual-buffer . embark-refine-virtual-buffer-type)
+    (minor-mode . embark-lookup-lighter-minor-mode)
+    (xref-location . embark-set-xref-location-default-action))
+  "Alist associating type to functions for transforming targets.
+Each function should take a target string and return a pair of
+the form a `cons' of the new type and the new target."
+  :type 'hook)
+
 (defcustom embark-become-keymaps
   '(embark-become-help-map
     embark-become-file+buffer-map
@@ -564,40 +573,56 @@ minibuffer."
         (run-at-time 0 nil run-action)
         (top-level)))))
 
+(defun embark-refine-virtual-buffer-type (target)
+  "Refine virtual-buffer TARGET to its real type.
+
+This function takes a target of type virtual-buffer (from
+Consult's `consult-buffer' command) and transforms it to its
+actual type, whether `buffer', `file' or `bookmark', and also
+removes its prefix typing character."
+  (cons (pcase (- (aref target 0) #x100000)
+          ((or ?b ?p) 'buffer)
+          ((or ?f ?q) 'file)
+          (?m 'bookmark)
+          (_ 'general))
+        (substring target 1)))
+
+(defun embark-lookup-lighter-minor-mode (target)
+  "If TARGET is a lighter, look up its minor mode.
+
+The `describe-minor-mode' command has as completion candidates
+both minor-modes and their lighters.  This function replaces the
+lighters by their minor modes, so actions expecting a function
+work on them."
+  (cons 'minor-mode
+        (let ((symbol (intern-soft target)))
+          (if (and symbol (boundp symbol))
+              target
+            (symbol-name (lookup-minor-mode-from-indicator target))))))
+
+(defun embark-set-xref-location-default-action (target)
+  "Set `embark-goto-location' as the default action for TARGET."
+  (setq embark--command 'embark-goto-location)
+  (cons 'xref-location target))
+
 (defun embark--target ()
   "Retrieve current target.
 
-This function also performs a couple of transformations meant to
-have actions work in more cases.
+An initial guess at the current target and its type is determined
+by running the functions in `emark-target-finders' until one
+returns a non-nil result.  Each function should either a pair of
+a type symbol and a target string, or nil.
 
-1. It transforms `virtual-buffer' targets from Consult's
-`consult-buffer' command to their actual type, whether `buffer',
-`file' or `bookmark', and their prefix typing character is
-removed.
-
-2. It transforms minor mode lighters to the minor mode name.
-
-If more useful cases of transformation arise, a general mechanism
-for registering transformers will be added to Embark."
-  (pcase-let ((`(,type . ,target)
-               (run-hook-with-args-until-success 'embark-target-finders)))
-    (pcase type
-      ('virtual-buffer
-       (cons (pcase (- (aref target 0) #x100000)
-               ((or ?b ?p) 'buffer)
-               ((or ?f ?q) 'file)
-               (?m 'bookmark)
-               (_ 'general))
-             (substring target 1)))
-      ('minor-mode
-       (cons 'minor-mode
-             (let ((symbol (intern-soft target)))
-               (if (and symbol (boundp symbol))
-                   target
-                 (symbol-name (lookup-minor-mode-from-indicator target))))))
-      (_ (when (eq type 'xref-location)
-           (setq embark--command 'embark-goto-location))
-         (cons type target)))))
+The initial type is then looked up as a key in the variable
+`embark-transformer-alist'.  If there is a transformer for
+the type, it is called with the initial target, and must return a
+`cons' of the transformed type and target."
+  (pcase-let* ((`(,type . ,target)
+                (run-hook-with-args-until-success 'embark-target-finders))
+               (transformer (alist-get type embark-transformer-alist)))
+    (if transformer
+        (funcall transformer target)
+      (cons type target))))
 
 (defun embark--prompt-for-action (&optional exit)
   "Prompt the user for an action and perform it.
