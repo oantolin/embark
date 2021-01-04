@@ -6,9 +6,9 @@
 
    - The system for configuring targets and candidate collections has
      been greatly simplified, so if you wrote your own target finders
-     or candidate collectors, you will need to tweak them to
-     return =(cons category previous-return-value)=. This change means
-     separate classifiers are no longer needed.
+     or candidate collectors, you will need to tweak them to return
+     =(cons type previous-return-value)=. This change means separate
+     classifiers are no longer needed (or supported!).
    - If you are already an Embark user and a relatively recent update
      caused you to lose the package and symbol actions, install
      [[https://github.com/minad/marginalia][Marginalia]], activate =marginalia-mode= and you should be good to
@@ -84,26 +84,38 @@
  a sequence of file actions without losing your place in the file
  system, turning =find-file= into a mini-file manager.
 
- Embark's default configuration has actions for the following
- categories: files, buffers, symbols, packages, urls, bookmarks, and
- as a somewhat special case, actions for when the region is active.
- You can read about the [[https://github.com/oantolin/embark/wiki/Default-Actions][default actions and their keybindings]] on the
- GitHub project wiki.
+ Emacs's minibuffer completion system includes metadata indicating the
+ /category/ of what is being completed. For example, =find-file='s
+ metadata indicates a category of =file= and =switch-to-buffer='s metadata
+ indicates a category of =buffer=. Embark has the related notion of the
+ /type/ of a target for actions, and by default when category metadata
+ is present it is taken to be the type of minibuffer completion
+ candidates when used as targets. Emacs commands often do not set
+ useful category metadata so the [[https://github.com/minad/marginalia][Marginalia]] package, which supplies
+ this missing metadata, is highly recommended for use with Embark.
+
+ Embark's default configuration has actions for the following target
+ types: files, buffers, symbols, packages, urls, bookmarks, and as a
+ somewhat special case, actions for when the region is active. You can
+ read about the [[https://github.com/oantolin/embark/wiki/Default-Actions][default actions and their keybindings]] on the GitHub
+ project wiki.
 
 *** Working with sets of possible targets
  
  Besides acting individually on targets, Embark lets you work
  collectively on a set of target /candidates/. For example, while you
  are in the minibuffer the candidates are simply the possible
- completions of your input. Embark provides two commands to work on
+ completions of your input. Embark provides three commands to work on
  candidate sets:
 
  - The =embark-occur= command produces a buffer listing all candidates,
    for you to peruse and run actions on at your leisure. The
    candidates can be viewed in a grid or as a list showing additional
-   annotations. The =embark-live-occur= variant produces "live" Embark
-   Occur buffers, meaning they auto-update as the set of candidates
-   changes.
+   annotations.
+
+ - The =embark-live-occur= variant of =embark-occur= produces "live"
+   Embark Occur buffers, meaning they auto-update as the set of
+   candidates changes.
 
  - The =embark-export= command tries to open a buffer in an appropriate
    major mode for the set of candidates. If the candidates are files
@@ -346,7 +358,7 @@
    (add-to-list 'marginalia-prompt-categories '("tab by name" . tab))
  #+end_src
 
- That's it! But in case you are ever in a situation were you don't
+ That's it! But in case you are ever in a situation where you don't
  already have commands that prompt for the targets you want, I'll
  describe how writing your own command with appropriate =category=
  metadata looks:
