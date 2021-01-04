@@ -182,7 +182,26 @@
    (use-package embark
      :ensure t
      :bind
-     ("C-S-a" . embark-act)) ; pick some comfortable binding
+     ("C-S-a" . embark-act)               ; pick some comfortable binding
+
+     ;; For Selectrum users:
+
+     (add-hook 'embark-target-finders
+               (defun current-candidate+category ()
+                 (when selectrum-active-p
+                   (cons (selectrum--get-meta 'category)
+                         (selectrum-get-current-candidate)))))
+
+     (add-hook 'embark-candidate-collectors
+               (defun current-candidates+category ()
+                 (when selectrum-active-p
+                   (cons (selectrum--get-meta 'category)
+                         (selectrum-get-current-candidates
+                          ;; Pass relative file names for dired.
+                          minibuffer-completing-file-name)))))
+
+     ;; No unnecessary computation delay after injection.
+     (add-hook 'embark-setup-hook 'selectrum-set-selected-candidate))
  #+end_src
 
  The other command you may want a binding for is =embark-act-noexit=, if
@@ -195,6 +214,19 @@
  so wish. If you do choose to bind them directly, you'll probably want
  to bind them in =minibuffer-local-map=, since they are most useful in
  the minibuffer (in fact, =embark-become= only works in the minibuffer).
+
+ Embark needs to know what your minibuffer completion system considers
+ to be the list of candidates and which one is the current one. Embark
+ works out of the box if you use Emacs's default tab completion, or
+ the built-in =icomplete-mode= or =fido-mode=. It is possible to configure
+ Embark to work with other completion UI, and the above sample
+ configuration includes the settings for [[https://github.com/raxod502/selectrum/][Selectrum]].
+
+ If you are a [[https://emacs-helm.github.io/helm/][Helm]] or [[https://github.com/abo-abo/swiper][Ivy]] user you are unlikely to want Embark since
+ those packages include comprehensive functionality for acting on
+ minibuffer completion candidates. (Although you could still be
+ interested in using Embark solely for actions outside of the
+ minibuffer.)
 
 *** Showing a reminder of available actions
 
