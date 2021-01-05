@@ -50,8 +50,8 @@ Configuration
 
 Defining actions for new categories of targets
 
-* New minibuffer target example, tab-bar tabs: New minibuffer target example tab-bar tabs. 
-* New target example in regular buffers, short Wikipedia links: New target example in regular buffers short Wikipedia links. 
+* New minibuffer target example - tab-bar tabs::
+* New target example in regular buffers - short Wikipedia links::
 
 @end detailmenu
 @end menu
@@ -436,12 +436,12 @@ option first. I include the alternative options since there will be
 similar situations where the easiest option is not available.
 
 @menu
-* New minibuffer target example, tab-bar tabs: New minibuffer target example tab-bar tabs. 
-* New target example in regular buffers, short Wikipedia links: New target example in regular buffers short Wikipedia links. 
+* New minibuffer target example - tab-bar tabs::
+* New target example in regular buffers - short Wikipedia links::
 @end menu
 
-@node New minibuffer target example tab-bar tabs
-@subsection New minibuffer target example, tab-bar tabs
+@node New minibuffer target example - tab-bar tabs
+@subsection New minibuffer target example - tab-bar tabs
 
 Say you use the new @uref{https://www.gnu.org/software/emacs/manual/html_node/emacs/Tab-Bars.html, tab bars} from Emacs 27 and you want Embark to
 offer tab-specific actions when you use the tab-bar-mode commands
@@ -560,8 +560,8 @@ You can fix this if you wish as described in the previous section.
 @end enumerate
 @end enumerate
 
-@node New target example in regular buffers short Wikipedia links
-@subsection New target example in regular buffers, short Wikipedia links
+@node New target example in regular buffers - short Wikipedia links
+@subsection New target example in regular buffers - short Wikipedia links
 
 Say you want to teach embark to treat text of the form
 @samp{wikipedia:Gary_Kasparov} in any regular buffer as a link to Wikipedia,

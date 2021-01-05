@@ -340,7 +340,7 @@ explain more than one way to proceed, typically with the easiest
 option first. I include the alternative options since there will be
 similar situations where the easiest option is not available.
 
-*** New minibuffer target example, tab-bar tabs
+*** New minibuffer target example - tab-bar tabs
 
 Say you use the new [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Tab-Bars.html][tab bars]] from Emacs 27 and you want Embark to
 offer tab-specific actions when you use the tab-bar-mode commands
@@ -449,7 +449,7 @@ commands, instead of defining new ones.
     desired, though, since you don't get completion for the tab names.
     You can fix this if you wish as described in the previous section.
     
-*** New target example in regular buffers, short Wikipedia links
+*** New target example in regular buffers - short Wikipedia links
 
 Say you want to teach embark to treat text of the form
 =wikipedia:Gary_Kasparov= in any regular buffer as a link to Wikipedia,
