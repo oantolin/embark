@@ -795,9 +795,10 @@ minibuffer input to the chosen entry and, unless this leads to
 new completion candidates (for example, when entering a directory
 in `find-file'), exits the minibuffer.
 
-If you are using `embark-completing-read' as your
-`completing-read-function' you might want to set
-`embark-occur-minibuffer-completion' to t."
+If you are adding `embark-live-occur-after-input' or
+`embark-live-occur-after-delay' to your `minibuffer-setup-hook'
+to use Embark Live Occur as your completion UI you might want to
+set `embark-occur-minibuffer-completion' to t."
   :type 'boolean)
 
 (defface embark-occur-candidate '((t :inherit default))
@@ -979,9 +980,10 @@ new completion candidates (for example, when entering a directory
 in `find-file') or the command was called with a prefix argument,
 exit the minibuffer.
 
-If you are using `embark-completing-read' as your
-`completing-read-function' you might want to set
-`embark-occur-minibuffer-completion' to t."
+If you are adding `embark-live-occur-after-input' or
+`embark-live-occur-after-delay' to your `minibuffer-setup-hook'
+to use Embark Live Occur as your completion UI you might want to
+set `embark-occur-minibuffer-completion' to t."
   (let ((text (button-label entry)))
     (if (and embark-occur-minibuffer-completion
              (active-minibuffer-window)
