@@ -9,7 +9,9 @@
 [[https://melpa.org/#/embark][file:https://melpa.org/packages/embark-badge.svg]]
 :END:
 
-* Breaking news (that is, news about things breaking)
+* Breaking news
+
+  (That is, news about things breaking!)
 
   - The system for configuring targets and candidate collections has
     been greatly simplified, so if you wrote your own target finders
