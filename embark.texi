@@ -1,7 +1,7 @@
 \input texinfo    @c -*- texinfo -*-
 @c %**start of header
 @setfilename embark.info
-@settitle Embark
+@settitle Embark: Emacs Mini-Buffer Actions Rooted in Keymaps
 @documentencoding UTF-8
 @documentlanguage en
 @c %**end of header
@@ -13,7 +13,7 @@
 
 @finalout
 @titlepage
-@title Embark
+@title Embark: Emacs Mini-Buffer Actions Rooted in Keymaps
 @author Omar Antolín Camarena
 @end titlepage
 
@@ -21,7 +21,7 @@
 
 @ifnottex
 @node Top
-@top Embark
+@top Embark: Emacs Mini-Buffer Actions Rooted in Keymaps
 @end ifnottex
 
 @menu
