@@ -580,12 +580,16 @@ This function takes a target of type virtual-buffer (from
 Consult's `consult-buffer' command) and transforms it to its
 actual type, whether `buffer', `file' or `bookmark', and also
 removes its prefix typing character."
-  (cons (pcase (- (aref target 0) #x100000)
-          ((or ?b ?p) 'buffer)
-          ((or ?f ?q) 'file)
-          (?m 'bookmark)
-          (_ 'general))
-        (substring target 1)))
+  (let ((first (- (aref target 0) #x100000)))
+    (if (<= 0 first ?z)
+        (cons (pcase first
+                ((or ?b ?p) 'buffer)
+                ((or ?f ?q) 'file)
+                (?m 'bookmark)
+                (_ 'general))
+              (substring target 1))
+      ;; new buffer case, don't remove first char
+      (cons 'buffer target))))
 
 (defun embark-lookup-lighter-minor-mode (target)
   "If TARGET is a lighter, look up its minor mode.
