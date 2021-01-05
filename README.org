@@ -1,530 +1,527 @@
+#+TITLE: Embark
 #+EXPORT_FILE_NAME: embark.texi
 #+TEXINFO_DIR_CATEGORY: Emacs
 #+TEXINFO_DIR_TITLE: Embark: (embark).
 #+TEXINFO_DIR_DESC: Emacs Mini-Buffer Actions Rooted in Keymaps
 
-* embark - Emacs Mini-Buffer Actions Rooted in Keymaps
+* Breaking news (that is, news about things breaking)
 
-[[https://melpa.org/#/embark][file:https://melpa.org/packages/embark-badge.svg]]
+  - The system for configuring targets and candidate collections has
+    been greatly simplified, so if you wrote your own target finders
+    or candidate collectors, you will need to tweak them to return
+    =(cons type previous-return-value)=. This change means separate
+    classifiers are no longer needed (or supported!).
+  - If you are already an Embark user and a relatively recent update
+    caused you to lose the package and symbol actions, install
+    [[https://github.com/minad/marginalia][Marginalia]], activate =marginalia-mode= and you should be good to
+    go. If you want to read more about these changes see [[https://github.com/oantolin/embark#embark-marginalia-and-consult][the last
+    section]].
 
-** Breaking news (that is, news about things breaking)
+* Overview
+** Acting on targets
 
-   - The system for configuring targets and candidate collections has
-     been greatly simplified, so if you wrote your own target finders
-     or candidate collectors, you will need to tweak them to return
-     =(cons type previous-return-value)=. This change means separate
-     classifiers are no longer needed (or supported!).
-   - If you are already an Embark user and a relatively recent update
-     caused you to lose the package and symbol actions, install
-     [[https://github.com/minad/marginalia][Marginalia]], activate =marginalia-mode= and you should be good to
-     go. If you want to read more about these changes see [[https://github.com/oantolin/embark#embark-marginalia-and-consult][the last
-     section]].
+This package provides a sort of right-click contextual menu for Emacs,
+accessed through the =embark-act= command (which you should bind to a
+convenient key), offering you relevant /actions/ to use on a /target/
+determined by the context:
 
-** Overview
-*** Acting on targets
+- In the minibuffer, the target is the current best completion
+ candidate.
+- In the =*Completions*= buffer the target is the completion at point.
+- In a regular buffer, the target is the region if active, or else the
+ file, symbol or url at point.
 
- This package provides a sort of right-click contextual menu for Emacs,
- accessed through the =embark-act= command (which you should bind to a
- convenient key), offering you relevant /actions/ to use on a /target/
- determined by the context:
+The type of actions offered depend on the type of the target:
 
- - In the minibuffer, the target is the current best completion
-  candidate.
- - In the =*Completions*= buffer the target is the completion at point.
- - In a regular buffer, the target is the region if active, or else the
-  file, symbol or url at point.
+- For files you get offered actions like deleting, copying,
+ renaming, visiting in another window, running a shell command on the
+ file, etc.
+- For buffers the actions include switching to or killing the buffer.
+- For package names the actions include installing, removing or
+ visiting the homepage.
 
- The type of actions offered depend on the type of the target:
-
- - For files you get offered actions like deleting, copying,
-  renaming, visiting in another window, running a shell command on the
-  file, etc.
- - For buffers the actions include switching to or killing the buffer.
- - For package names the actions include installing, removing or
-  visiting the homepage.
-
- If you want a reminder of which actions are available after running
- =embark-act= type =C-h= which will prompt you for an action with
- completion, and remind you of the keybindings.
+If you want a reminder of which actions are available after running
+=embark-act= type =C-h= which will prompt you for an action with
+completion, and remind you of the keybindings.
  
- Everything is easily configurable: determining the current target,
- classifying it, and deciding which actions are offered for each type
- in the classification. The above introduction just mentions part of
- the default configuration.
+Everything is easily configurable: determining the current target,
+classifying it, and deciding which actions are offered for each type
+in the classification. The above introduction just mentions part of
+the default configuration.
 
- Configuring which actions are offered for a type is particularly easy
- and requires no programming: the variable =embark-keymap-alist=
- associates target types with variables containing keymaps, and those
- keymaps containing bindings for the actions. (To examine the
- available categories and their associated keymaps, you can use =C-h v
- embark-keymap-alist= or customize that variable.) For example, in the
- default configuration the type =file= is associated with the symbol
- =embark-file-keymap=. That symbol names a keymap with single-letter
- keybindings for common Emacs file commands, for instance =c= is bound
- to =copy-file=. This means that if you are in the minibuffer after
- running a command that prompts for a file, such as =find-file= or
- =rename-file=, you can copy a file by running =embark-act= and then
- pressing =c=.
+Configuring which actions are offered for a type is particularly easy
+and requires no programming: the variable =embark-keymap-alist=
+associates target types with variables containing keymaps, and those
+keymaps containing bindings for the actions. (To examine the
+available categories and their associated keymaps, you can use =C-h v
+embark-keymap-alist= or customize that variable.) For example, in the
+default configuration the type =file= is associated with the symbol
+=embark-file-keymap=. That symbol names a keymap with single-letter
+keybindings for common Emacs file commands, for instance =c= is bound
+to =copy-file=. This means that if you are in the minibuffer after
+running a command that prompts for a file, such as =find-file= or
+=rename-file=, you can copy a file by running =embark-act= and then
+pressing =c=.
 
- These action keymaps are very convenient but not strictly necessary
- when using =embark-act=: you can use any command that reads from the
- minibuffer as an action and the target of the action will be inserted
- at the first minibuffer prompt. After running =embark-act= all of your
- keybindings and even =execute-extended-command= can be used to run a
- command. The action keymaps are normal Emacs keymaps and you should
- feel free to bind in them whatever commands you find useful as
- actions.
+These action keymaps are very convenient but not strictly necessary
+when using =embark-act=: you can use any command that reads from the
+minibuffer as an action and the target of the action will be inserted
+at the first minibuffer prompt. After running =embark-act= all of your
+keybindings and even =execute-extended-command= can be used to run a
+command. The action keymaps are normal Emacs keymaps and you should
+feel free to bind in them whatever commands you find useful as
+actions.
 
- The actions in =embark-general-map= are available no matter what type
- of completion you are in the middle of. By default this includes
- bindings to save the current candidate in the kill ring and to insert
- the current candidate in the previously selected buffer (the buffer
- that was current when you executed a command that opened up the
- minibuffer).
+The actions in =embark-general-map= are available no matter what type
+of completion you are in the middle of. By default this includes
+bindings to save the current candidate in the kill ring and to insert
+the current candidate in the previously selected buffer (the buffer
+that was current when you executed a command that opened up the
+minibuffer).
 
- There is a variant of =embark-act= called =embark-act-noexit=. They
- behave the same way if used outside the minibuffer, but if called
- from the minibuffer =embark-act= will exit the minibuffer and the other
- command won't. For example, you can use =embark-act-noexit= to perform
- a sequence of file actions without losing your place in the file
- system, turning =find-file= into a mini-file manager.
+There is a variant of =embark-act= called =embark-act-noexit=. They
+behave the same way if used outside the minibuffer, but if called
+from the minibuffer =embark-act= will exit the minibuffer and the other
+command won't. For example, you can use =embark-act-noexit= to perform
+a sequence of file actions without losing your place in the file
+system, turning =find-file= into a mini-file manager.
 
- Emacs's minibuffer completion system includes metadata indicating the
- /category/ of what is being completed. For example, =find-file='s
- metadata indicates a category of =file= and =switch-to-buffer='s metadata
- indicates a category of =buffer=. Embark has the related notion of the
- /type/ of a target for actions, and by default when category metadata
- is present it is taken to be the type of minibuffer completion
- candidates when used as targets. Emacs commands often do not set
- useful category metadata so the [[https://github.com/minad/marginalia][Marginalia]] package, which supplies
- this missing metadata, is highly recommended for use with Embark.
+Emacs's minibuffer completion system includes metadata indicating the
+/category/ of what is being completed. For example, =find-file='s
+metadata indicates a category of =file= and =switch-to-buffer='s metadata
+indicates a category of =buffer=. Embark has the related notion of the
+/type/ of a target for actions, and by default when category metadata
+is present it is taken to be the type of minibuffer completion
+candidates when used as targets. Emacs commands often do not set
+useful category metadata so the [[https://github.com/minad/marginalia][Marginalia]] package, which supplies
+this missing metadata, is highly recommended for use with Embark.
 
- Embark's default configuration has actions for the following target
- types: files, buffers, symbols, packages, urls, bookmarks, and as a
- somewhat special case, actions for when the region is active. You can
- read about the [[https://github.com/oantolin/embark/wiki/Default-Actions][default actions and their keybindings]] on the GitHub
- project wiki.
+Embark's default configuration has actions for the following target
+types: files, buffers, symbols, packages, urls, bookmarks, and as a
+somewhat special case, actions for when the region is active. You can
+read about the [[https://github.com/oantolin/embark/wiki/Default-Actions][default actions and their keybindings]] on the GitHub
+project wiki.
 
-*** Working with sets of possible targets
+** Working with sets of possible targets
  
- Besides acting individually on targets, Embark lets you work
- collectively on a set of target /candidates/. For example, while you
- are in the minibuffer the candidates are simply the possible
- completions of your input. Embark provides three commands to work on
- candidate sets:
+Besides acting individually on targets, Embark lets you work
+collectively on a set of target /candidates/. For example, while you
+are in the minibuffer the candidates are simply the possible
+completions of your input. Embark provides three commands to work on
+candidate sets:
 
- - The =embark-occur= command produces a buffer listing all candidates,
-   for you to peruse and run actions on at your leisure. The
-   candidates can be viewed in a grid or as a list showing additional
-   annotations.
+- The =embark-occur= command produces a buffer listing all candidates,
+  for you to peruse and run actions on at your leisure. The
+  candidates can be viewed in a grid or as a list showing additional
+  annotations.
 
- - The =embark-live-occur= variant of =embark-occur= produces "live"
-   Embark Occur buffers, meaning they auto-update as the set of
-   candidates changes.
+- The =embark-live-occur= variant of =embark-occur= produces "live"
+  Embark Occur buffers, meaning they auto-update as the set of
+  candidates changes.
 
- - The =embark-export= command tries to open a buffer in an appropriate
-   major mode for the set of candidates. If the candidates are files
-   export produces a Dired buffer; if they are buffers, you get an
-   Ibuffer buffer; and if they are packages you get a buffer in
-   package menu mode.
+- The =embark-export= command tries to open a buffer in an appropriate
+  major mode for the set of candidates. If the candidates are files
+  export produces a Dired buffer; if they are buffers, you get an
+  Ibuffer buffer; and if they are packages you get a buffer in
+  package menu mode.
 
-   There is also support for exporting a list of grep results to an
-   honest grep-mode buffer, on which you can even use [[https://github.com/mhayashi1120/Emacs-wgrep][wgrep]] if you
-   wish. In order to make use of this exporter you will need a command
-   that prompts you in the minibuffer for a grep result line. In the
-   near future you will be able to configure Emacs 28 to use
-   =xref-show-definitions-completing-read= as the value of
-   =xref-show-xrefs-function= and =xref-show-definitions-function=. With
-   that configuration, =project-find-regexp=, for example, with use the
-   minibuffer to offers search results. Additionally, today, you can
-   use the grepping commands from the [[https://github.com/minad/consult/][Consult]] package, =consult-grep=,
-   =consult-git-grep= or =consult-ripgrep=.
+  There is also support for exporting a list of grep results to an
+  honest grep-mode buffer, on which you can even use [[https://github.com/mhayashi1120/Emacs-wgrep][wgrep]] if you
+  wish. In order to make use of this exporter you will need a command
+  that prompts you in the minibuffer for a grep result line. In the
+  near future you will be able to configure Emacs 28 to use
+  =xref-show-definitions-completing-read= as the value of
+  =xref-show-xrefs-function= and =xref-show-definitions-function=. With
+  that configuration, =project-find-regexp=, for example, with use the
+  minibuffer to offers search results. Additionally, today, you can
+  use the grepping commands from the [[https://github.com/minad/consult/][Consult]] package, =consult-grep=,
+  =consult-git-grep= or =consult-ripgrep=.
 
- These are always available as "actions" (although they do not act on
- just the current target but on all candidates) for =embark-act= and are
- bound to =O=, =L= and =E=, respectively, in =embark-general-map=. This means
- that you do not have to bind your own key bindings for these
- (although you can, of course), just a key binding for =embark-act= or
- =embark-act-noexit=.
+These are always available as "actions" (although they do not act on
+just the current target but on all candidates) for =embark-act= and are
+bound to =O=, =L= and =E=, respectively, in =embark-general-map=. This means
+that you do not have to bind your own key bindings for these
+(although you can, of course), just a key binding for =embark-act= or
+=embark-act-noexit=.
  
-*** Switching to a different command without losing what you've typed
+** Switching to a different command without losing what you've typed
 
- Embark also has the =embark-become= command which is useful for when
- you run a command, start typing at the minibuffer and realize you
- meant a different command. The most common case for me is that I run
- =switch-to-buffer=, start typing a buffer name and realize I haven't
- opened the file I had in mind yet! I'll use this situation as a
- running example to illustrate =embark-become=. When this happens I can,
- of course, press =C-g= and then run =find-file= and open the file, but
- this requires retyping the portion of the file name you already
- typed. This process can be streamlined with =embark-become=: will still
- in the =switch-to-buffer= you can run =embark-become= and effectively
- make the =switch-to-buffer= command become =find-file= for this run.
+Embark also has the =embark-become= command which is useful for when
+you run a command, start typing at the minibuffer and realize you
+meant a different command. The most common case for me is that I run
+=switch-to-buffer=, start typing a buffer name and realize I haven't
+opened the file I had in mind yet! I'll use this situation as a
+running example to illustrate =embark-become=. When this happens I can,
+of course, press =C-g= and then run =find-file= and open the file, but
+this requires retyping the portion of the file name you already
+typed. This process can be streamlined with =embark-become=: will still
+in the =switch-to-buffer= you can run =embark-become= and effectively
+make the =switch-to-buffer= command become =find-file= for this run.
 
- You can bind =embark-become= to a key in =minibuffer-local-map=, but it
- is also available as an action under the letter =B= (uppercase), so you
- don't need a binding if you already have one for =embark-act= or
- =embark-act-noexit=. So, assuming I have =embark-act= bound to, say,
- =C-S-a=, once I realize I haven't open the file I can type =C-S-a B C-x
- C-f= to have =switch-to-buffer= become =find-file= without losing what I
- have already typed in the minibuffer.
+You can bind =embark-become= to a key in =minibuffer-local-map=, but it
+is also available as an action under the letter =B= (uppercase), so you
+don't need a binding if you already have one for =embark-act= or
+=embark-act-noexit=. So, assuming I have =embark-act= bound to, say,
+=C-S-a=, once I realize I haven't open the file I can type =C-S-a B C-x
+C-f= to have =switch-to-buffer= become =find-file= without losing what I
+have already typed in the minibuffer.
 
- But for even more convenience, =embark-become= offers shorter key
- bindings for commands you are likely to want the current command to
- become. The way this works is that there is a variable
- =embark-become-keymaps= containing a list of names of keymaps. When you
- use =embark-become= it activates those keymaps in that list which
- contain the current command. For example, the default value of
- =embark-become-keymaps= contains a keymap =embark-become-file+buffer-map=
- with bindings for several commands related to files and buffers, in
- particular, it binds =switch-to-buffer= to =b= and =find-file= to =f=. So
- when I accidentally try to switch to a buffer for a file I haven't
- opened yet, I can type =C-S-a B f= to switch to =find-file=.
+But for even more convenience, =embark-become= offers shorter key
+bindings for commands you are likely to want the current command to
+become. The way this works is that there is a variable
+=embark-become-keymaps= containing a list of names of keymaps. When you
+use =embark-become= it activates those keymaps in that list which
+contain the current command. For example, the default value of
+=embark-become-keymaps= contains a keymap =embark-become-file+buffer-map=
+with bindings for several commands related to files and buffers, in
+particular, it binds =switch-to-buffer= to =b= and =find-file= to =f=. So
+when I accidentally try to switch to a buffer for a file I haven't
+opened yet, I can type =C-S-a B f= to switch to =find-file=.
 
-** Configuration
-*** Quick start
+* Configuration
+** Quick start
 
- The easiest way to install Embark is from Melpa. It is highly
- recommended to also install [[https://github.com/minad/marginalia][Marginalia]], so that Embark can offer you
- preconfigured actions in more contexts. For =use-package= users that
- add Melpa to their =package-archives=, the following is a very
- reasonable starting configuration:
+The easiest way to install Embark is from Melpa. It is highly
+recommended to also install [[https://github.com/minad/marginalia][Marginalia]], so that Embark can offer you
+preconfigured actions in more contexts. For =use-package= users that
+add Melpa to their =package-archives=, the following is a very
+reasonable starting configuration:
+
+#+begin_src emacs-lisp
+  (use-package marginalia
+    :ensure t
+    :config
+    (marginalia-mode))
+
+  (use-package embark
+    :ensure t
+    :bind
+    ("C-S-a" . embark-act)               ; pick some comfortable binding
+    :config
+    ;; For Selectrum users:
+    (defun current-candidate+category ()
+      (when selectrum-active-p
+        (cons (selectrum--get-meta 'category)
+              (selectrum-get-current-candidate))))
+
+    (add-hook 'embark-target-finders #'current-candidate+category)
+
+    (defun current-candidates+category ()
+      (when selectrum-active-p
+        (cons (selectrum--get-meta 'category)
+              (selectrum-get-current-candidates
+               ;; Pass relative file names for dired.
+               minibuffer-completing-file-name))))
+
+    (add-hook 'embark-candidate-collectors #'current-candidates+category)
+
+    ;; No unnecessary computation delay after injection.
+    (add-hook 'embark-setup-hook 'selectrum-set-selected-candidate))
+#+end_src
+
+The other command you may want a binding for is =embark-act-noexit=, if
+so put it in =minibuffer-local-map=.
+
+Other Embark commands such as =embark-become=, =embark-occur=,
+=embark-live-occur=, =embark-export= can be run through =embark-act= as
+actions bound to =B=, =O=, =L=, =E= respectively, and thus don't really need
+a dedicated key binding, but feel free to bind them directly if you
+so wish. If you do choose to bind them directly, you'll probably want
+to bind them in =minibuffer-local-map=, since they are most useful in
+the minibuffer (in fact, =embark-become= only works in the minibuffer).
+
+Embark needs to know what your minibuffer completion system considers
+to be the list of candidates and which one is the current one. Embark
+works out of the box if you use Emacs's default tab completion, or
+the built-in =icomplete-mode= or =fido-mode=. It is possible to configure
+Embark to work with other completion UI, and the above sample
+configuration includes the settings for [[https://github.com/raxod502/selectrum/][Selectrum]].
+
+If you are a [[https://emacs-helm.github.io/helm/][Helm]] or [[https://github.com/abo-abo/swiper][Ivy]] user you are unlikely to want Embark since
+those packages include comprehensive functionality for acting on
+minibuffer completion candidates. (Although you could still be
+interested in using Embark solely for actions outside of the
+minibuffer.)
+
+** Showing a reminder of available actions
+
+If you want a reminder of which actions are available after running
+=embark-act=, use =embark-keymap-help=, which is bound to =C-h= in all of
+Embark's action keymaps. That command will prompt you for the name of
+an action with completion (but feel free to enter a command not among
+the offered candidates!), and will also remind you of the
+keybindings.
+
+If you find you prefer entering actions that way, you can configure
+embark to always prompt you for actions by setting the variable
+=embark-prompter= to =embark-completing-read-prompter=.
+
+If you want to see the actions and their key bindings, but want to
+use the keybindings rather than completing the command name, you can
+install [[https://github.com/justbur/emacs-which-key][which-key]] and configure Embark as follows:
+
+#+begin_src emacs-lisp
+  (setq embark-action-indicator
+        (lambda (map)
+          (which-key--show-keymap "Embark" map nil nil 'no-paging)
+          #'which-key--hide-popup-ignore-command)
+        embark-become-indicator embark-action-indicator)
+#+end_src
+ 
+** Allowing the target to be edited before acting on it
+
+By default, for most commands =embark= inserts the target of the action
+into the next minibuffer prompt and "presses =RET=" for you, accepting
+the target as is.
+
+For some commands this might be undesirable, either for safety
+(because a command is "hard to undo", like =delete-file= or
+=kill-buffer)=, or because further input is required next to the target
+(like when using =shell-command=: the target is the file and you still
+need to enter a shell command to run on it, at the same prompt). You
+can add such commands to the =embark-allow-edit-commands= variable
+(which by default already contains the examples mentioned, and a few
+others as well).
+
+Now, automatically pressing =RET= for most commands is only the default.
+If you set the variable =embark-allow-edit-default= to =t=, then =embark=
+will instead give you a chance to edit the target before acting upon
+it, for all commands except those listed in =embark-skip-edit-commands=.
+
+** Running some setup after injecting the target
+
+You can customize what happens after the target is inserted at the
+minibuffer prompt of an action. There is a hook, =embark-setup-hook=,
+that is run by default after injecting the target into the minibuffer.
+This hook can be overridden for specific action commands by associating
+the command to the desired overriding hook in =embark-setup-overrides=.
+
+For example, consider using =shell-command= as an action during file
+completion. It would be useful to insert a space before the target
+file name and to leave the point at the beginning, so you can
+immediately type the shell command. That's why in =embark='s default
+configuration there is an entry in =embark-setup-overrides= associating
+=shell-command= to =embark--shell-prep=, a simple helper command that
+quotes all the spaces in the file name, inserts an extra space at the
+beginning of the line and leaves point to the left of it.
+
+** Creating your own keymaps
+
+All internal keymaps are defined with a helper macro
+=embark-define-keymap= that you can use to define your own keymaps,
+whether they are for new categories in =embark-keymap-alist= or for any
+other purpose! For example a simple version of the file action keymap
+could be defined as follows:
+
+#+BEGIN_SRC emacs-lisp
+  (embark-define-keymap embark-file-map
+    "Example keymap with a few file actions"
+    ("d" delete-file)
+    ("r" rename-file)
+    ("c" copy-file))
+#+END_SRC
+
+Remember also that these action keymaps are perfectly normal Emacs
+keymaps, and do not need to be created with this helper macro. You
+can use the built-in =define-key=, or your favorite external package
+such as =bind-key= or =general.el= to manage them.
+ 
+** Defining actions for new categories of targets
+
+It is easy to configure Embark to provide actions for new types of
+targets, either in the minibuffer or outside it. I present below two
+very detailed examples of how to do this. At several points I'll
+explain more than one way to proceed, typically with the easiest
+option first. I include the alternative options since there will be
+similar situations where the easiest option is not available.
+
+*** New minibuffer target example, tab-bar tabs
+
+Say you use the new [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Tab-Bars.html][tab bars]] from Emacs 27 and you want Embark to
+offer tab-specific actions when you use the tab-bar-mode commands
+that mention tabs by name. You would need to: (1) make sure Embark
+knows those commands deal with tabs, (2) define a keymap for tab
+actions and configure Embark so it knows that's the keymap you want.
+
+**** Telling Embark about commands that prompt for tabs by name
+
+For step (1), it would be great if the =tab-bar-mode= commands reported
+the completion category =tab= when asking you for a tab with
+completion. (All built-in Emacs commands that prompt for file names,
+for example, do have metadata indicating that they want a =file=.) They
+do not, unfortunately, and I will describe a couple of ways to deal
+with this.
+
+Maybe the easiest thing is to configure [[https://github.com/minad/marginalia][Marginalia]] to enhance those
+commands. All of the =tab-bar-*-tab-by-name= commands have the words
+"tab by name" in the minibuffer prompt, so you can use:
+
+#+begin_src emacs-lisp
+  (add-to-list 'marginalia-prompt-categories '("tab by name" . tab))
+#+end_src
+
+That's it! But in case you are ever in a situation where you don't
+already have commands that prompt for the targets you want, I'll
+describe how writing your own command with appropriate =category=
+metadata looks:
+ 
+#+begin_src emacs-lisp
+  (defun my-select-tab-by-name (tab)
+    (interactive
+     (list
+      (let ((tab-list (or (mapcar #'(lambda (tab) (cdr (assq 'name tab)))
+                                  (tab-bar-tabs))
+                          (user-error "No tabs found"))))
+        (completing-read
+         "Tabs: "
+         (lambda (string predicate action)
+           (if (eq action 'metadata)
+               '(metadata (category . tab))
+             (complete-with-action action tab-list string predicate)))))))
+    (tab-bar-select-tab-by-name tab))
+#+end_src
+
+As you can see, the built-in support for setting the category
+metadatum is not very easy to use or pretty to look at. To help with
+this I recommend the =consult--read= function from the excellent
+[[https://github.com/minad/consult/][Consult]] package. With that function we can rewrite the command as
+follows:
+ 
+#+begin_src emacs-lisp
+  (defun my-select-tab-by-name (tab)
+    (interactive
+     (list
+      (let ((tab-list (or (mapcar #'(lambda (tab) (cdr (assq 'name tab)))
+                                  (tab-bar-tabs))
+                          (user-error "No tabs found"))))
+        (consult--read "Tabs: " tab-list
+                       :category 'tab))))
+    (tab-bar-select-tab-by-name tab))
+#+end_src
+
+Much nicer! No matter how you define the =my-select-tab-by-name=
+command, the first approach with Marginalia and prompt detection has
+the following advantages: you get the =tab= category for all the
+=tab-bar-*-bar-by-name= commands at once, also, you enhance built-in
+commands, instead of defining new ones.
+ 
+**** Defining and configuring a keymap for tab actions
+
+ Let's say we want to offer select, rename and close actions for tabs
+ (in addition to Embark general actions, such as saving the tab name to
+ the kill-ring, which you get for free). Then this will do:
 
  #+begin_src emacs-lisp
-   (use-package marginalia
-     :ensure t
-     :config
-     (marginalia-mode))
+   (embark-define-keymap embark-tab-actions
+     "Keymap for actions for tab-bar tabs (when mentioned by name)."
+     ("s" . tab-bar-select-tab-by-name)
+     ("r" . tab-bar-rename-tab-by-name)
+     ("k" . tab-bar-close-tab-by-name))
 
-   (use-package embark
-     :ensure t
-     :bind
-     ("C-S-a" . embark-act)               ; pick some comfortable binding
-     :config
-     ;; For Selectrum users:
-     (defun current-candidate+category ()
-       (when selectrum-active-p
-         (cons (selectrum--get-meta 'category)
-               (selectrum-get-current-candidate))))
-
-     (add-hook 'embark-target-finders #'current-candidate+category)
-
-     (defun current-candidates+category ()
-       (when selectrum-active-p
-         (cons (selectrum--get-meta 'category)
-               (selectrum-get-current-candidates
-                ;; Pass relative file names for dired.
-                minibuffer-completing-file-name))))
-
-     (add-hook 'embark-candidate-collectors #'current-candidates+category)
-
-     ;; No unnecessary computation delay after injection.
-     (add-hook 'embark-setup-hook 'selectrum-set-selected-candidate))
+   (add-to-list 'embark-keymap-alist '(tab . embark-tab-actions))
  #+end_src
 
- The other command you may want a binding for is =embark-act-noexit=, if
- so put it in =minibuffer-local-map=.
+ What if after using this for a while you feel closing the tab
+ without confirmation is dangerous? You have a couple of options:
 
- Other Embark commands such as =embark-become=, =embark-occur=,
- =embark-live-occur=, =embark-export= can be run through =embark-act= as
- actions bound to =B=, =O=, =L=, =E= respectively, and thus don't really need
- a dedicated key binding, but feel free to bind them directly if you
- so wish. If you do choose to bind them directly, you'll probably want
- to bind them in =minibuffer-local-map=, since they are most useful in
- the minibuffer (in fact, =embark-become= only works in the minibuffer).
+ 1. You can keep using the =tab-bar-close-tab-by-name= command, but no
+    longer let Embark press =RET= for you:
+    #+begin_src emacs-lisp
+      (add-to-list 'embark-allow-edit-commands 'tab-bar-close-tab-by-name)
+    #+end_src
 
- Embark needs to know what your minibuffer completion system considers
- to be the list of candidates and which one is the current one. Embark
- works out of the box if you use Emacs's default tab completion, or
- the built-in =icomplete-mode= or =fido-mode=. It is possible to configure
- Embark to work with other completion UI, and the above sample
- configuration includes the settings for [[https://github.com/raxod502/selectrum/][Selectrum]].
+ 2. You can write your own command that prompts for confirmation and
+    use that instead of =tab-bar-close-tab-by-name= in the above keymap:
+    #+begin_src emacs-lisp
+      (defun my-confirm-close-tab-by-name (tab)
+        (interactive "sTab to close: ")
+        (when (y-or-n-p (format "Close tab '%s'? " tab))
+          (tab-bar-close-tab-by-name tab)))
+    #+end_src
 
- If you are a [[https://emacs-helm.github.io/helm/][Helm]] or [[https://github.com/abo-abo/swiper][Ivy]] user you are unlikely to want Embark since
- those packages include comprehensive functionality for acting on
- minibuffer completion candidates. (Although you could still be
- interested in using Embark solely for actions outside of the
- minibuffer.)
-
-*** Showing a reminder of available actions
-
- If you want a reminder of which actions are available after running
- =embark-act=, use =embark-keymap-help=, which is bound to =C-h= in all of
- Embark's action keymaps. That command will prompt you for the name of
- an action with completion (but feel free to enter a command not among
- the offered candidates!), and will also remind you of the
- keybindings.
-
- If you find you prefer entering actions that way, you can configure
- embark to always prompt you for actions by setting the variable
- =embark-prompter= to =embark-completing-read-prompter=.
-
- If you want to see the actions and their key bindings, but want to
- use the keybindings rather than completing the command name, you can
- install [[https://github.com/justbur/emacs-which-key][which-key]] and configure Embark as follows:
-
- #+begin_src emacs-lisp
-   (setq embark-action-indicator
-         (lambda (map)
-           (which-key--show-keymap "Embark" map nil nil 'no-paging)
-           #'which-key--hide-popup-ignore-command)
-         embark-become-indicator embark-action-indicator)
- #+end_src
- 
-*** Allowing the target to be edited before acting on it
-
- By default, for most commands =embark= inserts the target of the action
- into the next minibuffer prompt and "presses =RET=" for you, accepting
- the target as is.
-
- For some commands this might be undesirable, either for safety
- (because a command is "hard to undo", like =delete-file= or
- =kill-buffer)=, or because further input is required next to the target
- (like when using =shell-command=: the target is the file and you still
- need to enter a shell command to run on it, at the same prompt). You
- can add such commands to the =embark-allow-edit-commands= variable
- (which by default already contains the examples mentioned, and a few
- others as well).
-
- Now, automatically pressing =RET= for most commands is only the default.
- If you set the variable =embark-allow-edit-default= to =t=, then =embark=
- will instead give you a chance to edit the target before acting upon
- it, for all commands except those listed in =embark-skip-edit-commands=.
-
-*** Running some setup after injecting the target
-
- You can customize what happens after the target is inserted at the
- minibuffer prompt of an action. There is a hook, =embark-setup-hook=,
- that is run by default after injecting the target into the minibuffer.
- This hook can be overridden for specific action commands by associating
- the command to the desired overriding hook in =embark-setup-overrides=.
-
- For example, consider using =shell-command= as an action during file
- completion. It would be useful to insert a space before the target
- file name and to leave the point at the beginning, so you can
- immediately type the shell command. That's why in =embark='s default
- configuration there is an entry in =embark-setup-overrides= associating
- =shell-command= to =embark--shell-prep=, a simple helper command that
- quotes all the spaces in the file name, inserts an extra space at the
- beginning of the line and leaves point to the left of it.
-
-*** Creating your own keymaps
-
- All internal keymaps are defined with a helper macro
- =embark-define-keymap= that you can use to define your own keymaps,
- whether they are for new categories in =embark-keymap-alist= or for any
- other purpose! For example a simple version of the file action keymap
- could be defined as follows:
-
- #+BEGIN_SRC emacs-lisp
-   (embark-define-keymap embark-file-map
-     "Example keymap with a few file actions"
-     ("d" delete-file)
-     ("r" rename-file)
-     ("c" copy-file))
- #+END_SRC
-
- Remember also that these action keymaps are perfectly normal Emacs
- keymaps, and do not need to be created with this helper macro. You
- can use the built-in =define-key=, or your favorite external package
- such as =bind-key= or =general.el= to manage them.
- 
-*** Defining actions for new categories of targets
-
- It is easy to configure Embark to provide actions for new types of
- targets, either in the minibuffer or outside it. I present below two
- very detailed examples of how to do this. At several points I'll
- explain more than one way to proceed, typically with the easiest
- option first. I include the alternative options since there will be
- similar situations where the easiest option is not available.
-
-**** New minibuffer target example: tab-bar tabs
-
- Say you use the new [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Tab-Bars.html][tab bars]] from Emacs 27 and you want Embark to
- offer tab-specific actions when you use the tab-bar-mode commands
- that mention tabs by name. You would need to: (1) make sure Embark
- knows those commands deal with tabs, (2) define a keymap for tab
- actions and configure Embark so it knows that's the keymap you want.
-
-***** Telling Embark about commands that prompt for tabs by name
-
- For step (1), it would be great if the =tab-bar-mode= commands reported
- the completion category =tab= when asking you for a tab with
- completion. (All built-in Emacs commands that prompt for file names,
- for example, do have metadata indicating that they want a =file=.) They
- do not, unfortunately, and I will describe a couple of ways to deal
- with this.
-
- Maybe the easiest thing is to configure [[https://github.com/minad/marginalia][Marginalia]] to enhance those
- commands. All of the =tab-bar-*-tab-by-name= commands have the words
- "tab by name" in the minibuffer prompt, so you can use:
-
- #+begin_src emacs-lisp
-   (add-to-list 'marginalia-prompt-categories '("tab by name" . tab))
- #+end_src
-
- That's it! But in case you are ever in a situation where you don't
- already have commands that prompt for the targets you want, I'll
- describe how writing your own command with appropriate =category=
- metadata looks:
- 
- #+begin_src emacs-lisp
-   (defun my-select-tab-by-name (tab)
-     (interactive
-      (list
-       (let ((tab-list (or (mapcar #'(lambda (tab) (cdr (assq 'name tab)))
-                                   (tab-bar-tabs))
-                           (user-error "No tabs found"))))
-         (completing-read
-          "Tabs: "
-          (lambda (string predicate action)
-            (if (eq action 'metadata)
-                '(metadata (category . tab))
-              (complete-with-action action tab-list string predicate)))))))
-     (tab-bar-select-tab-by-name tab))
- #+end_src
-
- As you can see, the built-in support for setting the category
- metadatum is not very easy to use or pretty to look at. To help with
- this I recommend the =consult--read= function from the excellent
- [[https://github.com/minad/consult/][Consult]] package. With that function we can rewrite the command as
- follows:
- 
- #+begin_src emacs-lisp
-   (defun my-select-tab-by-name (tab)
-     (interactive
-      (list
-       (let ((tab-list (or (mapcar #'(lambda (tab) (cdr (assq 'name tab)))
-                                   (tab-bar-tabs))
-                           (user-error "No tabs found"))))
-         (consult--read "Tabs: " tab-list
-                        :category 'tab))))
-     (tab-bar-select-tab-by-name tab))
- #+end_src
-
- Much nicer! No matter how you define the =my-select-tab-by-name=
- command, the first approach with Marginalia and prompt detection has
- the following advantages: you get the =tab= category for all the
- =tab-bar-*-bar-by-name= commands at once, also, you enhance built-in
- commands, instead of defining new ones.
- 
-***** Defining and configuring a keymap for tab actions
-
-  Let's say we want to offer select, rename and close actions for tabs
-  (in addition to Embark general actions, such as saving the tab name to
-  the kill-ring, which you get for free). Then this will do:
-
-  #+begin_src emacs-lisp
-    (embark-define-keymap embark-tab-actions
-      "Keymap for actions for tab-bar tabs (when mentioned by name)."
-      ("s" . tab-bar-select-tab-by-name)
-      ("r" . tab-bar-rename-tab-by-name)
-      ("k" . tab-bar-close-tab-by-name))
-
-    (add-to-list 'embark-keymap-alist '(tab . embark-tab-actions))
-  #+end_src
-
-  What if after using this for a while you feel closing the tab
-  without confirmation is dangerous? You have a couple of options:
-
-  1. You can keep using the =tab-bar-close-tab-by-name= command, but no
-     longer let Embark press =RET= for you:
-     #+begin_src emacs-lisp
-       (add-to-list 'embark-allow-edit-commands 'tab-bar-close-tab-by-name)
-     #+end_src
-
-  2. You can write your own command that prompts for confirmation and
-     use that instead of =tab-bar-close-tab-by-name= in the above keymap:
-     #+begin_src emacs-lisp
-       (defun my-confirm-close-tab-by-name (tab)
-         (interactive "sTab to close: ")
-         (when (y-or-n-p (format "Close tab '%s'? " tab))
-           (tab-bar-close-tab-by-name tab)))
-     #+end_src
-
-     Notice that this is a command you can also use directly from =M-x=
-     independently of Embark. Using it from =M-x= leaves something to be
-     desired, though, since you don't get completion for the tab names.
-     You can fix this if you wish as described in the previous section.
+    Notice that this is a command you can also use directly from =M-x=
+    independently of Embark. Using it from =M-x= leaves something to be
+    desired, though, since you don't get completion for the tab names.
+    You can fix this if you wish as described in the previous section.
     
-**** New target example in regular buffers: short Wikipedia links
+*** New target example in regular buffers, short Wikipedia links
 
- Say you want to teach embark to treat text of the form
- =wikipedia:Gary_Kasparov= in any regular buffer as a link to Wikipedia,
- with actions to open the Wikipedia page in eww or an external browser
- or to save the URL of the page in the kill-ring. We can take
- advantage of the actions that Embark has preconfigured for URLs, so
- all we need to do is teach Embark that =wikipedia:Gary_Kasparov= stands
- for the URL =https://en.wikipedia.org/wiki/Garry_Kasparov=.
+Say you want to teach embark to treat text of the form
+=wikipedia:Gary_Kasparov= in any regular buffer as a link to Wikipedia,
+with actions to open the Wikipedia page in eww or an external browser
+or to save the URL of the page in the kill-ring. We can take
+advantage of the actions that Embark has preconfigured for URLs, so
+all we need to do is teach Embark that =wikipedia:Gary_Kasparov= stands
+for the URL =https://en.wikipedia.org/wiki/Garry_Kasparov=.
 
- You can be as fancy as you want with the recognized syntax. Here, to
- keep the example simple, I'll assume the link matches the regexp
- =wikipedia:[[:alnum:]_]+=. We will write a function that looks for a
- match surrounding point, and returns the pair =(cons 'url
- actual-url-of-the-page)=.
+You can be as fancy as you want with the recognized syntax. Here, to
+keep the example simple, I'll assume the link matches the regexp
+=wikipedia:[[:alnum:]_]+=. We will write a function that looks for a
+match surrounding point, and returns the pair =(cons 'url
+actual-url-of-the-page)=.
  
- #+begin_src emacs-lisp
-   (defun my-short-wikipedia-link ()
-     "Target a link at point of the form wikipedia:Page_Name."
-     (save-excursion
-       (let* ((beg (progn (skip-chars-backward "[:alnum:]_:") (point)))
-              (end (progn (skip-chars-forward "[:alnum:]_:") (point)))
-              (str (buffer-substring-no-properties beg end)))
-         (save-match-data
-           (when (string-match "wikipedia:\\([[:alnum:]_]+\\)" str)
-             (cons 'url (format "https://en.wikipedia.org/wiki/%s"
-                                (match-string 1 str))))))))
+#+begin_src emacs-lisp
+  (defun my-short-wikipedia-link ()
+    "Target a link at point of the form wikipedia:Page_Name."
+    (save-excursion
+      (let* ((beg (progn (skip-chars-backward "[:alnum:]_:") (point)))
+             (end (progn (skip-chars-forward "[:alnum:]_:") (point)))
+             (str (buffer-substring-no-properties beg end)))
+        (save-match-data
+          (when (string-match "wikipedia:\\([[:alnum:]_]+\\)" str)
+            (cons 'url (format "https://en.wikipedia.org/wiki/%s"
+                               (match-string 1 str))))))))
 
-   (add-to-list 'embark-target-finders 'my-short-wikipedia-link)
- #+end_src
+  (add-to-list 'embark-target-finders 'my-short-wikipedia-link)
+#+end_src
 
-** Embark, Marginalia and Consult
+* Embark, Marginalia and Consult
   
- Some changes were made to Embark, to better cooperate with the
- [[https://github.com/minad/marginalia][Marginalia]] and [[https://github.com/minad/consult][Consult]] packages, and prior to being submitted to
- MELPA. Neither of those packages is a dependency of Embark, but
- Marginalia is highly recommended, for reasons explained in the rest
- of this section
+Some changes were made to Embark, to better cooperate with the
+[[https://github.com/minad/marginalia][Marginalia]] and [[https://github.com/minad/consult][Consult]] packages, and prior to being submitted to
+MELPA. Neither of those packages is a dependency of Embark, but
+Marginalia is highly recommended, for reasons explained in the rest
+of this section
 
- Embark comes with actions for symbols (commands, functions, variables
- with actions such as finding the definition, looking up the
- documentation, evaluating, etc.) in the =embark-symbol-map= keymap, and
- for packages (actions like install, delete, browse url, etc.) in the
- =embark-package-keymap=.
+Embark comes with actions for symbols (commands, functions, variables
+with actions such as finding the definition, looking up the
+documentation, evaluating, etc.) in the =embark-symbol-map= keymap, and
+for packages (actions like install, delete, browse url, etc.) in the
+=embark-package-keymap=.
 
- Unfortunately Embark no longer automatically offers you these keymaps
- when relevant, because many built-in Emacs commands don't report
- accurate category metadata. For example, a command like
- =describe-package=, which reads a package name from the minibuffer,
- does not have metadata indicating so.
+Unfortunately Embark no longer automatically offers you these keymaps
+when relevant, because many built-in Emacs commands don't report
+accurate category metadata. For example, a command like
+=describe-package=, which reads a package name from the minibuffer,
+does not have metadata indicating so.
 
- Previously Embark had functions to supply this missing metadata, but
- they have been moved to Marginalia, which augments many Emacs command
- to report accurate category metadata. Simply activating
- =marginalia-mode= allows Embark to offer you the package and symbol
- actions when appropriate again.
+Previously Embark had functions to supply this missing metadata, but
+they have been moved to Marginalia, which augments many Emacs command
+to report accurate category metadata. Simply activating
+=marginalia-mode= allows Embark to offer you the package and symbol
+actions when appropriate again.
 
- All annotation functions have been removed from Embark and moved to
- Marginalia (where they have been improved!). Embark used these old
- annotation functions for the list view in Embark Occur buffers.
+All annotation functions have been removed from Embark and moved to
+Marginalia (where they have been improved!). Embark used these old
+annotation functions for the list view in Embark Occur buffers.
 
- - If you install Marginalia and activate =marginalia-mode=, the list
-   view in Embark Occur buffers will use the Marginalia annotations
-   automatically.
+- If you install Marginalia and activate =marginalia-mode=, the list
+  view in Embark Occur buffers will use the Marginalia annotations
+  automatically.
 
- - If you don't install Marginalia, you will see only the annotations
-   that come with Emacs (such as keybindings in =M-x=, or the unicode
-   characters in =C-x 8 RET=).
+- If you don't install Marginalia, you will see only the annotations
+  that come with Emacs (such as keybindings in =M-x=, or the unicode
+  characters in =C-x 8 RET=).
 
- Other small changes:
+Other small changes:
 
- - If you have Consult installed and call =embark-occur= from
-   =consult-line=, =consult-mark= or =consult-outline=, you will notice the
-   Embark Occur buffer starts in list view by default. Similarly,
-   you'll notice that the =consult-yank= family of commands start out in
-   list view with zebra stripes, so you can easily tell where
-   multi-line kill-ring entries start and end.
- - The function =embark-open-externally= has been removed following the
-   policy of avoiding overlap with Consult. If you used that action,
-   add [[https://github.com/minad/consult/blob/373498acb76b9395e5e590fb8e39f671a9363cd7/consult.el#L707][the small function]] to your configuration or install Consult and
-   use =consult-file-externally=.
+- If you have Consult installed and call =embark-occur= from
+  =consult-line=, =consult-mark= or =consult-outline=, you will notice the
+  Embark Occur buffer starts in list view by default. Similarly,
+  you'll notice that the =consult-yank= family of commands start out in
+  list view with zebra stripes, so you can easily tell where
+  multi-line kill-ring entries start and end.
+- The function =embark-open-externally= has been removed following the
+  policy of avoiding overlap with Consult. If you used that action,
+  add [[https://github.com/minad/consult/blob/373498acb76b9395e5e590fb8e39f671a9363cd7/consult.el#L707][the small function]] to your configuration or install Consult and
+  use =consult-file-externally=.

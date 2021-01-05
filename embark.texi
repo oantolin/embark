@@ -1,7 +1,7 @@
 \input texinfo    @c -*- texinfo -*-
 @c %**start of header
 @setfilename embark.info
-@settitle 
+@settitle Embark
 @documentencoding UTF-8
 @documentlanguage en
 @c %**end of header
@@ -13,7 +13,7 @@
 
 @finalout
 @titlepage
-@title 
+@title Embark
 @author Omar Antolín Camarena
 @end titlepage
 
@@ -21,21 +21,17 @@
 
 @ifnottex
 @node Top
-@top 
+@top Embark
 @end ifnottex
 
 @menu
-* embark - Emacs Mini-Buffer Actions Rooted in Keymaps::
-
-@detailmenu
---- The Detailed Node Listing ---
-
-embark - Emacs Mini-Buffer Actions Rooted in Keymaps
-
 * Breaking news (that is, news about things breaking): Breaking news (that is news about things breaking). 
 * Overview::
 * Configuration::
 * Embark, Marginalia and Consult: Embark Marginalia and Consult. 
+
+@detailmenu
+--- The Detailed Node Listing ---
 
 Overview
 
@@ -52,23 +48,16 @@ Configuration
 * Creating your own keymaps::
 * Defining actions for new categories of targets::
 
+Defining actions for new categories of targets
+
+* New minibuffer target example, tab-bar tabs: New minibuffer target example tab-bar tabs. 
+* New target example in regular buffers, short Wikipedia links: New target example in regular buffers short Wikipedia links. 
+
 @end detailmenu
 @end menu
 
-@node embark - Emacs Mini-Buffer Actions Rooted in Keymaps
-@chapter embark - Emacs Mini-Buffer Actions Rooted in Keymaps
-
-@uref{https://melpa.org/#/embark, file:https://melpa.org/packages/embark-badge.svg}
-
-@menu
-* Breaking news (that is, news about things breaking): Breaking news (that is news about things breaking). 
-* Overview::
-* Configuration::
-* Embark, Marginalia and Consult: Embark Marginalia and Consult. 
-@end menu
-
 @node Breaking news (that is news about things breaking)
-@section Breaking news (that is, news about things breaking)
+@chapter Breaking news (that is, news about things breaking)
 
 @itemize
 @item
@@ -86,7 +75,7 @@ section}.
 @end itemize
 
 @node Overview
-@section Overview
+@chapter Overview
 
 @menu
 * Acting on targets::
@@ -95,7 +84,7 @@ section}.
 @end menu
 
 @node Acting on targets
-@subsection Acting on targets
+@section Acting on targets
 
 This package provides a sort of right-click contextual menu for Emacs,
 accessed through the @samp{embark-act} command (which you should bind to a
@@ -141,7 +130,7 @@ and requires no programming: the variable @samp{embark-keymap-alist}
 associates target types with variables containing keymaps, and those
 keymaps containing bindings for the actions. (To examine the
 available categories and their associated keymaps, you can use @samp{C-h v
- embark-keymap-alist} or customize that variable.) For example, in the
+embark-keymap-alist} or customize that variable.) For example, in the
 default configuration the type @samp{file} is associated with the symbol
 @samp{embark-file-keymap}. That symbol names a keymap with single-letter
 keybindings for common Emacs file commands, for instance @samp{c} is bound
@@ -190,7 +179,7 @@ read about the @uref{https://github.com/oantolin/embark/wiki/Default-Actions, de
 project wiki.
 
 @node Working with sets of possible targets
-@subsection Working with sets of possible targets
+@section Working with sets of possible targets
 
 Besides acting individually on targets, Embark lets you work
 collectively on a set of target @emph{candidates}. For example, while you
@@ -238,7 +227,7 @@ that you do not have to bind your own key bindings for these
 @samp{embark-act-noexit}.
 
 @node Switching to a different command without losing what you've typed
-@subsection Switching to a different command without losing what you've typed
+@section Switching to a different command without losing what you've typed
 
 Embark also has the @samp{embark-become} command which is useful for when
 you run a command, start typing at the minibuffer and realize you
@@ -257,7 +246,7 @@ is also available as an action under the letter @samp{B} (uppercase), so you
 don't need a binding if you already have one for @samp{embark-act} or
 @samp{embark-act-noexit}. So, assuming I have @samp{embark-act} bound to, say,
 @samp{C-S-a}, once I realize I haven't open the file I can type @samp{C-S-a B C-x
- C-f} to have @samp{switch-to-buffer} become @samp{find-file} without losing what I
+C-f} to have @samp{switch-to-buffer} become @samp{find-file} without losing what I
 have already typed in the minibuffer.
 
 But for even more convenience, @samp{embark-become} offers shorter key
@@ -273,7 +262,7 @@ when I accidentally try to switch to a buffer for a file I haven't
 opened yet, I can type @samp{C-S-a B f} to switch to @samp{find-file}.
 
 @node Configuration
-@section Configuration
+@chapter Configuration
 
 @menu
 * Quick start::
@@ -285,7 +274,7 @@ opened yet, I can type @samp{C-S-a B f} to switch to @samp{find-file}.
 @end menu
 
 @node Quick start
-@subsection Quick start
+@section Quick start
 
 The easiest way to install Embark is from Melpa. It is highly
 recommended to also install @uref{https://github.com/minad/marginalia, Marginalia}, so that Embark can offer you
@@ -350,7 +339,7 @@ interested in using Embark solely for actions outside of the
 minibuffer.)
 
 @node Showing a reminder of available actions
-@subsection Showing a reminder of available actions
+@section Showing a reminder of available actions
 
 If you want a reminder of which actions are available after running
 @samp{embark-act}, use @samp{embark-keymap-help}, which is bound to @samp{C-h} in all of
@@ -376,7 +365,7 @@ install @uref{https://github.com/justbur/emacs-which-key, which-key} and configu
 @end lisp
 
 @node Allowing the target to be edited before acting on it
-@subsection Allowing the target to be edited before acting on it
+@section Allowing the target to be edited before acting on it
 
 By default, for most commands @samp{embark} inserts the target of the action
 into the next minibuffer prompt and ``presses @samp{RET}'' for you, accepting
@@ -397,7 +386,7 @@ will instead give you a chance to edit the target before acting upon
 it, for all commands except those listed in @samp{embark-skip-edit-commands}.
 
 @node Running some setup after injecting the target
-@subsection Running some setup after injecting the target
+@section Running some setup after injecting the target
 
 You can customize what happens after the target is inserted at the
 minibuffer prompt of an action. There is a hook, @samp{embark-setup-hook},
@@ -415,7 +404,7 @@ quotes all the spaces in the file name, inserts an extra space at the
 beginning of the line and leaves point to the left of it.
 
 @node Creating your own keymaps
-@subsection Creating your own keymaps
+@section Creating your own keymaps
 
 All internal keymaps are defined with a helper macro
 @samp{embark-define-keymap} that you can use to define your own keymaps,
@@ -437,7 +426,7 @@ can use the built-in @samp{define-key}, or your favorite external package
 such as @samp{bind-key} or @samp{general.el} to manage them.
 
 @node Defining actions for new categories of targets
-@subsection Defining actions for new categories of targets
+@section Defining actions for new categories of targets
 
 It is easy to configure Embark to provide actions for new types of
 targets, either in the minibuffer or outside it. I present below two
@@ -446,10 +435,13 @@ explain more than one way to proceed, typically with the easiest
 option first. I include the alternative options since there will be
 similar situations where the easiest option is not available.
 
-@enumerate
-@item
-New minibuffer target example: tab-bar tabs
+@menu
+* New minibuffer target example, tab-bar tabs: New minibuffer target example tab-bar tabs. 
+* New target example in regular buffers, short Wikipedia links: New target example in regular buffers short Wikipedia links. 
+@end menu
 
+@node New minibuffer target example tab-bar tabs
+@subsection New minibuffer target example, tab-bar tabs
 
 Say you use the new @uref{https://www.gnu.org/software/emacs/manual/html_node/emacs/Tab-Bars.html, tab bars} from Emacs 27 and you want Embark to
 offer tab-specific actions when you use the tab-bar-mode commands
@@ -568,9 +560,8 @@ You can fix this if you wish as described in the previous section.
 @end enumerate
 @end enumerate
 
-@item
-New target example in regular buffers: short Wikipedia links
-
+@node New target example in regular buffers short Wikipedia links
+@subsection New target example in regular buffers, short Wikipedia links
 
 Say you want to teach embark to treat text of the form
 @samp{wikipedia:Gary_Kasparov} in any regular buffer as a link to Wikipedia,
@@ -584,7 +575,7 @@ You can be as fancy as you want with the recognized syntax. Here, to
 keep the example simple, I'll assume the link matches the regexp
 @samp{wikipedia:[[:alnum:]_]+}. We will write a function that looks for a
 match surrounding point, and returns the pair @samp{(cons 'url
- actual-url-of-the-page)}.
+actual-url-of-the-page)}.
 
 @lisp
 (defun my-short-wikipedia-link ()
@@ -600,10 +591,9 @@ match surrounding point, and returns the pair @samp{(cons 'url
 
 (add-to-list 'embark-target-finders 'my-short-wikipedia-link)
 @end lisp
-@end enumerate
 
 @node Embark Marginalia and Consult
-@section Embark, Marginalia and Consult
+@chapter Embark, Marginalia and Consult
 
 Some changes were made to Embark, to better cooperate with the
 @uref{https://github.com/minad/marginalia, Marginalia} and @uref{https://github.com/minad/consult, Consult} packages, and prior to being submitted to
