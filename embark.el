@@ -1269,8 +1269,9 @@ Argument BUFFER-NAME specifies the name of the created buffer."
                 'list))
       (when (eq embark-occur-view 'zebra)
         (setq embark-occur-view 'list)
-        (embark-occur-zebra-minor-mode)))
-    (embark--cache-info buffer)
+        (embark-occur-zebra-minor-mode))
+      (with-current-buffer from (embark--cache-info buffer))
+      (revert-buffer))
     buffer))
 
 (defun embark-occur--display (occur-buffer &optional action)
@@ -1282,9 +1283,7 @@ window where the buffer is displayed.
 Optional argument ACTION is passed to `display-buffer' to control
 window placement."
   (let ((occur-window (display-buffer occur-buffer action)))
-    (with-selected-window occur-window
-      (run-mode-hooks)
-      (revert-buffer))
+    (with-selected-window occur-window (run-mode-hooks))
     occur-window))
 
 (defun embark-occur--initial-view-arg ()
