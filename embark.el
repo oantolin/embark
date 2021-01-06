@@ -763,7 +763,8 @@ minor mode activated).  Additionally you can associate t to a
 default initial view for types not mentioned separately."
   :type '(alist :key-type symbol
                 :value-type (choice (const :tag "List view" list)
-                                    (const :tag "Grid view" grid))))
+                                    (const :tag "Grid view" grid)
+                                    (const :tag "List with Zebra stripes" zebra))))
 
 (defcustom embark-exporters-alist
   '((buffer . embark-export-ibuffer)
