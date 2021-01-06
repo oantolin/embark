@@ -1460,7 +1460,7 @@ buffer for each type of completion."
   (interactive)
   (user-error "Not meant to be called directly"))
 
-(declare-function 'compile-goto-error "compile")
+(declare-function compile-goto-error "compile")
 
 (defun embark-goto-location (location)
   "Go to LOCATION, which should be a string with a grep match."
