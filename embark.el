@@ -591,12 +591,16 @@ This function takes a target of type virtual-buffer (from
 Consult's `consult-buffer' command) and transforms it to its
 actual type, whether `buffer', `file' or `bookmark', and also
 removes its prefix typing character."
-  (cons (pcase (- (aref target 0) #x100000)
-          ((or ?b ?p) 'buffer)
-          ((or ?f ?q) 'file)
-          (?m 'bookmark)
-          (_ 'general))
-        (substring target 1)))
+  (let ((first (- (aref target 0) #x100000)))
+    (if (<= 0 first ?z)
+        (cons (pcase first
+                ((or ?b ?p) 'buffer)
+                ((or ?f ?q) 'file)
+                (?m 'bookmark)
+                (_ 'general))
+              (substring target 1))
+      ;; new buffer case, don't remove first char
+      (cons 'buffer target))))
 
 (defun embark-lookup-lighter-minor-mode (target)
   "If TARGET is a lighter, look up its minor mode.
@@ -802,9 +806,10 @@ minibuffer input to the chosen entry and, unless this leads to
 new completion candidates (for example, when entering a directory
 in `find-file'), exits the minibuffer.
 
-If you are using `embark-completing-read' as your
-`completing-read-function' you might want to set
-`embark-occur-minibuffer-completion' to t."
+If you are adding `embark-live-occur-after-input' or
+`embark-live-occur-after-delay' to your `minibuffer-setup-hook'
+to use Embark Live Occur as your completion UI you might want to
+set `embark-occur-minibuffer-completion' to t."
   :type 'boolean)
 
 (defface embark-occur-candidate '((t :inherit default))
@@ -986,9 +991,10 @@ new completion candidates (for example, when entering a directory
 in `find-file') or the command was called with a prefix argument,
 exit the minibuffer.
 
-If you are using `embark-completing-read' as your
-`completing-read-function' you might want to set
-`embark-occur-minibuffer-completion' to t."
+If you are adding `embark-live-occur-after-input' or
+`embark-live-occur-after-delay' to your `minibuffer-setup-hook'
+to use Embark Live Occur as your completion UI you might want to
+set `embark-occur-minibuffer-completion' to t."
   (let ((text (button-label entry)))
     (if (and embark-occur-minibuffer-completion
              (active-minibuffer-window)
