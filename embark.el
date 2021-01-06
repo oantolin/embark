@@ -279,21 +279,21 @@ This list is used only when `embark-allow-edit-default' is t."
         (buffer-substring (minibuffer-prompt-end) (point))))
     default-directory))
 
-(defun embark--cache-info (&optional buffer)
+(defun embark--target-buffer ()
+  "Return buffer that should be targeted by Embark actions."
+  (if (minibufferp)
+      (window-buffer (minibuffer-selected-window))
+    (or embark--target-buffer ; cached?
+        (current-buffer))))
+
+(defun embark--cache-info (buffer)
   "Cache information needed for actions in variables local to BUFFER.
 BUFFER defaults to the current buffer."
-  (let ((type (or embark--type
-                  (car (run-hook-with-args-until-success
-                        'embark-candidate-collectors))))
-        (cmd (or embark--command this-command))
+  (let ((cmd (or embark--command this-command))
         (dir (embark--default-directory))
-        (target-buffer (if (minibufferp)
-                           (window-buffer (minibuffer-selected-window))
-                         (or embark--target-buffer
-                             (current-buffer)))))
-    (with-current-buffer (or buffer (current-buffer))
+        (target-buffer (embark--target-buffer)))
+    (with-current-buffer buffer
       (setq-local embark--command cmd)
-      (setq-local embark--type type)
       (setq-local default-directory dir)
       (setq-local embark--target-buffer target-buffer))))
 
@@ -302,14 +302,24 @@ BUFFER defaults to the current buffer."
 Meant to be be added to `completion-setup-hook'."
   ;; when completion-setup-hook hook runs, the *Completions* buffer is
   ;; available in the variable standard-output
-  (embark--cache-info standard-output))
+  (embark--cache-info standard-output)
+  (when (minibufferp completion-reference-buffer)
+    (setf (buffer-local-value 'embark--type standard-output)
+          (completion-metadata-get (embark--metadata) 'category))))
 
 ;; We have to add this *after* completion-setup-function because that's
 ;; when the buffer is put in completion-list-mode and turning the mode
 ;; on kills all local variables! So we use a depth of 5.
 (add-hook 'completion-setup-hook #'embark--cache-info--completion-list 5)
 
-(add-hook 'minibuffer-setup-hook #'embark--cache-info)
+;;;###autoload
+(progn
+  (defun embark--record-this-command ()
+    "Record command which opened the minibuffer.
+We record this because `embark-default-action' needs to know it.
+This function is meant to be added to `minibuffer-setup-hook'."
+    (setq-local embark--command this-command))
+  (add-hook 'minibuffer-setup-hook #'embark--record-this-command))
 
 ;;; internal variables
 
@@ -541,8 +551,9 @@ minibuffer."
                      embark-export))    ; in the target window
       (command-execute action)
     (let* ((command embark--command)
-           (action-window (if (buffer-live-p embark--target-buffer)
-                              (display-buffer embark--target-buffer)
+           (target-buffer (embark--target-buffer))
+           (action-window (if (buffer-live-p target-buffer)
+                              (display-buffer target-buffer)
                             (selected-window)))
            (setup-hook (or (alist-get action embark-setup-overrides)
                            embark-setup-hook))
@@ -1127,6 +1138,16 @@ This is specially useful to tell where multi-line entries begin and end."
 
 (defun embark-occur--revert ()
   "Recalculate Embark Occur candidates if possible."
+  (when (buffer-live-p embark-occur-from)
+    (pcase-let ((`(,type . ,candidates)
+                 (with-current-buffer embark-occur-from
+                   (run-hook-with-args-until-success
+                    'embark-candidate-collectors))))
+      (setq embark--type type
+            embark-occur-candidates candidates
+            default-directory
+            (with-current-buffer embark-occur-from
+              (embark--default-directory)))))
   (setq embark-occur-annotator
         (or
          ;; for the active minibuffer, get annotation-function metadatum
@@ -1140,16 +1161,6 @@ This is specially useful to tell where multi-line entries begin and end."
          (when (boundp 'marginalia-annotators)
            (alist-get embark--type (symbol-value
                                     (car marginalia-annotators))))))
-  (when (buffer-live-p embark-occur-from)
-    (pcase-let ((`(,type . ,candidates)
-                 (with-current-buffer embark-occur-from
-                   (run-hook-with-args-until-success
-                    'embark-candidate-collectors))))
-      (setq embark--type type
-            embark-occur-candidates candidates
-            default-directory
-            (with-current-buffer embark-occur-from
-              (embark--default-directory)))))
   (if (eq embark-occur-view 'list)
       (embark-occur--list-view)
     (embark-occur--grid-view)))
