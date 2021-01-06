@@ -594,7 +594,7 @@ removes its prefix typing character."
   (let ((first (- (aref target 0) #x100000)))
     (if (<= 0 first ?z)
         (cons (pcase first
-                ((or ?b ?p) 'buffer)
+                ((or ?b ?h ?p) 'buffer)
                 ((or ?f ?q) 'file)
                 (?m 'bookmark)
                 (_ 'general))
