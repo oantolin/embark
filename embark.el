@@ -708,7 +708,8 @@ convenient access to the other commands in it."
                                    (lambda ()
                                      (delete-minibuffer-contents)
                                      (insert target))
-                                 (command-execute become))))
+                                 (let ((use-dialog-box nil))
+                                   (command-execute become)))))
         (top-level)))))
 
 (defmacro embark-define-keymap (name doc &rest bindings)
