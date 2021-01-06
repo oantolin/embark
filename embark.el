@@ -271,9 +271,6 @@ This list is used only when `embark-allow-edit-default' is t."
 (defvar-local embark--command nil
   "Command that started the completion session.")
 
-(defvar embark--last-command-and-input nil
-  "Previous command and the input the user gave it.")
-
 (defun embark--default-directory ()
   "Guess a reasonable default directory for the current candidates."
   (if (and (minibufferp) minibuffer-completing-file-name)
@@ -322,18 +319,7 @@ Meant to be be added to `completion-setup-hook'."
 We record this because `embark-default-action' needs to know it.
 This function is meant to be added to `minibuffer-setup-hook'."
     (setq-local embark--command this-command))
-  
-  (add-hook 'minibuffer-setup-hook #'embark--record-this-command)
-
-  (defun embark--record-last-command-and-input ()
-    "Record the last command and the input given to it.
-We record this so `embark-repeat' can rerun the command with the
-same input.  This function is meant to be added to
-`minibuffer-exit-hook'."
-    (setq embark--last-command-and-input
-          (cons embark--command (minibuffer-contents))))
-
-  (add-hook 'minibuffer-exit-hook #'embark--record-last-command-and-input))
+  (add-hook 'minibuffer-setup-hook #'embark--record-this-command))
 
 ;;; internal variables
 
@@ -724,17 +710,6 @@ convenient access to the other commands in it."
                                      (insert target))
                                  (command-execute become))))
         (top-level)))))
-
-;;;###autoload
-(defun embark-repeat ()
-  "Repeat last command that used the minibuffer and insert the same input."
-  (interactive)
-  (pcase-let ((`(,cmd . ,input) embark--last-command-and-input))
-    (minibuffer-with-setup-hook
-        (lambda ()
-          (delete-minibuffer-contents)
-          (insert input))
-    (command-execute cmd))))
 
 (defmacro embark-define-keymap (name doc &rest bindings)
   "Define keymap variable NAME.
