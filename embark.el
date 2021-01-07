@@ -1213,9 +1213,9 @@ means list view, anything else means proceed according to
   "Reuse an Embark Collect Completions window to display BUFFER.
 ALIST comes from the action argument of `display-buffer'."
   (cl-loop for window in (window-list-1 nil 'no-minibuffer)
-           for buffer = (window-buffer (window-buffer window))
            when (and (window-live-p window)
-                     (eq (buffer-local-value 'embark-collect--kind buffer)
+                     (eq (buffer-local-value 'embark-collect--kind
+                                             (window-buffer window))
                          :completions))
            return (window--display-buffer buffer window 'reuse alist)))
 
