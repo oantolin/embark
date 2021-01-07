@@ -1,4 +1,4 @@
-;;; Embark.el --- Conveniently act on minibuffer completions   -*- lexical-binding: t; -*-
+;;; embark.el --- Conveniently act on minibuffer completions   -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2020  Omar Antolín Camarena
 
