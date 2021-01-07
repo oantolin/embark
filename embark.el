@@ -545,11 +545,16 @@ minibuffer."
 
 (defun embark--act (action target &optional exit)
   "Perform ACTION injecting the TARGET, optionally EXIT to top level."
-  (if (memq action '(embark-become      ; these actions handle
-                     embark-live-occur  ; exiting on their own
-                     embark-occur       ; and should not be run
-                     embark-export))    ; in the target window
-      (command-execute action)
+  (if (memq action '(embark-become      ; these actions should not be
+                     embark-live-occur  ; run in the target window
+                     embark-occur
+                     embark-export))
+      (progn
+        (command-execute action)
+        (when (and exit (eq action 'embark-occur))
+          ;; we handle exiting for embark-occur
+          (run-at-time 0 nil #'message nil)
+          (top-level)))
     (let* ((command embark--command)
            (target-buffer (embark--target-buffer))
            (action-window (if (buffer-live-p target-buffer)
@@ -1221,48 +1226,6 @@ a linked Embark Live Occur buffer."
   (interactive)
   (embark-occur--toggle 'tabulated-list-use-header-line t nil))
 
-(defun embark-occur-noselect (buffer-name &optional initial-view)
-  "Create and return a buffer of current candidates ready for action.
-Optionally start in INITIAL-VIEW (either `list' or `grid')
-instead of what `embark-occur-initial-view-alist' specifies.
-Argument BUFFER-NAME specifies the name of the created buffer."
-  (pcase-let ((from (current-buffer))
-              (buffer (generate-new-buffer buffer-name))
-              (`(,type . ,candidates)
-               (run-hook-with-args-until-success 'embark-candidate-collectors)))
-    (setq embark-occur-linked-buffer buffer)
-    (with-current-buffer buffer
-      ;; we'll run the mode hooks once the buffer is displayed, so
-      ;; the hooks can make use of the window
-      (delay-mode-hooks (embark-occur-mode))
-      (setq tabulated-list-use-header-line nil) ; default to no header
-      (setq embark-occur-from from)
-      (setq embark-occur-candidates candidates)
-      (add-hook 'tabulated-list-revert-hook #'embark-occur--revert nil t)
-      (setq embark-occur-view
-            (or initial-view
-                (alist-get type embark-occur-initial-view-alist)
-                (alist-get t embark-occur-initial-view-alist)
-                'list))
-      (when (eq embark-occur-view 'zebra)
-        (setq embark-occur-view 'list)
-        (embark-occur-zebra-minor-mode))
-      (with-current-buffer from (embark--cache-info buffer))
-      (revert-buffer))
-    buffer))
-
-(defun embark-occur--display (occur-buffer &optional action)
-  "Display the Embark OCCUR-BUFFER and run mode hooks.
-This is also when we initially fill the buffer with candidates,
-since the grid view needs to know the window width.  Return the
-window where the buffer is displayed.
-
-Optional argument ACTION is passed to `display-buffer' to control
-window placement."
-  (let ((occur-window (display-buffer occur-buffer action)))
-    (with-selected-window occur-window (run-mode-hooks))
-    occur-window))
-
 (defun embark-occur--initial-view-arg ()
   "Translate current prefix arg to intial Embark Occur view.
 \\[universal-argument] means grid view, a prefix argument of 1
@@ -1275,11 +1238,86 @@ means list view, anything else means proceed according to
 (defun embark--reuse-live-occur-window (buffer alist)
   "Reuse an Embark Live Occur window in the current frame to display BUFFER.
 ALIST comes from the action argument of `display-buffer'."
-  (cl-loop for window in (window-list-1 nil 'nomini)
+  (cl-loop for window in (window-list-1 nil 'no-minibuffer)
            for name = (buffer-name (window-buffer window))
            when (and (window-live-p window)
                      (string-match-p "Embark Live Occur" name))
            return (window--display-buffer buffer window 'reuse alist)))
+
+(defun embark--occur (name initial-view kind)
+  "Create and display an Embark occur buffer of given KIND.
+The buffer is put in INITIAL-VIEW and given the specified NAME.
+The KIND can be :completions, :live or :snapshot.
+Both :completions and :live buffer auto-update.  Additonally,
+:completions buffers will be displayed in a dedicated window
+at the bottom of the frame and are automatically killed when
+the minibuffer is exited."
+  (pcase-let ((from (current-buffer))
+              (buffer (generate-new-buffer name))
+              (`(,type . ,candidates)
+               (run-hook-with-args-until-success 'embark-candidate-collectors)))
+    (setq embark-occur-linked-buffer buffer)
+    (with-current-buffer buffer
+      ;; we'll run the mode hooks once the buffer is displayed, so
+      ;; the hooks can make use of the window
+      (delay-mode-hooks (embark-occur-mode))
+
+      (setq tabulated-list-use-header-line nil) ; default to no header
+
+      (unless (eq kind :snapshot)
+        ;; setup live updating
+        (with-current-buffer from
+          (add-hook 'after-change-functions
+                    #'embark-occur--update-linked nil t)))
+
+      (unless (and (minibufferp from) (eq kind :snapshot))
+        ;; for a snapshot of a minibuffer, don't link back to minibuffer:
+        ;; they can get recycled and if so revert would do the wrong thing
+        (setq embark-occur-from from))
+
+      (setq embark--type type)
+      (setq embark-occur-candidates candidates)
+      (add-hook 'tabulated-list-revert-hook #'embark-occur--revert nil t)
+
+      (setq embark-occur-view
+            (or initial-view
+                (alist-get type embark-occur-initial-view-alist)
+                (alist-get t embark-occur-initial-view-alist)
+                'list))
+      (when (eq embark-occur-view 'zebra)
+        (setq embark-occur-view 'list)
+        (embark-occur-zebra-minor-mode))
+
+      (with-current-buffer from (embark--cache-info buffer)))
+
+    (let ((window (display-buffer
+                   buffer
+                   (when (eq kind :completions)
+                     '((embark--reuse-live-occur-window
+                        display-buffer-at-bottom))))))
+
+      (with-selected-window window
+        (run-mode-hooks)
+        (revert-buffer))
+
+      (set-window-dedicated-p window t)
+
+      (when (minibufferp from)
+        (add-hook
+         'minibuffer-exit-hook
+         (pcase kind
+           (:completions
+            (lambda () (kill-buffer buffer)))
+           (:live
+            (lambda ()
+              (setf (buffer-local-value 'embark-occur-from buffer) nil)
+              (run-at-time 0 nil #'display-buffer buffer)))
+           (:snapshot
+            (lambda () (run-at-time 0 nil #'display-buffer buffer))))
+         nil t)
+        (setq minibuffer-scroll-window window))
+
+      window)))
 
 ;;;###autoload
 (defun embark-live-occur (&optional initial-view)
@@ -1292,20 +1330,7 @@ argument of 1 means list view.
 To control the display, add an entry to `display-buffer-alist'
 with key \"Embark Live Occur\"."
   (interactive (embark-occur--initial-view-arg))
-  (let ((occur-buffer
-         (embark-occur-noselect "*Embark Live Occur*" initial-view)))
-    (add-hook 'after-change-functions   ; set up live updates!
-              #'embark-occur--update-linked nil t)
-    (let ((occur-window (embark-occur--display
-                         occur-buffer
-                         '((embark--reuse-live-occur-window
-                            display-buffer-at-bottom)))))
-      (set-window-dedicated-p occur-window t)
-      (when (minibufferp)
-        (add-hook 'minibuffer-exit-hook
-                  (lambda () (kill-buffer occur-buffer))
-                  nil t)
-        (setq minibuffer-scroll-window occur-window)))))
+  (embark--occur "*Embark Live Occur*" initial-view :live))
 
 ;;;###autoload
 (defun embark-occur (&optional initial-view)
@@ -1318,15 +1343,7 @@ argument of 1 means list view.
 To control the display, add an entry to `display-buffer-alist'
 with key \"Embark Occur\"."
   (interactive (embark-occur--initial-view-arg))
-  (let ((occur-buffer
-         (embark-occur-noselect "*Embark Occur*" initial-view)))
-    (when (minibufferp)
-      ;; sever the link since minibuffers stay live and get recycled
-      (setf (buffer-local-value 'embark-occur-from occur-buffer) nil))
-    (run-at-time 0 nil (lambda ()
-                         (message nil)
-                         (select-window (embark-occur--display occur-buffer))))
-    (top-level)))
+  (embark--occur "*Embark Occur*" initial-view :snapshot))
 
 (defun embark-live-occur-after-delay ()
   "Start `embark-live-occur' after `embark-live-occur-initial-delay'.
@@ -1335,7 +1352,7 @@ Live Occur buffer popup every time you use the minibuffer."
   (when minibuffer-completion-table
     (run-with-idle-timer
      embark-live-occur-initial-delay nil
-     (lambda () (when (minibufferp) (embark-live-occur))))))
+     (lambda () (when (minibufferp) (embark--occur "*Embark Live Occur*" nil :completions))))))
 
 (defun embark--wait-for-input (_beg _end _len)
   "After input in the minibuffer, wait briefly and run `embark-live-occur'.
