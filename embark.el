@@ -1477,7 +1477,7 @@ probably shouldn't use this function directly."
   "0.10")
 
 (defun embark-collect-completions-after-input ()
-  "Start `embark-collect-completions' shortly after the minibuffer receives some input.
+  "Start `embark-collect-completions' after some minibuffer input.
 Add this function to `minibuffer-setup-hook' to have an Embark
 Live Collect buffer popup soon after you type something in the
 minibuffer; the length of the delay after typing is given by
