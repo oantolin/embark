@@ -331,17 +331,42 @@ There are three kinds:
 - :live, which does
 - :completions, which also auto-updates, but is ephemeral.")
 
+(define-obsolete-variable-alias
+  'embark-occur-candidates
+  'embark-collect-candidates
+  "0.10")
+
 (defvar-local embark-collect-candidates nil
   "List of candidates in current collect buffer.")
+
+(define-obsolete-variable-alias
+  'embark-occur-view
+  'embark-collect-view
+  "0.10")
 
 (defvar-local embark-collect-view 'list
   "Type of view in collect buffer: `list' or `grid'.")
 
+(define-obsolete-variable-alias
+  'embark-occur-from
+  'embark-collect-from
+  "0.10")
+
 (defvar-local embark-collect-from nil
   "The buffer `embark-collect' was called from.")
 
+(define-obsolete-variable-alias
+  'embark-occur-linked-buffer
+  'embark-collect-linked-buffer
+  "0.10")
+
 (defvar-local embark-collect-linked-buffer nil
   "Buffer local variable indicating which Embark Buffer to update.")
+
+(define-obsolete-variable-alias
+  'embark-occur-annotator
+  'embark-collect-annotator
+  "0.10")
 
 (defvar-local embark-collect-annotator nil
   "Annotation function of minibuffer session for this collect.")
@@ -405,6 +430,11 @@ Return the category metadatum as the type of the target."
              (concat
               (substring contents 0 (or (cdr (last completions)) 0))
               (car completions)))))))))
+
+(define-obsolete-function-alias
+  'embark-target-occur-candidate
+  'embark-target-collect-candidate
+  "0.10")
 
 (defun embark-target-collect-candidate ()
   "Target the collect candidate at point."
@@ -762,6 +792,11 @@ candidates and whose `cdr' is the list of candidates, each of
 which should be a string."
   :type 'hook)
 
+(define-obsolete-variable-alias
+  'embark-occur-initial-view-alist
+  'embark-collect-initial-view-alist
+  "0.10")
+
 (defcustom embark-collect-initial-view-alist
   '((file . grid)
     (buffer . grid)
@@ -802,16 +837,36 @@ default is `embark-collect-snapshot'."
 The expected format is the same as for functions in
 `embark-exporters-alist'.")
 
+(define-obsolete-variable-alias
+  'embark-live-occur-update-delay
+  'embark-collect-live-update-delay
+  "0.10")
+
 (defcustom embark-collect-live-update-delay 0.15
   "Wait this long for more input before updating Embark Collect Live buffer."
   :type 'number)
+
+(define-obsolete-variable-alias
+  'embark-live-occur-initial-delay
+  'embark-collect-live-initial-delay
+  "0.10")
 
 (defcustom embark-collect-live-initial-delay 0.3
   "Wait this long for input before popping up Embark Collect Live buffer."
   :type 'number)
 
+(define-obsolete-variable-alias
+  'embark-occur-candidate
+  'embark-collect-candidate
+  "0.10")
+
 (defface embark-collect-candidate '((t :inherit default))
   "Face for candidates in Embark Collect.")
+
+(define-obsolete-variable-alias
+  'embark-occur-zebra-highlight
+  'embark-collect-zebra-highlight
+  "0.10")
 
 (defface embark-collect-zebra-highlight
   '((default :extend t)
@@ -821,9 +876,19 @@ The expected format is the same as for functions in
      :background "#242424"))
   "Face to highlight alternate rows in `embark-collect-zebra-minor-mode'")
 
+(define-obsolete-variable-alias
+  'embark-occur-annotation
+  'embark-collect-annotation
+  "0.10")
+
 (defface embark-collect-annotation '((t :inherit completions-annotations))
   "Face for annotations in Embark Collect.
 This is only used for annotation that are not already fontified.")
+
+(define-obsolete-variable-alias
+  'embark-occur-post-revert-hook
+  'embark-collect-post-revert-hook
+  "0.10")
 
 (defcustom embark-collect-post-revert-hook nil
   "Hook run after an Embark Collect buffer is updated."
@@ -903,6 +968,11 @@ list `embark-candidate-collectors'."
          (push (buffer-name buffer) buffers)))
       (cons 'buffer (nreverse buffers)))))
 
+(define-obsolete-function-alias
+  'embark-embark-occur-candidates
+  'embark-embark-collect-candidates
+  "0.10")
+
 (defun embark-embark-collect-candidates ()
   "Return candidates in Embark Collect buffer.
 This makes `embark-export' work in Embark Collect buffers."
@@ -946,8 +1016,18 @@ in `embark-collect-direct-action-minor-mode-map' nor mentioned by
       (not (symbolp cmd))
       (memq cmd '(ignore embark-keymap-help))))
 
+(define-obsolete-variable-alias
+  'embark-occur-direct-action-minor-mode-map
+  'embark-collect-direct-action-minor-mode-map
+  "0.10")
+
 (defvar embark-collect-direct-action-minor-mode-map (make-sparse-keymap)
   "Keymap for direct bindings to embark actions.")
+
+(define-obsolete-function-alias
+  'embark-occur-direct-action-minor-mode
+  'embark-collect-direct-action-minor-mode
+  "0.10")
 
 (define-minor-mode embark-collect-direct-action-minor-mode
   "Bind type-specific actions directly (without need for `embark-act')."
@@ -978,6 +1058,11 @@ in `embark-collect-direct-action-minor-mode-map' nor mentioned by
      minibuffer-completion-predicate
      (substring contents pt))))
 
+(define-obsolete-function-alias
+  'embark-occur-choose
+  'embark-collect-choose
+  "0.10")
+
 (defun embark-collect-choose (entry)
   "Select a completion or run default action on Embark Collect ENTRY.
 
@@ -1006,6 +1091,8 @@ For other Embark Collect buffers, run the default action on ENTRY."
             (exit-minibuffer)))
       (embark--act #'embark-default-action text))))
 
+(make-obsolete 'embark-occur-mode-map 'embark-collect-mode-map "0.10")
+
 (embark-define-keymap embark-collect-mode-map
   "Keymap for Embark collect mode."
   ("a" embark-act)
@@ -1019,6 +1106,11 @@ For other Embark Collect buffers, run the default action on ENTRY."
   ("b" backward-button)
   ("<right>" forward-button)
   ("<left>" backward-button))
+
+(define-obsolete-function-alias
+  'embark-occur-mode
+  'embark-collect-mode
+  "0.10")
 
 (define-derived-mode embark-collect-mode tabulated-list-mode "Embark Collect"
   "List of candidates to be acted on.
@@ -1094,6 +1186,11 @@ keybinding for it.  Or alternatively you might want to enable
               (user-error (goto-char (point-max))))
             (overlay-put (make-overlay pt (point))
                          'face 'embark-collect-zebra-highlight)))))))
+
+(define-obsolete-function-alias
+  'embark-occur-zebra-minor-mode
+  'embark-collect-zebra-minor-mode
+  "0.10")
 
 (define-minor-mode embark-collect-zebra-minor-mode
   "Minor mode to highlight alternate rows in an Embark Collect buffer.
@@ -1184,6 +1281,11 @@ Refresh the buffer afterwards."
            (if (eq (buffer-local-value variable buffer) this) that this))
       (revert-buffer))))
 
+(define-obsolete-function-alias
+  'embark-occur-toggle-view
+  'embark-collect-toggle-view
+  "0.10")
+
 (defun embark-collect-toggle-view ()
   "Toggle between list and grid views of Embark Collect buffer.
 This command can be called either from the Embark Collect buffer
@@ -1191,6 +1293,11 @@ itself, or, from any buffer (particularly a minibuffer) that has
 a linked Embark Collect Live buffer."
   (interactive)
   (embark-collect--toggle 'embark-collect-view 'list 'grid))
+
+(define-obsolete-function-alias
+  'embark-occur-toggle-header
+  'embark-collect-toggle-header
+  "0.10")
 
 (defun embark-collect-toggle-header ()
   "Toggle the visibility of the header line of Embark Collect buffer.
@@ -1296,6 +1403,11 @@ the minibuffer is exited."
 
       window)))
 
+(define-obsolete-function-alias
+  'embark-live-occur
+  'embark-collect-live
+  "0.10")
+
 ;;;###autoload
 (defun embark-collect-live (&optional initial-view)
   "Create a live-updating Embark Collect buffer.
@@ -1308,6 +1420,11 @@ To control the display, add an entry to `display-buffer-alist'
 with key \"Embark Collect Live\"."
   (interactive (embark-collect--initial-view-arg))
   (embark--collect "*Embark Collect Live*" initial-view :live))
+
+(define-obsolete-function-alias
+  'embark-occur
+  'embark-collect-snapshot
+  "0.10")
 
 ;;;###autoload
 (defun embark-collect-snapshot (&optional initial-view)
@@ -1327,6 +1444,11 @@ with key \"Embark Collect\"."
   (interactive)
   (embark--collect "*Embark Collect Completions*" nil :completions))
 
+(define-obsolete-function-alias
+  'embark-live-occur-after-delay
+  'embark-collect-completions-after-delay
+  "0.10")
+
 (defun embark-collect-completions-after-delay ()
   "Start `embark-collect-live' after `embark-collect-live-initial-delay'.
 Add this function to `minibuffer-setup-hook' to have an Embark
@@ -1344,6 +1466,11 @@ probably shouldn't use this function directly."
   (remove-hook 'after-change-functions 'embark--wait-for-input t)
   (embark-collect-completions-after-delay))
 
+(define-obsolete-function-alias
+  'embark-live-occur-after-input
+  'embark-collect-completions-after-input
+  "0.10")
+
 (defun embark-collect-completions-after-input ()
   "Start `embark-collect-completions' shortly after the minibuffer receives some input.
 Add this function to `minibuffer-setup-hook' to have an Embark
@@ -1352,6 +1479,11 @@ minibuffer; the length of the delay after typing is given by
 `embark-collect-live-initial-delay'."
   (when minibuffer-completion-table
    (add-hook 'after-change-functions #'embark--wait-for-input nil t)))
+
+(define-obsolete-function-alias
+  'embark-switch-to-live-occur
+  'embark-switch-to-collect-completions
+  "0.10")
 
 ;;;###autoload
 (defun embark-switch-to-collect-completions ()
