@@ -751,7 +751,8 @@ convenient access to the other commands in it."
                                    (lambda ()
                                      (delete-minibuffer-contents)
                                      (insert target))
-                                 (let ((use-dialog-box nil))
+                                 (let ((use-dialog-box nil)
+                                       (this-command become))
                                    (command-execute become)))))
         (top-level)))))
 
