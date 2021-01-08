@@ -1,4 +1,4 @@
-;;; avy-embark-occur.el --- Use avy to jump to Embark Occur entries  -*- lexical-binding: t; -*-
+;;; avy-embark-collect.el --- Use avy to jump to Embark Collect entries  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2020  Omar Antolín Camarena
 
@@ -20,8 +20,8 @@
 
 ;;; Commentary:
 
-;; This packages provides two commands, `avy-embark-occur-choose' and
-;; `avy-embark-occur-act', that use avy to jump to an Embark Occur
+;; This packages provides two commands, `avy-embark-collect-choose' and
+;; `avy-embark-collect-act', that use avy to jump to an Embark Collect
 ;; entry and choose it or act on it, respectively.
 
 ;;; Code:
@@ -30,47 +30,47 @@
 (require 'embark)
 (eval-when-compile (require 'subr-x))
 
-(defvar avy-embark-occur--initial-window nil
+(defvar avy-embark-collect--initial-window nil
   "Window that was selected before jumping.")
 
 (defun avy-action-embark-choose (pt)
   "Choose completion at PT."
   (goto-char pt)
-  (embark-occur-choose (button-at pt)))
+  (embark-collect-choose (button-at pt)))
 
 (defun avy-action-embark-act (pt)
   "Act on the completion at PT."
   (goto-char pt)
   (add-hook 'embark-post-action-hook
-            (lambda () (select-window avy-embark-occur--initial-window))
+            (lambda () (select-window avy-embark-collect--initial-window))
             nil t)
   (embark-act))
 
-(defun avy-embark-occur--choose-window ()
-  "Choose a window displaying an Embark Occur buffer to jump to.
-The Embark Occur buffer to use is chosen in order of priority as:
+(defun avy-embark-collect--choose-window ()
+  "Choose a window displaying an Embark Collect buffer to jump to.
+The Embark Collect buffer to use is chosen in order of priority as:
 - the current buffer,
-- a linked Embark Occur buffer,
-- some visible Embark Occur buffer."
+- a linked Embark Collect buffer,
+- some visible Embark Collect buffer."
   (cond
-   ((derived-mode-p 'embark-occur-mode) (get-buffer-window))
-   (embark-occur-linked-buffer
-    (get-buffer-window embark-occur-linked-buffer))
+   ((derived-mode-p 'embark-collect-mode) (selected-window))
+   (embark-collect-linked-buffer
+    (get-buffer-window embark-collect-linked-buffer))
    (t (catch 'return
         (dolist (window (window-list-1))
           (with-selected-window window
-            (when (derived-mode-p 'embark-occur-mode)
+            (when (derived-mode-p 'embark-collect-mode)
               (throw 'return window))))))))
 
-(defun avy-embark-occur--jump (action dispatch-alist)
-  "Jump to an Embark Occur candidate and perform ACTION.
+(defun avy-embark-collect--jump (action dispatch-alist)
+  "Jump to an Embark Collect candidate and perform ACTION.
 Other actions are listed in the DISPATCH-LIST.
-The Embark Occur buffer to use is chosen in order of priority as:
+The Embark Collect buffer to use is chosen in order of priority as:
 - the current buffer,
-- a linked Embark Occur buffer,
-- some visible Embark Occur buffer."
-  (setq avy-embark-occur--initial-window (selected-window))
-  (if-let ((wnd (avy-embark-occur--choose-window)))
+- a linked Embark Collect buffer,
+- some visible Embark Collect buffer."
+  (setq avy-embark-collect--initial-window (selected-window))
+  (if-let ((wnd (avy-embark-collect--choose-window)))
       (with-current-buffer (window-buffer wnd)
         (avy-with avy-completion
           (let ((avy-action action)
@@ -82,25 +82,25 @@ The Embark Occur buffer to use is chosen in order of priority as:
                  (forward-button 1 t)
                  (while (not (bobp))
                    (when (eq (button-type (button-at (point)))
-                             'embark-occur-entry) ; skip annotations
+                             'embark-collect-entry) ; skip annotations
                      (push (cons (point) wnd) btns))
                    (forward-button 1 t))
                  (nreverse btns)))))))
-    (user-error "No *Embark Occur* found")))
+    (user-error "No *Embark Collect* found")))
 
-(defun avy-embark-occur-choose ()
-  "Choose an Embark Occur candidate."
+(defun avy-embark-collect-choose ()
+  "Choose an Embark Collect candidate."
   (interactive)
-  (avy-embark-occur--jump #'avy-action-embark-choose
-                          '((?x . avy-action-embark-act)
-                            (?m . avy-action-goto))))
+  (avy-embark-collect--jump #'avy-action-embark-choose
+                            '((?x . avy-action-embark-act)
+                              (?m . avy-action-goto))))
 
-(defun avy-embark-occur-act ()
-  "Act on an Embark Occur candidate."
+(defun avy-embark-collect-act ()
+  "Act on an Embark Collect candidate."
   (interactive)
-  (avy-embark-occur--jump #'avy-action-embark-act
-                          '((?x . avy-action-embark-choose)
-                            (?m . avy-action-goto))))
+  (avy-embark-collect--jump #'avy-action-embark-act
+                            '((?x . avy-action-embark-choose)
+                              (?m . avy-action-goto))))
 
-(provide 'avy-embark-occur)
-;;; avy-embark-occur.el ends here
+(provide 'avy-embark-collect)
+;;; avy-embark-collect.el ends here
