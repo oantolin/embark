@@ -63,17 +63,28 @@ Defining actions for new categories of targets
 
 @itemize
 @item
+The ``occur'' subsytem has been overhauled and renamed ``collect''.
+There are aliases for the old command and variable names with
+``occur'' in them, but those will be gone in a couple of months. So
+please update your configuration.
+
+(The ``occur'' name came from @samp{ivy-occur} but since both @samp{occur} and
+@samp{helm-occur} use @samp{occur} in a different sense, and @samp{occur} is obviously
+older than @samp{ivy-occur}, I decided to avoid the @samp{embark-occur} name.
+The new @samp{embark-collect} name is much more self-explanatory too.)
+
+@item
 The system for configuring targets and candidate collections has
 been greatly simplified, so if you wrote your own target finders
 or candidate collectors, you will need to tweak them to return
 @samp{(cons type previous-return-value)}. This change means separate
 classifiers are no longer needed (or supported!).
+
 @item
-If you are already an Embark user and a relatively recent update
-caused you to lose the package and symbol actions, install
-@uref{https://github.com/minad/marginalia, Marginalia}, activate @samp{marginalia-mode} and you should be good to
-go. If you want to read more about these changes see @uref{https://github.com/oantolin/embark#embark-marginalia-and-consult, the last
-section}.
+If you are already an Embark user and an update caused you to lose
+the package and symbol actions, install @uref{https://github.com/minad/marginalia, Marginalia}, activate
+@samp{marginalia-mode} and you should be good to go. If you want to read
+more about these changes see @uref{https://github.com/oantolin/embark#embark-marginalia-and-consult, the last section}.
 @end itemize
 
 @node Overview
@@ -191,15 +202,17 @@ candidate sets:
 
 @itemize
 @item
-The @samp{embark-occur} command produces a buffer listing all candidates,
-for you to peruse and run actions on at your leisure. The
-candidates can be viewed in a grid or as a list showing additional
-annotations.
+The @samp{embark-collect-snapshot} command produces a buffer listing all
+the current candidates, for you to peruse and run actions on at your
+leisure. The candidates can be viewed in a grid or as a list showing
+additional annotations.
 
 @item
-The @samp{embark-live-occur} variant of @samp{embark-occur} produces ``live''
-Embark Occur buffers, meaning they auto-update as the set of
-candidates changes.
+The @samp{embark-collect-live} variant of @samp{embark-collect-snapshot} produces
+``live'' Embark Collect buffers, meaning they auto-update as the set
+of candidates changes. Most users of visual completion UIs such as
+Icomplete or Selectrum will probably not want to use this, to avoid
+seeing double.
 
 @item
 The @samp{embark-export} command tries to open a buffer in an appropriate
@@ -223,7 +236,7 @@ use the grepping commands from the @uref{https://github.com/minad/consult/, Cons
 
 These are always available as ``actions'' (although they do not act on
 just the current target but on all candidates) for @samp{embark-act} and are
-bound to @samp{O}, @samp{L} and @samp{E}, respectively, in @samp{embark-general-map}. This means
+bound to @samp{S}, @samp{L} and @samp{E}, respectively, in @samp{embark-general-map}. This means
 that you do not have to bind your own key bindings for these
 (although you can, of course), just a key binding for @samp{embark-act} or
 @samp{embark-act-noexit}.
@@ -253,15 +266,18 @@ have already typed in the minibuffer.
 
 But for even more convenience, @samp{embark-become} offers shorter key
 bindings for commands you are likely to want the current command to
-become. The way this works is that there is a variable
-@samp{embark-become-keymaps} containing a list of names of keymaps. When you
-use @samp{embark-become} it activates those keymaps in that list which
-contain the current command. For example, the default value of
+become. When you use @samp{embark-become} it looks for the current command in
+all keymaps named in the list @samp{embark-become-keymaps} and then activates
+all keymaps that contain it. For example, the default value of
 @samp{embark-become-keymaps} contains a keymap @samp{embark-become-file+buffer-map}
 with bindings for several commands related to files and buffers, in
-particular, it binds @samp{switch-to-buffer} to @samp{b} and @samp{find-file} to @samp{f}. So
-when I accidentally try to switch to a buffer for a file I haven't
-opened yet, I can type @samp{C-S-a B f} to switch to @samp{find-file}.
+particular, it binds @samp{switch-to-buffer} to @samp{b} and @samp{find-file} to @samp{f}. So when
+I accidentally try to switch to a buffer for a file I haven't opened
+yet, @samp{embark-become} finds that the command I ran, @samp{switch-to-buffer}, is
+in the keymap @samp{embark-become-file+buffer-map}, so it activates that
+keymap (and any others that also contain a binding for
+@samp{switch-to-buffer}). The end result is that I can type @samp{C-S-a B f} to
+switch to @samp{find-file}.
 
 @node Configuration
 @chapter Configuration
@@ -319,9 +335,9 @@ reasonable starting configuration:
 The other command you may want a binding for is @samp{embark-act-noexit}, if
 so put it in @samp{minibuffer-local-map}.
 
-Other Embark commands such as @samp{embark-become}, @samp{embark-occur},
-@samp{embark-live-occur}, @samp{embark-export} can be run through @samp{embark-act} as
-actions bound to @samp{B}, @samp{O}, @samp{L}, @samp{E} respectively, and thus don't really need
+Other Embark commands such as @samp{embark-become}, @samp{embark-collect-snapshot},
+@samp{embark-collect-live}, @samp{embark-export} can be run through @samp{embark-act} as
+actions bound to @samp{B}, @samp{S}, @samp{L}, @samp{E} respectively, and thus don't really need
 a dedicated key binding, but feel free to bind them directly if you
 so wish. If you do choose to bind them directly, you'll probably want
 to bind them in @samp{minibuffer-local-map}, since they are most useful in
@@ -623,12 +639,12 @@ actions when appropriate again.
 
 All annotation functions have been removed from Embark and moved to
 Marginalia (where they have been improved!). Embark used these old
-annotation functions for the list view in Embark Occur buffers.
+annotation functions for the list view in Embark Collect buffers.
 
 @itemize
 @item
 If you install Marginalia and activate @samp{marginalia-mode}, the list
-view in Embark Occur buffers will use the Marginalia annotations
+view in Embark Collect buffers will use the Marginalia annotations
 automatically.
 
 @item
@@ -641,9 +657,9 @@ Other small changes:
 
 @itemize
 @item
-If you have Consult installed and call @samp{embark-occur} from
+If you have Consult installed and call @samp{embark-collect-snapshot} from
 @samp{consult-line}, @samp{consult-mark} or @samp{consult-outline}, you will notice the
-Embark Occur buffer starts in list view by default. Similarly,
+Embark Collect buffer starts in list view by default. Similarly,
 you'll notice that the @samp{consult-yank} family of commands start out in
 list view with zebra stripes, so you can easily tell where
 multi-line kill-ring entries start and end.
