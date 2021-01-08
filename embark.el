@@ -1444,6 +1444,7 @@ with key \"Embark Collect\"."
   (interactive (embark-collect--initial-view-arg))
   (embark--collect "*Embark Collect*" initial-view :snapshot))
 
+;;;###autoload
 (defun embark-collect-completions ()
   "Create an ephemeral live-updating Embark Collect buffer."
   (interactive)
@@ -1454,6 +1455,7 @@ with key \"Embark Collect\"."
   'embark-collect-completions-after-delay
   "0.10")
 
+;;;###autoload
 (defun embark-collect-completions-after-delay ()
   "Start `embark-collect-live' after `embark-collect-live-initial-delay'.
 Add this function to `minibuffer-setup-hook' to have an Embark
@@ -1476,6 +1478,7 @@ probably shouldn't use this function directly."
   'embark-collect-completions-after-input
   "0.10")
 
+;;;###autoload
 (defun embark-collect-completions-after-input ()
   "Start `embark-collect-completions' after some minibuffer input.
 Add this function to `minibuffer-setup-hook' to have an Embark
