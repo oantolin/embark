@@ -474,12 +474,14 @@ relative path."
 (defvar embark-general-map)             ; forward declarations
 (defvar embark-meta-map)
 
-(defun embark--action-keymap (type)
-  "Return action keymap for targets of given TYPE."
+(defun embark--action-keymap (types)
+  "Return action keymap for targets of given TYPES."
   (make-composed-keymap
    (or embark-overriding-keymap
-       (symbol-value (alist-get type embark-keymap-alist)))
-   (if (eq type 'region)
+       (mapcar
+        (lambda (type) (symbol-value (alist-get type embark-keymap-alist)))
+        (seq-uniq types)))
+   (if (memq 'region types)
        embark-meta-map
      embark-general-map)))
 
@@ -663,24 +665,32 @@ work on them."
   (setq embark--command 'embark-goto-location)
   (cons 'xref-location target))
 
-(defun embark--target ()
-  "Retrieve current target.
+(defun embark--targets ()
+  "Retrieve current targets.
 
-An initial guess at the current target and its type is determined
-by running the functions in `emark-target-finders' until one
-returns a non-nil result.  Each function should either a pair of
-a type symbol and a target string, or nil.
+An initial guess at the current targets and their type is
+determined by running the functions in `emark-target-finders'
+and collecting all non-nil results. Each function should either a
+pair of a type symbol and a target string, or nil.
 
-The initial type is then looked up as a key in the variable
-`embark-transformer-alist'.  If there is a transformer for
-the type, it is called with the initial target, and must return a
-`cons' of the transformed type and target."
-  (pcase-let* ((`(,type . ,target)
-                (run-hook-with-args-until-success 'embark-target-finders))
-               (transformer (alist-get type embark-transformer-alist)))
-    (if transformer
-        (funcall transformer target)
-      (cons type target))))
+For each pair, the type is then looked up as a key in the
+variable `embark-transformer-alist'. If there is a transformer
+for the type, it is called with the initial target, and must
+return a `cons' of the transformed type and target."
+  (cl-loop for finder in embark-target-finders
+           for (type . target) = (funcall finder)
+           when type collect
+           (let ((transformer (alist-get type embark-transformer-alist)))
+             (if transformer
+                 (funcall transformer target)
+               (cons type target)))))
+
+(cl-defun embark--keymaps-containing (cmd ids &key keymap result)
+  "Map RESULT on IDS whose KEYMAP contains a binding for CMD."
+  (cl-loop for id in ids
+           for map = (funcall keymap id)
+           when (where-is-internal cmd (list map))
+           collect (funcall result id)))
 
 (defun embark--prompt-for-action (&optional exit)
   "Prompt the user for an action and perform it.
@@ -690,14 +700,25 @@ and returns a function that executes the chosen command, in the
 correct target window, injecting the target at the first
 minibuffer prompt.  The optional argument EXIT controls whether
 to exit the minibuffer."
-  (pcase-let* ((`(,type . ,target) (embark--target))
-               (action (embark--with-indicator embark-action-indicator
-                                               embark-prompter
-                                               (embark--action-keymap type)
-                                               target)))
+  (let* ((pairs (embark--targets))
+         (types (mapcar #'car pairs))
+         (target-indicator (mapconcat #'cdr pairs " | "))
+         (action (embark--with-indicator embark-action-indicator
+                                         embark-prompter
+                                         (embark--action-keymap types)
+                                         target-indicator)))
     (if (null action)
         (minibuffer-message "Canceled")
-      (embark--act action target exit))))
+      (embark--act action
+                   (car
+                    (embark--keymaps-containing
+                     action
+                     pairs
+                     :keymap (pcase-lambda (`(,type . ,target))
+                               (embark--action-keymap (list type)))
+                     :result (pcase-lambda (`(,type . ,target))
+                               target)))
+                   exit))))
 
 ;;;###autoload
 (defun embark-act-noexit ()
@@ -722,10 +743,9 @@ Completions buffer it ixs the candidate at point."
 (defun embark--become-keymap ()
   "Return keymap of commands to become for current command."
   (make-composed-keymap
-   (cl-loop for keymap-name in embark-become-keymaps
-            for keymap = (symbol-value keymap-name)
-            when (where-is-internal embark--command (list keymap))
-            collect keymap)
+   (embark--keymaps-containing embark--command embark-become-keymaps
+                               :keymap #'symbol-value
+                               :result #'symbol-value)
    embark-meta-map))
 
 ;;;###autoload
