@@ -129,7 +129,7 @@
     (package . embark-package-map)
     (bookmark . embark-bookmark-map)
     (region . embark-region-map)
-    (line . embark-line-map))
+    (consult-location . embark-line-map))
   "Alist of action types and corresponding keymaps.
 For any type not listed here, `embark-act' will use
 `embark-general-map'."
@@ -802,7 +802,7 @@ which should be a string."
   '((file . grid)
     (buffer . grid)
     (symbol . list)
-    (line . list)
+    (consult-location . list)
     (xref-location . list)
     (kill-ring . zebra)
     (t . list))
@@ -1609,7 +1609,7 @@ This is whatever command opened the minibuffer in the first place."
   (kill-new string))
 
 (defun embark--strip-prefix (string)
-  "Remove the unicode prefix from a Consult line."
+  "Remove the unicode prefix from a consult-location string."
   (let ((i 0) (l (length string)))
     (while (and (< i l) (<= #x100000 (aref string i) #x10fffd))
       (setq i (1+ i)))
@@ -1829,8 +1829,8 @@ and leaves the point to the left of it."
   ("a" package-autoremove)
   ("g" package-refresh-contents))
 
-(embark-define-keymap embark-line-map
-  "Keymap of Embark actions for Consult lines."
+(embark-define-keymap embark-consult-location-map
+  "Keymap of Embark actions for Consult's consult-location category."
   ("i" embark-insert-line) ; shadow the ones from general map
   ("w" embark-save-line))
 
