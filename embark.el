@@ -1608,27 +1608,22 @@ This is whatever command opened the minibuffer in the first place."
   (interactive "sSave: ")
   (kill-new string))
 
-(defun embark--split-line (string)
-  "Split a Consult line into its line number and contents."
+(defun embark--strip-prefix (string)
+  "Remove the unicode prefix from a Consult line."
   (let ((i 0) (l (length string)) (n 0))
     (while (and (< i l) (<= #x100000 (aref string i) #x10fffd))
       (setq n (+ (* n #xfffe) (- (aref string i) #x100000)) i (1+ i)))
-    (cons n (substring-no-properties string i))))
+    (substring-no-properties string i)))
 
 (defun embark-insert-line (line)
   "Insert LINE at point."
   (interactive "sInsert line: ")
-  (insert (cdr (embark--split-line line))))
+  (insert (embark--strip-prefix line)))
 
 (defun embark-save-line (line)
   "Save LINE in the kill ring."
   (interactive "sSave line: ")
-  (kill-new (cdr (embark--split-line line))))
-
-(defun embark-save-line-number (line)
-  "Save the line number of LINE in the kill ring."
-  (interactive "sSave line number of line: ")
-  (kill-new (number-to-string (car (embark--split-line line)))))
+  (kill-new (embark--strip-prefix line)))
 
 (defun embark-eshell (file)
   "Run eshell in directory of FILE."
@@ -1836,9 +1831,8 @@ and leaves the point to the left of it."
 
 (embark-define-keymap embark-line-map
   "Keymap of Embark actions for Consult lines."
-  ("i" embark-insert-line)
-  ("w" embark-save-line)
-  ("n" embark-save-line-number))
+  ("i" embark-insert-line) ; shadow the ones from general map
+  ("w" embark-save-line))
 
 (embark-define-keymap embark-bookmark-map
   "Keymap for Embark bookmark actions."
