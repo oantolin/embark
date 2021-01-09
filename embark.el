@@ -1576,14 +1576,9 @@ buffer for each type of completion."
   "Create an occur mode buffer listing LINES.
 The elements of LINES are assumed to be values of category consult-line."
   (let ((buf (generate-new-buffer "*Embark Export Occur*"))
-        (mouse-msg "mouse-2: go to this occurrence"))
+        (mouse-msg "mouse-2: go to this occurrence")
+        last-buf)
     (with-current-buffer buf
-      (insert (propertize
-               (format "%d lines from buffer: %s\n"
-                       (length lines)
-                       (marker-buffer (car (get-text-property
-                                            0 'consult-location (car lines)))))
-               'face list-matching-lines-buffer-name-face))
       (dolist (line lines)
         (pcase-let*
             ((`(,loc . ,num) (get-text-property 0 'consult-location line))
@@ -1603,7 +1598,13 @@ The elements of LINES are assumed to be values of category consult-line."
 				   'occur-target loc
 				   'follow-link t
 				   'help-echo mouse-msg))
-             (nl (propertize "\n" 'occur-target loc)))
+             (nl (propertize "\n" 'occur-target loc))
+             (this-buf (marker-buffer loc)))
+          (unless (eq this-buf last-buf)
+            (insert (propertize
+                     (format "lines from buffer: %s\n" this-buf)
+                     'face list-matching-lines-buffer-name-face))
+            (setq last-buf this-buf))
           (insert (concat lineno contents nl))))
       (occur-mode))
     (switch-to-buffer buf)))
