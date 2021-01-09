@@ -1553,7 +1553,6 @@ buffer for each type of completion."
 
 (defun embark-export-list-packages (packages)
   "Create a package menu mode buffer listing PACKAGES."
-  (interactive)
   (let ((buf (generate-new-buffer "*Embark Export Packages*")))
     (with-current-buffer buf
       (package-menu-mode)
@@ -1564,7 +1563,6 @@ buffer for each type of completion."
 
 (defun embark-export-grep (lines)
   "Create a grep mode buffer listing LINES."
-  (interactive)
   (let ((buf (generate-new-buffer "*Embark Export Grep*")))
     (with-current-buffer buf
       (insert (propertize "Exported grep results:\n\n" 'wgrep-header t))
