@@ -154,7 +154,7 @@ a string, or nil to indicate it found no target."
   :type 'hook)
 
 (defcustom embark-transformer-alist
-  '((virtual-buffer . embark-refine-virtual-buffer-type)
+  '((consult-buffer . embark-refine-consult-buffer-type)
     (minor-mode . embark-lookup-lighter-minor-mode)
     (xref-location . embark-set-xref-location-default-action))
   "Alist associating type to functions for transforming targets.
@@ -627,10 +627,10 @@ minibuffer."
         (run-at-time 0 nil run-action)
         (top-level)))))
 
-(defun embark-refine-virtual-buffer-type (target)
-  "Refine virtual-buffer TARGET to its real type.
+(defun embark-refine-consult-buffer-type (target)
+  "Refine consult-buffer TARGET to its real type.
 
-This function takes a target of type virtual-buffer (from
+This function takes a target of type consult-buffer (from
 Consult's `consult-buffer' command) and transforms it to its
 actual type, whether `buffer', `file' or `bookmark', and also
 removes its prefix typing character."
