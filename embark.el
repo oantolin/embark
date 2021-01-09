@@ -1610,9 +1610,9 @@ This is whatever command opened the minibuffer in the first place."
 
 (defun embark--strip-prefix (string)
   "Remove the unicode prefix from a Consult line."
-  (let ((i 0) (l (length string)) (n 0))
+  (let ((i 0) (l (length string)))
     (while (and (< i l) (<= #x100000 (aref string i) #x10fffd))
-      (setq n (+ (* n #xfffe) (- (aref string i) #x100000)) i (1+ i)))
+      (setq i (1+ i)))
     (substring-no-properties string i)))
 
 (defun embark-insert-line (line)
