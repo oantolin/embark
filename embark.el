@@ -821,6 +821,7 @@ default initial view for types not mentioned separately."
     (file . embark-export-dired)
     (package . embark-export-list-packages)
     (xref-location . embark-export-grep)
+    (consult-location . embark-export-occur)
     (t . embark-collect-snapshot))
   "Alist associating completion types to export functions.
 Each function should take a list of strings which are candidates
@@ -1569,6 +1570,42 @@ buffer for each type of completion."
       (dolist (line lines) (insert line "\n"))
       (grep-mode)
       (setq-local wgrep-header/footer-parser #'ignore))
+    (switch-to-buffer buf)))
+
+(defun embark-export-occur (lines)
+  "Create an occur mode buffer listing LINES.
+The elements of LINES are assumed to be values of category consult-line."
+  (let ((buf (generate-new-buffer "*Embark Export Occur*"))
+        (mouse-msg "mouse-2: go to this occurrence"))
+    (with-current-buffer buf
+      (insert (propertize
+               (format "%d lines from buffer: %s\n"
+                       (length lines)
+                       (marker-buffer (car (get-text-property
+                                            0 'consult-location (car lines)))))
+               'face list-matching-lines-buffer-name-face))
+      (dolist (line lines)
+        (pcase-let*
+            ((`(,loc . ,num) (get-text-property 0 'consult-location line))
+             (prefix-len (next-single-property-change 0 'consult-location line))
+             ;; the text properties added to the following strings are
+             ;; taken from occur-engine
+             (lineno (propertize (format "%7d:" num)
+                                 'occur-prefix t
+				 ;; Allow insertion of text at the end
+                                 ;; of the prefix (for Occur Edit mode).
+				 'front-sticky t
+				 'rear-nonsticky t
+				 'occur-target loc
+				 'follow-link t
+				 'help-echo mouse-msg))
+             (contents (propertize (substring line prefix-len)
+				   'occur-target loc
+				   'follow-link t
+				   'help-echo mouse-msg))
+             (nl (propertize "\n" 'occur-target loc)))
+          (insert (concat lineno contents nl))))
+      (occur-mode))
     (switch-to-buffer buf)))
 
 ;;; custom actions
