@@ -129,7 +129,7 @@
     (package . embark-package-map)
     (bookmark . embark-bookmark-map)
     (region . embark-region-map)
-    (consult-location . embark-line-map))
+    (consult-location . embark-consult-location-map))
   "Alist of action types and corresponding keymaps.
 For any type not listed here, `embark-act' will use
 `embark-general-map'."
