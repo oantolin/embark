@@ -13,7 +13,7 @@
 
   (That is, news about things breaking!)
 
-  - The "occur" subsytem has been overhauled and renamed "collect".
+  - The "occur" subsystem has been overhauled and renamed "collect".
     There are aliases for the old command and variable names with
     "occur" in them, but those will be gone in a couple of months. So
     please update your configuration.
@@ -46,7 +46,7 @@ determined by the context:
  candidate.
 - In the =*Completions*= buffer the target is the completion at point.
 - In a regular buffer, the target is the region if active, or else the
- file, symbol or url at point.
+ file, symbol or URL at point.
 
 The type of actions offered depend on the type of the target:
 
@@ -114,7 +114,7 @@ useful category metadata so the [[https://github.com/minad/marginalia][Marginali
 this missing metadata, is highly recommended for use with Embark.
 
 Embark's default configuration has actions for the following target
-types: files, buffers, symbols, packages, urls, bookmarks, and as a
+types: files, buffers, symbols, packages, URLs, bookmarks, and as a
 somewhat special case, actions for when the region is active. You can
 read about the [[https://github.com/oantolin/embark/wiki/Default-Actions][default actions and their keybindings]] on the GitHub
 project wiki.
