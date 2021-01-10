@@ -1596,6 +1596,7 @@ The elements of LINES are assumed to be values of category consult-line."
 				 'help-echo mouse-msg))
              (contents (propertize (substring line prefix-len)
 				   'occur-target loc
+                                   'occur-match t
 				   'follow-link t
 				   'help-echo mouse-msg))
              (nl (propertize "\n" 'occur-target loc))
