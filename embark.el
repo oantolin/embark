@@ -1607,6 +1607,7 @@ The elements of LINES are assumed to be values of category consult-line."
                      'face list-matching-lines-buffer-name-face))
             (setq last-buf this-buf))
           (insert (concat lineno contents nl))))
+      (goto-char (point-min))
       (occur-mode))
     (switch-to-buffer buf)))
 
