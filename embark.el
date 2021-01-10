@@ -121,11 +121,11 @@
     (environment-variables . embark-file-map) ; they come up in file completion
     (url . embark-url-map)
     (buffer . embark-buffer-map)
-    (command . embark-symbol-map)
-    (unicode-name . embark-unicode-name-map)
     (symbol . embark-symbol-map)
-    (variable . embark-symbol-map)
-    (minor-mode . embark-symbol-map)
+    (command . embark-command-map)
+    (variable . embark-variable-map)
+    (minor-mode . embark-command-map)
+    (unicode-name . embark-unicode-name-map)
     (package . embark-package-map)
     (bookmark . embark-bookmark-map)
     (region . embark-region-map)
@@ -1634,6 +1634,13 @@ This is whatever command opened the minibuffer in the first place."
   (setq this-command embark--command)   ; so the proper hooks apply
   (call-interactively embark--command))
 
+
+(defalias 'embark-execute-command
+  ;; this one is kind of embarrassing: embark-keymap-prompter gives
+  ;; execute-extended-command special treatment, so we need a command
+  ;; just like it... but with a different name!
+  #'execute-extended-command)
+
 (defun embark-insert (string)
   "Insert STRING at point."
   (interactive "sInsert: ")
@@ -1848,11 +1855,25 @@ and leaves the point to the left of it."
 (embark-define-keymap embark-symbol-map
   "Keymap for Embark symbol actions."
   ("h" describe-symbol)
-  ("c" Info-goto-emacs-command-node)
   ("s" embark-info-lookup-symbol)
   ("d" embark-find-definition)
   ("b" where-is)
   ("e" eval-expression))
+
+(embark-define-keymap embark-command-map
+  "Keymap for Embark command actions."
+  :parent embark-symbol-map
+  ("x" embark-execute-command)
+  ("c" Info-goto-emacs-command-node)
+  ("g" global-set-key)
+  ("l" local-set-key))
+
+(embark-define-keymap embark-variable-map
+  "Keymap for Embark variable actions."
+  :parent embark-symbol-map
+  ("=" set-variable)
+  ("c" customize-set-variable)
+  ("C" customize-variable))
 
 (embark-define-keymap embark-package-map
   "Keymap for Embark package actions."
