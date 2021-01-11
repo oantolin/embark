@@ -84,9 +84,13 @@ associated to an active minibuffer for a Consult command."
   :init-value nil
   :lighter " Preview"
   (remove-hook 'post-command-hook #'embark-consult-preview--trigger t)
-  (embark-consult-preview--preconditions)
-  (when embark-consult-preview-minor-mode
-    (add-hook 'post-command-hook #'embark-consult-preview--trigger nil t)))
+  (condition-case nil
+      (progn
+        (embark-consult-preview--preconditions)
+        (when embark-consult-preview-minor-mode
+          (add-hook 'post-command-hook
+                    #'embark-consult-preview--trigger nil t)))
+    (user-error (setq embark-consult-preview-minor-mode nil))))
 
 (provide 'embark-consult-preview)
 ;;; embark-consult-preview.el ends here
