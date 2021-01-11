@@ -1,4 +1,4 @@
-;;; embark-consult-preview.el --- Consult preview for Embark Collect buffers -*- lexical-binding: t; -*-
+;;; embark-consult.el --- Consult integration for Embark -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2021  Omar Antolín Camarena
 
@@ -23,9 +23,11 @@
 
 ;;; Commentary:
 
-;; This is package provides easy access to Consult previews from an
+;; This package provides integration between Embark and Consult.
+
+;; For now, it only provides access to Consult preview from
 ;; auto-updating Embark Collect buffer that is associated to an active
-;; minibuffer for a Consult command.  It includes:
+;; minibuffer for a Consult command:
 
 ;; - `embark-consult-preview-at-point', a command to trigger Consult's
 ;; preview for the entry at point.
@@ -34,10 +36,15 @@
 ;; Collect buffers that automatically previous the entry at point as
 ;; you move around.
 
+;; Eventually all Consult-related functionality in Embark will be
+;; moved to this package.
+
 ;;; Code:
 
 (require 'embark)
 (require 'consult)
+
+;;; Consult preview
 
 (defvar-local embark-consult-preview--last-entry nil
   "Stores last entry previewed.")
@@ -92,5 +99,5 @@ associated to an active minibuffer for a Consult command."
                     #'embark-consult-preview--trigger nil t)))
     (user-error (setq embark-consult-preview-minor-mode nil))))
 
-(provide 'embark-consult-preview)
-;;; embark-consult-preview.el ends here
+(provide 'embark-consult)
+;;; embark-consult.el ends here
