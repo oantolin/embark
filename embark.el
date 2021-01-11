@@ -156,7 +156,8 @@ a string, or nil to indicate it found no target."
 (defcustom embark-transformer-alist
   '((consult-buffer . embark-refine-consult-buffer-type)
     (minor-mode . embark-lookup-lighter-minor-mode)
-    (xref-location . embark-set-xref-location-default-action))
+    (xref-location . embark-set-xref-location-default-action)
+    (symbol . embark-refine-symbol-type))
   "Alist associating type to functions for transforming targets.
 Each function should take a target string and return a pair of
 the form a `cons' of the new type and the new target."
@@ -654,6 +655,15 @@ removes its prefix typing character."
               (substring target 1))
       ;; new buffer case, don't remove first char
       (cons 'buffer target))))
+
+(defun embark-refine-symbol-type (target)
+  "Refine symbol TARGET to command or variable if possible."
+  (when-let ((symbol (intern-soft target)))
+    (cons (cond
+           ((commandp symbol) 'command)
+           ((boundp symbol) 'variable)
+           (t 'symbol))
+          target)))
 
 (defun embark-lookup-lighter-minor-mode (target)
   "If TARGET is a lighter, look up its minor mode.
