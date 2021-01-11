@@ -69,12 +69,8 @@ Consult command."
   (let ((entry (ignore-errors (button-label (point))))) ; error at eob
     (unless (equal entry embark-consult-preview--last-entry)
       (setq embark-consult-preview--last-entry entry)
-      (when-let ((target-window (get-buffer-window embark--target-buffer)))
-        (with-current-buffer embark-collect-from
-          (let ((preview consult--preview-function)
-                (input (minibuffer-contents)))
-            (with-selected-window target-window
-              (funcall preview input entry))))))))
+      (with-selected-window (active-minibuffer-window)
+        (funcall consult--preview-function (minibuffer-contents) entry)))))
 
 ;;;###autoload
 (defun embark-consult-preview-at-point ()
