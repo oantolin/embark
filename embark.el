@@ -420,7 +420,7 @@ function, variable or face.  As a nicety, in Org Mode surrounding
       (when (or (boundp sym)
                 (fboundp sym)
                 (facep sym))
-        (cons 'symbol (symbol-name sym))))))
+        (cons 'symbol name)))))
 
 (defun embark-target-top-minibuffer-completion ()
   "Target the top completion candidate in the minibuffer.
