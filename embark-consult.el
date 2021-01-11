@@ -78,8 +78,13 @@ Consult command."
 Must be run from an auto-updating Embark Collect buffer that is
 associated to an active minibuffer for a Consult command."
   (interactive)
-  (embark-consult-preview--preconditions)
-  (embark-consult-preview--trigger))
+  (condition-case err
+      (progn
+        (embark-consult-preview--preconditions)
+        (embark-consult-preview--trigger))
+    (user-error
+     (embark-consult-preview-minor-mode -1)
+     (message "Turning off preview: %s" (cadr err)))))
 
 ;;;###autoload
 (define-minor-mode embark-consult-preview-minor-mode
@@ -88,13 +93,13 @@ Must be used in an auto-updating Embark Collect buffer that is
 associated to an active minibuffer for a Consult command."
   :init-value nil
   :lighter " Preview"
-  (remove-hook 'post-command-hook #'embark-consult-preview--trigger t)
+  (remove-hook 'post-command-hook #'embark-consult-preview-at-point t)
   (condition-case nil
       (progn
         (embark-consult-preview--preconditions)
         (when embark-consult-preview-minor-mode
           (add-hook 'post-command-hook
-                    #'embark-consult-preview--trigger nil t)))
+                    #'embark-consult-preview-at-point nil t)))
     (user-error (setq embark-consult-preview-minor-mode nil))))
 
 (provide 'embark-consult)
