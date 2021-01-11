@@ -4,6 +4,9 @@
 
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Keywords: convenience
+;; Version: 0.3
+;; Homepage: https://github.com/oantolin/embark
+;; Package-Requires: ((emacs "25.1") (embark "0.9") (avy "0.5"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -33,12 +36,12 @@
 (defvar avy-embark-collect--initial-window nil
   "Window that was selected before jumping.")
 
-(defun avy-action-embark-choose (pt)
+(defun avy-embark-collect--choose (pt)
   "Choose completion at PT."
   (goto-char pt)
   (embark-collect-choose (button-at pt)))
 
-(defun avy-action-embark-act (pt)
+(defun avy-embark-collect--act (pt)
   "Act on the completion at PT."
   (goto-char pt)
   (add-hook 'embark-post-action-hook
@@ -64,7 +67,7 @@ The Embark Collect buffer to use is chosen in order of priority as:
 
 (defun avy-embark-collect--jump (action dispatch-alist)
   "Jump to an Embark Collect candidate and perform ACTION.
-Other actions are listed in the DISPATCH-LIST.
+Other actions are listed in the DISPATCH-ALIST.
 The Embark Collect buffer to use is chosen in order of priority as:
 - the current buffer,
 - a linked Embark Collect buffer,
@@ -91,15 +94,15 @@ The Embark Collect buffer to use is chosen in order of priority as:
 (defun avy-embark-collect-choose ()
   "Choose an Embark Collect candidate."
   (interactive)
-  (avy-embark-collect--jump #'avy-action-embark-choose
-                            '((?x . avy-action-embark-act)
+  (avy-embark-collect--jump #'avy-embark-collect-choose
+                            '((?x . avy-embark-collect--act)
                               (?m . avy-action-goto))))
 
 (defun avy-embark-collect-act ()
   "Act on an Embark Collect candidate."
   (interactive)
-  (avy-embark-collect--jump #'avy-action-embark-act
-                            '((?x . avy-action-embark-choose)
+  (avy-embark-collect--jump #'avy-embark-collect-act
+                            '((?x . avy-embark-collect--choose)
                               (?m . avy-action-goto))))
 
 (provide 'avy-embark-collect)
