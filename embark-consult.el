@@ -76,6 +76,7 @@ Consult command."
             (with-selected-window target-window
               (funcall preview input entry))))))))
 
+;;;###autoload
 (defun embark-consult-preview-at-point ()
   "Trigger Consult preview for Embark Collect entry at point.
 Must be run from an auto-updating Embark Collect buffer that is
@@ -84,6 +85,7 @@ associated to an active minibuffer for a Consult command."
   (embark-consult-preview--preconditions)
   (embark-consult-preview--trigger))
 
+;;;###autoload
 (define-minor-mode embark-consult-preview-minor-mode
   "Minor mode to use Consult preview as you move around.
 Must be used in an auto-updating Embark Collect buffer that is
