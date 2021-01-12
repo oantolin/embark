@@ -121,6 +121,7 @@
     (environment-variables . embark-file-map) ; they come up in file completion
     (url . embark-url-map)
     (buffer . embark-buffer-map)
+    (identifier . embark-identifier-map)
     (symbol . embark-symbol-map)
     (command . embark-command-map)
     (variable . embark-variable-map)
@@ -146,7 +147,7 @@ Embark will set the parent of this map to `embark-general-map'.")
     embark-target-completion-at-point
     embark-target-url-at-point
     embark-target-file-at-point
-    embark-target-symbol-at-point)
+    embark-target-identifier-at-point)
   "List of functions to determine the target in current context.
 Each function should take no arguments and return either a cons
 of the form (type . target) where type is a symbol and target is
@@ -407,21 +408,25 @@ There are three kinds:
   (when-let ((url (ffap-url-at-point)))
     (cons 'url url)))
 
-(defun embark-target-symbol-at-point ()
-  "Target symbol at point.
+(defun embark-target-identifier-at-point ()
+  "Target identifier at point.
 
-The symbol at point is only a valid target if it names a
-function, variable or face.  As a nicety, in Org Mode surrounding
-== or ~~ are accounted for."
+In Emacs Lisp buffers the identifier is promoted to a symbol, for
+which more actions are available.  Identifiers are also promoted
+to symbols if they are interned Emacs Lisp symbols and found in a
+buffer whose major mode does not inherit from `prog-mode'.
+
+As a convenience, in Org Mode surrounding == or ~~ are removed."
   (when-let ((name (thing-at-point 'symbol)))
     (when (and (derived-mode-p 'org-mode)
                (string-match-p "^\\([~=]\\).*\\1$" name))
       (setq name (substring name 1 -1)))
-    (when-let ((sym (intern-soft name)))
-      (when (or (boundp sym)
-                (fboundp sym)
-                (facep sym))
-        (cons 'symbol name)))))
+    (cons (if (or (derived-mode-p 'emacs-lisp-mode)
+                  (and (intern-soft name)
+                       (not (derived-mode-p 'prog-mode))))
+              'symbol
+            'identifier)
+          name)))
 
 (defun embark-target-top-minibuffer-completion ()
   "Target the top completion candidate in the minibuffer.
@@ -1873,6 +1878,11 @@ and leaves the point to the left of it."
   ("r" embark-rename-buffer)
   ("=" ediff-buffers)
   ("|" embark-shell-command-on-buffer))
+
+(embark-define-keymap embark-identifier-map
+  "Keymap for Embark identifier actions."
+  ("h" display-local-help)
+  ("d" xref-find-definitions))
 
 (embark-define-keymap embark-symbol-map
   "Keymap for Embark symbol actions."
