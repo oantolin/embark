@@ -1947,6 +1947,7 @@ and leaves the point to the left of it."
 (embark-define-keymap embark-become-file+buffer-map
   "Embark become keymap for files and buffers."
   ("f" find-file)
+  ("." find-file-at-point)
   ("p" project-find-file)
   ("r" recentf-open-files)
   ("b" switch-to-buffer)
