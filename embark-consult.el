@@ -44,7 +44,7 @@
 (require 'embark)
 (require 'consult)
 
-;;; Consult preview
+;;; Consult preview from Embark Collect buffers
 
 (defvar-local embark-consult-preview--last-entry nil
   "Stores last entry previewed.")
@@ -101,6 +101,102 @@ associated to an active minibuffer for a Consult command."
           (add-hook 'post-command-hook
                     #'embark-consult-preview-at-point nil t)))
     (user-error (setq embark-consult-preview-minor-mode nil))))
+
+;;; Support for consult-location
+
+;;;
+(defun embark--strip-prefix (string)
+  "Remove the unicode prefix from a consult-location string."
+  (let ((i 0) (l (length string)))
+    (while (and (< i l) (<= #x100000 (aref string i) #x10fffd))
+      (setq i (1+ i)))
+    (substring-no-properties string i)))
+
+(defun embark-insert-line (line)
+  "Insert LINE at point."
+  (interactive "sInsert line: ")
+  (insert (embark--strip-prefix line)))
+
+(defun embark-save-line (line)
+  "Save LINE in the kill ring."
+  (interactive "sSave line: ")
+  (kill-new (embark--strip-prefix line)))
+
+(embark-define-keymap embark-consult-location-map
+  "Keymap of Embark actions for Consult's consult-location category."
+  ("i" embark-insert-line) ; shadow the ones from general map
+  ("w" embark-save-line))
+
+(defun embark-consult-export-occur (lines)
+  "Create an occur mode buffer listing LINES.
+The elements of LINES are assumed to be values of category consult-line."
+  (let ((buf (generate-new-buffer "*Embark Export Occur*"))
+        (mouse-msg "mouse-2: go to this occurrence")
+        last-buf)
+    (with-current-buffer buf
+      (dolist (line lines)
+        (pcase-let*
+            ((`(,loc . ,num) (get-text-property 0 'consult-location line))
+             (prefix-len (next-single-property-change 0 'consult-location line))
+             ;; the text properties added to the following strings are
+             ;; taken from occur-engine
+             (lineno (propertize (format "%7d:" num)
+                                 'occur-prefix t
+				 ;; Allow insertion of text at the end
+                                 ;; of the prefix (for Occur Edit mode).
+				 'front-sticky t
+				 'rear-nonsticky t
+				 'occur-target loc
+				 'follow-link t
+				 'help-echo mouse-msg))
+             (contents (propertize (substring line prefix-len)
+				   'occur-target loc
+                                   'occur-match t
+				   'follow-link t
+				   'help-echo mouse-msg))
+             (nl (propertize "\n" 'occur-target loc))
+             (this-buf (marker-buffer loc)))
+          (unless (eq this-buf last-buf)
+            (insert (propertize
+                     (format "lines from buffer: %s\n" this-buf)
+                     'face list-matching-lines-buffer-name-face))
+            (setq last-buf this-buf))
+          (insert (concat lineno contents nl))))
+      (goto-char (point-min))
+      (occur-mode))
+    (switch-to-buffer buf)))
+
+(setf (alist-get 'consult-location embark-keymap-alist)
+      'embark-consult-location-map)
+
+(setf (alist-get 'consult-location embark-collect-initial-view-alist)
+      'list)
+
+(setf (alist-get 'consult-location embark-exporters-alist)
+      'embark-consult-export-occur)
+
+;;; support for consult-buffer
+
+(defun embark-consult-refine-buffer-type (target)
+  "Refine consult-buffer TARGET to its real type.
+
+This function takes a target of type consult-buffer (from
+Consult's `consult-buffer' command) and transforms it to its
+actual type, whether `buffer', `file' or `bookmark', and also
+removes its prefix typing character."
+  (let ((first (- (aref target 0) #x100000)))
+    (if (<= 0 first ?z)
+        (cons (pcase first
+                ((or ?b ?h ?p) 'buffer)
+                ((or ?f ?q) 'file)
+                (?m 'bookmark)
+                (_ 'general))
+              (substring target 1))
+      ;; new buffer case, don't remove first char
+      (cons 'buffer target))))
+
+(setf (alist-get 'consult-buffer embark-transformer-alist)
+      'embark-consult-refine-buffer-type)
 
 (provide 'embark-consult)
 ;;; embark-consult.el ends here

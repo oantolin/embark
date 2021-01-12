@@ -13,6 +13,15 @@
 
   (That is, news about things breaking!)
 
+  - If a recent update to Embark made it stop working with certain
+    [[https://github.com/minad/consult/][Consult]] commands, just install and load the new embark-consult
+    package (available on Melpa). In addition to the prior
+    functionality for Consult, this package also contains an
+    =embark-consult-preview-at-point= that triggers a Consult preview
+    for the entry at point in an auto-updating Embark Collect buffer,
+    and an =embark-consult-preview-minor-mode= to run the Consult
+    preview automatically as you move around the collect buffer.
+
   - The "occur" subsystem has been overhauled and renamed "collect".
     There are aliases for the old command and variable names with
     "occur" in them, but those will be gone in a couple of months. So

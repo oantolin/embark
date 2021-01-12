@@ -129,8 +129,7 @@
     (unicode-name . embark-unicode-name-map)
     (package . embark-package-map)
     (bookmark . embark-bookmark-map)
-    (region . embark-region-map)
-    (consult-location . embark-consult-location-map))
+    (region . embark-region-map))
   "Alist of action types and corresponding keymaps.
 For any type not listed here, `embark-act' will use
 `embark-general-map'."
@@ -155,8 +154,7 @@ a string, or nil to indicate it found no target."
   :type 'hook)
 
 (defcustom embark-transformer-alist
-  '((consult-buffer . embark-refine-consult-buffer-type)
-    (minor-mode . embark-lookup-lighter-minor-mode)
+  '((minor-mode . embark-lookup-lighter-minor-mode)
     (xref-location . embark-set-xref-location-default-action)
     (symbol . embark-refine-symbol-type))
   "Alist associating type to functions for transforming targets.
@@ -643,24 +641,6 @@ minibuffer."
         (run-at-time 0 nil run-action)
         (top-level)))))
 
-(defun embark-refine-consult-buffer-type (target)
-  "Refine consult-buffer TARGET to its real type.
-
-This function takes a target of type consult-buffer (from
-Consult's `consult-buffer' command) and transforms it to its
-actual type, whether `buffer', `file' or `bookmark', and also
-removes its prefix typing character."
-  (let ((first (- (aref target 0) #x100000)))
-    (if (<= 0 first ?z)
-        (cons (pcase first
-                ((or ?b ?h ?p) 'buffer)
-                ((or ?f ?q) 'file)
-                (?m 'bookmark)
-                (_ 'general))
-              (substring target 1))
-      ;; new buffer case, don't remove first char
-      (cons 'buffer target))))
-
 (defun embark-refine-symbol-type (target)
   "Refine symbol TARGET to command or variable if possible."
   (when-let ((symbol (intern-soft target)))
@@ -827,7 +807,6 @@ which should be a string."
   '((file . grid)
     (buffer . grid)
     (symbol . list)
-    (consult-location . list)
     (xref-location . list)
     (kill-ring . zebra)
     (t . list))
@@ -846,7 +825,6 @@ default initial view for types not mentioned separately."
     (file . embark-export-dired)
     (package . embark-export-list-packages)
     (xref-location . embark-export-grep)
-    (consult-location . embark-export-occur)
     (t . embark-collect-snapshot))
   "Alist associating completion types to export functions.
 Each function should take a list of strings which are candidates
@@ -1597,45 +1575,6 @@ buffer for each type of completion."
       (setq-local wgrep-header/footer-parser #'ignore))
     (switch-to-buffer buf)))
 
-(defun embark-export-occur (lines)
-  "Create an occur mode buffer listing LINES.
-The elements of LINES are assumed to be values of category consult-line."
-  (let ((buf (generate-new-buffer "*Embark Export Occur*"))
-        (mouse-msg "mouse-2: go to this occurrence")
-        last-buf)
-    (with-current-buffer buf
-      (dolist (line lines)
-        (pcase-let*
-            ((`(,loc . ,num) (get-text-property 0 'consult-location line))
-             (prefix-len (next-single-property-change 0 'consult-location line))
-             ;; the text properties added to the following strings are
-             ;; taken from occur-engine
-             (lineno (propertize (format "%7d:" num)
-                                 'occur-prefix t
-				 ;; Allow insertion of text at the end
-                                 ;; of the prefix (for Occur Edit mode).
-				 'front-sticky t
-				 'rear-nonsticky t
-				 'occur-target loc
-				 'follow-link t
-				 'help-echo mouse-msg))
-             (contents (propertize (substring line prefix-len)
-				   'occur-target loc
-                                   'occur-match t
-				   'follow-link t
-				   'help-echo mouse-msg))
-             (nl (propertize "\n" 'occur-target loc))
-             (this-buf (marker-buffer loc)))
-          (unless (eq this-buf last-buf)
-            (insert (propertize
-                     (format "lines from buffer: %s\n" this-buf)
-                     'face list-matching-lines-buffer-name-face))
-            (setq last-buf this-buf))
-          (insert (concat lineno contents nl))))
-      (goto-char (point-min))
-      (occur-mode))
-    (switch-to-buffer buf)))
-
 ;;; custom actions
 
 (defun embark-keymap-help ()
@@ -1677,23 +1616,6 @@ This is whatever command opened the minibuffer in the first place."
   "Save STRING in the kill ring."
   (interactive "sSave: ")
   (kill-new string))
-
-(defun embark--strip-prefix (string)
-  "Remove the unicode prefix from a consult-location string."
-  (let ((i 0) (l (length string)))
-    (while (and (< i l) (<= #x100000 (aref string i) #x10fffd))
-      (setq i (1+ i)))
-    (substring-no-properties string i)))
-
-(defun embark-insert-line (line)
-  "Insert LINE at point."
-  (interactive "sInsert line: ")
-  (insert (embark--strip-prefix line)))
-
-(defun embark-save-line (line)
-  "Save LINE in the kill ring."
-  (interactive "sSave line: ")
-  (kill-new (embark--strip-prefix line)))
 
 (defun embark-eshell (file)
   "Run eshell in directory of FILE."
@@ -1917,11 +1839,6 @@ and leaves the point to the left of it."
   ("u" embark-browse-package-url)
   ("a" package-autoremove)
   ("g" package-refresh-contents))
-
-(embark-define-keymap embark-consult-location-map
-  "Keymap of Embark actions for Consult's consult-location category."
-  ("i" embark-insert-line) ; shadow the ones from general map
-  ("w" embark-save-line))
 
 (embark-define-keymap embark-bookmark-map
   "Keymap for Embark bookmark actions."
