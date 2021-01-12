@@ -94,14 +94,14 @@ The Embark Collect buffer to use is chosen in order of priority as:
 (defun avy-embark-collect-choose ()
   "Choose an Embark Collect candidate."
   (interactive)
-  (avy-embark-collect--jump #'avy-embark-collect-choose
+  (avy-embark-collect--jump #'avy-embark-collect--choose
                             '((?x . avy-embark-collect--act)
                               (?m . avy-action-goto))))
 
 (defun avy-embark-collect-act ()
   "Act on an Embark Collect candidate."
   (interactive)
-  (avy-embark-collect--jump #'avy-embark-collect-act
+  (avy-embark-collect--jump #'avy-embark-collect--act
                             '((?x . avy-embark-collect--choose)
                               (?m . avy-action-goto))))
 
