@@ -28,7 +28,7 @@
 ;; It contains some functionality previously contain in Embark itself:
 
 ;; - Support for consult-buffer, so that you get the correct actions
-;; for each type of entry in cosult-buffer's list.
+;; for each type of entry in consult-buffer's list.
 
 ;; - Support for consult-line, consult-outline, consult-mark and
 ;; consult-global-mark, so that the insert and save actions don't
@@ -49,7 +49,7 @@
 ;; preview for the entry at point.
 
 ;; - `embark-consult-preview-minor-mode', a minor mode for Embark
-;; Collect buffers that automatically previous the entry at point as
+;; Collect buffers that automatically previews the entry at point as
 ;; you move around.
 
 ;; If you always want the minor mode enabled whenever it possible use:
