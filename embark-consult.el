@@ -129,7 +129,7 @@ associated to an active minibuffer for a Consult command."
 
 ;;;
 (defun embark-consult--strip-prefix (string)
-  "Remove the unicode prefix from a consult-location string."
+  "Remove the unicode prefix from a consult-location STRING."
   (let ((i 0) (l (length string)))
     (while (and (< i l) (<= #x100000 (aref string i) #x10fffd))
       (setq i (1+ i)))
@@ -156,7 +156,7 @@ associated to an active minibuffer for a Consult command."
 ;;;###autoload
 (defun embark-consult-export-occur (lines)
   "Create an occur mode buffer listing LINES.
-The elements of LINES are assumed to be values of category consult-line."
+The elements of LINES are assumed to be values of category `consult-line'."
   (let ((buf (generate-new-buffer "*Embark Export Occur*"))
         (mouse-msg "mouse-2: go to this occurrence")
         last-buf)
@@ -206,9 +206,9 @@ The elements of LINES are assumed to be values of category consult-line."
 
 ;;;###autoload
 (defun embark-consult-refine-buffer-type (target)
-  "Refine consult-buffer TARGET to its real type.
+  "Refine `consult-buffer' TARGET to its real type.
 
-This function takes a target of type consult-buffer (from
+This function takes a target of type `consult-buffer' (from
 Consult's `consult-buffer' command) and transforms it to its
 actual type, whether `buffer', `file' or `bookmark', and also
 removes its prefix typing character."
