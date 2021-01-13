@@ -192,7 +192,7 @@ The elements of LINES are assumed to be values of category consult-line."
     (switch-to-buffer buf)))
 
 ;;;###autoload
-(progn
+(with-eval-after-load 'embark
   (setf (alist-get 'consult-location embark-keymap-alist)
         'embark-consult-location-map)
   (setf (alist-get 'consult-location embark-collect-initial-view-alist)
@@ -222,8 +222,9 @@ removes its prefix typing character."
       (cons 'buffer target))))
 
 ;;;###autoload
-(setf (alist-get 'consult-buffer embark-transformer-alist)
-      'embark-consult-refine-buffer-type)
+(with-eval-after-load 'embark
+  (setf (alist-get 'consult-buffer embark-transformer-alist)
+        'embark-consult-refine-buffer-type))
 
 (provide 'embark-consult)
 ;;; embark-consult.el ends here
