@@ -23,9 +23,15 @@
 
 ;;; Commentary:
 
-;; This package provides integration between Embark and Consult.
+;; This package provides integration between Embark and Consult. To
+;; use it, arrange for it to be loaded once both of those are loaded:
 
-;; It contains some functionality previously contain in Embark itself:
+;; (with-eval-after-load 'consult
+;;   (with-eval-after-load 'embark
+;;     (require 'embark-consult)))
+
+;; Some of the functionality here was previously contained in Embark
+;; itself:
 
 ;; - Support for consult-buffer, so that you get the correct actions
 ;; for each type of entry in consult-buffer's list.
@@ -56,7 +62,7 @@
 
 ;; (add-hook 'embark-collect-mode-hook #'embark-consult-preview-minor-mode)
 
-;; If you don't want the minor mode automatically one and prefer to
+;; If you don't want the minor mode automatically on and prefer to
 ;; trigger the consult previews manually use this instead:
 
 ;; (define-key embark-collect-mode-map (kbd "C-j")
@@ -95,7 +101,6 @@ Consult command."
       (with-selected-window (active-minibuffer-window)
         (funcall consult--preview-function (minibuffer-contents) entry)))))
 
-;;;###autoload
 (defun embark-consult-preview-at-point ()
   "Trigger Consult preview for Embark Collect entry at point.
 Must be run from an auto-updating Embark Collect buffer that is
@@ -109,7 +114,6 @@ associated to an active minibuffer for a Consult command."
      (embark-consult-preview-minor-mode -1)
      (message "Turning off preview: %s" (cadr err)))))
 
-;;;###autoload
 (define-minor-mode embark-consult-preview-minor-mode
   "Minor mode to use Consult preview as you move around.
 Must be used in an auto-updating Embark Collect buffer that is
@@ -135,25 +139,21 @@ associated to an active minibuffer for a Consult command."
       (setq i (1+ i)))
     (substring-no-properties string i)))
 
-;;;###autoload
 (defun embark-consult-insert-line (line)
   "Insert LINE at point."
   (interactive "sInsert line: ")
   (insert (embark-consult--strip-prefix line)))
 
-;;;###autoload
 (defun embark-consult-save-line (line)
   "Save LINE in the kill ring."
   (interactive "sSave line: ")
   (kill-new (embark-consult--strip-prefix line)))
 
-;;;###autoload
 (embark-define-keymap embark-consult-location-map
   "Keymap of Embark actions for Consult's consult-location category."
   ("i" embark-consult-insert-line) ; shadow the ones from general map
   ("w" embark-consult-save-line))
 
-;;;###autoload
 (defun embark-consult-export-occur (lines)
   "Create an occur mode buffer listing LINES.
 The elements of LINES are assumed to be values of category `consult-line'."
@@ -193,18 +193,16 @@ The elements of LINES are assumed to be values of category `consult-line'."
       (occur-mode))
     (switch-to-buffer buf)))
 
-;;;###autoload
-(with-eval-after-load 'embark
-  (setf (alist-get 'consult-location embark-keymap-alist)
-        'embark-consult-location-map)
-  (setf (alist-get 'consult-location embark-collect-initial-view-alist)
-        'list)
-  (setf (alist-get 'consult-location embark-exporters-alist)
-        'embark-consult-export-occur))
+
+(setf (alist-get 'consult-location embark-keymap-alist)
+      'embark-consult-location-map)
+(setf (alist-get 'consult-location embark-collect-initial-view-alist)
+      'list)
+(setf (alist-get 'consult-location embark-exporters-alist)
+      'embark-consult-export-occur)
 
 ;;; support for consult-buffer
 
-;;;###autoload
 (defun embark-consult-refine-buffer-type (target)
   "Refine `consult-buffer' TARGET to its real type.
 
@@ -223,10 +221,8 @@ removes its prefix typing character."
       ;; new buffer case, don't remove first char
       (cons 'buffer target))))
 
-;;;###autoload
-(with-eval-after-load 'embark
-  (setf (alist-get 'consult-buffer embark-transformer-alist)
-        'embark-consult-refine-buffer-type))
+(setf (alist-get 'consult-buffer embark-transformer-alist)
+      'embark-consult-refine-buffer-type)
 
 (provide 'embark-consult)
 ;;; embark-consult.el ends here

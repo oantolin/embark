@@ -22,6 +22,16 @@
     and an =embark-consult-preview-minor-mode= to run the Consult
     preview automatically as you move around the collect buffer.
 
+    #+begin_src emacs-lisp
+      (use-package embark-consult
+        :ensure t
+        :after (embark consult)
+        ;; if you want to have consult previews as you move around an
+        ;; auto-updating embark collect buffer
+        :hook
+        (embark-collect-mode . embark-consult-preview-minor-mode))
+    #+end_src
+
   - The "occur" subsystem has been overhauled and renamed "collect".
     There are aliases for the old command and variable names with
     "occur" in them, but those will be gone in a couple of months. So
@@ -248,6 +258,15 @@ reasonable starting configuration:
 
     ;; No unnecessary computation delay after injection.
     (add-hook 'embark-setup-hook 'selectrum-set-selected-candidate))
+
+  ;; Consult users will also want the embark-consult package.
+  (use-package embark-consult
+    :ensure t
+    :after (embark consult)
+    ;; if you want to have consult previews as you move around an
+    ;; auto-updating embark collect buffer
+    :hook
+    (embark-collect-mode . embark-consult-preview-minor-mode))
 #+end_src
 
 The other command you may want a binding for is =embark-act-noexit=, if
