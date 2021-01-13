@@ -128,27 +128,27 @@ associated to an active minibuffer for a Consult command."
 ;;; Support for consult-location
 
 ;;;
-(defun embark--strip-prefix (string)
+(defun embark-consult--strip-prefix (string)
   "Remove the unicode prefix from a consult-location string."
   (let ((i 0) (l (length string)))
     (while (and (< i l) (<= #x100000 (aref string i) #x10fffd))
       (setq i (1+ i)))
     (substring-no-properties string i)))
 
-(defun embark-insert-line (line)
+(defun embark-consult-insert-line (line)
   "Insert LINE at point."
   (interactive "sInsert line: ")
-  (insert (embark--strip-prefix line)))
+  (insert (embark-consult--strip-prefix line)))
 
-(defun embark-save-line (line)
+(defun embark-consultsave-line (line)
   "Save LINE in the kill ring."
   (interactive "sSave line: ")
-  (kill-new (embark--strip-prefix line)))
+  (kill-new (embark-consult--strip-prefix line)))
 
 (embark-define-keymap embark-consult-location-map
   "Keymap of Embark actions for Consult's consult-location category."
-  ("i" embark-insert-line) ; shadow the ones from general map
-  ("w" embark-save-line))
+  ("i" embark-consult-insert-line) ; shadow the ones from general map
+  ("w" embark-consult-save-line))
 
 (defun embark-consult-export-occur (lines)
   "Create an occur mode buffer listing LINES.
