@@ -1405,9 +1405,9 @@ the minibuffer is exited."
                   (rename-buffer
                    (replace-regexp-in-string " Live" "" (buffer-name))
                    t)))
-              (run-at-time 0 nil #'display-buffer buffer)))
+              (run-at-time 0 nil #'pop-to-buffer buffer)))
            (:snapshot
-            (lambda () (run-at-time 0 nil #'display-buffer buffer))))
+            (lambda () (run-at-time 0 nil #'pop-to-buffer buffer))))
          nil t)
         (setq minibuffer-scroll-window window))
 
