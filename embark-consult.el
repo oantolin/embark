@@ -135,11 +135,13 @@ associated to an active minibuffer for a Consult command."
       (setq i (1+ i)))
     (substring-no-properties string i)))
 
+;;;###autoload
 (defun embark-consult-insert-line (line)
   "Insert LINE at point."
   (interactive "sInsert line: ")
   (insert (embark-consult--strip-prefix line)))
 
+;;;###autoload
 (defun embark-consult-save-line (line)
   "Save LINE in the kill ring."
   (interactive "sSave line: ")
