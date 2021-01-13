@@ -277,6 +277,11 @@ This list is used only when `embark-allow-edit-default' is t."
 (defvar-local embark--target-buffer nil
   "Cache for the previous buffer, meant to be set buffer-locally.")
 
+(defvar-local embark--target-window nil
+  "Cache for the previous window, meant to be set buffer-locally.
+Since windows can be reused to display different buffers, this
+window should only be used if it displays `embark--target-buffer'.")
+
 (defvar-local embark--command nil
   "Command that started the completion session.")
 
@@ -290,21 +295,41 @@ This list is used only when `embark-allow-edit-default' is t."
 
 (defun embark--target-buffer ()
   "Return buffer that should be targeted by Embark actions."
-  (if (minibufferp)
-      (window-buffer (minibuffer-selected-window))
-    (or embark--target-buffer ; cached?
-        (current-buffer))))
+  (cond
+   ((and (minibufferp) (minibuffer-selected-window))
+    (window-buffer (minibuffer-selected-window)))
+   ((and embark--target-buffer (buffer-live-p embark--target-buffer))
+    embark--target-buffer)
+   (t (current-buffer))))
+
+(defun embark--target-window (&optional display)
+  "Return window which should be selected when Embark actions run.
+If DISPLAY is non-nil, call `display-buffer' to produce the
+window if necessary."
+  (cond
+   ((and (minibufferp) (minibuffer-selected-window))
+    (minibuffer-selected-window))
+   ((and embark--target-window
+         (window-live-p embark--target-window)
+         (eq (window-buffer embark--target-window) embark--target-buffer))
+    embark--target-window)
+   (embark--target-buffer
+    (or (get-buffer-window embark--target-buffer)
+        (when display (display-buffer embark--target-buffer))))
+   (display (selected-window))))
 
 (defun embark--cache-info (buffer)
   "Cache information needed for actions in variables local to BUFFER.
 BUFFER defaults to the current buffer."
   (let ((cmd (or embark--command this-command))
         (dir (embark--default-directory))
-        (target-buffer (embark--target-buffer)))
+        (target-buffer (embark--target-buffer))
+        (target-window (embark--target-window)))
     (with-current-buffer buffer
-      (setq-local embark--command cmd)
-      (setq-local default-directory dir)
-      (setq-local embark--target-buffer target-buffer))))
+      (setq-local embark--command cmd
+                  default-directory dir
+                  embark--target-buffer target-buffer
+                  embark--target-window target-window))))
 
 (defun embark--cache-info--completion-list ()
   "Cache information needed for actions in a *Completions* buffer.
@@ -608,10 +633,7 @@ minibuffer."
           (run-at-time 0 nil #'message nil)
           (top-level)))
     (let* ((command embark--command)
-           (target-buffer (embark--target-buffer))
-           (action-window (if (buffer-live-p target-buffer)
-                              (display-buffer target-buffer)
-                            (selected-window)))
+           (action-window (embark--target-window t))
            (setup-hook (or (alist-get action embark-setup-overrides)
                            embark-setup-hook))
            (allow-edit (if embark-allow-edit-default
@@ -1146,10 +1168,7 @@ keybinding for it.  Or alternatively you might want to enable
             (let ((dir default-directory) ; smuggle to the target window
                   (annotator embark-collect-annotator)
                   (candidates embark-collect-candidates))
-              (with-current-buffer
-                  (if (buffer-live-p embark--target-buffer)
-                      embark--target-buffer
-                    (current-buffer))
+              (with-current-buffer (embark--target-buffer)
                 (let ((default-directory dir)) ; for marginalia's file annotator
                   (mapcar
                    (lambda (cand)
