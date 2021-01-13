@@ -140,16 +140,18 @@ associated to an active minibuffer for a Consult command."
   (interactive "sInsert line: ")
   (insert (embark-consult--strip-prefix line)))
 
-(defun embark-consultsave-line (line)
+(defun embark-consult-save-line (line)
   "Save LINE in the kill ring."
   (interactive "sSave line: ")
   (kill-new (embark-consult--strip-prefix line)))
 
+;;;###autoload
 (embark-define-keymap embark-consult-location-map
   "Keymap of Embark actions for Consult's consult-location category."
   ("i" embark-consult-insert-line) ; shadow the ones from general map
   ("w" embark-consult-save-line))
 
+;;;###autoload
 (defun embark-consult-export-occur (lines)
   "Create an occur mode buffer listing LINES.
 The elements of LINES are assumed to be values of category consult-line."
@@ -189,17 +191,18 @@ The elements of LINES are assumed to be values of category consult-line."
       (occur-mode))
     (switch-to-buffer buf)))
 
-(setf (alist-get 'consult-location embark-keymap-alist)
-      'embark-consult-location-map)
-
-(setf (alist-get 'consult-location embark-collect-initial-view-alist)
-      'list)
-
-(setf (alist-get 'consult-location embark-exporters-alist)
-      'embark-consult-export-occur)
+;;;###autoload
+(progn
+  (setf (alist-get 'consult-location embark-keymap-alist)
+        'embark-consult-location-map)
+  (setf (alist-get 'consult-location embark-collect-initial-view-alist)
+        'list)
+  (setf (alist-get 'consult-location embark-exporters-alist)
+        'embark-consult-export-occur))
 
 ;;; support for consult-buffer
 
+;;;###autoload
 (defun embark-consult-refine-buffer-type (target)
   "Refine consult-buffer TARGET to its real type.
 
@@ -218,6 +221,7 @@ removes its prefix typing character."
       ;; new buffer case, don't remove first char
       (cons 'buffer target))))
 
+;;;###autoload
 (setf (alist-get 'consult-buffer embark-transformer-alist)
       'embark-consult-refine-buffer-type)
 
