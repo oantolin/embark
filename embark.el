@@ -665,12 +665,12 @@ minibuffer."
 
 (defun embark-refine-symbol-type (target)
   "Refine symbol TARGET to command or variable if possible."
-  (when-let ((symbol (intern-soft target)))
-    (cons (cond
-           ((commandp symbol) 'command)
-           ((boundp symbol) 'variable)
-           (t 'symbol))
-          target)))
+  (cons (or (when-let ((symbol (intern-soft target)))
+              (cond
+               ((commandp symbol) 'command)
+               ((boundp symbol) 'variable)))
+            'symbol)
+        target))
 
 (defun embark-lookup-lighter-minor-mode (target)
   "If TARGET is a lighter, look up its minor mode.
