@@ -63,7 +63,27 @@ Defining actions for new categories of targets
 
 @itemize
 @item
-The ``occur'' subsytem has been overhauled and renamed ``collect''.
+If a recent update to Embark made it stop working with certain
+@uref{https://github.com/minad/consult/, Consult} commands, just install and load the new embark-consult
+package (available on Melpa). In addition to the prior
+functionality for Consult, this package also contains an
+@samp{embark-consult-preview-at-point} that triggers a Consult preview
+for the entry at point in an auto-updating Embark Collect buffer,
+and an @samp{embark-consult-preview-minor-mode} to run the Consult
+preview automatically as you move around the collect buffer.
+
+@lisp
+(use-package embark-consult
+  :ensure t
+  :after (embark consult)
+  ;; if you want to have consult previews as you move around an
+  ;; auto-updating embark collect buffer
+  :hook
+  (embark-collect-mode . embark-consult-preview-minor-mode))
+@end lisp
+
+@item
+The ``occur'' subsystem has been overhauled and renamed ``collect''.
 There are aliases for the old command and variable names with
 ``occur'' in them, but those will be gone in a couple of months. So
 please update your configuration.
@@ -112,7 +132,7 @@ candidate.
 In the @samp{*Completions*} buffer the target is the completion at point.
 @item
 In a regular buffer, the target is the region if active, or else the
-file, symbol or url at point.
+file, symbol or URL at point.
 @end itemize
 
 The type of actions offered depend on the type of the target:
@@ -186,7 +206,7 @@ useful category metadata so the @uref{https://github.com/minad/marginalia, Margi
 this missing metadata, is highly recommended for use with Embark.
 
 Embark's default configuration has actions for the following target
-types: files, buffers, symbols, packages, urls, bookmarks, and as a
+types: files, buffers, symbols, packages, URLs, bookmarks, and as a
 somewhat special case, actions for when the region is active. You can
 read about the @uref{https://github.com/oantolin/embark/wiki/Default-Actions, default actions and their keybindings} on the GitHub
 project wiki.
@@ -211,8 +231,11 @@ additional annotations.
 The @samp{embark-collect-live} variant of @samp{embark-collect-snapshot} produces
 ``live'' Embark Collect buffers, meaning they auto-update as the set
 of candidates changes. Most users of visual completion UIs such as
-Icomplete or Selectrum will probably not want to use this, to avoid
-seeing double.
+Icomplete, Selectrum or Ivy will probably either not want to use
+this, to avoid seeing double, or to configure their completion UI to
+hide while using @samp{embark-collect-live}. See the Embark wiki for
+[sample configuration for
+Selectrum](@uref{https://github.com/oantolin/embark/wiki/Additional-Configuration#pause-selectrum-while-using-embark-collect-live}).
 
 @item
 The @samp{embark-export} command tries to open a buffer in an appropriate
@@ -309,27 +332,16 @@ reasonable starting configuration:
 (use-package embark
   :ensure t
   :bind
-  ("C-S-a" . embark-act)               ; pick some comfortable binding
-  :config
-  ;; For Selectrum users:
-  (defun current-candidate+category ()
-    (when selectrum-active-p
-      (cons (selectrum--get-meta 'category)
-            (selectrum-get-current-candidate))))
+  ("C-S-a" . embark-act))              ; pick some comfortable binding
 
-  (add-hook 'embark-target-finders #'current-candidate+category)
-
-  (defun current-candidates+category ()
-    (when selectrum-active-p
-      (cons (selectrum--get-meta 'category)
-            (selectrum-get-current-candidates
-             ;; Pass relative file names for dired.
-             minibuffer-completing-file-name))))
-
-  (add-hook 'embark-candidate-collectors #'current-candidates+category)
-
-  ;; No unnecessary computation delay after injection.
-  (add-hook 'embark-setup-hook 'selectrum-set-selected-candidate))
+;; Consult users will also want the embark-consult package.
+(use-package embark-consult
+  :ensure t
+  :after (embark consult)
+  ;; if you want to have consult previews as you move around an
+  ;; auto-updating embark collect buffer
+  :hook
+  (embark-collect-mode . embark-consult-preview-minor-mode))
 @end lisp
 
 The other command you may want a binding for is @samp{embark-act-noexit}, if
@@ -345,16 +357,14 @@ the minibuffer (in fact, @samp{embark-become} only works in the minibuffer).
 
 Embark needs to know what your minibuffer completion system considers
 to be the list of candidates and which one is the current one. Embark
-works out of the box if you use Emacs's default tab completion, or
-the built-in @samp{icomplete-mode} or @samp{fido-mode}. It is possible to configure
-Embark to work with other completion UI, and the above sample
-configuration includes the settings for @uref{https://github.com/raxod502/selectrum/, Selectrum}.
+works out of the box if you use Emacs's default tab completion, the
+built-in @samp{icomplete-mode} or @samp{fido-mode}, or the third-party packages
+@uref{https://github.com/raxod502/selectrum/, Selectrum} or @uref{https://github.com/abo-abo/swiper, Ivy}.
 
 If you are a @uref{https://emacs-helm.github.io/helm/, Helm} or @uref{https://github.com/abo-abo/swiper, Ivy} user you are unlikely to want Embark since
 those packages include comprehensive functionality for acting on
-minibuffer completion candidates. (Although you could still be
-interested in using Embark solely for actions outside of the
-minibuffer.)
+minibuffer completion candidates. (Embark does come with Ivy
+integration despite this.)
 
 @node Showing a reminder of available actions
 @section Showing a reminder of available actions
