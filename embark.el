@@ -23,10 +23,10 @@
 
 ;;; Commentary:
 
-;; This package provides a sort of right-click contextual menu for Emacs,
-;; accessed through the `embark-act' command (which you should bind to a
-;; convenient key), offering you relevant /actions/ to use on a /target/
-;; determined by the context:
+;; This package provides a sort of right-click contextual menu for
+;; Emacs, accessed through the `embark-act' command (which you should
+;; bind to a convenient key), offering you relevant actions to use on
+;; a target determined by the context:
 
 ;; - In the minibuffer, the target is the current best completion
 ;;  candidate.
@@ -79,16 +79,17 @@
 ;; https://github.com/oantolin/embark/wiki/Default-Actions
 
 ;; Besides acting individually on targets, Embark lets you work
-;; collectively on a set of target /candidates/.  For example, while you are
-;; in the minibuffer the candidates are simply the possible completions
-;; of your input.  Embark provides two commands to work on candidate sets:
+;; collectively on a set of target candidates.  For example, while
+;; you are in the minibuffer the candidates are simply the possible
+;; completions of your input.  Embark provides three commands to work
+;; on candidate sets:
 
-;; - The `embark-collect' command produces a buffer listing all
-;;   candidates, for you to peruse and run actions on at your leisure.
-;;   The candidates can be viewed in a grid or as a list showing
-;;   additional annotations.  The `embark-collect-live' variant
-;;   produces "live" Embark Collect buffers, meaning they autoupdate
-;;   as the set of candidates changes.
+;; - The `embark-collect-snapshot' command produces a buffer listing
+;;   all candidates, for you to peruse and run actions on at your
+;;   leisure.  The candidates can be viewed in a grid or as a list
+;;   showing additional annotations.  The `embark-collect-live'
+;;   variant produces "live" Embark Collect buffers, meaning they
+;;   autoupdate as the set of candidates changes.
 
 ;; - The `embark-export' command tries to open a buffer in an
 ;;   appropriate major mode for the set of candidates.  If the
