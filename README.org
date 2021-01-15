@@ -156,9 +156,8 @@ candidate sets:
   of candidates changes. Most users of visual completion UIs such as
   Icomplete, Selectrum or Ivy will probably either not want to use
   this, to avoid seeing double, or to configure their completion UI to
-  hide while using =embark-collect-live=. See the Embark wiki for
-  [sample configuration for
-  Selectrum](https://github.com/oantolin/embark/wiki/Additional-Configuration#pause-selectrum-while-using-embark-collect-live).
+  hide while using =embark-collect-live=. See the Embark wiki for [[https://github.com/oantolin/embark/wiki/Additional-Configuration#pause-selectrum-while-using-embark-collect-live][sample
+  configuration for Selectrum]].
 
 - The =embark-export= command tries to open a buffer in an appropriate
   major mode for the set of candidates. If the candidates are files
