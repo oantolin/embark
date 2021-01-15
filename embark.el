@@ -1594,6 +1594,31 @@ buffer for each type of completion."
       (setq-local wgrep-header/footer-parser #'ignore))
     (switch-to-buffer buf)))
 
+;;; integration with external completion UIs
+
+;; selectrum
+
+(declare-function selectrum--get-meta "selectrum")
+(declare-function selectrum-get-current-candidate "selectrum")
+(declare-function selectrum-get-current-candidates "selectrum")
+
+(defun embark-target-selectrum-selection ()
+  "Target the currently selected item in Selectrum.
+Return the category metadatum as the type of the target."
+  (when (bound-and-true-p selectrum-active-p)
+    (cons (selectrum--get-meta 'category)
+	  (selectrum-get-current-candidate))))
+
+(defun embark-selectrum-candidates ()
+  (when (bound-and-true-p selectrum-active-p)
+    (cons (selectrum--get-meta 'category)
+	  (selectrum-get-current-candidates
+	   ;; Pass relative file names for dired.
+	   minibuffer-completing-file-name))))
+
+(with-eval-after-load 'selectrum
+  (add-hook 'embark-target-finders #'embark-target-selectrum-selection)
+  (add-hook 'embark-candidate-collectors #'embark-selectrum-candidates))
 ;;; custom actions
 
 (defun embark-keymap-help ()
