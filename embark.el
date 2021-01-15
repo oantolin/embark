@@ -1619,6 +1619,43 @@ Return the category metadatum as the type of the target."
 (with-eval-after-load 'selectrum
   (add-hook 'embark-target-finders #'embark-target-selectrum-selection)
   (add-hook 'embark-candidate-collectors #'embark-selectrum-candidates))
+
+;; ivy
+
+(declare-function ivy--expand-file-name "ivy")
+(declare-function ivy-state-current "ivy")
+(defvar ivy-text)
+(defvar ivy-last)
+(defvar ivy--old-cands) ; this stores the current candidates :)
+
+(defun embark-target-ivy-selection ()
+  "Target the currently selected item in Ivy.
+Return the category metadatum as the type of the target."
+  ;; my favorite way of detecting Ivy
+  (when (eq mwheel-scroll-up-function 'ivy-next-line)
+    (cons
+     (completion-metadata-get (embark--metadata) 'category)
+     (ivy--expand-file-name
+      (if (and (> ivy--length 0)
+               (stringp (ivy-state-current ivy-last)))
+          (ivy-state-current ivy-last)
+        ivy-text)))))
+
+(defun embark-ivy-candidates ()
+  "Return all current Ivy candidates."
+  ;; my favorite way of detecting Ivy
+  (when (eq mwheel-scroll-up-function 'ivy-next-line)
+    (cons
+     ;; swiper-isearch uses swiper-isearch-function as a completion
+     ;; table, but it doesn't understand metadata queries
+     (ignore-errors
+       (completion-metadata-get (embark--metadata) 'category))
+     ivy--old-cands)))
+
+(with-eval-after-load 'ivy
+  (add-hook 'embark-target-finders #'embark-target-ivy-selection)
+  (add-hook 'embark-candidate-collectors #'embark-ivy-candidates))
+
 ;;; custom actions
 
 (defun embark-keymap-help ()
