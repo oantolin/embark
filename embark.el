@@ -1627,6 +1627,7 @@ Return the category metadatum as the type of the target."
 (defvar ivy-text)
 (defvar ivy-last)
 (defvar ivy--old-cands) ; this stores the current candidates :)
+(defvar ivy--length)
 
 (defun embark-target-ivy-selection ()
   "Target the currently selected item in Ivy.
