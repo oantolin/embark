@@ -591,13 +591,26 @@ keybindings and even \\[execute-extended-command] to select a command."
                                   embark-key-action-separator
                                   name))))))
     (intern-soft
-     (completing-read
-      "Command: "
-      (lambda (string predicate action)
-        (if (eq action 'metadata)
-            `(metadata (category . command))
-          (complete-with-action action commands string predicate)))
-      nil t))))
+     (minibuffer-with-setup-hook
+         (lambda ()
+           (use-local-map
+            (make-composed-keymap
+             (let ((map (make-sparse-keymap)))
+               (define-key map "@"
+                 (lambda ()
+                   (interactive)
+                   (when-let ((cmd (embark-keymap-prompter keymap)))
+                     (delete-minibuffer-contents)
+                     (insert (symbol-name cmd)))))
+               map)
+             (current-local-map))))
+       (completing-read
+        "Command: "
+        (lambda (string predicate action)
+          (if (eq action 'metadata)
+              `(metadata (category . command))
+            (complete-with-action action commands string predicate)))
+        nil t)))))
 
 (defun embark--with-indicator (indicator prompter keymap &optional target)
   "Display INDICATOR while calling PROMPTER with KEYMAP.
