@@ -537,10 +537,9 @@ needed."
    ((stringp indicator)
     (let ((mini (active-minibuffer-window)))
       (if (or (use-region-p) (not mini))
-          (let (minibuffer-message-timeout)
-            (minibuffer-message "%s on %s"
-                                indicator
-                                (if target (format "'%s'" target) "region")))
+          (message "%s on %s"
+                   indicator
+                   (if target (format "'%s'" target) "region"))
         (let ((indicator-overlay
                (make-overlay (point-min) (point-min)
                              (window-buffer mini) t t)))
@@ -604,18 +603,25 @@ keybindings and even \\[execute-extended-command] to select a command."
   "Display INDICATOR while calling PROMPTER with KEYMAP.
 The optional argument TARGET is displayed for actions outside the
 minibuffer."
-  (let ((remove-indicator (embark--show-indicator indicator keymap target))
-        (cmd (condition-case nil
-                 (minibuffer-with-setup-hook
-                     ;; if the prompter opens its own minibuffer, show
-                     ;; the indicator there too (don't bother with
-                     ;; removing it since the whole recursive
-                     ;; minibuffer disappears)
-                     (lambda ()
-                       (embark--show-indicator indicator keymap target))
-                   (let ((enable-recursive-minibuffers t))
-                     (funcall prompter keymap)))
-               (quit nil))))
+  (let* ((remove-indicator (embark--show-indicator indicator keymap target))
+         (cmd (condition-case nil
+                  (minibuffer-with-setup-hook
+                      ;; if the prompter opens its own minibuffer, show
+                      ;; the indicator there too (don't bother with
+                      ;; removing it since the whole recursive
+                      ;; minibuffer disappears)
+                      (lambda ()
+                        ;; if the outer embark--show-indicator decided
+                        ;; to display a message, remove-indicator is a
+                        ;; string containing the message, which we use
+                        (embark--show-indicator (if (stringp remove-indicator)
+                                                    remove-indicator
+                                                  indicator)
+                                                keymap
+                                                target))
+                    (let ((enable-recursive-minibuffers t))
+                      (funcall prompter keymap)))
+                (quit nil))))
     (cond
      ((overlayp remove-indicator) (delete-overlay remove-indicator))
      ((functionp remove-indicator) (funcall remove-indicator)))
