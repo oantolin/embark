@@ -1159,11 +1159,11 @@ keybinding for it.  Or alternatively you might want to enable
   (setq tabulated-list-format
         (if embark-collect-annotator
             (let ((width (embark-collect--max-width)))
-              `[("Candidate" ,width t) ("Annotation" 0 nil)])
+              `[("Candidate" ,width t) ("Annotation" 0 t)])
           [("Candidate" 0 t)]))
   (if tabulated-list-use-header-line
       (tabulated-list-init-header)
-    (setq header-line-format nil))
+    (setq header-line-format nil tabulated-list--header-string nil))
   (setq tabulated-list-entries
         (if embark-collect-annotator
             (let ((dir default-directory) ; smuggle to the target window
@@ -1239,7 +1239,7 @@ This is specially useful to tell where multi-line entries begin and end."
           (make-vector columns `("Candidate" ,width nil)))
     (if tabulated-list-use-header-line
         (tabulated-list-init-header)
-      (setq header-line-format nil))
+      (setq header-line-format nil tabulated-list--header-string nil))
     (setq tabulated-list-entries
           (cl-loop with cands = (copy-tree embark-collect-candidates)
                    while cands
