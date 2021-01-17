@@ -281,8 +281,9 @@ If you want a reminder of which actions are available after running
 =embark-act=, use =embark-keymap-help=, which is bound to =C-h= in all of
 Embark's action keymaps. That command will prompt you for the name of
 an action with completion (but feel free to enter a command not among
-the offered candidates!), and will also remind you of the
-keybindings.
+the offered candidates!), and will also remind you of the keybindings.
+You can press =@= at the prompt and then one of the keybindings to enter
+the name of the corresponding action.
 
 If you find you prefer entering actions that way, you can configure
 embark to always prompt you for actions by setting the variable
