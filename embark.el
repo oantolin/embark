@@ -653,6 +653,7 @@ minibuffer."
           (run-at-time 0 nil #'message nil)
           (top-level)))
     (let* ((command embark--command)
+           (prefix prefix-arg)
            (action-window (embark--target-window t))
            (setup-hook (or (alist-get action embark-setup-overrides)
                            embark-setup-hook))
@@ -674,6 +675,7 @@ minibuffer."
                              (run-hooks 'embark-pre-action-hook)
                              (let ((enable-recursive-minibuffers t)
                                    (embark--command command)
+                                   (prefix-arg prefix)
                                    (use-dialog-box nil) ; avoid mouse dialogs
                                    (last-nonmenu-event 13)) ; avoid mouse dialogs
                                (command-execute action))
