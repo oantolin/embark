@@ -178,9 +178,12 @@ when using @samp{embark-act}: you can use any command that reads from the
 minibuffer as an action and the target of the action will be inserted
 at the first minibuffer prompt. After running @samp{embark-act} all of your
 keybindings and even @samp{execute-extended-command} can be used to run a
-command. The action keymaps are normal Emacs keymaps and you should
-feel free to bind in them whatever commands you find useful as
-actions.
+command. For example, if you want to replace all occurrences of the
+symbol at point, just use @samp{M-%} as the action, there is no need to bind
+@samp{query-replace} in one of Embark's keymaps. Also, those action keymaps
+are normal Emacs keymaps and you should feel free to bind in them
+whatever commands you find useful as actions and want to be available
+through convenient bindings.
 
 The actions in @samp{embark-general-map} are available no matter what type
 of completion you are in the middle of. By default this includes
