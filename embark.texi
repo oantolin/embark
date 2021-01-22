@@ -447,7 +447,7 @@ the target as is.
 
 For some commands this might be undesirable, either for safety
 (because a command is ``hard to undo'', like @samp{delete-file} or
-@samp{kill-buffer)}, or because further input is required next to the target
+@samp{kill-buffer}), or because further input is required next to the target
 (like when using @samp{shell-command}: the target is the file and you still
 need to enter a shell command to run on it, at the same prompt). You
 can add such commands to the @samp{embark-allow-edit-commands} variable
