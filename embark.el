@@ -99,11 +99,9 @@
 
 ;; These are always available as "actions" (although they do not act
 ;; on just the current target but on all candidates) for embark-act and
-;; are bound to C, L and E, respectively, in embark-general-map.  This
+;; are bound to S, L and E, respectively, in embark-general-map.  This
 ;; means that you do not have to bind your own key bindings for these
-;; (although you can, of course), just a key binding for `embark-act'
-;; or `embark-act-noexit'.
-
+;; (although you can, of course), just a key binding for `embark-act'.
 
 ;;; Code:
 
@@ -236,6 +234,17 @@ corresponding value as a setup hook (instead of
 `embark-setup-hook') after injecting the target into in the
 minibuffer and before acting on it."
   :type '(alist :key-type function :value-type hook))
+
+(defcustom embark-quit-after-action t
+  "Should `embark-act' quit the minibuffer?
+This controls whether calling `embark-act' without a prefix
+argument quits the minibuffer or not.  You can always get the
+opposite behavior to that indicated by this variable by calling
+`embark-act' with \\[universal-argument].
+
+Note that `embark-act' can also be called from outside the
+minibuffer and this variable is irrelevant in that case."
+  :type 'boolean)
 
 (defcustom embark-allow-edit-default nil
   "Is the user allowed to edit the target before acting on it?
@@ -640,8 +649,8 @@ minibuffer."
      ((functionp remove-indicator) (funcall remove-indicator)))
     cmd))
 
-(defun embark-exit ()
-  "Exit the active minibuffer preserving the window configuration.
+(defun embark-quit ()
+  "Quit the active minibuffer preserving the window configuration.
 If you often use actions that spawn new windows, you might want
 to bind this to C-g in the minibuffer and in auto-updating Embark
 Collect buffers.
@@ -746,7 +755,7 @@ the type, it is called with the initial target, and must return a
       (cons type target))))
 
 ;;;###autoload
-(defun embark-act-noexit ()
+(defun embark-act (&optional arg)
   "Prompt the user for an action and perform it.
 The target of the action is chosen by `embark-target-finders'.
 By default, if called from a minibuffer the target is the top
@@ -755,8 +764,13 @@ Completions buffer it is the candidate at point.
 
 This command uses `embark-prompter' to ask the user to specify an
 action, and calls it injecting the target at the first minibuffer
-prompt."
-  (interactive)
+prompt.
+
+If you call this from the minibuffer, it can optionally quit the
+minibuffer. The variable `embark-quit-after-action' controls
+whether calling `embark-act' without a prefix argument quits the
+minibuffer, and if you use \\[universal-argument] it will do the opposite."
+  (interactive "P")
   (pcase-let* ((`(,type . ,target) (embark--target))
                (action (embark--with-indicator embark-action-indicator
                                                embark-prompter
@@ -764,22 +778,9 @@ prompt."
                                                target)))
     (if (null action)
         (minibuffer-message "Canceled")
-      (embark--act action target))))
-
-;;;###autoload
-(defun embark-act ()
-  "Perform an action and exit from all minibuffers (if any).
-The target of the action is chosen by `embark-target-finders'.
-By default, if called from a minibuffer the target is the top
-completion candidate, if called from an Embark Collect or a
-Completions buffer it is the candidate at point.
-
-This command uses `embark-prompter' to ask the user to specify an
-action, and calls it injecting the target at the first minibuffer
-prompt."
-  (interactive)
-  (embark-act-noexit)
-  (embark-exit))
+      (embark--act action target)))
+  (when (if embark-quit-after-action (not arg) arg)
+    (embark-quit)))
 
 (defun embark--become-keymap ()
   "Return keymap of commands to become for current command."
