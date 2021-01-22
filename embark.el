@@ -640,18 +640,37 @@ minibuffer."
      ((functionp remove-indicator) (funcall remove-indicator)))
     cmd))
 
-(defun embark--act (action target &optional exit)
-  "Perform ACTION injecting the TARGET, optionally EXIT to top level."
-  (if (memq action '(embark-become      ; these actions should not be
+(defun embark-exit ()
+  "Exit the active minibuffer preserving the window configuration.
+If you often use actions that spawn new windows, you might want
+to bind this to C-g in the minibuffer and in auto-updating Embark
+Collect buffers.
+
+This command runs `minibuffer-exit-hook'."
+  (interactive)
+  (when-let* ((wincfg (current-window-configuration))
+              (miniwin (active-minibuffer-window)))
+    (with-selected-window miniwin
+      (let ((msg
+             (when (bound-and-true-p minibuffer-message-overlay)
+               (overlay-get minibuffer-message-overlay 'after-string))))
+        (when (and msg (string-match-p "\\` *\\[.+\\]\\'" msg))
+          (setq msg (substring (string-trim msg) 1 -1)))
+        (run-at-time 0 nil (lambda ()
+                             (set-window-configuration wincfg)
+                             (when (minibufferp)
+                               (select-window (get-mru-window)))
+                             (message msg)))
+        (run-hooks 'minibuffer-exit-hook)
+        (abort-recursive-edit)))))
+
+(defun embark--act (action target)
+  "Perform ACTION injecting the TARGET."
+  (if (memq action '(embark-become        ; these actions should not
                      embark-collect-live  ; run in the target window
                      embark-collect-snapshot
                      embark-export))
-      (progn
-        (command-execute action)
-        (when (and exit (eq action 'embark-collect-snapshot))
-          ;; we handle exiting for embark-collect-snapshot
-          (run-at-time 0 nil #'message nil)
-          (top-level)))
+      (command-execute action)
     (let* ((command embark--command)
            (prefix prefix-arg)
            (action-window (embark--target-window t))
@@ -668,22 +687,17 @@ minibuffer."
                        (let ((embark-setup-hook setup-hook))
                          (run-hooks 'embark-setup-hook))
                        (unless allow-edit
-                         (run-at-time 0 nil #'exit-minibuffer)))))
-           (run-action (lambda ()
-                         (minibuffer-with-setup-hook inject
-                           (with-selected-window action-window
-                             (run-hooks 'embark-pre-action-hook)
-                             (let ((enable-recursive-minibuffers t)
-                                   (embark--command command)
-                                   (prefix-arg prefix)
-                                   (use-dialog-box nil) ; avoid mouse dialogs
-                                   (last-nonmenu-event 13)) ; avoid mouse dialogs
-                               (command-execute action))
-                             (run-hooks 'embark-post-action-hook))))))
-      (if (not (and exit (minibufferp)))
-          (funcall run-action)
-        (run-at-time 0 nil run-action)
-        (top-level)))))
+                         (run-at-time 0 nil #'exit-minibuffer))))))
+      (minibuffer-with-setup-hook inject
+        (with-selected-window action-window
+          (run-hooks 'embark-pre-action-hook)
+          (let ((enable-recursive-minibuffers t)
+                (embark--command command)
+                (prefix-arg prefix)
+                (use-dialog-box nil)    ; avoid mouse dialogs
+                (last-nonmenu-event 13)) ; avoid mouse dialogs
+            (command-execute action))
+          (run-hooks 'embark-post-action-hook))))))
 
 (defun embark-refine-symbol-type (target)
   "Refine symbol TARGET to command or variable if possible."
@@ -731,14 +745,18 @@ the type, it is called with the initial target, and must return a
         (funcall transformer target)
       (cons type target))))
 
-(defun embark--prompt-for-action (&optional exit)
+;;;###autoload
+(defun embark-act-noexit ()
   "Prompt the user for an action and perform it.
+The target of the action is chosen by `embark-target-finders'.
+By default, if called from a minibuffer the target is the top
+completion candidate, if called from an Embark Collect or a
+Completions buffer it is the candidate at point.
 
-This uses `embark-prompter' to ask the user to specify an action
-and returns a function that executes the chosen command, in the
-correct target window, injecting the target at the first
-minibuffer prompt.  The optional argument EXIT controls whether
-to exit the minibuffer."
+This command uses `embark-prompter' to ask the user to specify an
+action, and calls it injecting the target at the first minibuffer
+prompt."
+  (interactive)
   (pcase-let* ((`(,type . ,target) (embark--target))
                (action (embark--with-indicator embark-action-indicator
                                                embark-prompter
@@ -746,27 +764,22 @@ to exit the minibuffer."
                                                target)))
     (if (null action)
         (minibuffer-message "Canceled")
-      (embark--act action target exit))))
-
-;;;###autoload
-(defun embark-act-noexit ()
-  "Embark upon an action.
-The target of the action is chosen by `embark-target-finders'.
-By default, if called from a minibuffer the target is the top
-completion candidate, if called from an Embark Collect or a
-Completions buffer it is the candidate at point."
-  (interactive)
-  (embark--prompt-for-action))
+      (embark--act action target))))
 
 ;;;###autoload
 (defun embark-act ()
-  "Embark upon an action and exit from all minibuffers (if any).
+  "Perform an action and exit from all minibuffers (if any).
 The target of the action is chosen by `embark-target-finders'.
 By default, if called from a minibuffer the target is the top
 completion candidate, if called from an Embark Collect or a
-Completions buffer it ixs the candidate at point."
+Completions buffer it is the candidate at point.
+
+This command uses `embark-prompter' to ask the user to specify an
+action, and calls it injecting the target at the first minibuffer
+prompt."
   (interactive)
-  (embark--prompt-for-action 'exit))
+  (embark-act-noexit)
+  (embark-exit))
 
 (defun embark--become-keymap ()
   "Return keymap of commands to become for current command."
