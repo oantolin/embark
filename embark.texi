@@ -64,6 +64,14 @@ Defining actions for new categories of targets
 
 @itemize
 @item
+The command @samp{embark-act-noexit} has been removed and a variable
+@samp{embark-quit-after-action} now controls whether @samp{embark-act} quits the
+minibuffer or not. (Also note that the word ``exit'' in
+@samp{embark-act-noexit} was used incorrectly according to Emacs's
+terminology: exiting the minibuffer means accepting the input,
+like when you press @samp{RET}; and what @samp{embark-act-noexit} did was more
+like pressing @samp{C-g} which Emacs calls aborting or quitting.)
+@item
 If a recent update to Embark made it stop working with certain
 @uref{https://github.com/minad/consult/, Consult} commands, just install and load the new embark-consult
 package (available on Melpa). In addition to the prior
@@ -591,9 +599,9 @@ the kill-ring, which you get for free). Then this will do:
 @lisp
 (embark-define-keymap embark-tab-actions
   "Keymap for actions for tab-bar tabs (when mentioned by name)."
-  ("s" . tab-bar-select-tab-by-name)
-  ("r" . tab-bar-rename-tab-by-name)
-  ("k" . tab-bar-close-tab-by-name))
+  ("s" tab-bar-select-tab-by-name)
+  ("r" tab-bar-rename-tab-by-name)
+  ("k" tab-bar-close-tab-by-name))
 
 (add-to-list 'embark-keymap-alist '(tab . embark-tab-actions))
 @end lisp

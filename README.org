@@ -487,9 +487,9 @@ commands, instead of defining new ones.
  #+begin_src emacs-lisp
    (embark-define-keymap embark-tab-actions
      "Keymap for actions for tab-bar tabs (when mentioned by name)."
-     ("s" . tab-bar-select-tab-by-name)
-     ("r" . tab-bar-rename-tab-by-name)
-     ("k" . tab-bar-close-tab-by-name))
+     ("s" tab-bar-select-tab-by-name)
+     ("r" tab-bar-rename-tab-by-name)
+     ("k" tab-bar-close-tab-by-name))
 
    (add-to-list 'embark-keymap-alist '(tab . embark-tab-actions))
  #+end_src
