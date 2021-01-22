@@ -1445,7 +1445,7 @@ the minibuffer is exited."
 
       (set-window-dedicated-p window t)
 
-      (when (minibufferp from)
+      (when (and (minibufferp from) (not (eq kind :snapshot)))
         (add-hook
          'minibuffer-exit-hook
          (pcase kind
@@ -1459,9 +1459,7 @@ the minibuffer is exited."
                   (rename-buffer
                    (replace-regexp-in-string " Live" "" (buffer-name))
                    t)))
-              (run-at-time 0 nil #'pop-to-buffer buffer)))
-           (:snapshot
-            (lambda () (run-at-time 0 nil #'pop-to-buffer buffer))))
+              (run-at-time 0 nil #'pop-to-buffer buffer))))
          nil t)
         (setq minibuffer-scroll-window window))
 
@@ -1501,7 +1499,8 @@ argument of 1 means list view.
 To control the display, add an entry to `display-buffer-alist'
 with key \"Embark Collect\"."
   (interactive (embark-collect--initial-view-arg))
-  (embark--collect "*Embark Collect*" initial-view :snapshot))
+  (embark--collect "*Embark Collect*" initial-view :snapshot)
+  (embark-quit))
 
 ;;;###autoload
 (defun embark-collect-completions ()
