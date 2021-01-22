@@ -816,7 +816,7 @@ convenient access to the other commands in it."
                                  (let ((use-dialog-box nil)
                                        (this-command become))
                                    (command-execute become)))))
-        (top-level)))))
+        (abort-recursive-edit)))))
 
 (defmacro embark-define-keymap (name doc &rest bindings)
   "Define keymap variable NAME.
@@ -1584,7 +1584,7 @@ buffer for each type of completion."
                        (message nil)
                        (let ((default-directory dir)) ; dired needs this info
                          (funcall exporter candidates))))
-        (top-level)))))
+        (abort-recursive-edit)))))
 
 (defun embark-export-ibuffer (buffers)
   "Create an ibuffer buffer listing BUFFERS."
