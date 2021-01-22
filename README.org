@@ -13,6 +13,13 @@
 
   (That is, news about things breaking!)
 
+  - The command =embark-act-noexit= has been removed and a variable
+    =embark-quit-after-action= now controls whether =embark-act= quits the
+    minibuffer or not. (Also note that the word "exit" in
+    =embark-act-noexit= was used incorrectly according to Emacs's
+    terminology: exiting the minibuffer means accepting the input,
+    like when you press =RET=; and what =embark-act-noexit= did was more
+    like pressing =C-g= which Emacs calls aborting or quitting.)
   - If a recent update to Embark made it stop working with certain
     [[https://github.com/minad/consult/][Consult]] commands, just install and load the new embark-consult
     package (available on Melpa). In addition to the prior
