@@ -758,6 +758,9 @@ the type, it is called with the initial target, and must return a
         (funcall transformer target)
       (cons type target))))
 
+(defvar embark-act--in-progress nil
+  "Bound to t if `embark--act' is in progress")
+
 ;;;###autoload
 (defun embark-act (&optional arg)
   "Prompt the user for an action and perform it.
@@ -782,9 +785,25 @@ minibuffer, and if you use \\[universal-argument] it will do the opposite."
                                                target)))
     (if (null action)
         (minibuffer-message "Canceled")
-      (embark--act action target)
-      (when (if embark-quit-after-action (not arg) arg)
-        (embark-quit)))))
+      (if (and (minibufferp) (if embark-quit-after-action (not arg) arg))
+          (if (catch 'embark-act
+                (let ((embark-act--in-progress t))
+                  (embark--act action target))
+                nil)
+              ;; An inner embark-act has already performed an `embark-quit'. We
+              ;; should therefore not quit with `embark-quit' because only the
+              ;; innermost embark-act sees the correct window configuration
+              (if embark-act--in-progress
+                  (throw 'embark-act t)
+                (abort-recursive-edit))
+            ;; We are the inner embark-act, the current window configuration is
+            ;; the correct one, so we should quit with `embark-quit'
+            (if embark-act--in-progress
+                (cl-letf (((symbol-function #'abort-recursive-edit)
+                           (lambda () (throw 'embark-act t))))
+                  (embark-quit))
+              (embark-quit)))
+        (embark--act action target)))))
 
 (defun embark--become-keymap ()
   "Return keymap of commands to become for current command."
