@@ -758,6 +758,8 @@ the type, it is called with the initial target, and must return a
         (funcall transformer target)
       (cons type target))))
 
+(defvar embark-act--should-unwind nil)
+
 ;;;###autoload
 (defun embark-act (&optional arg)
   "Prompt the user for an action and perform it.
@@ -782,9 +784,21 @@ minibuffer, and if you use \\[universal-argument] it will do the opposite."
                                                target)))
     (if (null action)
         (minibuffer-message "Canceled")
-      (embark--act action target)
-      (when (if embark-quit-after-action (not arg) arg)
-        (embark-quit)))))
+      (let ((should-quit
+             (and (minibufferp) (if embark-quit-after-action (not arg) arg))))
+        (setq embark-act--should-unwind nil)
+        (unwind-protect (embark--act action target)
+          (when (and embark-act--should-unwind should-quit)
+            ;; If we get here, it means that an inner `embark-act' has set
+            ;; `embark-act--should-unwind' to t and performed an `embark-quit'.
+            ;; That means we should quit normally without `embark-quit' here
+            ;; because only the innermost quit sees the correct window
+            ;; configuration to be restored
+            (abort-recursive-edit)))
+        (when should-quit
+          (setq embark-act--should-unwind t)
+          (run-at-time 0 nil #'set 'embark-act--should-unwind nil)
+          (embark-quit))))))
 
 (defun embark--become-keymap ()
   "Return keymap of commands to become for current command."
