@@ -787,8 +787,18 @@ minibuffer, and if you use \\[universal-argument] it will do the opposite."
         (minibuffer-message "Canceled")
       (if (and (minibufferp) (if embark-quit-after-action (not arg) arg))
           (if (catch 'embark-act
-                (let ((embark-act--in-progress t))
-                  (embark--act action target))
+                (let* ((target-depth (1+ (recursion-depth)))
+                       (target-mini-depth (1+ (minibuffer-depth)))
+                       (hook
+                        (lambda ()
+                          (and (= target-depth (recursion-depth))
+                               (= target-mini-depth (minibuffer-depth))
+                               (setq-local embark-act--in-progress t)))))
+                  (unwind-protect
+                      (progn
+                        (add-hook 'minibuffer-setup-hook hook)
+                        (embark--act action target))
+                    (remove-hook 'minibuffer-setup-hook hook)))
                 nil)
               ;; An inner embark-act has already performed an `embark-quit'. We
               ;; should therefore not quit with `embark-quit' because only the
