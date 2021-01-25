@@ -785,9 +785,11 @@ minibuffer, and if you use \\[universal-argument] it will do the opposite."
                                                target)))
     (if (null action)
         (minibuffer-message "Canceled")
-      (embark--act action target)
-      (when (if embark-quit-after-action (not arg) arg)
-        (embark-quit)))))
+      (unwind-protect
+          (embark--act action target)
+        (and (if embark-quit-after-action (not arg) arg)
+             (minibufferp)
+             (embark-quit))))))
 
 (defun embark--become-keymap ()
   "Return keymap of commands to become for current command."
