@@ -758,12 +758,10 @@ the type, it is called with the initial target, and must return a
         (funcall transformer target)
       (cons type target))))
 
-(defvar embark-act--in-progress nil
-  "Bound to t if `embark--act' is in progress")
-
-;;;###autoload
-(defun embark-act (&optional arg)
-  "Prompt the user for an action and perform it.
+(let ((do-throw (make-symbol "embark-act-do-throw")))
+  (set do-throw nil)
+  (defun embark-act (&optional arg)
+    "Prompt the user for an action and perform it.
 The target of the action is chosen by `embark-target-finders'.
 By default, if called from a minibuffer the target is the top
 completion candidate, if called from an Embark Collect or a
@@ -777,43 +775,46 @@ If you call this from the minibuffer, it can optionally quit the
 minibuffer. The variable `embark-quit-after-action' controls
 whether calling `embark-act' without a prefix argument quits the
 minibuffer, and if you use \\[universal-argument] it will do the opposite."
-  (interactive "P")
-  (pcase-let* ((`(,type . ,target) (embark--target))
-               (action (embark--with-indicator embark-action-indicator
-                                               embark-prompter
-                                               (embark--action-keymap type)
-                                               target)))
-    (if (null action)
-        (minibuffer-message "Canceled")
-      (if (and (minibufferp) (if embark-quit-after-action (not arg) arg))
-          (if (catch 'embark-act
-                (let* ((target-depth (1+ (recursion-depth)))
-                       (target-mini-depth (1+ (minibuffer-depth)))
-                       (hook
-                        (lambda ()
-                          (and (= target-depth (recursion-depth))
-                               (= target-mini-depth (minibuffer-depth))
-                               (setq-local embark-act--in-progress t)))))
-                  (unwind-protect
-                      (progn
-                        (add-hook 'minibuffer-setup-hook hook)
-                        (embark--act action target))
-                    (remove-hook 'minibuffer-setup-hook hook)))
-                nil)
-              ;; An inner embark-act has already performed an `embark-quit'. We
-              ;; should therefore not quit with `embark-quit' because only the
-              ;; innermost embark-act sees the correct window configuration
-              (if embark-act--in-progress
-                  (throw 'embark-act t)
-                (abort-recursive-edit))
-            ;; We are the inner embark-act, the current window configuration is
-            ;; the correct one, so we should quit with `embark-quit'
-            (if embark-act--in-progress
-                (cl-letf (((symbol-function #'abort-recursive-edit)
-                           (lambda () (throw 'embark-act t))))
-                  (embark-quit))
-              (embark-quit)))
-        (embark--act action target)))))
+    (interactive "P")
+    (pcase-let* ((`(,type . ,target) (embark--target))
+                 (action (embark--with-indicator embark-action-indicator
+                                                 embark-prompter
+                                                 (embark--action-keymap type)
+                                                 target)))
+      (if (null action)
+          (minibuffer-message "Canceled")
+        (if (and (minibufferp) (if embark-quit-after-action (not arg) arg))
+            (if (catch 'embark-act
+                  (let* ((target-depth (1+ (recursion-depth)))
+                         (target-mini-depth (1+ (minibuffer-depth)))
+                         (hook
+                          (lambda ()
+                            (and (= target-depth (recursion-depth))
+                                 (= target-mini-depth (minibuffer-depth))
+                                 (set (make-local-variable do-throw) t)))))
+                    (unwind-protect
+                        (progn
+                          (add-hook 'minibuffer-setup-hook hook)
+                          (embark--act action target))
+                      (remove-hook 'minibuffer-setup-hook hook)))
+                  nil)
+                ;; An inner embark-act has already performed an `embark-quit'.
+                ;; We should therefore not quit with `embark-quit' because only
+                ;; the innermost embark-act sees the correct window
+                ;; configuration
+                (if (symbol-value do-throw)
+                    (throw 'embark-act t)
+                  (abort-recursive-edit))
+              ;; We are the inner embark-act, the current window configuration
+              ;; is the correct one, so we should quit with `embark-quit'
+              (if (symbol-value do-throw)
+                  (cl-letf (((symbol-function #'abort-recursive-edit)
+                             (lambda () (throw 'embark-act t))))
+                    (embark-quit))
+                (embark-quit)))
+          (embark--act action target))))))
+
+;;;###autoload (autoload 'embark-act "embark" nil t)
 
 (defun embark--become-keymap ()
   "Return keymap of commands to become for current command."
