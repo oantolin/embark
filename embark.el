@@ -675,6 +675,17 @@ minibuffer."
      ((functionp remove-indicator) (funcall remove-indicator)))
     cmd))
 
+(defun embark-run-after-command (function &rest args)
+  "Call FUNCTION with ARGS after currently running command."
+  (cl-labels
+      ((hook ()
+             (remove-hook 'post-command-hook #'hook)
+             (with-demoted-errors "embark-run-after-command PCH: %S"
+               (condition-case _
+                   (apply function args)
+                 (quit (message "Quit"))))))
+    (add-hook 'post-command-hook #'hook)))
+
 (defun embark--act (action target &optional quit)
   "Perform ACTION injecting the TARGET.
 If called from a minibuffer with non-nil QUIT, quit the
@@ -700,7 +711,7 @@ minibuffer before executing the action."
                        (let ((embark-setup-hook setup-hook))
                          (run-hooks 'embark-setup-hook))
                        (unless allow-edit
-                         (run-at-time 0 nil #'exit-minibuffer)))))
+                         (embark-run-after-command #'exit-minibuffer)))))
            (run-action (lambda ()
                          (minibuffer-with-setup-hook inject
                            (with-selected-window action-window
@@ -714,7 +725,7 @@ minibuffer before executing the action."
                              (run-hooks 'embark-post-action-hook))))))
       (if (not (and quit (minibufferp)))
           (funcall run-action)
-        (run-at-time 0 nil run-action)
+        (embark-run-after-command run-action)
         (abort-recursive-edit)))))
 
 (defun embark-refine-symbol-type (target)
@@ -829,14 +840,14 @@ containing point."
                                           (embark--become-keymap))))
       (if (null become)
           (minibuffer-message "Canceled")
-        (run-at-time 0 nil (lambda ()
-                               (minibuffer-with-setup-hook
-                                   (lambda ()
-                                     (delete-minibuffer-contents)
-                                     (insert target))
-                                 (let ((use-dialog-box nil)
-                                       (this-command become))
-                                   (command-execute become)))))
+        (embark-run-after-command (lambda ()
+                                    (minibuffer-with-setup-hook
+                                        (lambda ()
+                                          (delete-minibuffer-contents)
+                                          (insert target))
+                                      (let ((use-dialog-box nil)
+                                            (this-command become))
+                                        (command-execute become)))))
         (abort-recursive-edit)))))
 
 (defmacro embark-define-keymap (name doc &rest bindings)
@@ -1487,9 +1498,9 @@ the minibuffer is exited."
                   (rename-buffer
                    (replace-regexp-in-string " Live" "" (buffer-name))
                    t)))
-              (run-at-time 0 nil #'pop-to-buffer buffer)))
+              (embark-run-after-command #'pop-to-buffer buffer)))
            (:snapshot
-            (lambda () (run-at-time 0 nil #'pop-to-buffer buffer))))
+            (lambda () (embark-run-after-command #'pop-to-buffer buffer))))
          nil t)
         (setq minibuffer-scroll-window window))
 
@@ -1608,11 +1619,11 @@ buffer for each type of completion."
     (if (eq exporter 'embark-collect-snapshot)
         (embark-collect-snapshot)
       (let ((dir (embark--default-directory)))
-        (run-at-time 0 nil
-                     (lambda ()
-                       (message nil)
-                       (let ((default-directory dir)) ; dired needs this info
-                         (funcall exporter candidates))))
+        (embark-run-after-command
+         (lambda ()
+           (message nil)
+           (let ((default-directory dir)) ; dired needs this info
+             (funcall exporter candidates))))
         (abort-recursive-edit)))))
 
 (defun embark-export-ibuffer (buffers)
@@ -1870,7 +1881,7 @@ and leaves the point to the left of it."
 (defun embark--eval-prep ()
   "If target is: a variable, skip edit; a function, wrap in parens."
   (if (not (fboundp (intern (minibuffer-contents))))
-      (run-at-time 0 nil #'exit-minibuffer)
+      (embark-run-after-command #'exit-minibuffer)
     (beginning-of-line)
     (insert "(")
     (end-of-line)
