@@ -654,9 +654,7 @@ minibuffer."
   "Quit the active minibuffer preserving the window configuration.
 If you often use actions that spawn new windows, you might want
 to bind this to C-g in the minibuffer and in auto-updating Embark
-Collect buffers.
-
-This command runs `minibuffer-exit-hook'."
+Collect buffers."
   (interactive)
   (when-let* ((wincfg (current-window-configuration))
               (miniwin (active-minibuffer-window)))
@@ -666,12 +664,17 @@ This command runs `minibuffer-exit-hook'."
                (overlay-get minibuffer-message-overlay 'after-string))))
         (when (and msg (string-match-p "\\` *\\[.+\\]\\'" msg))
           (setq msg (substring (string-trim msg) 1 -1)))
-        (run-at-time 0 nil (lambda ()
-                             (set-window-configuration wincfg)
-                             (when (minibufferp)
-                               (select-window (get-mru-window)))
-                             (message msg)))
-        (run-hooks 'minibuffer-exit-hook)
+        (run-at-time
+         0 nil
+         (lambda ()
+           (let* ((new-miniwin (active-minibuffer-window))
+                  (minibuf (if new-miniwin (window-buffer new-miniwin))))
+             (set-window-configuration wincfg)
+             (if minibuf
+                 (set-window-buffer miniwin minibuf)
+               (when (minibufferp)
+                 (select-window (get-mru-window)))))
+           (message msg)))
         (abort-recursive-edit)))))
 
 (defun embark--act (action target)
