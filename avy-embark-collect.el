@@ -91,6 +91,7 @@ The Embark Collect buffer to use is chosen in order of priority as:
                  (nreverse btns)))))))
     (user-error "No *Embark Collect* found")))
 
+;;;###autoload
 (defun avy-embark-collect-choose ()
   "Choose an Embark Collect candidate."
   (interactive)
@@ -98,6 +99,7 @@ The Embark Collect buffer to use is chosen in order of priority as:
                             '((?x . avy-embark-collect--act)
                               (?m . avy-action-goto))))
 
+;;;###autoload
 (defun avy-embark-collect-act ()
   "Act on an Embark Collect candidate."
   (interactive)
