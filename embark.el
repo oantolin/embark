@@ -758,11 +758,9 @@ the type, it is called with the initial target, and must return a
         (funcall transformer target)
       (cons type target))))
 
-(defvar embark-act--should-unwind nil)
-
-;;;###autoload
-(defun embark-act (&optional arg)
-  "Prompt the user for an action and perform it.
+(let ((should-unwind nil))
+  (defun embark-act (&optional arg)
+    "Prompt the user for an action and perform it.
 The target of the action is chosen by `embark-target-finders'.
 By default, if called from a minibuffer the target is the top
 completion candidate, if called from an Embark Collect or a
@@ -776,29 +774,31 @@ If you call this from the minibuffer, it can optionally quit the
 minibuffer. The variable `embark-quit-after-action' controls
 whether calling `embark-act' without a prefix argument quits the
 minibuffer, and if you use \\[universal-argument] it will do the opposite."
-  (interactive "P")
-  (pcase-let* ((`(,type . ,target) (embark--target))
-               (action (embark--with-indicator embark-action-indicator
-                                               embark-prompter
-                                               (embark--action-keymap type)
-                                               target)))
-    (if (null action)
-        (minibuffer-message "Canceled")
-      (let ((should-quit
-             (and (minibufferp) (if embark-quit-after-action (not arg) arg))))
-        (setq embark-act--should-unwind nil)
-        (unwind-protect (embark--act action target)
-          (when (and embark-act--should-unwind should-quit)
-            ;; If we get here, it means that an inner `embark-act' has set
-            ;; `embark-act--should-unwind' to t and performed an `embark-quit'.
-            ;; That means we should quit normally without `embark-quit' here
-            ;; because only the innermost quit sees the correct window
-            ;; configuration to be restored
-            (abort-recursive-edit)))
-        (when should-quit
-          (setq embark-act--should-unwind t)
-          (run-at-time 0 nil #'set 'embark-act--should-unwind nil)
-          (embark-quit))))))
+    (interactive "P")
+    (pcase-let* ((`(,type . ,target) (embark--target))
+                 (action (embark--with-indicator embark-action-indicator
+                                                 embark-prompter
+                                                 (embark--action-keymap type)
+                                                 target)))
+      (if (null action)
+          (minibuffer-message "Canceled")
+        (let ((should-quit
+               (and (minibufferp) (if embark-quit-after-action (not arg) arg))))
+          (setq should-unwind nil)
+          (unwind-protect (embark--act action target)
+            (when (and should-unwind should-quit)
+              ;; If we get here, it means that an inner `embark-act' has set
+              ;; `should-unwind' to t and performed an `embark-quit'. That
+              ;; means we should quit normally without `embark-quit' here
+              ;; because only the innermost quit sees the correct window
+              ;; configuration to be restored
+              (abort-recursive-edit)))
+          (when should-quit
+            (setq should-unwind t)
+            (run-at-time 0 nil (lambda () (setq should-unwind nil)))
+            (embark-quit)))))))
+
+;;;###autoload (autoload 'embark-act "embark" nil t)
 
 (defun embark--become-keymap ()
   "Return keymap of commands to become for current command."
