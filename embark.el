@@ -664,18 +664,21 @@ Collect buffers."
                (overlay-get minibuffer-message-overlay 'after-string))))
         (when (and msg (string-match-p "\\` *\\[.+\\]\\'" msg))
           (setq msg (substring (string-trim msg) 1 -1)))
-        (run-at-time
-         0 nil
-         (lambda ()
-           (let* ((new-miniwin (active-minibuffer-window))
-                  (minibuf (when new-miniwin (window-buffer new-miniwin))))
-             (set-window-configuration wincfg)
-             (if new-miniwin
-                 (set-window-buffer miniwin minibuf)
-               (when (minibufferp)
-                 (select-window (get-mru-window)))))
-           (message msg)))
-        (abort-recursive-edit)))))
+        (let ((hook))
+          (setq
+           hook
+           (lambda ()
+             (remove-hook 'post-command-hook hook)
+             (let* ((new-miniwin (active-minibuffer-window))
+                    (minibuf (when new-miniwin (window-buffer new-miniwin))))
+               (set-window-configuration wincfg)
+               (if new-miniwin
+                   (set-window-buffer miniwin minibuf)
+                 (when (minibufferp)
+                   (select-window (get-mru-window)))))
+             (message msg)))
+          (add-hook 'post-command-hook hook))))
+    (abort-recursive-edit)))
 
 (defun embark--act (action target)
   "Perform ACTION injecting the TARGET."
