@@ -224,6 +224,11 @@ removes its prefix typing character."
 (setf (alist-get 'consult-buffer embark-transformer-alist)
       'embark-consult-refine-buffer-type)
 
+;;; support for consult-register
+
+(setf (alist-get 'register embark-collect-initial-view-alist)
+      'list)
+
 ;;; bindings for consult commands in embark keymaps
 
 (define-key embark-general-map (kbd "C-s") #'consult-isearch)
