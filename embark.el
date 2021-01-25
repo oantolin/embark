@@ -668,9 +668,9 @@ Collect buffers."
          0 nil
          (lambda ()
            (let* ((new-miniwin (active-minibuffer-window))
-                  (minibuf (if new-miniwin (window-buffer new-miniwin))))
+                  (minibuf (when new-miniwin (window-buffer new-miniwin))))
              (set-window-configuration wincfg)
-             (if minibuf
+             (if new-miniwin
                  (set-window-buffer miniwin minibuf)
                (when (minibufferp)
                  (select-window (get-mru-window)))))
