@@ -428,16 +428,6 @@ behavior of @samp{embark-act} and define a non-quitting version as follows:
     (embark-act)))
 @end lisp
 
-When @samp{embark-act} quits the minibuffer it uses the @samp{embark-quit} command
-to do so, this command quits the minibuffer but keeps the window
-configuration intact. Normally pressing @samp{C-g} in the minibuffer restores
-the window configuration from before opening the minibuffer, this can
-be annoying if you used some actions that spawn new windows, such as
-@samp{find-file-other-window}. (This is not specific to Embark, if you use
-recursive minibuffers you probably noticed this behavior already.) If
-you usually want to preserve your windows when exiting the minibuffer,
-you may want to bind @samp{embark-quit} to @samp{C-g} in @samp{minibuffer-local-map}.
-
 @node Allowing the target to be edited before acting on it
 @section Allowing the target to be edited before acting on it
 

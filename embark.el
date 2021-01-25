@@ -568,7 +568,7 @@ keybindings and even \\[execute-extended-command] to select a command."
                 (key-binding key))))
     (setq cmd
           (pcase cmd
-            ((or 'minibuffer-keyboard-quit 'abort-recursive-edit 'embark-quit)
+            ((or 'minibuffer-keyboard-quit 'abort-recursive-edit)
              nil)
             ('self-insert-command
              (minibuffer-message "Not an action")
@@ -650,35 +650,10 @@ minibuffer."
      ((functionp remove-indicator) (funcall remove-indicator)))
     cmd))
 
-(defun embark-quit ()
-  "Quit the active minibuffer preserving the window configuration.
-If you often use actions that spawn new windows, you might want
-to bind this to C-g in the minibuffer and in auto-updating Embark
-Collect buffers."
-  (interactive)
-  (when-let* ((wincfg (current-window-configuration))
-              (miniwin (active-minibuffer-window)))
-    (with-selected-window miniwin
-      (let ((msg
-             (when (bound-and-true-p minibuffer-message-overlay)
-               (overlay-get minibuffer-message-overlay 'after-string))))
-        (when (and msg (string-match-p "\\` *\\[.+\\]\\'" msg))
-          (setq msg (substring (string-trim msg) 1 -1)))
-        (run-at-time
-         0 nil
-         (lambda ()
-           (let* ((new-miniwin (active-minibuffer-window))
-                  (minibuf (when new-miniwin (window-buffer new-miniwin))))
-             (set-window-configuration wincfg)
-             (if new-miniwin
-                 (set-window-buffer miniwin minibuf)
-               (when (minibufferp)
-                 (select-window (get-mru-window)))))
-           (message msg)))
-        (abort-recursive-edit)))))
-
-(defun embark--act (action target)
-  "Perform ACTION injecting the TARGET."
+(defun embark--act (action target &optional quit)
+  "Perform ACTION injecting the TARGET.
+If called from a minibuffer with non-nil QUIT, quit the
+minibuffer before executing the action."
   (if (memq action '(embark-become        ; these actions should not
                      embark-collect-live  ; run in the target window
                      embark-collect-snapshot
@@ -700,17 +675,22 @@ Collect buffers."
                        (let ((embark-setup-hook setup-hook))
                          (run-hooks 'embark-setup-hook))
                        (unless allow-edit
-                         (run-at-time 0 nil #'exit-minibuffer))))))
-      (minibuffer-with-setup-hook inject
-        (with-selected-window action-window
-          (run-hooks 'embark-pre-action-hook)
-          (let ((enable-recursive-minibuffers t)
-                (embark--command command)
-                (prefix-arg prefix)
-                (use-dialog-box nil)    ; avoid mouse dialogs
-                (last-nonmenu-event 13)) ; avoid mouse dialogs
-            (command-execute action))
-          (run-hooks 'embark-post-action-hook))))))
+                         (run-at-time 0 nil #'exit-minibuffer)))))
+           (run-action (lambda ()
+                         (minibuffer-with-setup-hook inject
+                           (with-selected-window action-window
+                             (run-hooks 'embark-pre-action-hook)
+                             (let ((enable-recursive-minibuffers t)
+                                   (embark--command command)
+                                   (prefix-arg prefix)
+                                   (use-dialog-box nil) ; avoid mouse dialogs
+                                   (last-nonmenu-event 13)) ; avoid mouse dialogs
+                               (command-execute action))
+                             (run-hooks 'embark-post-action-hook))))))
+      (if (not (and quit (minibufferp)))
+          (funcall run-action)
+        (run-at-time 0 nil run-action)
+        (abort-recursive-edit)))))
 
 (defun embark-refine-symbol-type (target)
   "Refine symbol TARGET to command or variable if possible."
@@ -782,9 +762,7 @@ minibuffer, and if you use \\[universal-argument] it will do the opposite."
                                                target)))
     (if (null action)
         (minibuffer-message "Canceled")
-      (embark--act action target)
-      (when (if embark-quit-after-action (not arg) arg)
-        (embark-quit)))))
+      (embark--act action target (if embark-quit-after-action (not arg) arg)))))
 
 (defun embark--become-keymap ()
   "Return keymap of commands to become for current command."
@@ -1462,7 +1440,7 @@ the minibuffer is exited."
 
       (set-window-dedicated-p window t)
 
-      (when (and (minibufferp from) (not (eq kind :snapshot)))
+      (when (minibufferp from)
         (add-hook
          'minibuffer-exit-hook
          (pcase kind
@@ -1476,7 +1454,9 @@ the minibuffer is exited."
                   (rename-buffer
                    (replace-regexp-in-string " Live" "" (buffer-name))
                    t)))
-              (run-at-time 0 nil #'pop-to-buffer buffer))))
+              (run-at-time 0 nil #'pop-to-buffer buffer)))
+           (:snapshot
+            (lambda () (run-at-time 0 nil #'pop-to-buffer buffer))))
          nil t)
         (setq minibuffer-scroll-window window))
 
@@ -1517,7 +1497,7 @@ To control the display, add an entry to `display-buffer-alist'
 with key \"Embark Collect\"."
   (interactive (embark-collect--initial-view-arg))
   (embark--collect "*Embark Collect*" initial-view :snapshot)
-  (embark-quit))
+  (when (minibufferp) (abort-recursive-edit)))
 
 ;;;###autoload
 (defun embark-collect-completions ()
