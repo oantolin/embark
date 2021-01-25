@@ -650,32 +650,36 @@ minibuffer."
      ((functionp remove-indicator) (funcall remove-indicator)))
     cmd))
 
-(defun embark-quit ()
-  "Quit the active minibuffer preserving the window configuration.
+(let ((quit-in-progress nil))
+  (defun embark-quit ()
+    "Quit the active minibuffer preserving the window configuration.
 If you often use actions that spawn new windows, you might want
 to bind this to C-g in the minibuffer and in auto-updating Embark
 Collect buffers."
-  (interactive)
-  (when-let* ((wincfg (current-window-configuration))
-              (miniwin (active-minibuffer-window)))
-    (with-selected-window miniwin
-      (let ((msg
-             (when (bound-and-true-p minibuffer-message-overlay)
-               (overlay-get minibuffer-message-overlay 'after-string))))
-        (when (and msg (string-match-p "\\` *\\[.+\\]\\'" msg))
-          (setq msg (substring (string-trim msg) 1 -1)))
-        (run-at-time
-         0 nil
-         (lambda ()
-           (let* ((new-miniwin (active-minibuffer-window))
-                  (minibuf (when new-miniwin (window-buffer new-miniwin))))
-             (set-window-configuration wincfg)
-             (if new-miniwin
-                 (set-window-buffer miniwin minibuf)
-               (when (minibufferp)
-                 (select-window (get-mru-window)))))
-           (message msg)))
-        (abort-recursive-edit)))))
+    (interactive)
+    (when-let* ((wincfg (current-window-configuration))
+                (miniwin (active-minibuffer-window)))
+      (unless quit-in-progress
+        (with-selected-window miniwin
+          (let ((msg
+                 (when (bound-and-true-p minibuffer-message-overlay)
+                   (overlay-get minibuffer-message-overlay 'after-string))))
+            (when (and msg (string-match-p "\\` *\\[.+\\]\\'" msg))
+              (setq msg (substring (string-trim msg) 1 -1)))
+            (run-at-time
+             0 nil
+             (lambda ()
+               (setq quit-in-progress nil)
+               (let* ((new-miniwin (active-minibuffer-window))
+                      (minibuf (when new-miniwin (window-buffer new-miniwin))))
+                 (set-window-configuration wincfg)
+                 (if new-miniwin
+                     (set-window-buffer miniwin minibuf)
+                   (when (minibufferp)
+                     (select-window (get-mru-window)))))
+               (message msg)))))
+        (setq quit-in-progress t))
+      (abort-recursive-edit))))
 
 (defun embark--act (action target)
   "Perform ACTION injecting the TARGET."
