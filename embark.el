@@ -173,7 +173,6 @@ conveniently become one another."
 
 (defcustom embark-prompter 'embark-keymap-prompter
   "Function used to prompt the user for actions.
-
 This should be set to a function that prompts the use for an
 action and returns the symbol naming the action command.  The
 default value, `embark-keymap-prompter' activates the type
@@ -194,28 +193,35 @@ Used by `embark-completing-read-prompter' and `embark-keymap-help'."
   "Face used to display key bindings.
 Used by `embark-completing-read-prompter' and `embark-keymap-help'.")
 
-(defcustom embark-action-indicator (propertize "Act" 'face 'highlight)
+(defcustom embark-action-indicator
+  (let ((act (propertize "Act" 'face 'highlight)))
+    (cons act (concat act " on '%s'")))
   "Indicator to use when embarking upon an action.
+If set to a string it is used as a format string where %s will be
+replaced by the target of `embark-act', and the resulting string
+is prepended to the minibuffer prompt or shown in the echo area
+if `embark-act' was called outside of the minibuffer.
 
-If set to a string prepend it to the minibuffer prompt or to the
-message in the echo area when outside of the minibuffer.  When
-set to a function it is called with the action keymap.  The
-function should return either nil or a function to be called when
-the indicator is no longer needed.  Finally, if this variable is
-set to nil no indication is shown."
-  :type '(choice function string nil))
+You can also set this variable to a cons of two format strings,
+in which case the first is used if `embark-act' is called from
+the minibuffer and the second is used otherwise.
+
+Finally, you can set this variable to a function, which will be
+called with the action keymap and the target.  The function
+should return either nil or a function to be called when the
+indicator is no longer needed.  Finally, if this variable is set
+to nil no indication is shown."
+  :type '(choice function string (cons string string) nil))
 
 (defcustom embark-become-indicator (propertize "Become" 'face 'highlight)
   "Indicator to use when using `embark-become'.
-
-If set to a string prepend it to the minibuffer prompt or to the
-message in the echo area when outside of the minibuffer.  If set
-to a function it will be called with one of the keymaps listed in
-`embark-become-keymaps' containing the currently executing
-command (or nil, if no such keymap exists).  The function should
-return either nil or a function to be called when the indicator
-is no longer needed.  Finally, if this variable is set to nil no
-indication is shown."
+If set to a string, it is prepended to the minibuffer prompt when
+you call `embark-become'.  If set to a function it will be called
+with one of the keymaps listed in `embark-become-keymaps'
+containing the currently executing command (or nil, if no such
+keymap exists).  The function should return either nil or a
+function to be called when the indicator is no longer needed.
+Finally, if this variable is set to nil no indication is shown."
   :type '(choice function string nil))
 
 (defcustom embark-setup-hook nil
@@ -429,7 +435,7 @@ There are three kinds:
 
 (defun embark-target-active-region ()
   "Target the region if active."
-  (when (use-region-p) '(region)))
+  (when (use-region-p) '(region . <region>)))
 
 (defun embark-target-file-at-point ()
   "Target file at point."
@@ -535,30 +541,48 @@ relative path."
 
 (defun embark--show-indicator (indicator keymap target)
   "Show INDICATOR for a pending action or a instance of becoming.
-If the minibuffer is active and INDICATOR is a string it is put
-in an overlay in the minibuffer; the overlay is returned so it
-can be deleted when the indicator is no longer needed.  If
-INDICATOR is a sting but the minibuffer is inactive a message
-combining the INDICATOR and thee TARGET is shown in the echo
-area.  Finally, if INDICATOR is a function, this function is
-called with the KEYMAP.  The function should return either nil,
-or a function to be called when the indicator is no longer
-needed."
+If INDICATOR is a string it is used as a format string and %s is
+replaced by the target.  If the minibuffer is active, the
+formatted string is put in an overlay in the minibuffer prompt
+and the overlay is returned so it can be deleted when the
+indicator is no longer needed.  If the minibuffer is inactive,
+then the formatted string is shown in the echo area and returned.
+
+If INDICATOR is a cons of two strings, they are used as format
+strings as described above: if the minibuffer is active the first
+string is used and if not, the second is used.
+
+Finally, if INDICATOR is a function, this function is called with
+the KEYMAP and TARGET.* The function should return either nil, or
+a function to be called when the indicator is no longer needed.
+
+*For a limited time only, if the function only accepts one
+argument, it is called with the KEYMAP but a warning is displayed
+saying you should update it to also accept the TARGET.
+Eventually only the two argument case will be supported."
   (cond
-   ((stringp indicator)
-    (let ((mini (active-minibuffer-window)))
-      (if (or (use-region-p) (not mini))
-          (message "%s on %s"
-                   indicator
-                   (if target (format "'%s'" target) "region"))
-        (let ((indicator-overlay
-               (make-overlay (point-min) (point-min)
-                             (window-buffer mini) t t)))
-          (overlay-put indicator-overlay 'before-string
-                       (concat indicator " "))
-          indicator-overlay))))
    ((functionp indicator)
-    (funcall indicator keymap))))
+    (if target
+        (condition-case nil
+            (funcall indicator keymap target)
+          (wrong-number-of-arguments
+           (message "Update your `embark-action-indicator' to accept \
+the keymap and target as arguments")
+           (funcall indicator keymap)))
+      (funcall indicator keymap)))
+   ((or (stringp indicator) (consp indicator))
+    (let* ((mini (active-minibuffer-window))
+           (ind (format (if (consp indicator)
+                            (if mini (car indicator) (cdr indicator))
+                          indicator)
+                        target)))
+      (if mini
+          (let ((indicator-overlay
+                 (make-overlay (point-min) (point-min)
+                               (window-buffer mini) t t)))
+            (overlay-put indicator-overlay 'before-string (concat ind " "))
+            indicator-overlay)
+        (message ind))))))
 
 (defun embark-keymap-prompter (keymap)
   "Let the user choose an action using the bindings in KEYMAP.
@@ -668,7 +692,7 @@ minibuffer before executing the action."
            (allow-edit (if embark-allow-edit-default
                            (not (memq action embark-skip-edit-commands))
                          (memq action embark-allow-edit-commands)))
-           (inject (if (null target) ; for region actions target is nil
+           (inject (if (not (stringp target)) ; for region actions
                        #'ignore
                      (lambda ()
                        (delete-minibuffer-contents)
@@ -752,9 +776,10 @@ action, and calls it injecting the target at the first minibuffer
 prompt.
 
 If you call this from the minibuffer, it can optionally quit the
-minibuffer. The variable `embark-quit-after-action' controls
-whether calling `embark-act' without a prefix argument quits the
-minibuffer, and if you use \\[universal-argument] it will do the opposite."
+minibuffer.  The variable `embark-quit-after-action' controls
+whether calling `embark-act' with nil ARG quits the minibuffer,
+and if ARG is non-nil it will do the opposite.  Interactively,
+ARG is the prefix argument."
   (interactive "P")
   (pcase-let* ((`(,type . ,target) (embark--target))
                (action (embark--with-indicator embark-action-indicator
@@ -1644,6 +1669,8 @@ Return the category metadatum as the type of the target."
 	  (selectrum-get-current-candidate))))
 
 (defun embark-selectrum-candidates ()
+  "Collect the current Selectrum candidates.
+Return the category metadatum as the type of the candidates."
   (when (bound-and-true-p selectrum-active-p)
     (cons (selectrum--get-meta 'category)
 	  (selectrum-get-current-candidates
