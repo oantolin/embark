@@ -360,7 +360,7 @@ Meant to be be added to `completion-setup-hook'."
 (progn
   (defun embark--record-this-command ()
     "Record command which opened the minibuffer.
-We record this because `embark-default-action' needs to know it.
+We record this because it will be the default action.
 This function is meant to be added to `minibuffer-setup-hook'."
     (setq-local embark--command this-command))
   (add-hook 'minibuffer-setup-hook #'embark--record-this-command))
@@ -526,10 +526,12 @@ relative path."
   "Return action keymap for targets of given TYPE."
   (make-composed-keymap
    (or embark-overriding-keymap
-       (symbol-value (alist-get type embark-keymap-alist)))
+        (symbol-value (alist-get type embark-keymap-alist)))
    (if (eq type 'region)
        embark-meta-map
-     embark-general-map)))
+     (make-composed-keymap
+      `(keymap (13 . ,embark--command))
+      embark-general-map))))
 
 (defun embark--show-indicator (indicator keymap target)
   "Show INDICATOR for a pending action or a instance of becoming.
@@ -1145,7 +1147,7 @@ For other Embark Collect buffers, run the default action on ENTRY."
                       (= (car (embark--boundaries))
                          (- (point) (minibuffer-prompt-end))))
             (exit-minibuffer)))
-      (embark--act #'embark-default-action text))))
+      (embark--act embark--command text))))
 
 (make-obsolete 'embark-occur-mode-map 'embark-collect-mode-map "0.10")
 
@@ -1705,14 +1707,6 @@ Return the category metadatum as the type of the target."
     (goto-char (point-min))
     (compile-goto-error)))
 
-(defun embark-default-action ()
-  "Default action.
-This is whatever command opened the minibuffer in the first place."
-  (interactive)
-  (setq this-command embark--command)   ; so the proper hooks apply
-  (call-interactively embark--command))
-
-
 (defalias 'embark-execute-command
   ;; this one is kind of embarrassing: embark-keymap-prompter gives
   ;; execute-extended-command special treatment, so we need a command
@@ -1849,7 +1843,6 @@ and leaves the point to the left of it."
   :parent embark-meta-map
   ("i" embark-insert)
   ("w" embark-save)
-  ("RET" embark-default-action)
   ("E" embark-export)
   ("S" embark-collect-snapshot)
   ("L" embark-collect-live)
