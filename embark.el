@@ -1811,6 +1811,14 @@ with command output.  For replacement behaviour see
   (interactive (list (read-char-by-name "Insert character  (Unicode name or hex): ")))
   (kill-new (format "%c" char)))
 
+(defun embark-isearch ()
+  "Prompt for string in the minibuffer and start isearch.
+Unlike isearch, this command reads the string from the
+minibuffer, which means it can be used as an Embark action."
+  (interactive)
+  (isearch-mode t)
+  (isearch-edit-string))
+
 ;;; setup hooks for actions
 
 (defun embark--shell-prep ()
@@ -1846,7 +1854,8 @@ and leaves the point to the left of it."
   ("E" embark-export)
   ("S" embark-collect-snapshot)
   ("L" embark-collect-live)
-  ("B" embark-become))
+  ("B" embark-become)
+  ("C-s" embark-isearch))
 
 (autoload 'org-table-convert-region "org-table")
 
