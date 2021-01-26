@@ -1614,6 +1614,7 @@ buffer for each type of completion."
     (switch-to-buffer buf)))
 
 (defvar wgrep-header/footer-parser)
+(declare-function wgrep-setup "wgrep")
 
 (defun embark-export-grep (lines)
   "Create a grep mode buffer listing LINES."
@@ -1621,8 +1622,10 @@ buffer for each type of completion."
     (with-current-buffer buf
       (insert (propertize "Exported grep results:\n\n" 'wgrep-header t))
       (dolist (line lines) (insert line "\n"))
+      (goto-char (point-min))
       (grep-mode)
-      (setq-local wgrep-header/footer-parser #'ignore))
+      (setq-local wgrep-header/footer-parser #'ignore)
+      (when (fboundp 'wgrep-setup) (wgrep-setup)))
     (switch-to-buffer buf)))
 
 ;;; integration with external completion UIs
