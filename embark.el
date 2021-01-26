@@ -1424,7 +1424,7 @@ the minibuffer is exited."
       (delay-mode-hooks (embark-collect-mode))
 
       (setq embark-collect--kind kind)
-      
+
       (setq tabulated-list-use-header-line nil) ; default to no header
 
       (unless (eq kind :snapshot)
@@ -1466,11 +1466,19 @@ the minibuffer is exited."
       (set-window-dedicated-p window t)
 
       (when (minibufferp from)
+        ;; A function added to `minibuffer-exit-hook' locally isn't called if
+        ;; we `abort-recursive-edit' from outside the minibuffer, that is why
+        ;; we use `change-major-mode-hook', which is also run on minibuffer
+        ;; exit.
         (add-hook
-         'minibuffer-exit-hook
+         'change-major-mode-hook
          (pcase kind
            (:completions
-            (lambda () (kill-buffer buffer)))
+            (lambda ()
+              ;; Killing a buffer shown in a selected dedicated window will
+              ;; set-buffer to a random buffer for some reason, so preserve it.
+              (save-current-buffer
+                (kill-buffer buffer))))
            (:live
             (lambda ()
               (setf (buffer-local-value 'embark-collect-from buffer) nil)
