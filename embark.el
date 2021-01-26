@@ -600,7 +600,7 @@ keybindings and even \\[execute-extended-command] to select a command."
                                  'line-prefix
                                  (concat
                                   (propertize desc 'face 'embark-keybinding)
-                                  embark-key-action-separator " "))))))
+                                  embark-key-action-separator))))))
     (intern-soft
      (minibuffer-with-setup-hook
          (lambda ()
