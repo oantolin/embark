@@ -229,6 +229,11 @@ removes its prefix typing character."
 (setf (alist-get 'register embark-collect-initial-view-alist)
       'zebra)
 
+;;; support for consult-yank*
+
+(setf (alist-get 'kill-ring embark-collect-initial-view-alist)
+      'zebra)
+
 ;;; bindings for consult commands in embark keymaps
 
 (define-key embark-file-map "x" #'consult-file-externally)

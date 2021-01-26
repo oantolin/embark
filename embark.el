@@ -861,7 +861,6 @@ which should be a string."
     (buffer . grid)
     (symbol . list)
     (xref-location . list)
-    (kill-ring . zebra)
     (t . list))
   "Initial views for Embark Collect buffers by type.
 This is an alist associating completion types to either `list',
