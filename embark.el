@@ -595,11 +595,10 @@ keybindings and even \\[execute-extended-command] to select a command."
                                      (key-description key)))
                          (name (symbol-name cmd)))
                      (propertize name
-                                 'display
+                                 'line-prefix
                                  (concat
                                   (propertize desc 'face 'embark-keybinding)
-                                  embark-key-action-separator
-                                  name))))))
+                                  embark-key-action-separator " "))))))
     (intern-soft
      (minibuffer-with-setup-hook
          (lambda ()
