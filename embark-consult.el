@@ -227,7 +227,7 @@ removes its prefix typing character."
 ;;; support for consult-register
 
 (setf (alist-get 'register embark-collect-initial-view-alist)
-      'list)
+      'zebra)
 
 ;;; bindings for consult commands in embark keymaps
 
