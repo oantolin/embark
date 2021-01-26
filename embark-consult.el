@@ -231,7 +231,6 @@ removes its prefix typing character."
 
 ;;; bindings for consult commands in embark keymaps
 
-(define-key embark-general-map (kbd "C-s") #'consult-isearch)
 (define-key embark-file-map "x" #'consult-file-externally)
 
 (provide 'embark-consult)
