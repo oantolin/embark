@@ -131,7 +131,6 @@ associated to an active minibuffer for a Consult command."
 
 ;;; Support for consult-location
 
-;;;
 (defun embark-consult--strip-prefix (string)
   "Remove the unicode prefix from a consult-location STRING."
   (let ((i 0) (l (length string)))
