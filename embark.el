@@ -808,16 +808,17 @@ command.  The new command can be run normally using keybindings or
 `embark-become-keymaps', that keymap is activated to provide
 convenient access to the other commands in it.
 
-If FULL is non-nil, the entire minibuffer contents are used as
-the initial input of the new command.  By default only the part
-of the minibuffer contents between the current completion
-boundaries is taken.  What this means is fairly technical,
-but (1) usually there is no difference: the completion boundaries
-include the entire minibuffer contents, and (2) the most common
-case where these notions differ is file completion, in which case
-the completion boundaries single out the path component
-containing point."
-  (interactive)
+If FULL is non-nil (interactively, if called with a prefix
+argument), the entire minibuffer contents are used as the initial
+input of the new command.  By default only the part of the
+minibuffer contents between the current completion boundaries is
+taken.  What this means is fairly technical, but (1) usually
+there is no difference: the completion boundaries include the
+entire minibuffer contents, and (2) the most common case where
+these notions differ is file completion, in which case the
+completion boundaries single out the path component containing
+point."
+  (interactive "P")
   (when (minibufferp)
     (let ((target (if full
                       (minibuffer-contents)
