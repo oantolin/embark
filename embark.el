@@ -700,7 +700,7 @@ minibuffer before executing the action."
                        (let ((embark-setup-hook setup-hook))
                          (run-hooks 'embark-setup-hook))
                        (unless allow-edit
-                         (run-at-time 0 nil #'exit-minibuffer)))))
+                         (add-hook 'post-command-hook #'exit-minibuffer nil t)))))
            (run-action (lambda ()
                          (minibuffer-with-setup-hook inject
                            (with-selected-window action-window
@@ -1871,7 +1871,7 @@ and leaves the point to the left of it."
 (defun embark--eval-prep ()
   "If target is: a variable, skip edit; a function, wrap in parens."
   (if (not (fboundp (intern (minibuffer-contents))))
-      (run-at-time 0 nil #'exit-minibuffer)
+      (add-hook 'post-command-hook #'exit-minibuffer nil t)
     (beginning-of-line)
     (insert "(")
     (end-of-line)
