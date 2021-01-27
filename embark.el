@@ -676,15 +676,25 @@ minibuffer."
     cmd))
 
 (defun embark-run-after-command (function &rest args)
-  "Call FUNCTION with ARGS after currently running command."
-  (cl-labels
-      ((hook ()
-             (remove-hook 'post-command-hook #'hook)
-             (with-demoted-errors "embark-run-after-command PCH: %S"
-               (condition-case _
-                   (apply function args)
-                 (quit (message "Quit"))))))
-    (add-hook 'post-command-hook #'hook)))
+  "Call FUNCTION with ARGS on next command loop iteration."
+  (let ((hook (make-symbol "embark--run-after-command")))
+    (put hook 'embark--run-after-command t)
+    (fset hook
+          (lambda ()
+            (remove-hook 'post-command-hook hook)
+            (with-demoted-errors "embark-run-after-command PCH: %S"
+              (condition-case _
+                  (apply function args)
+                (quit (message "Quit"))))
+            ;; `embark-run-after-command' may have been used inside `function'
+            ;; to delay another function, we should call it here
+            (run-hook-wrapped 'post-command-hook
+                              (lambda (h)
+                                (when (and (symbolp h)
+                                           (get h 'embark--run-after-command))
+                                  (funcall h)
+                                  t)))))
+    (add-hook 'post-command-hook hook)))
 
 (defun embark--act (action target &optional quit)
   "Perform ACTION injecting the TARGET.
