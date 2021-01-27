@@ -224,6 +224,15 @@ removes its prefix typing character."
 (setf (alist-get 'consult-buffer embark-transformer-alist)
       'embark-consult-refine-buffer-type)
 
+;;; support for consult-isearch
+
+(defun embark-consult-isearch-strip-prefix (cand)
+  "Remove the unicode prefix character from a `consult-isearch' string."
+  (cons 'consult-isearch (embark-consult--strip-prefix cand)))
+
+(setf (alist-get 'consult-isearch embark-transformer-alist)
+      'embark-consult-isearch-strip-prefix)
+
 ;;; support for consult-register
 
 (setf (alist-get 'consult-register embark-collect-initial-view-alist)
