@@ -184,11 +184,6 @@ prompts for an action with completion."
                         embark-completing-read-prompter)
                  (function :tag "Other")))
 
-(defcustom embark-key-action-separator (propertize " → " 'face 'shadow)
-  "Separator shown between a key and its binding.
-Used by `embark-completing-read-prompter' and `embark-keymap-help'."
-  :type 'string)
-
 (defface embark-keybinding '((t :inherit success))
   "Face used to display key bindings.
 Used by `embark-completing-read-prompter' and `embark-keymap-help'.")
@@ -620,11 +615,14 @@ keybindings and even \\[execute-extended-command] to select a command."
                                        (single-key-description key)
                                      (key-description key)))
                          (name (symbol-name cmd)))
-                     (propertize name
-                                 'line-prefix
-                                 (concat
-                                  (propertize desc 'face 'embark-keybinding)
-                                  embark-key-action-separator))))))
+                     (concat
+                      (substring name 0 -1)
+                      (propertize
+                       (substring name -1)
+                       'display
+                       (format "%s (%s)"
+                               (substring name -1)
+                               (propertize desc 'face 'embark-keybinding))))))))
     (intern-soft
      (minibuffer-with-setup-hook
          (lambda ()
