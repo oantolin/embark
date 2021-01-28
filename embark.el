@@ -636,7 +636,8 @@ keybindings and even \\[execute-extended-command] to select a command."
                    (interactive)
                    (when-let ((cmd (embark-keymap-prompter keymap)))
                      (delete-minibuffer-contents)
-                     (insert (symbol-name cmd)))))
+                     (insert (symbol-name cmd))
+                     (add-hook 'post-command-hook #'exit-minibuffer nil t))))
                map)
              (current-local-map))))
        (completing-read
