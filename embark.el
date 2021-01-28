@@ -632,6 +632,7 @@ keybindings and even \\[execute-extended-command] to select a command."
                (define-key map "@"
                  (lambda ()
                    (interactive)
+                   (message "Action key:")
                    (when-let ((cmd (embark-keymap-prompter keymap)))
                      (delete-minibuffer-contents)
                      (insert (symbol-name cmd))
