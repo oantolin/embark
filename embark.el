@@ -1857,6 +1857,18 @@ minibuffer, which means it can be used as an Embark action."
   (isearch-mode t)
   (isearch-edit-string))
 
+(defun embark-act-on-region-contents ()
+  "Act on the contents of the region."
+  (interactive)
+  (let ((contents (buffer-substring (region-beginning) (region-end)))
+        (mode major-mode))
+    (with-temp-buffer
+      (setq-local major-mode mode)
+      (insert contents)
+      (goto-char (point-min))
+      (let (embark-quit-after-action)
+        (embark-act)))))
+
 ;;; setup hooks for actions
 
 (defun embark--shell-prep ()
@@ -1899,6 +1911,7 @@ and leaves the point to the left of it."
 
 (embark-define-keymap embark-region-map
   "Keymap for Embark actions on the active region."
+  ("RET" embark-act-on-region-contents)
   ("u" upcase-region)
   ("l" downcase-region)
   ("c" capitalize-region)
