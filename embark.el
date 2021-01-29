@@ -1983,7 +1983,7 @@ and leaves the point to the left of it."
   "Keymap for Embark command actions."
   :parent embark-symbol-map
   ("x" embark-execute-command)
-  ("c" Info-goto-emacs-command-node)
+  ("I" Info-goto-emacs-command-node)
   ("g" global-set-key)
   ("l" local-set-key))
 
@@ -1992,7 +1992,7 @@ and leaves the point to the left of it."
   :parent embark-symbol-map
   ("=" set-variable)
   ("c" customize-set-variable)
-  ("C" customize-variable))
+  ("u" customize-variable))
 
 (embark-define-keymap embark-package-map
   "Keymap for Embark package actions."
