@@ -200,34 +200,28 @@ The elements of LINES are assumed to be values of category `consult-line'."
 (setf (alist-get 'consult-location embark-exporters-alist)
       'embark-consult-export-occur)
 
-;;; support for consult-buffer
+;;; support for consult-multi
 
-(defun embark-consult-refine-buffer-type (target)
-  "Refine `consult-buffer' TARGET to its real type.
+(defun embark-consult-refine-multi-type (target)
+  "Refine `consult-multi' TARGET to its real type.
 
-This function takes a target of type `consult-buffer' (from
-Consult's `consult-buffer' command) and transforms it to its
-actual type, whether `buffer', `file' or `bookmark', and also
-removes its prefix typing character."
-  (let ((first (- (aref target 0) #x100000)))
-    (if (<= 0 first ?z)
-        (cons (pcase first
-                ((or ?b ?h ?p) 'buffer)
-                ((or ?f ?q) 'file)
-                (?m 'bookmark)
-                (_ 'general))
-              (substring target 1))
-      ;; new buffer case, don't remove first char
-      (cons 'buffer target))))
+This function takes a target of type `consult-multi' (from
+Consult's `consult-multi' category) and transforms it to its
+actual type and also removes its uniqueness prefix."
+  (if-let (cat (get-text-property 0 'consult-multi target))
+      (cons cat (substring target (next-single-char-property-change
+                                   0 'consult-multi target)))
+    ;; new buffer case, don't remove first char
+    (cons 'buffer target)))
 
-(setf (alist-get 'consult-buffer embark-transformer-alist)
-      'embark-consult-refine-buffer-type)
+(setf (alist-get 'consult-multi embark-transformer-alist)
+      'embark-consult-refine-multi-type)
 
 ;;; support for consult-isearch
 
-(defun embark-consult-isearch-strip-prefix (cand)
-  "Remove the unicode prefix character from a `consult-isearch' string."
-  (cons 'consult-isearch (embark-consult--strip-prefix cand)))
+(defun embark-consult-isearch-strip-prefix (target)
+  "Remove the unicode prefix character from a `consult-isearch' TARGET."
+  (cons 'consult-isearch (embark-consult--strip-prefix target)))
 
 (setf (alist-get 'consult-isearch embark-transformer-alist)
       'embark-consult-isearch-strip-prefix)
