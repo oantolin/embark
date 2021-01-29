@@ -296,6 +296,10 @@ window should only be used if it displays `embark--target-buffer'.")
 (defvar-local embark--command nil
   "Command that started the completion session.")
 
+(defvar-local embark--default-action nil
+  "Command that should be used as the default action.
+Defaults to `embark--command'.")
+
 (defun embark--default-directory ()
   "Guess a reasonable default directory for the current candidates."
   (if (and (minibufferp) minibuffer-completing-file-name)
@@ -333,11 +337,13 @@ window if necessary."
   "Cache information needed for actions in variables local to BUFFER.
 BUFFER defaults to the current buffer."
   (let ((cmd (or embark--command this-command))
+        (def embark--default-action)
         (dir (embark--default-directory))
         (target-buffer (embark--target-buffer))
         (target-window (embark--target-window)))
     (with-current-buffer buffer
       (setq-local embark--command cmd
+                  embark--default-action def
                   default-directory dir
                   embark--target-buffer target-buffer
                   embark--target-window target-window))))
@@ -531,7 +537,7 @@ relative path."
    (if (eq type 'region)
        embark-meta-map
      (make-composed-keymap
-      `(keymap (13 . ,embark--command))
+      `(keymap (13 . ,(or embark--default-action embark--command)))
       embark-general-map))))
 
 (defun embark--show-indicator (indicator keymap target)
@@ -741,7 +747,7 @@ work on them."
 
 (defun embark-set-xref-location-default-action (target)
   "Set `embark-goto-location' as the default action for TARGET."
-  (setq embark--command 'embark-goto-location)
+  (setq embark--default-action 'embark-goto-location)
   (cons 'xref-location target))
 
 (defun embark--target ()
@@ -1172,7 +1178,7 @@ For other Embark Collect buffers, run the default action on ENTRY."
                       (= (car (embark--boundaries))
                          (- (point) (minibuffer-prompt-end))))
             (exit-minibuffer)))
-      (embark--act embark--command text))))
+      (embark--act (or embark--default-action embark--command) text))))
 
 (make-obsolete 'embark-occur-mode-map 'embark-collect-mode-map "0.10")
 
