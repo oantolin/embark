@@ -614,44 +614,48 @@ keybindings and even \\[execute-extended-command] to select a command."
 (defun embark-completing-read-prompter (keymap)
   "Prompt via completion for a command bound in KEYMAP."
   (let* ((commands
-          (cl-loop
-           for (key . cmd) in (cdr (keymap-canonicalize keymap))
-           unless (embark--omit-binding-p cmd)
-           collect (let ((desc (if (numberp key)
-                                       (single-key-description key)
-                                     (key-description key)))
-                         (name (symbol-name cmd)))
-                     (concat
-                      (substring name 0 -1)
-                      (propertize
-                       (substring name -1)
-                       'display
-                       (format "%s (%s)"
-                               (substring name -1)
-                               (propertize desc 'face 'embark-keybinding))))))))
-    (intern-soft
-     (minibuffer-with-setup-hook
-         (lambda ()
-           (use-local-map
-            (make-composed-keymap
-             (let ((map (make-sparse-keymap)))
-               (define-key map "@"
-                 (lambda ()
-                   (interactive)
-                   (message "Action key:")
-                   (when-let ((cmd (embark-keymap-prompter keymap)))
-                     (delete-minibuffer-contents)
-                     (insert (symbol-name cmd))
-                     (add-hook 'post-command-hook #'exit-minibuffer nil t))))
-               map)
-             (current-local-map))))
-       (completing-read
-        "Command: "
-        (lambda (string predicate action)
-          (if (eq action 'metadata)
-              `(metadata (category . command))
-            (complete-with-action action commands string predicate)))
-        nil t)))))
+          (cl-loop for (key . cmd) in (embark--all-bindings keymap)
+                   for name = (or
+                               (when (symbolp cmd) (symbol-name cmd))
+                               (when-let ((doc (documentation cmd)))
+                                 (save-match-data
+                                   (when (string-match "^\\(.*\\)$" doc)
+                                     (match-string 1 doc))))
+                               "<unnamed>")
+                   do (add-text-properties
+                       0 1
+                       `(display
+                         ,(format "%-3s %s"
+                                  (propertize key 'face 'embark-keybinding)
+                                  (substring name 0 1)))
+                       name)
+                   unless (eq cmd 'embark-keymap-help)
+                   collect (cons name cmd))))
+    (cdr
+     (assoc
+      (minibuffer-with-setup-hook
+          (lambda ()
+            (use-local-map
+             (make-composed-keymap
+              (let ((map (make-sparse-keymap)))
+                (define-key map "@"
+                  (lambda ()
+                    (interactive)
+                    (message "Action key:")
+                    (when-let ((cmd (embark-keymap-prompter keymap)))
+                      (delete-minibuffer-contents)
+                      (insert (symbol-name cmd))
+                      (add-hook 'post-command-hook #'exit-minibuffer nil t))))
+                map)
+              (current-local-map))))
+        (completing-read
+         "Command: "
+         (lambda (string predicate action)
+           (if (eq action 'metadata)
+               `(metadata (category . command))
+             (complete-with-action action commands string predicate)))
+         nil t))
+      commands))))
 
 (defun embark--with-indicator (indicator prompter keymap &optional target)
   "Display INDICATOR while calling PROMPTER with KEYMAP.
@@ -1096,14 +1100,22 @@ Returns the name of the command."
            (documentation action)))
     name))
 
-(defun embark--omit-binding-p (cmd)
-  "Should CMD binding be hidden from the user?
-Return non-nil if this is a key binding that should not be bound
-in `embark-collect-direct-action-minor-mode-map' nor mentioned by
-`embark-keymap-help'."
-  (or (null cmd)
-      (not (symbolp cmd))
-      (memq cmd '(ignore embark-keymap-help))))
+(defun embark--all-bindings (keymap)
+  "Return an alist of all bindings in KEYMAP."
+  (let (bindings)
+    (map-keymap
+     (lambda (key def)
+       (let ((desc (single-key-description key)))
+         (cond
+          ((null def))
+          ((keymapp def)
+           (dolist (bind (embark--all-bindings def))
+             (push (cons (concat desc " " (car bind))
+                         (cdr bind))
+                   bindings)))
+          (t (push (cons desc def) bindings)))))
+     keymap)
+    (nreverse bindings)))
 
 (define-obsolete-variable-alias
   'embark-occur-direct-action-minor-mode-map
@@ -1127,11 +1139,10 @@ in `embark-collect-direct-action-minor-mode-map' nor mentioned by
     ;; must mutate keymap, not make new one
     (let ((map embark-collect-direct-action-minor-mode-map))
       (setcdr map nil)
-      (map-keymap
-       (lambda (key cmd)
-         (unless (embark--omit-binding-p cmd)
-           (define-key map (vector key) (embark--action-command cmd))))
-       (embark--action-keymap embark--type)))))
+      (cl-loop for (key . cmd) in (embark--all-bindings
+                                   (embark--action-keymap embark--type))
+               unless (eq cmd 'embark-keymap-help)
+               do (define-key map (kbd key) (embark--action-command cmd))))))
 
 (define-button-type 'embark-collect-entry
   'face 'embark-collect-candidate
@@ -1211,6 +1222,7 @@ keybinding for it.  Or alternatively you might want to enable
 
 (defun embark-collect--max-width ()
   "Maximum width of any Embark Collect candidate."
+  ;; TODO take into account display properties
   (or (cl-loop for cand in embark-collect-candidates
                maximize (length cand))
       0))
