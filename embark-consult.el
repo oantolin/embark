@@ -291,7 +291,7 @@ actions that are on `embark-allow-edit-commands'."
   (cl-pushnew #'embark-consult-unique-match
               (alist-get cmd embark-setup-overrides)))
 
-(defun embark-consult-add-aynsc-separator ()
+(defun embark-consult-add-async-separator ()
   "Add Consult's async separator at the beginning.
 This is intended to be used in `embark-setup-hook' for any action
 that is a Consult async command."
@@ -301,7 +301,7 @@ that is a Consult async command."
     (end-of-line)))
 
 (dolist (bind (cdr embark-consult-async-search-map))
-  (cl-pushnew #'embark-consult-add-aynsc-separator
+  (cl-pushnew #'embark-consult-add-async-separator
               (alist-get (cdr bind) embark-setup-overrides)))
 
 
