@@ -1878,14 +1878,19 @@ minibuffer, which means it can be used as an Embark action."
 (defun embark-act-on-region-contents ()
   "Act on the contents of the region."
   (interactive)
-  (let ((contents (buffer-substring (region-beginning) (region-end)))
-        (mode major-mode))
-    (with-temp-buffer
-      (setq-local major-mode mode)
-      (insert contents)
-      (goto-char (point-min))
-      (let (embark-quit-after-action)
-        (embark-act)))))
+  (let* ((contents (buffer-substring (region-beginning) (region-end)))
+         (embark-target-finders
+          (lambda ()
+            (cons
+             (if (string-match-p "\\`\\_<.*?\\_>\\'" contents)
+                 (if (or (derived-mode-p 'emacs-lisp-mode)
+                         (and (not (derived-mode-p 'prog-mode))
+                              (intern-soft contents)))
+                     'symbol
+                   'identifier)
+               'general)
+             contents))))
+    (embark-act)))
 
 ;;; setup hooks for actions
 
