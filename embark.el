@@ -615,13 +615,14 @@ keybindings and even \\[execute-extended-command] to select a command."
   "Prompt via completion for a command bound in KEYMAP."
   (let* ((commands
           (cl-loop for (key . cmd) in (embark--all-bindings keymap)
-                   for name = (or
-                               (when (symbolp cmd) (symbol-name cmd))
-                               (when-let ((doc (documentation cmd)))
-                                 (save-match-data
-                                   (when (string-match "^\\(.*\\)$" doc)
-                                     (match-string 1 doc))))
-                               "<unnamed>")
+                   for name = (concat
+                               (or
+                                (when (symbolp cmd) (symbol-name cmd))
+                                (when-let ((doc (documentation cmd)))
+                                  (save-match-data
+                                    (when (string-match "^\\(.*\\)$" doc)
+                                      (match-string 1 doc))))
+                                "<unnamed>"))
                    do (add-text-properties
                        0 1
                        `(display
