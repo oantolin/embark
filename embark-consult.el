@@ -73,6 +73,9 @@
 (require 'embark)
 (require 'consult)
 
+(eval-when-compile
+  (require 'cl-lib))
+
 ;;; Consult preview from Embark Collect buffers
 
 (defvar-local embark-consult-preview--last-entry nil
@@ -239,6 +242,68 @@ actual type and also removes its uniqueness prefix."
 ;;; bindings for consult commands in embark keymaps
 
 (define-key embark-file-map "x" #'consult-file-externally)
+
+;;; support for Consult search commands
+
+(embark-define-keymap embark-consult-non-async-search-map
+  "Keymap for Consult non-async search commands"
+  ("o" consult-outline)
+  ("i" consult-imenu)
+  ("p" consult-project-imenu)
+  ("l" consult-line))
+
+(embark-define-keymap embark-consult-async-search-map
+  "Keymap for Consult async search commands"
+  ("g" consult-grep)
+  ("r" consult-ripgrep)
+  ("G" consult-git-grep)
+  ("f" consult-find)
+  ("L" consult-locate))
+
+(defvar embark-consult-search-map
+  (keymap-canonicalize
+   (make-composed-keymap embark-consult-non-async-search-map
+                         embark-consult-async-search-map))
+  "Keymap for Consult async search commands")
+
+(define-key embark-become-match-map "C" embark-consult-non-async-search-map)
+
+(add-to-list 'embark-become-keymaps 'embark-consult-async-search-map)
+
+(define-key embark-general-map "C" embark-consult-search-map)
+
+(dolist (bind (cdr embark-consult-search-map))
+  (add-to-list 'embark-allow-edit-commands (cdr bind)))
+
+(defun embark-consult-unique-match ()
+  "If there is a unique matching candidate, accept it.
+This is intended to be used in `embark-setup-hook' for some
+actions that are on `embark-allow-edit-commands'."
+  ;; I couldn't quickly get this to work for ivy, so just skip ivy
+  (unless (eq mwheel-scroll-up-function 'ivy-next-line)
+    (let ((candidates (embark-minibuffer-candidates)))
+      (unless (or (null (cdr candidates)) (cddr candidates))
+        (delete-minibuffer-contents)
+        (insert (cadr candidates))
+        (add-hook 'post-command-hook #'exit-minibuffer nil t)))))
+
+(dolist (cmd '(consult-outline consult-imenu consult-project-imenu))
+  (cl-pushnew #'embark-consult-unique-match
+              (alist-get cmd embark-setup-overrides)))
+
+(defun embark-consult-add-aynsc-separator ()
+  "Add Consult's async separator at the beginning.
+This is intended to be used in `embark-setup-hook' for any action
+that is a Consult async command."
+  (when consult-async-default-split
+    (beginning-of-line)
+    (insert consult-async-default-split)
+    (end-of-line)))
+
+(dolist (bind (cdr embark-consult-async-search-map))
+  (cl-pushnew #'embark-consult-add-aynsc-separator
+              (alist-get (cdr bind) embark-setup-overrides)))
+
 
 (provide 'embark-consult)
 ;;; embark-consult.el ends here
