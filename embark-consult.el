@@ -210,12 +210,8 @@ The elements of LINES are assumed to be values of category `consult-line'."
 
 This function takes a target of type `consult-multi' (from
 Consult's `consult-multi' category) and transforms it to its
-actual type and also removes its uniqueness prefix."
-  (if-let (cat (get-text-property 0 'consult-multi target))
-      (cons cat (substring target (next-single-char-property-change
-                                   0 'consult-multi target)))
-    ;; new buffer case, don't remove first char
-    (cons 'buffer target)))
+actual type."
+  (or (get-text-property 0 'consult-multi target) (cons 'general target)))
 
 (setf (alist-get 'consult-multi embark-transformer-alist)
       'embark-consult-refine-multi-type)
