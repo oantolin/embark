@@ -1891,6 +1891,7 @@ minibuffer, which means it can be used as an Embark action."
                    'identifier)
                'general)
              contents))))
+    (deactivate-mark)
     (embark-act)))
 
 ;;; setup hooks for actions
