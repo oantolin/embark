@@ -914,6 +914,7 @@ default initial view for types not mentioned separately."
     (file . embark-export-dired)
     (package . embark-export-list-packages)
     (xref-location . embark-export-grep)
+    (bookmark . embark-export-bookmarks)
     (t . embark-collect-snapshot))
   "Alist associating completion types to export functions.
 Each function should take a list of strings which are candidates
@@ -1707,6 +1708,24 @@ buffer for each type of completion."
       (setq-local wgrep-header/footer-parser #'ignore)
       (when (fboundp 'wgrep-setup) (wgrep-setup)))
     (switch-to-buffer buf)))
+
+(defun embark-export-bookmarks (bookmarks)
+  (let ((bookmark-alist
+         (cl-remove-if-not
+          (lambda (bmark)
+            (member (car bmark) bookmarks))
+          bookmark-alist))
+        saved-buffer)
+    (when-let ((buffer (get-buffer "*Bookmark List*")))
+      (with-current-buffer buffer
+        (setq saved-buffer (rename-buffer "*Saved Bookmark List*" t)))
+    (bookmark-bmenu-list)
+    (pop-to-buffer
+     (with-current-buffer "*Bookmark List*"
+       (rename-buffer "*Embark Export Bookmarks*" t)))
+    (when saved-buffer
+      (with-current-buffer saved-buffer
+        (rename-buffer "*Bookmark List*"))))))
 
 ;;; integration with external completion UIs
 
