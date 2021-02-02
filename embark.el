@@ -1716,17 +1716,13 @@ buffer for each type of completion."
           (lambda (bmark)
             (member (car bmark) bookmarks))
           bookmark-alist))
-        saved-buffer)
-    (when-let ((buffer (get-buffer "*Bookmark List*")))
-      (with-current-buffer buffer
-        (setq saved-buffer (rename-buffer "*Saved Bookmark List*" t))))
+        (saved-buffer
+         (embark-rename-buffer "*Bookmark List*" "*Saved Bookmark List*" t)))
     (bookmark-bmenu-list)
     (pop-to-buffer
-     (with-current-buffer "*Bookmark List*"
-       (rename-buffer "*Embark Export Bookmarks*" t)))
+     (embark-rename-buffer "*Bookmark List*" "*Embark Export Bookmarks*" t))
     (when saved-buffer
-      (with-current-buffer saved-buffer
-        (rename-buffer "*Bookmark List*")))))
+      (embark-rename-buffer saved-buffer "*Bookmark List*"))))
 
 ;;; integration with external completion UIs
 
@@ -1848,15 +1844,14 @@ Return the category metadatum as the type of the target."
   (interactive "SSymbol: ")
   (info-lookup-symbol symbol 'emacs-lisp-mode))
 
-(defun embark-rename-buffer (buf)
-  "Rename buffer BUF."
-  (interactive "bBuffer: ")
-  (with-current-buffer buf
-    (minibuffer-with-setup-hook
-        (lambda ()
-          (let ((prompt (make-overlay (point-min) (minibuffer-prompt-end))))
-            (overlay-put prompt 'display (format "Rename %s to: " buf))))
-      (call-interactively #'rename-buffer))))
+(defun embark-rename-buffer (buffer newname &optional unique)
+  "Rename BUFFER to NEWNAME, optionally making it UNIQUE.
+Interactively, you can set UNIQUE with a prefix argument.
+Returns the new name actually used."
+  (interactive "bBuffer: \nBRename %s to: \nP")
+  (when-let ((buf (get-buffer buffer)))
+    (with-current-buffer buf
+      (rename-buffer newname unique))))
 
 (defun embark-browse-package-url (pkg)
   "Open homepage for package PKG with `browse-url'."
