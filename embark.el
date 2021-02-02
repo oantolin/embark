@@ -1668,15 +1668,18 @@ buffer for each type of completion."
 
 (defun embark-export-dired (files)
   "Create a dired buffer listing FILES."
-  (setq files (mapcar #'directory-file-name files))
+  (setq files (mapcar #'directory-file-name
+                      (cl-remove-if-not #'file-exists-p files)))
   (when (dired-check-switches dired-listing-switches "A" "almost-all")
-    (setq files (cl-remove-if-not
+    (setq files (cl-remove-if
                  (lambda (path)
                    (let ((file (file-name-nondirectory path)))
-                     (unless (or (string= file ".") (string= file ".."))
-                       path)))
+                     (or (string= file ".") (string= file ".."))))
                  files)))
-  (dired (cons default-directory files))
+  (dired (cons
+          ;; TODO: is it worth finding the deepest common containing directory?
+          (if (cl-every #'file-name-absolute-p files) "/" default-directory)
+          files))
   (rename-buffer (format "*Embark Export Dired %s*" default-directory)))
 
 (autoload 'package-menu-mode "package")
