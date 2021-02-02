@@ -1710,6 +1710,7 @@ buffer for each type of completion."
     (switch-to-buffer buf)))
 
 (defun embark-export-bookmarks (bookmarks)
+  "Create a bookmark-bmenu-mode buffer listing BOOKMARKS."
   (let ((bookmark-alist
          (cl-remove-if-not
           (lambda (bmark)
@@ -1718,14 +1719,14 @@ buffer for each type of completion."
         saved-buffer)
     (when-let ((buffer (get-buffer "*Bookmark List*")))
       (with-current-buffer buffer
-        (setq saved-buffer (rename-buffer "*Saved Bookmark List*" t)))
+        (setq saved-buffer (rename-buffer "*Saved Bookmark List*" t))))
     (bookmark-bmenu-list)
     (pop-to-buffer
      (with-current-buffer "*Bookmark List*"
        (rename-buffer "*Embark Export Bookmarks*" t)))
     (when saved-buffer
       (with-current-buffer saved-buffer
-        (rename-buffer "*Bookmark List*"))))))
+        (rename-buffer "*Bookmark List*")))))
 
 ;;; integration with external completion UIs
 
