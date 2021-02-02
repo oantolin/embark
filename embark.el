@@ -1620,20 +1620,44 @@ minibuffer; the length of the delay after typing is given by
 The variable `embark-exporters-alist' controls how to make the
 buffer for each type of completion."
   (interactive)
-  (pcase-let* ((`(,type . ,candidates)
-                (run-hook-with-args-until-success 'embark-candidate-collectors))
-               (exporter (or embark-overriding-export-function
-                             (alist-get type embark-exporters-alist)
-                             (alist-get t embark-exporters-alist))))
-    (if (eq exporter 'embark-collect-snapshot)
-        (embark-collect-snapshot)
-      (let ((dir (embark--default-directory)))
-        (run-at-time 0 nil
-                     (lambda ()
-                       (message nil)
-                       (let ((default-directory dir)) ; dired needs this info
-                         (funcall exporter candidates))))
-        (abort-recursive-edit)))))
+  (pcase-let ((`(,type . ,candidates)
+               (run-hook-with-args-until-success 'embark-candidate-collectors)))
+    (if (null candidates)
+        (message "No candidates for export")
+      (let ((exporter (or embark-overriding-export-function
+                          (alist-get type embark-exporters-alist)
+                          (alist-get t embark-exporters-alist)))
+            (transformer (alist-get type embark-transformer-alist)))
+
+        ;; check to see if all candidates transform to same type
+        (when (and (not embark-overriding-export-function) transformer)
+          (pcase-let* ((`(,new-type . ,first-cand)
+                        (funcall transformer (car candidates))))
+            (unless (eq type new-type)
+              (when-let ((new-exporter
+                          (alist-get new-type embark-exporters-alist))
+                         (new-candidates (list first-cand)))
+                (when (cl-every
+                       (lambda (cand)
+                         (pcase-let ((`(,t-type . ,t-cand)
+                                      (funcall transformer cand)))
+                           (when (eq t-type new-type)
+                             (push t-cand new-candidates)
+                             t)))
+                       (cdr candidates))
+                  (setq type new-type
+                        exporter new-exporter
+                        candidates (nreverse new-candidates)))))))
+
+        (if (eq exporter 'embark-collect-snapshot)
+            (embark-collect-snapshot)
+          (let ((dir (embark--default-directory)))
+            (run-at-time 0 nil
+                         (lambda ()
+                           (message nil)
+                           (let ((default-directory dir)) ; dired needs this info
+                             (funcall exporter candidates))))
+            (abort-recursive-edit)))))))
 
 (defun embark-export-ibuffer (buffers)
   "Create an ibuffer buffer listing BUFFERS."
