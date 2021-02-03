@@ -1709,6 +1709,8 @@ buffer for each type of completion."
       (when (fboundp 'wgrep-setup) (wgrep-setup)))
     (switch-to-buffer buf)))
 
+(defvar bookmark-alist)
+
 (defun embark-export-bookmarks (bookmarks)
   "Create a bookmark-bmenu-mode buffer listing BOOKMARKS."
   (let ((bookmark-alist
