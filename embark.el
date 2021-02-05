@@ -472,19 +472,20 @@ As a convenience, in Org Mode surrounding == or ~~ are removed."
   "Target the top completion candidate in the minibuffer.
 Return the category metadatum as the type of the target."
   (when (minibufferp)
-    (let ((contents (minibuffer-contents)))
-      (cons
-       (completion-metadata-get (embark--metadata) 'category)
-       (if (test-completion contents
-                            minibuffer-completion-table
-                            minibuffer-completion-predicate)
-           contents
-         (let ((completions (completion-all-sorted-completions)))
-           (if (null completions)
-               contents
-             (concat
-              (substring contents 0 (or (cdr (last completions)) 0))
-              (car completions)))))))))
+    (pcase-let* ((`(,category . ,candidates) (embark-minibuffer-candidates))
+                 (contents (minibuffer-contents))
+                 (top (if (test-completion contents
+                                           minibuffer-completion-table
+                                           minibuffer-completion-predicate)
+                          contents
+                        (let ((completions (completion-all-sorted-completions)))
+                          (if (null completions)
+                              contents
+                            (concat
+                             (substring contents
+                                        0 (or (cdr (last completions)) 0))
+                             (car completions)))))))
+      (cons category (or (car (member top candidates)) top)))))
 
 (define-obsolete-function-alias
   'embark-target-occur-candidate
