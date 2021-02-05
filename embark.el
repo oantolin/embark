@@ -611,18 +611,25 @@ keybindings and even \\[execute-extended-command] to select a command."
             (_ cmd)))
     cmd))
 
+(defun embark--command-name (cmd)
+  "Return an appropriate name for CMD.
+If CMD is a symbol, use its symbol-name; for lambdas, use the
+first line of the documentation string; otherwise use the word
+'unnamed'."
+  (concat ; fresh copy, so we can freely add text properties
+   (or
+    (when (symbolp cmd) (symbol-name cmd))
+    (when-let ((doc (documentation cmd)))
+      (save-match-data
+        (when (string-match "^\\(.*\\)$" doc)
+          (match-string 1 doc))))
+    "<unnamed>")))
+
 (defun embark-completing-read-prompter (keymap)
   "Prompt via completion for a command bound in KEYMAP."
   (let* ((commands
           (cl-loop for (key . cmd) in (embark--all-bindings keymap)
-                   for name = (concat
-                               (or
-                                (when (symbolp cmd) (symbol-name cmd))
-                                (when-let ((doc (documentation cmd)))
-                                  (save-match-data
-                                    (when (string-match "^\\(.*\\)$" doc)
-                                      (match-string 1 doc))))
-                                "<unnamed>"))
+                   for name = (embark--command-name cmd)
                    do (add-text-properties
                        0 1
                        `(display
@@ -1092,14 +1099,12 @@ This makes `embark-export' work in Embark Collect buffers."
 (defun embark--action-command (action)
   "Turn an ACTION into a command to perform the action.
 Returns the name of the command."
-  (let ((name (intern (format "embark-action--%s" action)))
-        (fn (lambda ()
-              (interactive)
-              (embark--act action (cdr (embark--target))))))
-    (fset name fn)
-    (when (symbolp action)
-      (put name 'function-documentation
-           (documentation action)))
+  (let ((name (intern (format "embark-action--%s"
+                              (embark--command-name action)))))
+    (fset name (lambda ()
+                 (interactive)
+                 (embark--act action (cdr (embark--target)))))
+    (put name 'function-documentation (documentation action))
     name))
 
 (defun embark--all-bindings (keymap)
