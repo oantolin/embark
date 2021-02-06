@@ -139,22 +139,17 @@ associated to an active minibuffer for a Consult command."
   (let ((i 0) (l (length string)))
     (while (and (< i l) (<= #x100000 (aref string i) #x10fffd))
       (setq i (1+ i)))
-    (substring-no-properties string i)))
+    (let ((stripped (substring string i)))
+      (put-text-property 0 1 'embark-consult-prefix (substring string 0 i)
+                         stripped)
+      stripped)))
 
-(defun embark-consult-insert-line (line)
-  "Insert LINE at point."
-  (interactive "sInsert line: ")
-  (insert (embark-consult--strip-prefix line)))
+(defun embark-consult-location-strip-prefix (target)
+  "Remove the unicode prefix character from a `consult-location' TARGET."
+  (cons 'consult-location (embark-consult--strip-prefix target)))
 
-(defun embark-consult-save-line (line)
-  "Save LINE in the kill ring."
-  (interactive "sSave line: ")
-  (kill-new (embark-consult--strip-prefix line)))
-
-(embark-define-keymap embark-consult-location-map
-  "Keymap of Embark actions for Consult's consult-location category."
-  ("i" embark-consult-insert-line) ; shadow the ones from general map
-  ("w" embark-consult-save-line))
+(setf (alist-get 'consult-location embark-transformer-alist)
+      'embark-consult-location-strip-prefix)
 
 (defun embark-consult-export-occur (lines)
   "Create an occur mode buffer listing LINES.
@@ -207,11 +202,15 @@ The elements of LINES are assumed to be values of category `consult-line'."
 
 (defun embark-consult-refine-multi-type (target)
   "Refine `consult-multi' TARGET to its real type.
-
 This function takes a target of type `consult-multi' (from
 Consult's `consult-multi' category) and transforms it to its
 actual type."
-  (or (get-text-property 0 'consult-multi target) (cons 'general target)))
+  (pcase (get-text-property 0 'consult-multi target)
+    (`(,category . ,stripped)
+     (put-text-property 0 1 'embark-consult-prefix (substring target 0 1)
+                        stripped)
+     (cons category stripped))
+    ('nil (cons 'general target))))
 
 (setf (alist-get 'consult-multi embark-transformer-alist)
       'embark-consult-refine-multi-type)
@@ -314,6 +313,20 @@ that is a Consult async command."
   (cl-pushnew #'embark-consult-add-async-separator
               (alist-get (cdr bind) embark-setup-overrides)))
 
+;; fix default action for tofu-prefixing commands
+
+(defun embark-consult-restore-prefix ()
+  "Replace the minibuffer contents with the untrasformed target.
+This is used for default actions for types that have a
+transformer that removes a unicode prefix from the target."
+  (when-let ((pos (minibuffer-prompt-end))
+             (prefix (get-text-property pos 'embark-consult-prefix)))
+    (goto-char pos)
+    (insert prefix)))
+
+(dolist (cmd '(consult-line consult-buffer consult-isearch))
+  (cl-pushnew #'embark-consult-restore-prefix
+              (alist-get cmd embark-setup-overrides)))
 
 (provide 'embark-consult)
 ;;; embark-consult.el ends here
