@@ -1955,15 +1955,15 @@ and leaves the point to the left of it."
   (let ((contents (minibuffer-contents)))
     (delete-minibuffer-contents)
     (insert " " (shell-quote-wildcard-pattern contents))
-    (beginning-of-line)))
+    (goto-char (minibuffer-prompt-end))))
 
 (defun embark--eval-prep ()
   "If target is: a variable, skip edit; a function, wrap in parens."
   (if (not (fboundp (intern (minibuffer-contents))))
       (add-hook 'post-command-hook #'exit-minibuffer nil t)
-    (beginning-of-line)
+    (goto-char (minibuffer-prompt-end))
     (insert "(")
-    (end-of-line)
+    (goto-char (point-max))
     (insert ")")
     (backward-char)))
 
