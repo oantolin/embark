@@ -306,9 +306,9 @@ This is intended to be used in `embark-setup-overrides' for the
 This is intended to be used in `embark-setup-hook' for any action
 that is a Consult async command."
   (when consult-async-default-split
-    (beginning-of-line)
+    (goto-char (minibuffer-prompt-end))
     (insert consult-async-default-split)
-    (end-of-line)))
+    (goto-char (point-max))))
 
 (dolist (bind (cdr embark-consult-async-search-map))
   (cl-pushnew #'embark-consult-add-async-separator
