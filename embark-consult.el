@@ -190,9 +190,6 @@ The elements of LINES are assumed to be values of category `consult-line'."
       (occur-mode))
     (switch-to-buffer buf)))
 
-
-(setf (alist-get 'consult-location embark-keymap-alist)
-      'embark-consult-location-map)
 (setf (alist-get 'consult-location embark-collect-initial-view-alist)
       'list)
 (setf (alist-get 'consult-location embark-exporters-alist)
