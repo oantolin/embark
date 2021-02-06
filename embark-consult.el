@@ -283,10 +283,10 @@ actions that are on `embark-allow-edit-commands'."
   (cl-pushnew #'embark-consult-unique-match
               (alist-get cmd embark-setup-overrides)))
 
-(defun embark-consult-line-accept-tofu ()
+(defun embark-consult-accept-tofu ()
   "Accept input if it already starts with the unicode prefix.
 This is intended to be used in `embark-setup-overrides' for the
-`consult-line' action."
+`consult-line' and `consult-outline' actions."
   (let ((input (minibuffer-contents)))
     (when (and (> (length input) 0)
                (<= consult--tofu-char
@@ -294,8 +294,9 @@ This is intended to be used in `embark-setup-overrides' for the
                    (+ consult--tofu-char consult--tofu-range -1)))
       (add-hook 'post-command-hook #'exit-minibuffer nil t))))
 
-(cl-pushnew #'embark-consult-line-accept-tofu
-            (alist-get 'consult-line embark-setup-overrides))
+(dolist (cmd '(consult-line consult-outline))
+  (cl-pushnew #'embark-consult-accept-tofu
+              (alist-get cmd embark-setup-overrides)))
 
 (defun embark-consult-add-async-separator ()
   "Add Consult's async separator at the beginning.
@@ -321,7 +322,8 @@ transformer that removes a unicode prefix from the target."
     (goto-char pos)
     (insert prefix)))
 
-(dolist (cmd '(consult-line consult-buffer consult-isearch))
+(dolist (cmd '(consult-line consult-buffer consult-isearch
+               consult-outline consult-mark consult-global-mark))
   (cl-pushnew #'embark-consult-restore-prefix
               (alist-get cmd embark-setup-overrides)))
 
