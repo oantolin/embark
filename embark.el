@@ -1151,18 +1151,20 @@ Returns the name of the command."
 (defun embark--all-bindings (keymap)
   "Return an alist of all bindings in KEYMAP."
   (let (bindings)
-    (map-keymap
-     (lambda (key def)
-       (let ((desc (single-key-description key)))
-         (cond
-          ((null def))
-          ((keymapp def)
-           (dolist (bind (embark--all-bindings def))
-             (push (cons (concat desc " " (car bind))
-                         (cdr bind))
-                   bindings)))
-          (t (push (cons desc def) bindings)))))
-     keymap)
+    (cl-labels ((gather (keymap)
+                   (map-keymap
+                    (lambda (key def)
+                      (let ((desc (single-key-description key)))
+                        (cond
+                         ((null def))
+                         ((keymapp def)
+                          (dolist (bind (embark--all-bindings def))
+                            (push (cons (concat desc " " (car bind))
+                                        (cdr bind))
+                                  bindings)))
+                         (t (push (cons desc def) bindings)))))
+                    keymap)))
+      (gather (keymap-canonicalize keymap)))
     (nreverse bindings)))
 
 (define-obsolete-variable-alias
