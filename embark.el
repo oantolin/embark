@@ -326,9 +326,10 @@ window if necessary."
     (minibuffer-selected-window))
    ((and embark--target-window
          (window-live-p embark--target-window)
-         (eq (window-buffer embark--target-window) embark--target-buffer))
+         (or (not (buffer-live-p embark--target-buffer))
+             (eq (window-buffer embark--target-window) embark--target-buffer)))
     embark--target-window)
-   (embark--target-buffer
+   ((and embark--target-buffer (buffer-live-p embark--target-buffer))
     (or (get-buffer-window embark--target-buffer)
         (when display (display-buffer embark--target-buffer))))
    (display (selected-window))))
@@ -616,7 +617,7 @@ keybindings and even \\[execute-extended-command] to select a command."
 
 (defun embark--command-name (cmd)
   "Return an appropriate name for CMD.
-If CMD is a symbol, use its symbol-name; for lambdas, use the
+If CMD is a symbol, use its symbol name; for lambdas, use the
 first line of the documentation string; otherwise use the word
 'unnamed'."
   (concat ; fresh copy, so we can freely add text properties
@@ -1809,8 +1810,6 @@ Return the category metadatum as the type of the target."
   (interactive)
   (user-error "Not meant to be called directly"))
 
-(declare-function compile-goto-error "compile")
-
 (defun embark-goto-location (location)
   "Go to LOCATION, which should be a string with a grep match."
   (interactive "sLocation: ")
@@ -1818,7 +1817,9 @@ Return the category metadatum as the type of the target."
     (insert location "\n")
     (grep-mode)
     (goto-char (point-min))
-    (compile-goto-error)))
+    (let ((display-buffer-overriding-action '(display-buffer-same-window))
+          (inhibit-message t))
+      (next-error 0 t))))
 
 (defalias 'embark-execute-command
   ;; this one is kind of embarrassing: embark-keymap-prompter gives
