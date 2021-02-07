@@ -1184,6 +1184,9 @@ exit the minibuffer.
 
 For other Embark Collect buffers, run the default action on ENTRY."
   (let ((text (button-label entry)))
+    (when-let ((transform (alist-get embark--type embark-transformer-alist))
+               (new (funcall transform text)))
+      (setq text (cdr new)))
     (if (and (eq embark-collect--kind :completions))
         (progn
           (select-window (active-minibuffer-window))
