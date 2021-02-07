@@ -154,7 +154,6 @@ a string, or nil to indicate it found no target."
 
 (defcustom embark-transformer-alist
   '((minor-mode . embark-lookup-lighter-minor-mode)
-    (xref-location . embark-set-xref-location-default-action)
     (symbol . embark-refine-symbol-type))
   "Alist associating type to functions for transforming targets.
 Each function should take a target string and return a pair of
@@ -234,7 +233,7 @@ For commands appearing as keys in this alist, run the
 corresponding value as a setup hook (instead of
 `embark-setup-hook') after injecting the target into in the
 minibuffer and before acting on it."
-  :type '(alist :key-type function :value-type hook))
+  :type '(alist :key-type command :value-type hook))
 
 (defcustom embark-quit-after-action t
   "Should `embark-act' quit the minibuffer?
@@ -246,6 +245,39 @@ opposite behavior to that indicated by this variable by calling
 Note that `embark-act' can also be called from outside the
 minibuffer and this variable is irrelevant in that case."
   :type 'boolean)
+
+(defcustom embark-default-action-fallbacks
+  '((file . find-file)
+    (buffer . switch-to-buffer)
+    (symbol . embark-find-definition)
+    (command . embark-find-definition)
+    (variable . embark-find-definition)
+    (identifier . xref-find-definitions))
+  "Alist associating target types with fallback default actions.
+When the source of a target is minibuffer completion, the default
+action for it is usually the command that opened the minibuffer
+in the first place (but this can be overridden for a given type
+by an entry in `embark-default-action-overrides').  But when a
+target comes from a regular buffer (typically a thing at point),
+the default action for each target type is determined by this
+alist."
+  :type '(alist :key-type symbol :value-type command))
+
+(defcustom embark-default-action-overrides
+  '((xref-location . embark-goto-location))
+  "Alist associating target types with overriding default actions.
+When the source of a target is minibuffer completion, the default
+action for it is usually the command that opened the minibuffer
+in the first place but this can be overridden for a given type by
+an entry in this list.
+
+For example, if you run `delete-file' the default action for its
+completion candidates is `delete-file' itself.  You may prefer to
+make `find-file' the default action for all files, even if they
+wre obtained from a `delete-file' prompt.  In that case you can
+configure that by adding an entry to this variable pairing `file'
+with `find-file'."
+  :type '(alist :key-type symbol :value-type command))
 
 (defcustom embark-allow-edit-default nil
   "Is the user allowed to edit the target before acting on it?
@@ -296,10 +328,6 @@ window should only be used if it displays `embark--target-buffer'.")
 (defvar-local embark--command nil
   "Command that started the completion session.")
 
-(defvar-local embark--default-action nil
-  "Command that should be used as the default action.
-Defaults to `embark--command'.")
-
 (defun embark--default-directory ()
   "Guess a reasonable default directory for the current candidates."
   (if (and (minibufferp) minibuffer-completing-file-name)
@@ -337,14 +365,12 @@ window if necessary."
 (defun embark--cache-info (buffer)
   "Cache information needed for actions in variables local to BUFFER.
 BUFFER defaults to the current buffer."
-  (let ((cmd (or embark--command this-command))
-        (def embark--default-action)
+  (let ((cmd embark--command)
         (dir (embark--default-directory))
         (target-buffer (embark--target-buffer))
         (target-window (embark--target-window)))
     (with-current-buffer buffer
       (setq-local embark--command cmd
-                  embark--default-action def
                   default-directory dir
                   embark--target-buffer target-buffer
                   embark--target-window target-window))))
@@ -541,7 +567,7 @@ relative path."
    (if (eq type 'region)
        embark-meta-map
      (make-composed-keymap
-      `(keymap (13 . ,(or embark--default-action embark--command)))
+      `(keymap (13 . ,(embark--default-action type)))
       embark-general-map))))
 
 (defun embark--show-indicator (indicator keymap target)
@@ -729,6 +755,7 @@ minibuffer before executing the action."
                              (run-hooks 'embark-pre-action-hook)
                              (let ((enable-recursive-minibuffers t)
                                    (embark--command command)
+                                   (this-command action)
                                    (prefix-arg prefix)
                                    (use-dialog-box nil) ; avoid mouse dialogs
                                    (last-nonmenu-event 13)) ; avoid mouse dialogs
@@ -761,11 +788,6 @@ work on them."
               target
             (symbol-name (lookup-minor-mode-from-indicator target))))))
 
-(defun embark-set-xref-location-default-action (target)
-  "Set `embark-goto-location' as the default action for TARGET."
-  (setq embark--default-action 'embark-goto-location)
-  (cons 'xref-location target))
-
 (defun embark--target ()
   "Retrieve current target.
 
@@ -784,6 +806,21 @@ the type, it is called with the initial target, and must return a
     (if transformer
         (funcall transformer target)
       (cons type target))))
+
+(defun embark--default-action (type)
+  "Return default action for the given TYPE of target.
+The most common case is that the target comes from minibuffer
+completion, in which case the default action is the command that
+opened the minibuffer in the first place.  This can be overridden
+by `embark-default-action-overrides'.
+
+For targets that do not come from minibuffer completion
+\(typically some thing at point in a regular buffer) and whose
+type is not listed in `embark-default-action-overrides', the
+default action is given by `embark-default-action-fallbacks'."
+  (or (alist-get type embark-default-action-overrides)
+      embark--command
+      (alist-get type embark-default-action-fallbacks)))
 
 ;;;###autoload
 (defun embark-act (&optional arg)
@@ -1185,9 +1222,6 @@ exit the minibuffer.
 
 For other Embark Collect buffers, run the default action on ENTRY."
   (let ((text (button-label entry)))
-    (when-let ((transform (alist-get embark--type embark-transformer-alist))
-               (new (funcall transform text)))
-      (setq text (cdr new)))
     (if (and (eq embark-collect--kind :completions))
         (progn
           (select-window (active-minibuffer-window))
@@ -1203,7 +1237,7 @@ For other Embark Collect buffers, run the default action on ENTRY."
                       (= (car (embark--boundaries))
                          (- (point) (minibuffer-prompt-end))))
             (exit-minibuffer)))
-      (embark--act (or embark--default-action embark--command) text))))
+      (embark--act (embark--default-action embark--type) text))))
 
 (make-obsolete 'embark-occur-mode-map 'embark-collect-mode-map "0.10")
 
