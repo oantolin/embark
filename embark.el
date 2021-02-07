@@ -246,23 +246,6 @@ Note that `embark-act' can also be called from outside the
 minibuffer and this variable is irrelevant in that case."
   :type 'boolean)
 
-(defcustom embark-default-action-fallbacks
-  '((file . find-file)
-    (buffer . switch-to-buffer)
-    (symbol . embark-find-definition)
-    (command . embark-find-definition)
-    (variable . embark-find-definition)
-    (identifier . xref-find-definitions))
-  "Alist associating target types with fallback default actions.
-When the source of a target is minibuffer completion, the default
-action for it is usually the command that opened the minibuffer
-in the first place (but this can be overridden for a given type
-by an entry in `embark-default-action-overrides').  But when a
-target comes from a regular buffer (typically a thing at point),
-the default action for each target type is determined by this
-alist."
-  :type '(alist :key-type symbol :value-type command))
-
 (defcustom embark-default-action-overrides
   '((xref-location . embark-goto-location))
   "Alist associating target types with overriding default actions.
@@ -563,12 +546,10 @@ relative path."
   "Return action keymap for targets of given TYPE."
   (make-composed-keymap
    (or embark-overriding-keymap
-        (symbol-value (alist-get type embark-keymap-alist)))
-   (if (eq type 'region)
-       embark-meta-map
-     (make-composed-keymap
-      `(keymap (13 . ,(embark--default-action type)))
-      embark-general-map))))
+       (make-composed-keymap
+        `(keymap (13 . ,(embark--default-action type)))
+        (symbol-value (alist-get type embark-keymap-alist))))
+   (if (eq type 'region) embark-meta-map embark-general-map)))
 
 (defun embark--show-indicator (indicator keymap target)
   "Show INDICATOR for a pending action or a instance of becoming.
@@ -817,10 +798,12 @@ by `embark-default-action-overrides'.
 For targets that do not come from minibuffer completion
 \(typically some thing at point in a regular buffer) and whose
 type is not listed in `embark-default-action-overrides', the
-default action is given by `embark-default-action-fallbacks'."
+default action is given by whatever binding RET has in the action
+keymap for the given type."
   (or (alist-get type embark-default-action-overrides)
       embark--command
-      (alist-get type embark-default-action-fallbacks)))
+      (lookup-key (symbol-value (alist-get type embark-keymap-alist))
+                  (kbd "RET"))))
 
 ;;;###autoload
 (defun embark-act (&optional arg)
@@ -2050,6 +2033,7 @@ and leaves the point to the left of it."
 
 (embark-define-keymap embark-file-map
   "Keymap for Embark file actions."
+  ("RET" find-file)
   ("f" find-file)
   ("o" find-file-other-window)
   ("d" delete-file)
@@ -2074,6 +2058,7 @@ and leaves the point to the left of it."
 
 (embark-define-keymap embark-buffer-map
   "Keymap for Embark buffer actions."
+  ("RET" switch-to-buffer)
   ("k" kill-buffer)
   ("b" switch-to-buffer)
   ("o" switch-to-buffer-other-window)
@@ -2085,11 +2070,13 @@ and leaves the point to the left of it."
 
 (embark-define-keymap embark-identifier-map
   "Keymap for Embark identifier actions."
+  ("RET" xref-find-definitions)
   ("h" display-local-help)
   ("d" xref-find-definitions))
 
 (embark-define-keymap embark-symbol-map
   "Keymap for Embark symbol actions."
+  ("RET" embark-find-definition)
   ("h" describe-symbol)
   ("s" embark-info-lookup-symbol)
   ("d" embark-find-definition)
