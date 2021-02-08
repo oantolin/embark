@@ -725,7 +725,7 @@ minibuffer before executing the action."
                        #'ignore
                      (lambda ()
                        (delete-minibuffer-contents)
-                       (insert target)
+                       (insert (substring-no-properties target))
                        (let ((embark-setup-hook setup-hook))
                          (run-hooks 'embark-setup-hook))
                        (unless allow-edit
