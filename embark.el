@@ -1832,13 +1832,21 @@ Return the category metadatum as the type of the target."
 (defun embark-goto-location (location)
   "Go to LOCATION, which should be a string with a grep match."
   (interactive "sLocation: ")
-  (with-temp-buffer
-    (insert location "\n")
-    (grep-mode)
-    (goto-char (point-min))
-    (let ((display-buffer-overriding-action '(display-buffer-same-window))
-          (inhibit-message t))
-      (next-error 0 t))))
+  ;; Actions are run in the target window, so in this case whatever
+  ;; window was selected when the command that produced the
+  ;; xref-location candidates ran.  In particular, we inherit the
+  ;; default-directory of the buffer in that window, but we really
+  ;; want the default-directory of the minibuffer or collect window we
+  ;; call the action from, which is the previous window, since the
+  ;; location is given relative to that directory.
+  (with-selected-window (previous-window)
+    (with-temp-buffer
+      (insert location "\n")
+      (grep-mode)
+      (goto-char (point-min))
+      (let ((display-buffer-overriding-action '(display-buffer-same-window))
+            (inhibit-message t))
+        (next-error 0 t)))))
 
 (defalias 'embark-execute-command
   ;; this one is kind of embarrassing: embark-keymap-prompter gives
