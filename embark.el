@@ -704,6 +704,13 @@ minibuffer."
      ((functionp remove-indicator) (funcall remove-indicator)))
     cmd))
 
+(defun embark--quit-and-run (fn &rest args)
+  "Quit the minibuffer and then call FN with ARGS."
+  (run-at-time 0 nil #'set 'ring-bell-function ring-bell-function)
+  (apply #'run-at-time 0 nil fn args)
+  (setq ring-bell-function #'ignore)
+  (abort-recursive-edit))
+
 (defun embark--act (action target &optional quit)
   "Perform ACTION injecting the TARGET.
 If called from a minibuffer with non-nil QUIT, quit the
@@ -751,8 +758,7 @@ minibuffer before executing the action."
                              (run-hooks 'embark-post-action-hook))))))
       (if (not (and quit (minibufferp)))
           (funcall run-action)
-        (run-at-time 0 nil run-action)
-        (abort-recursive-edit)))))
+        (embark--quit-and-run run-action)))))
 
 (defun embark-refine-symbol-type (target)
   "Refine symbol TARGET to command or variable if possible."
@@ -879,15 +885,15 @@ point."
                                           (embark--become-keymap))))
       (if (null become)
           (minibuffer-message "Canceled")
-        (run-at-time 0 nil (lambda ()
-                               (minibuffer-with-setup-hook
-                                   (lambda ()
-                                     (delete-minibuffer-contents)
-                                     (insert target))
-                                 (let ((use-dialog-box nil)
-                                       (this-command become))
-                                   (command-execute become)))))
-        (abort-recursive-edit)))))
+        (embark--quit-and-run
+         (lambda ()
+           (minibuffer-with-setup-hook
+               (lambda ()
+                 (delete-minibuffer-contents)
+                 (insert target))
+             (let ((use-dialog-box nil)
+                   (this-command become))
+               (command-execute become)))))))))
 
 (defmacro embark-define-keymap (name doc &rest bindings)
   "Define keymap variable NAME.
@@ -1589,7 +1595,7 @@ To control the display, add an entry to `display-buffer-alist'
 with key \"Embark Collect\"."
   (interactive (embark-collect--initial-view-arg))
   (embark--collect "*Embark Collect*" initial-view :snapshot)
-  (when (minibufferp) (abort-recursive-edit)))
+  (when (minibufferp) (embark--quit-and-run #'message nil)))
 
 ;;;###autoload
 (defun embark-collect-completions ()
@@ -1691,12 +1697,10 @@ buffer for each type of completion."
         (if (eq exporter 'embark-collect-snapshot)
             (embark-collect-snapshot)
           (let ((dir (embark--default-directory)))
-            (run-at-time 0 nil
-                         (lambda ()
-                           (message nil)
-                           (let ((default-directory dir)) ; dired needs this info
-                             (funcall exporter candidates))))
-            (abort-recursive-edit)))))))
+            (embark--quit-and-run
+             (lambda ()
+               (let ((default-directory dir)) ; dired needs this info
+                 (funcall exporter candidates))))))))))
 
 (defun embark-export-ibuffer (buffers)
   "Create an ibuffer buffer listing BUFFERS."
