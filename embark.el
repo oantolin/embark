@@ -730,17 +730,24 @@ minibuffer before executing the action."
                          (run-hooks 'embark-setup-hook))
                        (unless allow-edit
                          (add-hook 'post-command-hook #'exit-minibuffer nil t)))))
-           (run-action (lambda ()
-                         (minibuffer-with-setup-hook inject
+           (run-action (if (commandp action)
+                           (lambda ()
+                             (minibuffer-with-setup-hook inject
+                               (with-selected-window action-window
+                                 (run-hooks 'embark-pre-action-hook)
+                                 (let ((enable-recursive-minibuffers t)
+                                       (embark--command command)
+                                       (this-command action)
+                                       (prefix-arg prefix)
+                                       ;; the next two avoid mouse dialogs
+                                       (use-dialog-box nil)
+                                       (last-nonmenu-event 13))
+                                   (command-execute action))
+                                 (run-hooks 'embark-post-action-hook))))
+                         (lambda ()
                            (with-selected-window action-window
                              (run-hooks 'embark-pre-action-hook)
-                             (let ((enable-recursive-minibuffers t)
-                                   (embark--command command)
-                                   (this-command action)
-                                   (prefix-arg prefix)
-                                   (use-dialog-box nil) ; avoid mouse dialogs
-                                   (last-nonmenu-event 13)) ; avoid mouse dialogs
-                               (command-execute action))
+                             (funcall action target)
                              (run-hooks 'embark-post-action-hook))))))
       (if (not (and quit (minibufferp)))
           (funcall run-action)
