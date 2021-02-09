@@ -353,10 +353,10 @@ BUFFER defaults to the current buffer."
         (target-buffer (embark--target-buffer))
         (target-window (embark--target-window)))
     (with-current-buffer buffer
-      (setq-local embark--command cmd
-                  default-directory dir
-                  embark--target-buffer target-buffer
-                  embark--target-window target-window))))
+      (setq embark--command cmd
+            default-directory dir
+            embark--target-buffer target-buffer
+            embark--target-window target-window))))
 
 (defun embark--cache-info--completion-list ()
   "Cache information needed for actions in a *Completions* buffer.
@@ -379,7 +379,7 @@ Meant to be be added to `completion-setup-hook'."
     "Record command which opened the minibuffer.
 We record this because it will be the default action.
 This function is meant to be added to `minibuffer-setup-hook'."
-    (setq-local embark--command this-command))
+    (setq embark--command this-command))
   (add-hook 'minibuffer-setup-hook #'embark--record-this-command))
 
 ;;; internal variables
