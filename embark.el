@@ -2091,12 +2091,14 @@ and leaves the point to the left of it."
   "Keymap for Embark identifier actions."
   ("RET" xref-find-definitions)
   ("h" display-local-help)
+  ("H" highlight-symbol-at-point)
   ("d" xref-find-definitions))
 
 (embark-define-keymap embark-symbol-map
   "Keymap for Embark symbol actions."
   ("RET" embark-find-definition)
   ("h" describe-symbol)
+  ("H" highlight-symbol-at-point)
   ("s" embark-info-lookup-symbol)
   ("d" embark-find-definition)
   ("b" where-is)
