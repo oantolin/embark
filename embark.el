@@ -836,14 +836,16 @@ whether calling `embark-act' with nil ARG quits the minibuffer,
 and if ARG is non-nil it will do the opposite.  Interactively,
 ARG is the prefix argument."
   (interactive "P")
-  (pcase-let* ((`(,type . ,target) (embark--target))
-               (action (embark--with-indicator embark-action-indicator
+  (pcase-let* ((`(,type . ,target) (embark--target)))
+    (if (and (null type) (null target))
+        (message "No target found")
+      (if-let ((action (embark--with-indicator embark-action-indicator
                                                embark-prompter
                                                (embark--action-keymap type)
                                                target)))
-    (if (null action)
-        (minibuffer-message "Canceled")
-      (embark--act action target (if embark-quit-after-action (not arg) arg)))))
+          (embark--act action target
+                       (if embark-quit-after-action (not arg) arg))
+        (minibuffer-message "Canceled")))))
 
 (defun embark--become-keymap ()
   "Return keymap of commands to become for current command."
