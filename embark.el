@@ -722,7 +722,6 @@ minibuffer before executing the action."
       (command-execute action)
     (let* ((command embark--command)
            (prefix prefix-arg)
-           (action-window (embark--target-window t))
            (setup-hook (or (alist-get action embark-setup-overrides)
                            embark-setup-hook))
            (allow-edit (if embark-allow-edit-default
@@ -740,24 +739,23 @@ minibuffer before executing the action."
            (run-action (if (commandp action)
                            (lambda ()
                              (minibuffer-with-setup-hook inject
-                               (with-selected-window action-window
-                                 (run-hooks 'embark-pre-action-hook)
-                                 (let ((enable-recursive-minibuffers t)
-                                       (embark--command command)
-                                       (this-command action)
-                                       (prefix-arg prefix)
-                                       ;; the next two avoid mouse dialogs
-                                       (use-dialog-box nil)
-                                       (last-nonmenu-event 13))
-                                   (command-execute action))
-                                 (run-hooks 'embark-post-action-hook))))
+                               (run-hooks 'embark-pre-action-hook)
+                               (let ((enable-recursive-minibuffers t)
+                                     (embark--command command)
+                                     (this-command action)
+                                     (prefix-arg prefix)
+                                     ;; the next two avoid mouse dialogs
+                                     (use-dialog-box nil)
+                                     (last-nonmenu-event 13))
+                                 (command-execute action))
+                               (run-hooks 'embark-post-action-hook)))
                          (lambda ()
-                           (with-selected-window action-window
-                             (run-hooks 'embark-pre-action-hook)
-                             (funcall action target)
-                             (run-hooks 'embark-post-action-hook))))))
+                           (run-hooks 'embark-pre-action-hook)
+                           (funcall action target)
+                           (run-hooks 'embark-post-action-hook)))))
       (if (not (and quit (minibufferp)))
-          (funcall run-action)
+          (with-selected-window (embark--target-window t)
+            (funcall run-action))
         (embark--quit-and-run run-action)))))
 
 (defun embark-refine-symbol-type (target)
