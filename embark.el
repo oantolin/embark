@@ -2014,10 +2014,9 @@ minibuffer, which means it can be used as an Embark action."
   "Toggle symbol highlighting using `highlight-symbol-at-point'."
   (interactive)
   (let ((regexp (find-tag-default-as-symbol-regexp))
-        (highlighted (cl-find t
-                              '(hi-lock-interactive-lighters
-                                hi-lock-interactive-patterns)
-                              :key #'boundp)))
+        (highlighted (cl-find-if #'boundp
+                                 '(hi-lock-interactive-lighters
+                                   hi-lock-interactive-patterns))))
     (if (and highlighted (assoc regexp (symbol-value highlighted)))
         (unhighlight-regexp regexp)
       (highlight-symbol-at-point))))
