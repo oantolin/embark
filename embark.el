@@ -2010,6 +2010,15 @@ minibuffer, which means it can be used as an Embark action."
     (deactivate-mark)
     (embark-act)))
 
+(defun embark-toggle-highlight ()
+  "Toggle symbol highlighting using `highlight-symbol-at-point'."
+  (interactive)
+  (let ((regexp (find-tag-default-as-symbol-regexp)))
+    (if (and (boundp 'hi-lock-interactive-patterns)
+             (assoc regexp hi-lock-interactive-patterns))
+        (hi-lock-unface-buffer regexp)
+      (hi-lock-face-symbol-at-point))))
+
 ;;; setup hooks for actions
 
 (defun embark--shell-prep ()
@@ -2113,14 +2122,14 @@ and leaves the point to the left of it."
   "Keymap for Embark identifier actions."
   ("RET" xref-find-definitions)
   ("h" display-local-help)
-  ("H" highlight-symbol-at-point)
+  ("H" embark-toggle-highlight)
   ("d" xref-find-definitions))
 
 (embark-define-keymap embark-symbol-map
   "Keymap for Embark symbol actions."
   ("RET" embark-find-definition)
   ("h" describe-symbol)
-  ("H" highlight-symbol-at-point)
+  ("H" embark-toggle-highlight)
   ("s" embark-info-lookup-symbol)
   ("d" embark-find-definition)
   ("b" where-is)
