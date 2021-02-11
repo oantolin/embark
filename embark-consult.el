@@ -137,7 +137,9 @@ associated to an active minibuffer for a Consult command."
 (defun embark-consult--strip-prefix (string)
   "Remove the unicode prefix from a consult-location STRING."
   (let ((i 0) (l (length string)))
-    (while (and (< i l) (<= #x100000 (aref string i) #x10fffd))
+    (while (and (< i l) (<= consult--tofu-char
+                            (aref string i)
+                            (+ consult--tofu-char consult--tofu-range -1)))
       (setq i (1+ i)))
     (let ((stripped (substring string i)))
       (put-text-property 0 1 'embark-consult-prefix (substring string 0 i)
@@ -256,7 +258,7 @@ actual type."
   (keymap-canonicalize
    (make-composed-keymap embark-consult-non-async-search-map
                          embark-consult-async-search-map))
-  "Keymap for Consult async search commands")
+  "Keymap for Consult async search commands.")
 
 (define-key embark-become-match-map "C" embark-consult-non-async-search-map)
 
@@ -284,7 +286,7 @@ actions that are on `embark-allow-edit-commands'."
               (alist-get cmd embark-setup-overrides)))
 
 (defun embark-consult-accept-tofu ()
-  "Accept input if it already starts with the unicode prefix.
+  "Accept input if it already has the unicode prefix.
 This is intended to be used in `embark-setup-overrides' for the
 `consult-line' and `consult-outline' actions."
   (let ((input (minibuffer-contents)))
