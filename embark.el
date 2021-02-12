@@ -838,14 +838,14 @@ ARG is the prefix argument."
   (interactive "P")
   (pcase-let* ((`(,type . ,target) (embark--target)))
     (if (and (null type) (null target))
-        (message "No target found")
+        (user-error "No target found")
       (if-let ((action (embark--with-indicator embark-action-indicator
                                                embark-prompter
                                                (embark--action-keymap type)
                                                target)))
           (embark--act action target
                        (if embark-quit-after-action (not arg) arg))
-        (minibuffer-message "Canceled")))))
+        (user-error "Canceled")))))
 
 ;;;###autoload
 (defun embark-default-action ()
@@ -865,7 +865,7 @@ keymap for the target's type."
   (pcase-let ((`(,type . ,target) (embark--target)))
     (if (or type target)
         (embark--act (embark--default-action type) target)
-      (message "No target found"))))
+      (user-error "No target found"))))
 
 (defun embark--become-keymap ()
   "Return keymap of commands to become for current command."
@@ -906,7 +906,7 @@ point."
                                           embark-prompter
                                           (embark--become-keymap))))
       (if (null become)
-          (minibuffer-message "Canceled")
+          (user-error "Canceled")
         (embark--quit-and-run
          (lambda ()
            (minibuffer-with-setup-hook
@@ -1504,83 +1504,85 @@ the minibuffer is exited."
               (buffer (generate-new-buffer name))
               (`(,type . ,candidates)
                (run-hook-with-args-until-success 'embark-candidate-collectors)))
-    (setq embark-collect-linked-buffer buffer)
-    (with-current-buffer buffer
-      ;; we'll run the mode hooks once the buffer is displayed, so
-      ;; the hooks can make use of the window
-      (delay-mode-hooks (embark-collect-mode))
+    (if (and (null candidates) (eq kind :snapshot))
+        (user-error "No candidates to collect")
+      (setq embark-collect-linked-buffer buffer)
+      (with-current-buffer buffer
+        ;; we'll run the mode hooks once the buffer is displayed, so
+        ;; the hooks can make use of the window
+        (delay-mode-hooks (embark-collect-mode))
 
-      (setq embark-collect--kind kind)
+        (setq embark-collect--kind kind)
 
-      (setq tabulated-list-use-header-line nil) ; default to no header
+        (setq tabulated-list-use-header-line nil) ; default to no header
 
-      (unless (eq kind :snapshot)
-        ;; setup live updating
-        (with-current-buffer from
-          (add-hook 'after-change-functions
-                    #'embark-collect--update-linked nil t)))
+        (unless (eq kind :snapshot)
+          ;; setup live updating
+          (with-current-buffer from
+            (add-hook 'after-change-functions
+                      #'embark-collect--update-linked nil t)))
 
-      (unless (and (minibufferp from) (eq kind :snapshot))
-        ;; for a snapshot of a minibuffer, don't link back to minibuffer:
-        ;; they can get recycled and if so revert would do the wrong thing
-        (setq embark-collect-from from))
+        (unless (and (minibufferp from) (eq kind :snapshot))
+          ;; for a snapshot of a minibuffer, don't link back to minibuffer:
+          ;; they can get recycled and if so revert would do the wrong thing
+          (setq embark-collect-from from))
 
-      (setq embark--type type)
-      (setq embark-collect-candidates candidates)
-      (add-hook 'tabulated-list-revert-hook #'embark-collect--revert nil t)
+        (setq embark--type type)
+        (setq embark-collect-candidates candidates)
+        (add-hook 'tabulated-list-revert-hook #'embark-collect--revert nil t)
 
-      (setq embark-collect-view
-            (or initial-view
-                (alist-get type embark-collect-initial-view-alist)
-                (alist-get t embark-collect-initial-view-alist)
-                'list))
-      (when (eq embark-collect-view 'zebra)
-        (setq embark-collect-view 'list)
-        (embark-collect-zebra-minor-mode))
+        (setq embark-collect-view
+              (or initial-view
+                  (alist-get type embark-collect-initial-view-alist)
+                  (alist-get t embark-collect-initial-view-alist)
+                  'list))
+        (when (eq embark-collect-view 'zebra)
+          (setq embark-collect-view 'list)
+          (embark-collect-zebra-minor-mode))
 
-      (with-current-buffer from (embark--cache-info buffer)))
+        (with-current-buffer from (embark--cache-info buffer)))
 
-    (let ((window (display-buffer
-                   buffer
-                   (when (eq kind :completions)
-                     '((embark--reuse-collect-completions-window
-                        display-buffer-at-bottom))))))
+      (let ((window (display-buffer
+                     buffer
+                     (when (eq kind :completions)
+                       '((embark--reuse-collect-completions-window
+                          display-buffer-at-bottom))))))
 
-      (with-selected-window window
-        (run-mode-hooks)
-        (revert-buffer))
+        (with-selected-window window
+          (run-mode-hooks)
+          (revert-buffer))
 
-      (set-window-dedicated-p window t)
+        (set-window-dedicated-p window t)
 
-      (when (minibufferp from)
-        ;; A function added to `minibuffer-exit-hook' locally isn't called if
-        ;; we `abort-recursive-edit' from outside the minibuffer, that is why
-        ;; we use `change-major-mode-hook', which is also run on minibuffer
-        ;; exit.
-        (add-hook
-         'change-major-mode-hook
-         (pcase kind
-           (:completions
-            (lambda ()
-              ;; Killing a buffer shown in a selected dedicated window will
-              ;; set-buffer to a random buffer for some reason, so preserve it.
-              (save-current-buffer
-                (kill-buffer buffer))))
-           (:live
-            (lambda ()
-              (setf (buffer-local-value 'embark-collect-from buffer) nil)
-              (with-current-buffer buffer
-                (save-match-data
-                  (rename-buffer
-                   (replace-regexp-in-string " Live" "" (buffer-name))
-                   t)))
-              (run-at-time 0 nil #'pop-to-buffer buffer)))
-           (:snapshot
-            (lambda () (run-at-time 0 nil #'pop-to-buffer buffer))))
-         nil t)
-        (setq minibuffer-scroll-window window))
+        (when (minibufferp from)
+          ;; A function added to `minibuffer-exit-hook' locally isn't called if
+          ;; we `abort-recursive-edit' from outside the minibuffer, that is why
+          ;; we use `change-major-mode-hook', which is also run on minibuffer
+          ;; exit.
+          (add-hook
+           'change-major-mode-hook
+           (pcase kind
+             (:completions
+              (lambda ()
+                ;; Killing a buffer shown in a selected dedicated window will
+                ;; set-buffer to a random buffer for some reason, so preserve it.
+                (save-current-buffer
+                  (kill-buffer buffer))))
+             (:live
+              (lambda ()
+                (setf (buffer-local-value 'embark-collect-from buffer) nil)
+                (with-current-buffer buffer
+                  (save-match-data
+                    (rename-buffer
+                     (replace-regexp-in-string " Live" "" (buffer-name))
+                     t)))
+                (run-at-time 0 nil #'pop-to-buffer buffer)))
+             (:snapshot
+              (lambda () (run-at-time 0 nil #'pop-to-buffer buffer))))
+           nil t)
+          (setq minibuffer-scroll-window window))
 
-      window)))
+        window))))
 
 (define-obsolete-function-alias
   'embark-live-occur
@@ -1690,7 +1692,7 @@ buffer for each type of completion."
   (pcase-let ((`(,type . ,candidates)
                (run-hook-with-args-until-success 'embark-candidate-collectors)))
     (if (null candidates)
-        (message "No candidates for export")
+        (user-error "No candidates for export")
       (let ((exporter (or embark-overriding-export-function
                           (alist-get type embark-exporters-alist)
                           (alist-get t embark-exporters-alist)))
@@ -1933,7 +1935,7 @@ Returns the new name actually used."
   (if-let ((desc (embark--package-desc pkg))
            (url (alist-get :url (package-desc-extras desc))))
       (browse-url url)
-    (message "No homepage found for `%s'" pkg)))
+    (user-error "No homepage found for `%s'" pkg)))
 
 (defun embark-insert-relative-path (file)
   "Insert relative path to FILE.
