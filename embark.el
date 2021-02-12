@@ -1288,11 +1288,22 @@ keybinding for it.  Or alternatively you might want to enable
 `embark-collect-direct-action-minor-mode' in
 `embark-collect-mode-hook'.")
 
+(defun embark--display-width (string)
+  "Compute width of STRING taking display properties into account."
+  (let ((len (length string)) (pos 0) (width 0))
+    (while (not (eq pos len))
+      (let ((end (next-single-property-change pos 'display string len))
+            (display (get-text-property pos 'display string)))
+        (setq width (+ width (if (stringp display)
+                                 (length display)
+                               (- end pos 1)))
+              pos end)))
+    width))
+
 (defun embark-collect--max-width ()
   "Maximum width of any Embark Collect candidate."
-  ;; TODO take into account display properties
   (or (cl-loop for cand in embark-collect-candidates
-               maximize (length cand))
+               maximize (embark--display-width cand))
       0))
 
 (defun embark-collect--list-view ()
