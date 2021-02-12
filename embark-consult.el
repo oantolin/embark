@@ -134,21 +134,22 @@ associated to an active minibuffer for a Consult command."
 
 ;;; Support for consult-location
 
-(defun embark-consult--strip-prefix (string)
-  "Remove the unicode prefix from a consult-location STRING."
-  (let ((i 0) (l (length string)))
-    (while (and (< i l) (<= consult--tofu-char
-                            (aref string i)
-                            (+ consult--tofu-char consult--tofu-range -1)))
-      (setq i (1+ i)))
-    (let ((stripped (substring string i)))
-      (put-text-property 0 1 'embark-consult-prefix (substring string 0 i)
+(defun embark-consult--strip-prefix (string property)
+  "Remove the initial characters of STRING with the given PROPERTY.
+The prefix is stored as the `embark-consult-prefix' property of
+the first remaining character."
+  (when (get-text-property 0 property string)
+    (let* ((i (next-single-property-change 0 property string))
+           (stripped (substring string i)))
+      (put-text-property 0 1
+                         'embark-consult-prefix (substring string 0 i)
                          stripped)
       stripped)))
 
 (defun embark-consult-location-strip-prefix (target)
   "Remove the unicode prefix character from a `consult-location' TARGET."
-  (cons 'consult-location (embark-consult--strip-prefix target)))
+  (cons 'consult-location
+        (embark-consult--strip-prefix target 'consult-location)))
 
 (setf (alist-get 'consult-location embark-transformer-alist)
       'embark-consult-location-strip-prefix)
@@ -218,7 +219,7 @@ actual type."
 
 (defun embark-consult-isearch-strip-prefix (target)
   "Remove the unicode prefix character from a `consult-isearch' TARGET."
-  (cons 'consult-isearch (embark-consult--strip-prefix target)))
+  (cons 'consult-isearch (embark-consult--strip-prefix target 'invisible)))
 
 (setf (alist-get 'consult-isearch embark-transformer-alist)
       'embark-consult-isearch-strip-prefix)
@@ -318,7 +319,7 @@ that is a Consult async command."
 ;; fix default action for tofu-prefixing commands
 
 (defun embark-consult-restore-prefix ()
-  "Replace the minibuffer contents with the untrasformed target.
+  "Replace the minibuffer contents with the untransformed target.
 This is used for default actions for types that have a
 transformer that removes a unicode prefix from the target."
   (when-let ((pos (minibuffer-prompt-end))
