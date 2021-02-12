@@ -237,6 +237,8 @@ actual type."
 
 (define-key embark-file-map "x" #'consult-file-externally)
 
+(define-key embark-become-file+buffer-map "Cb" #'consult-buffer)
+
 ;;; support for Consult search commands
 
 (embark-define-keymap embark-consult-non-async-search-map
