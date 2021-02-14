@@ -740,17 +740,21 @@ minibuffer before executing the action."
            (run-action (if (commandp action)
                            (lambda ()
                              (minibuffer-with-setup-hook inject
-                               (with-selected-window action-window
-                                 (run-hooks 'embark-pre-action-hook)
-                                 (let ((enable-recursive-minibuffers t)
-                                       (embark--command command)
-                                       (this-command action)
-                                       (prefix-arg prefix)
-                                       ;; the next two avoid mouse dialogs
-                                       (use-dialog-box nil)
-                                       (last-nonmenu-event 13))
-                                   (command-execute action))
-                                 (run-hooks 'embark-post-action-hook))))
+                               (let (window)
+                                 (with-selected-window action-window
+                                   (run-hooks 'embark-pre-action-hook)
+                                   (let ((enable-recursive-minibuffers t)
+                                         (embark--command command)
+                                         (this-command action)
+                                         (prefix-arg prefix)
+                                         ;; the next two avoid mouse dialogs
+                                         (use-dialog-box nil)
+                                         (last-nonmenu-event 13))
+                                     (command-execute action))
+                                   (setq window (selected-window))
+                                   (run-hooks 'embark-post-action-hook))
+                                 (unless (eq window action-window)
+                                   (select-window window)))))
                          (lambda ()
                            (with-selected-window action-window
                              (run-hooks 'embark-pre-action-hook)
