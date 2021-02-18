@@ -722,48 +722,51 @@ minibuffer before executing the action."
       (command-execute action)
     (let* ((command embark--command)
            (prefix prefix-arg)
+           (original-window (selected-window))
            (action-window (embark--target-window t))
            (setup-hook (or (alist-get action embark-setup-overrides)
                            embark-setup-hook))
            (allow-edit (if embark-allow-edit-default
                            (not (memq action embark-skip-edit-commands))
                          (memq action embark-allow-edit-commands)))
-           (inject (if (not (stringp target)) ; for region actions
-                       #'ignore
-                     (lambda ()
-                       (delete-minibuffer-contents)
-                       (insert (substring-no-properties target))
-                       (let ((embark-setup-hook setup-hook))
-                         (run-hooks 'embark-setup-hook))
-                       (unless allow-edit
-                         (add-hook 'post-command-hook #'exit-minibuffer nil t)))))
-           (run-action (if (commandp action)
-                           (lambda ()
-                             (minibuffer-with-setup-hook inject
-                               (let ((dedicated (window-dedicated-p))
-                                     final-window)
-                                 (set-window-dedicated-p nil t)
-                                 (unwind-protect
-                                     (with-selected-window action-window
-                                       (run-hooks 'embark-pre-action-hook)
-                                       (let ((enable-recursive-minibuffers t)
-                                             (embark--command command)
-                                             (this-command action)
-                                             (prefix-arg prefix)
-                                             ;; the next two avoid mouse dialogs
-                                             (use-dialog-box nil)
-                                             (last-nonmenu-event 13))
-                                         (command-execute action))
-                                       (setq final-window (selected-window))
-                                       (run-hooks 'embark-post-action-hook))
-                                   (set-window-dedicated-p nil dedicated))
-                                 (unless (eq final-window action-window)
-                                   (select-window final-window)))))
-                         (lambda ()
-                           (with-selected-window action-window
-                             (run-hooks 'embark-pre-action-hook)
-                             (funcall action target)
-                             (run-hooks 'embark-post-action-hook))))))
+           (inject
+            (if (not (stringp target))  ; for region actions
+                #'ignore
+              (lambda ()
+                (delete-minibuffer-contents)
+                (insert (substring-no-properties target))
+                (let ((embark-setup-hook setup-hook))
+                  (run-hooks 'embark-setup-hook))
+                (unless allow-edit
+                  (add-hook 'post-command-hook #'exit-minibuffer nil t)))))
+           (run-action
+            (if (commandp action)
+                (lambda ()
+                  (minibuffer-with-setup-hook inject
+                    (let ((dedicated (window-dedicated-p original-window))
+                          final-window)
+                      (set-window-dedicated-p original-window t)
+                      (unwind-protect
+                          (with-selected-window action-window
+                            (run-hooks 'embark-pre-action-hook)
+                            (let ((enable-recursive-minibuffers t)
+                                  (embark--command command)
+                                  (this-command action)
+                                  (prefix-arg prefix)
+                                  ;; the next two avoid mouse dialogs
+                                  (use-dialog-box nil)
+                                  (last-nonmenu-event 13))
+                              (command-execute action))
+                            (setq final-window (selected-window))
+                            (run-hooks 'embark-post-action-hook))
+                        (set-window-dedicated-p original-window dedicated))
+                      (unless (eq final-window action-window)
+                        (select-window final-window)))))
+              (lambda ()
+                (with-selected-window action-window
+                  (run-hooks 'embark-pre-action-hook)
+                  (funcall action target)
+                  (run-hooks 'embark-post-action-hook))))))
       (if (not (and quit (minibufferp)))
           (funcall run-action)
         (embark--quit-and-run run-action)))))
