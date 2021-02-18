@@ -740,21 +740,25 @@ minibuffer before executing the action."
            (run-action (if (commandp action)
                            (lambda ()
                              (minibuffer-with-setup-hook inject
-                               (let (window)
-                                 (with-selected-window action-window
-                                   (run-hooks 'embark-pre-action-hook)
-                                   (let ((enable-recursive-minibuffers t)
-                                         (embark--command command)
-                                         (this-command action)
-                                         (prefix-arg prefix)
-                                         ;; the next two avoid mouse dialogs
-                                         (use-dialog-box nil)
-                                         (last-nonmenu-event 13))
-                                     (command-execute action))
-                                   (setq window (selected-window))
-                                   (run-hooks 'embark-post-action-hook))
-                                 (unless (eq window action-window)
-                                   (select-window window)))))
+                               (let ((dedicated (window-dedicated-p))
+                                     final-window)
+                                 (set-window-dedicated-p nil t)
+                                 (unwind-protect
+                                     (with-selected-window action-window
+                                       (run-hooks 'embark-pre-action-hook)
+                                       (let ((enable-recursive-minibuffers t)
+                                             (embark--command command)
+                                             (this-command action)
+                                             (prefix-arg prefix)
+                                             ;; the next two avoid mouse dialogs
+                                             (use-dialog-box nil)
+                                             (last-nonmenu-event 13))
+                                         (command-execute action))
+                                       (setq final-window (selected-window))
+                                       (run-hooks 'embark-post-action-hook))
+                                   (set-window-dedicated-p nil dedicated))
+                                 (unless (eq final-window action-window)
+                                   (select-window final-window)))))
                          (lambda ()
                            (with-selected-window action-window
                              (run-hooks 'embark-pre-action-hook)
