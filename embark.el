@@ -2136,6 +2136,7 @@ and leaves the point to the left of it."
   "Keymap for Embark buffer actions."
   ("RET" switch-to-buffer)
   ("k" kill-buffer)
+  ("I" insert-buffer)
   ("b" switch-to-buffer)
   ("o" switch-to-buffer-other-window)
   ("z" embark-bury-buffer)
