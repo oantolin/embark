@@ -1895,7 +1895,9 @@ Return the category metadatum as the type of the target."
       (insert location "\n")
       (grep-mode)
       (goto-char (point-min))
-      (let ((inhibit-message t))
+      (let ((inhibit-message t)
+            (next-error-find-buffer-function
+             (lambda (&rest _args) (current-buffer))))
         (next-error 0 t)))))
 
 (defalias 'embark-execute-command
