@@ -1886,6 +1886,8 @@ Return the category metadatum as the type of the target."
   (interactive)
   (user-error "Not meant to be called directly"))
 
+(autoload 'compile-goto-error "compile")
+
 (defun embark-goto-location (location)
   "Go to LOCATION, which should be a string with a grep match."
   (interactive "sLocation: ")
@@ -1902,8 +1904,7 @@ Return the category metadatum as the type of the target."
       (insert location "\n")
       (grep-mode)
       (goto-char (point-min))
-      (let ((inhibit-message t))
-        (next-error 0 t)))))
+      (compile-goto-error))))
 
 (defalias 'embark-execute-command
   ;; this one is kind of embarrassing: embark-keymap-prompter gives
