@@ -1306,7 +1306,7 @@ keybinding for it.  Or alternatively you might want to enable
             (display (get-text-property pos 'display string)))
         (setq width (+ width (if (stringp display)
                                  (length display)
-                               (- end pos 1)))
+                               (- end pos)))
               pos end)))
     width))
 
