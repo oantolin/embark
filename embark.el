@@ -1110,10 +1110,9 @@ This using the same sort order that `icomplete' and
 replace `embark-minibuffer-candidates' with this function in the
 list `embark-candidate-collectors'."
   (when (minibufferp)
-    (let* ((all (completion-all-sorted-completions))
-           (last (last all)))
-      (when last (setcdr last nil))
-      all)))
+    (cons
+     (completion-metadata-get (embark--metadata) 'category)
+     (nconc (cl-copy-list (completion-all-sorted-completions)) nil))))
 
 (autoload 'dired-get-filename "dired")
 
