@@ -1898,8 +1898,7 @@ Return the category metadatum as the type of the target."
   ;; want the default-directory of the minibuffer or collect window we
   ;; call the action from, which is the previous window, since the
   ;; location is given relative to that directory.
-  (let ((default-directory
-          (with-selected-window (previous-window) default-directory)))
+  (with-selected-window (previous-window)
     (with-temp-buffer
       (insert location "\n")
       (grep-mode)
