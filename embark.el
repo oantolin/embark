@@ -722,7 +722,6 @@ minibuffer before executing the action."
       (command-execute action)
     (let* ((command embark--command)
            (prefix prefix-arg)
-           (original-window (selected-window))
            (action-window (embark--target-window t))
            (setup-hook (or (alist-get action embark-setup-overrides)
                            embark-setup-hook))
@@ -739,13 +738,15 @@ minibuffer before executing the action."
                   (run-hooks 'embark-setup-hook))
                 (unless allow-edit
                   (add-hook 'post-command-hook #'exit-minibuffer nil t)))))
+           (dedicate (and (derived-mode-p 'embark-collect-mode)
+                          (not (window-dedicated-p))
+                          (selected-window)))
            (run-action
             (if (commandp action)
                 (lambda ()
                   (minibuffer-with-setup-hook inject
-                    (let ((dedicated (window-dedicated-p original-window))
-                          final-window)
-                      (set-window-dedicated-p original-window t)
+                    (let (final-window)
+                      (when dedicate (set-window-dedicated-p dedicate t))
                       (unwind-protect
                           (with-selected-window action-window
                             (run-hooks 'embark-pre-action-hook)
@@ -759,7 +760,7 @@ minibuffer before executing the action."
                               (command-execute action))
                             (setq final-window (selected-window))
                             (run-hooks 'embark-post-action-hook))
-                        (set-window-dedicated-p original-window dedicated))
+                        (when dedicate (set-window-dedicated-p dedicate nil)))
                       (unless (eq final-window action-window)
                         (select-window final-window)))))
               (lambda ()
