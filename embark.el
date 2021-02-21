@@ -1592,15 +1592,18 @@ the minibuffer is exited."
                   (kill-buffer buffer))))
              (:live
               (lambda ()
-                (setf (buffer-local-value 'embark-collect-from buffer) nil)
-                (with-current-buffer buffer
-                  (save-match-data
-                    (rename-buffer
-                     (replace-regexp-in-string " Live" "" (buffer-name))
-                     t)))
-                (run-at-time 0 nil #'pop-to-buffer buffer)))
+                (when (buffer-live-p buffer)
+                  (setf (buffer-local-value 'embark-collect-from buffer) nil)
+                  (with-current-buffer buffer
+                    (save-match-data
+                      (rename-buffer
+                       (replace-regexp-in-string " Live" "" (buffer-name))
+                       t)))
+                  (run-at-time 0 nil #'pop-to-buffer buffer))))
              (:snapshot
-              (lambda () (run-at-time 0 nil #'pop-to-buffer buffer))))
+              (lambda ()
+                (when (buffer-live-p buffer)
+                  (run-at-time 0 nil #'pop-to-buffer buffer)))))
            nil t)
           (setq minibuffer-scroll-window window))
 
