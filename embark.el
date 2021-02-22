@@ -1302,12 +1302,12 @@ keybinding for it.  Or alternatively you might want to enable
 (defun embark--display-width (string)
   "Return width of STRING taking display and invisible properties into account."
   (let ((len (length string)) (pos 0) (width 0))
-    (while (not (eq pos len))
+    (while (/= pos len)
       (let ((dis (next-single-property-change pos 'display string len))
             (display (get-text-property pos 'display string)))
         (if (stringp display)
             (setq width (+ width (string-width display)) pos dis)
-          (while (not (eq pos dis))
+          (while (/= pos dis)
             (let ((inv (next-single-property-change pos 'invisible string dis)))
               (unless (get-text-property pos 'invisible string)
                 (setq width (+ width
