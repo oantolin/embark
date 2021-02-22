@@ -1306,11 +1306,16 @@ keybinding for it.  Or alternatively you might want to enable
       (let ((dis (next-single-property-change pos 'display string len))
             (display (get-text-property pos 'display string)))
         (if (stringp display)
-            (setq width (+ width (length display)) pos dis)
+            (setq width (+ width (string-width display)) pos dis)
           (while (not (eq pos dis))
             (let ((inv (next-single-property-change pos 'invisible string dis)))
               (unless (get-text-property pos 'invisible string)
-                (setq width (+ width (- inv pos))))
+                (setq width (+ width
+                               (string-width
+                                ;; avoid allocating a substring if possible
+                                (if (and (= pos 0) (= inv len))
+                                    string
+                                  (substring string pos inv))))))
               (setq pos inv))))))
     width))
 
