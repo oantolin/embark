@@ -1300,15 +1300,18 @@ keybinding for it.  Or alternatively you might want to enable
 `embark-collect-mode-hook'.")
 
 (defun embark--display-width (string)
-  "Compute width of STRING taking display properties into account."
+  "Return width of STRING taking display and invisible properties into account."
   (let ((len (length string)) (pos 0) (width 0))
     (while (not (eq pos len))
-      (let ((end (next-single-property-change pos 'display string len))
+      (let ((dis (next-single-property-change pos 'display string len))
             (display (get-text-property pos 'display string)))
-        (setq width (+ width (if (stringp display)
-                                 (length display)
-                               (- end pos)))
-              pos end)))
+        (if (stringp display)
+            (setq width (+ width (length display)) pos dis)
+          (while (not (eq pos dis))
+            (let ((inv (next-single-property-change pos 'invisible string dis)))
+              (unless (get-text-property pos 'invisible string)
+                (setq width (+ width (- inv pos))))
+              (setq pos inv))))))
     width))
 
 (defun embark-collect--max-width ()
