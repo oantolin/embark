@@ -239,7 +239,7 @@ The elements of LINES are assumed to be values of category `consult-line'."
 (setf (alist-get 'consult-grep embark-default-action-overrides)
       #'embark-consult-goto-location)
 (setf (alist-get 'consult-grep embark-exporters-alist)
-      #'embark-export-grep)
+      #'embark-consult-export-grep)
 (setf (alist-get 'consult-grep embark-collect-initial-view-alist)
       'list)
 
