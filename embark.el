@@ -1399,6 +1399,51 @@ This is specially useful to tell where multi-line entries begin and end."
                  #'embark-collect--add-zebra-stripes t)
     (embark-collect--remove-zebra-stripes)))
 
+(defface embark-separator
+  '((((class color) (min-colors 88) (background light))
+     :foreground "#ccc")
+    (((class color) (min-colors 88) (background dark))
+     :foreground "#333"))
+  "Face used for thin line separators.")
+
+(defun embark-collect--remove-lines-stripes ()
+  "Remove highlighting of alternate rows."
+  (remove-overlays nil nil 'face 'embark-collect-lines-highlight))
+
+(defun embark-collect--add-lines-stripes ()
+  "Highlight alternate rows with the `embark-collect-highlight-row' face."
+  (embark-collect--remove-lines-stripes)
+  (save-excursion
+    (goto-char (point-min))
+    (when (overlays-at (point)) (forward-line))
+    (let ((columns (length tabulated-list-format)))
+      (while (not (eobp))
+        (condition-case nil
+            (forward-button columns)
+          (user-error (goto-char (point-max))))
+        (overlay-put (make-overlay (- (point) 1) (point))
+                     'after-string
+                     (propertize (concat (propertize " " 'display '(space :align-to right)) "\n")
+                                 'cursor-intangible t
+                                 'intangible t
+                                 'face '(:inherit embark-separator :height 1 :underline t)))))))
+
+(define-minor-mode embark-collect-lines-minor-mode
+  "Minor mode to highlight alternate rows in an Embark Collect buffer.
+This is specially useful to tell where multi-line entries begin and end."
+  :init-value nil
+  :lighter " Lines"
+  (if embark-collect-lines-minor-mode
+      (progn
+        (add-hook 'embark-collect-post-revert-hook
+                  #'embark-collect--add-lines-stripes nil t)
+        (embark-collect--add-lines-stripes))
+    (remove-hook 'embark-collect-post-revert-hook
+                 #'embark-collect--add-lines-stripes t)
+    (embark-collect--remove-lines-stripes)))
+
+
+
 (defun embark-collect--grid-view ()
   "Grid view of candidates for Embark Collect buffer."
   (let* ((width (min (+ (embark-collect--max-width) 2) (floor (window-width) 2)))
