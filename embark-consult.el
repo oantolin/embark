@@ -152,7 +152,7 @@ the first remaining character."
         (embark-consult--strip-prefix target 'consult-location)))
 
 (setf (alist-get 'consult-location embark-transformer-alist)
-      'embark-consult-location-strip-prefix)
+      #'embark-consult-location-strip-prefix)
 
 (defun embark-consult-export-occur (lines)
   "Create an occur mode buffer listing LINES.
@@ -196,9 +196,54 @@ The elements of LINES are assumed to be values of category `consult-line'."
 (setf (alist-get 'consult-location embark-collect-initial-view-alist)
       'list)
 (setf (alist-get 'consult-location embark-exporters-alist)
-      'embark-consult-export-occur)
+      #'embark-consult-export-occur)
 
-;;; support for consult-multi
+;;; Support for consult-grep
+
+(defvar wgrep-header/footer-parser)
+(declare-function wgrep-setup "wgrep")
+
+(defun embark-consult-export-grep (lines)
+  "Create a grep mode buffer listing LINES."
+  (let ((buf (generate-new-buffer "*Embark Export Grep*")))
+    (with-current-buffer buf
+      (insert (propertize "Exported grep results:\n\n" 'wgrep-header t))
+      (dolist (line lines) (insert line "\n"))
+      (goto-char (point-min))
+      (grep-mode)
+      (setq-local wgrep-header/footer-parser #'ignore)
+      (when (fboundp 'wgrep-setup) (wgrep-setup)))
+    (switch-to-buffer buf)))
+
+(autoload 'compile-goto-error "compile")
+
+(defun embark-consult-goto-location (location)
+  "Go to LOCATION, which should be a string with a grep match."
+  (interactive "sLocation: ")
+  ;; Actions are run in the target window, so in this case whatever
+  ;; window was selected when the command that produced the
+  ;; xref-location candidates ran.  In particular, we inherit the
+  ;; default-directory of the buffer in that window, but we really
+  ;; want the default-directory of the minibuffer or collect window we
+  ;; call the action from, which is the previous window, since the
+  ;; location is given relative to that directory.
+  (with-temp-buffer
+    (setq default-directory (with-selected-window (previous-window)
+                              default-directory))
+    (insert location "\n")
+    (grep-mode)
+    (goto-char (point-min))
+    (let ((display-buffer-overriding-action '(display-buffer-same-window)))
+      (compile-goto-error))))
+
+(setf (alist-get 'consult-grep embark-default-action-overrides)
+      #'embark-consult-goto-location)
+(setf (alist-get 'consult-grep embark-exporters-alist)
+      #'embark-export-grep)
+(setf (alist-get 'consult-grep embark-collect-initial-view-alist)
+      'list)
+
+;;; Support for consult-multi
 
 (defun embark-consult-refine-multi-type (target)
   "Refine `consult-multi' TARGET to its real type.
@@ -213,23 +258,23 @@ actual type."
     ('nil (cons 'general target))))
 
 (setf (alist-get 'consult-multi embark-transformer-alist)
-      'embark-consult-refine-multi-type)
+      #'embark-consult-refine-multi-type)
 
-;;; support for consult-isearch
+;;; Support for consult-isearch
 
 (defun embark-consult-isearch-strip-prefix (target)
   "Remove the unicode prefix character from a `consult-isearch' TARGET."
   (cons 'consult-isearch (embark-consult--strip-prefix target 'invisible)))
 
 (setf (alist-get 'consult-isearch embark-transformer-alist)
-      'embark-consult-isearch-strip-prefix)
+      #'embark-consult-isearch-strip-prefix)
 
-;;; support for consult-register
+;;; Support for consult-register
 
 (setf (alist-get 'consult-register embark-collect-initial-view-alist)
       'zebra)
 
-;;; support for consult-yank*
+;;; Support for consult-yank*
 
 (setf (alist-get 'consult-yank embark-collect-initial-view-alist)
       'zebra)
@@ -240,7 +285,7 @@ actual type."
 
 (define-key embark-become-file+buffer-map "Cb" #'consult-buffer)
 
-;;; support for Consult search commands
+;;; Support for Consult search commands
 
 (embark-define-keymap embark-consult-non-async-search-map
   "Keymap for Consult non-async search commands"

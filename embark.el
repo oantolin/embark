@@ -246,8 +246,7 @@ Note that `embark-act' can also be called from outside the
 minibuffer and this variable is irrelevant in that case."
   :type 'boolean)
 
-(defcustom embark-default-action-overrides
-  '((xref-location . embark-goto-location))
+(defcustom embark-default-action-overrides nil
   "Alist associating target types with overriding default actions.
 When the source of a target is minibuffer completion, the default
 action for it is usually the command that opened the minibuffer
@@ -975,7 +974,6 @@ which should be a string."
   '((file . grid)
     (buffer . grid)
     (symbol . list)
-    (xref-location . list)
     (t . list))
   "Initial views for Embark Collect buffers by type.
 This is an alist associating completion types to either `list',
@@ -991,7 +989,6 @@ default initial view for types not mentioned separately."
   '((buffer . embark-export-ibuffer)
     (file . embark-export-dired)
     (package . embark-export-list-packages)
-    (xref-location . embark-export-grep)
     (bookmark . embark-export-bookmarks)
     (t . embark-collect-snapshot))
   "Alist associating completion types to export functions.
@@ -1793,21 +1790,6 @@ buffer for each type of completion."
       (package-menu--generate nil (mapcar #'intern packages)))
     (switch-to-buffer buf)))
 
-(defvar wgrep-header/footer-parser)
-(declare-function wgrep-setup "wgrep")
-
-(defun embark-export-grep (lines)
-  "Create a grep mode buffer listing LINES."
-  (let ((buf (generate-new-buffer "*Embark Export Grep*")))
-    (with-current-buffer buf
-      (insert (propertize "Exported grep results:\n\n" 'wgrep-header t))
-      (dolist (line lines) (insert line "\n"))
-      (goto-char (point-min))
-      (grep-mode)
-      (setq-local wgrep-header/footer-parser #'ignore)
-      (when (fboundp 'wgrep-setup) (wgrep-setup)))
-    (switch-to-buffer buf)))
-
 (defvar bookmark-alist)
 
 (defun embark-export-bookmarks (bookmarks)
@@ -1896,27 +1878,6 @@ Return the category metadatum as the type of the target."
   "Prompt for an action to perform or command to become and run it."
   (interactive)
   (user-error "Not meant to be called directly"))
-
-(autoload 'compile-goto-error "compile")
-
-(defun embark-goto-location (location)
-  "Go to LOCATION, which should be a string with a grep match."
-  (interactive "sLocation: ")
-  ;; Actions are run in the target window, so in this case whatever
-  ;; window was selected when the command that produced the
-  ;; xref-location candidates ran.  In particular, we inherit the
-  ;; default-directory of the buffer in that window, but we really
-  ;; want the default-directory of the minibuffer or collect window we
-  ;; call the action from, which is the previous window, since the
-  ;; location is given relative to that directory.
-  (with-temp-buffer
-    (setq default-directory (with-selected-window (previous-window)
-                              default-directory))
-    (insert location "\n")
-    (grep-mode)
-    (goto-char (point-min))
-    (let ((display-buffer-overriding-action '(display-buffer-same-window)))
-      (compile-goto-error))))
 
 (defalias 'embark-execute-command
   ;; this one is kind of embarrassing: embark-keymap-prompter gives
