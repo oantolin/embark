@@ -279,7 +279,7 @@ actual type."
 (setf (alist-get 'consult-yank embark-collect-initial-view-alist)
       'zebra)
 
-;;; bindings for consult commands in embark keymaps
+;;; Bindings for consult commands in embark keymaps
 
 (define-key embark-file-map "x" #'consult-file-externally)
 

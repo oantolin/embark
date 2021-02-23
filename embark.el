@@ -109,7 +109,7 @@
 
 (require 'ffap) ; used it to recognize file and url targets
 
-;;; user facing options
+;;; User facing options
 
 (defgroup embark nil
   "Emacs Mini-Buffer Actions Rooted in Keymaps"
@@ -294,7 +294,7 @@ This list is used only when `embark-allow-edit-default' is t."
   "Hook run after an embarked upon action concludes."
   :type 'hook)
 
-;;; stashing information for actions in buffer local variables
+;;; Stashing information for actions in buffer local variables
 
 (defvar-local embark--type nil
   "Cache for the completion type, meant to be set buffer-locally.")
@@ -381,7 +381,7 @@ This function is meant to be added to `minibuffer-setup-hook'."
     (setq embark--command this-command))
   (add-hook 'minibuffer-setup-hook #'embark--record-this-command))
 
-;;; internal variables
+;;; Internal variables
 
 (defvar-local embark-collect--kind nil
   "Kind of current collect buffer.
@@ -434,7 +434,7 @@ There are three kinds:
 (defvar-local embark--collect-live--timer nil
   "Timer scheduled to update Embark Collect Live buffer.")
 
-;;; core functionality
+;;; Core functionality
 
 (defun embark--metadata ()
   "Return current minibuffer completion metadata."
@@ -945,7 +945,7 @@ BINDINGS is the list of bindings."
          ,(if parent `(make-composed-keymap ,map ,parent) map))
        ,doc)))
 
-;;; embark collect
+;;; Embark collect
 
 (defgroup embark-collect nil
   "Buffers for acting on collected Embark targets"
@@ -1807,7 +1807,7 @@ buffer for each type of completion."
     (when saved-buffer
       (embark-rename-buffer saved-buffer "*Bookmark List*"))))
 
-;;; integration with external completion UIs
+;;; Integration with external completion UIs
 
 ;; selectrum
 
@@ -1872,7 +1872,7 @@ Return the category metadatum as the type of the target."
   (add-hook 'embark-target-finders #'embark-target-ivy-selection)
   (add-hook 'embark-candidate-collectors #'embark-ivy-candidates))
 
-;;; custom actions
+;;; Custom actions
 
 (defun embark-keymap-help ()
   "Prompt for an action to perform or command to become and run it."
@@ -2019,7 +2019,7 @@ minibuffer, which means it can be used as an Embark action."
         (unhighlight-regexp regexp)
       (highlight-symbol-at-point))))
 
-;;; setup hooks for actions
+;;; Setup hooks for actions
 
 (defun embark--shell-prep ()
   "Prepare target for use as argument for a shell command.
