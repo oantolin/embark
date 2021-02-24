@@ -1904,6 +1904,12 @@ Return the category metadatum as the type of the target."
             (substitute-in-file-name file)))))
     (eshell '(4))))
 
+(defun embark-dired-jump (file &optional other-window)
+  "Open dired buffer in directory containg FILE and move to its line.
+When called with a prefix argument, open dired in another window."
+  (interactive "fJump to Dired file: \nP")
+  (dired-jump other-window file))
+
 (defun embark-find-definition (symbol)
   "Find definition of SYMBOL."
   (interactive "SSymbol: ")
@@ -2090,6 +2096,7 @@ and leaves the point to the left of it."
   ("D" delete-directory)
   ("r" rename-file)
   ("c" copy-file)
+  ("j" embark-dired-jump)
   ("!" shell-command)
   ("&" async-shell-command)
   ("=" ediff-files)
