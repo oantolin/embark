@@ -736,7 +736,7 @@ minibuffer before executing the action."
                 (let ((embark-setup-hook setup-hook))
                   (run-hooks 'embark-setup-hook))
                 (unless allow-edit
-                  (add-hook 'post-command-hook #'exit-minibuffer nil t)))))
+                  (add-hook 'post-command-hook #'exit-minibuffer 10 t)))))
            (dedicate (and (derived-mode-p 'embark-collect-mode)
                           (not (window-dedicated-p))
                           (selected-window)))
