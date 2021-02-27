@@ -736,7 +736,13 @@ minibuffer before executing the action."
                 (let ((embark-setup-hook setup-hook))
                   (run-hooks 'embark-setup-hook))
                 (unless allow-edit
-                  (add-hook 'post-command-hook #'exit-minibuffer 10 t)))))
+                  (if (eq mwheel-scroll-up-function 'ivy-next-line)
+                      ;; Ivy has special needs: (1) for file names
+                      ;; ivy-immediate-done is not equivalent to
+                      ;; exit-minibuffer, (2) it needs a chance to run
+                      ;; its post command hook first, so use depth 10
+                      (add-hook 'post-command-hook 'ivy-immediate-done 10 t)
+                    (add-hook 'post-command-hook #'exit-minibuffer nil t))))))
            (dedicate (and (derived-mode-p 'embark-collect-mode)
                           (not (window-dedicated-p))
                           (selected-window)))
