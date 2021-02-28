@@ -453,8 +453,8 @@ There are three kinds:
   "Target file at point."
   (when-let ((file (if (derived-mode-p 'dired-mode)
                        (dired-get-filename t 'no-error-if-not-filep)
-                     (abbreviate-file-name (ffap-file-at-point)))))
-    (cons 'file file)))
+                     (ffap-file-at-point))))
+    (cons 'file (abbreviate-file-name file))))
 
 (defun embark-target-url-at-point ()
   "Target the URL at point."
