@@ -447,9 +447,13 @@ There are three kinds:
   "Target the region if active."
   (when (use-region-p) '(region . <region>)))
 
+(autoload 'dired-get-filename "dired")
+
 (defun embark-target-file-at-point ()
   "Target file at point."
-  (when-let ((file (ffap-file-at-point)))
+  (when-let ((file (if (derived-mode-p 'dired-mode)
+                       (dired-get-filename t 'no-error-if-not-filep)
+                     (abbreviate-file-name (ffap-file-at-point)))))
     (cons 'file file)))
 
 (defun embark-target-url-at-point ()
@@ -1117,8 +1121,6 @@ list `embark-candidate-collectors'."
     (cons
      (completion-metadata-get (embark--metadata) 'category)
      (nconc (cl-copy-list (completion-all-sorted-completions)) nil))))
-
-(autoload 'dired-get-filename "dired")
 
 (defun embark-dired-candidates ()
   "Return all files shown in dired buffer."
