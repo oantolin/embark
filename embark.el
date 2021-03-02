@@ -378,7 +378,7 @@ Meant to be be added to `completion-setup-hook'."
     "Record command which opened the minibuffer.
 We record this because it will be the default action.
 This function is meant to be added to `minibuffer-setup-hook'."
-    (setq embark--command this-command))
+    (setq-local embark--command this-command))
   (add-hook 'minibuffer-setup-hook #'embark--record-this-command))
 
 ;;; Internal variables
