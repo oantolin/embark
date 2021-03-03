@@ -1921,6 +1921,7 @@ When called with a prefix argument, open dired in another window."
 (defun embark-find-definition (symbol)
   "Find definition of SYMBOL."
   (interactive "SSymbol: ")
+  (xref-push-marker-stack)
   (cond
    ((fboundp symbol) (find-function symbol))
    ((boundp symbol) (find-variable symbol))))
