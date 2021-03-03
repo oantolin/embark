@@ -1918,6 +1918,8 @@ When called with a prefix argument, open dired in another window."
   (interactive "fJump to Dired file: \nP")
   (dired-jump other-window file))
 
+(autoload 'xref-push-marker-stack "xref")
+
 (defun embark-find-definition (symbol)
   "Find definition of SYMBOL."
   (interactive "SSymbol: ")
