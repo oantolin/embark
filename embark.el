@@ -812,15 +812,19 @@ returns a non-nil result.  Each function should either a pair of
 a type symbol and a target string, or nil.
 
 The initial type is then looked up as a key in the variable
-`embark-transformer-alist'.  If there is a transformer for
-the type, it is called with the initial target, and must return a
-`cons' of the transformed type and target."
+`embark-transformer-alist'.  If there is a transformer for the
+type, it is called with the initial target, and must return a
+`cons' of the transformed type and target.
+
+The return value is 3-element list of the possibly transformed
+type, the possibly transformed target and the original target."
   (pcase-let* ((`(,type . ,target)
                 (run-hook-with-args-until-success 'embark-target-finders))
                (transformer (alist-get type embark-transformer-alist)))
     (if transformer
-        (funcall transformer target)
-      (cons type target))))
+        (pcase-let ((`(,new-type . ,new-target) (funcall transformer target)))
+          (list new-type new-target target))
+      (list type target target))))
 
 (defun embark--default-action (type)
   "Return default action for the given TYPE of target.
@@ -857,16 +861,22 @@ whether calling `embark-act' with nil ARG quits the minibuffer,
 and if ARG is non-nil it will do the opposite.  Interactively,
 ARG is the prefix argument."
   (interactive "P")
-  (pcase-let* ((`(,type . ,target) (embark--target)))
+  (pcase-let* ((`(,type ,target ,original) (embark--target)))
     (if (and (null type) (null target))
         (user-error "No target found")
-      (if-let ((action (embark--with-indicator embark-action-indicator
-                                               embark-prompter
-                                               (embark--action-keymap type)
-                                               target)))
-          (embark--act action target
-                       (if embark-quit-after-action (not arg) arg))
-        (user-error "Canceled")))))
+      (let ((action (embark--with-indicator embark-action-indicator
+                                            embark-prompter
+                                            (embark--action-keymap type)
+                                            target))
+            (default-action (embark--default-action type)))
+        (if action
+            (embark--act action
+                         (if (and (eq action default-action)
+                                  (eq action embark--command))
+                             original
+                           target)
+                         (if embark-quit-after-action (not arg) arg))
+          (user-error "Canceled"))))))
 
 ;;;###autoload
 (defun embark-default-action ()
@@ -883,9 +893,12 @@ type is not listed in `embark-default-action-overrides', the
 default action is given by whatever binding RET has in the action
 keymap for the target's type."
   (interactive)
-  (pcase-let ((`(,type . ,target) (embark--target)))
-    (if (or type target)
-        (embark--act (embark--default-action type) target)
+  (pcase-let* ((`(,type ,target ,original) (embark--target))
+               (default-action (embark--default-action type)))
+    (if original
+        (embark--act default-action (if (eq default-action embark--command)
+                                        original
+                                      target))
       (user-error "No target found"))))
 
 (defun embark--become-keymap ()
@@ -1178,7 +1191,7 @@ Returns the name of the command."
                               (embark--command-name action)))))
     (fset name (lambda ()
                  (interactive)
-                 (embark--act action (cdr (embark--target)))))
+                 (embark--act action (cadr (embark--target)))))
     (put name 'function-documentation (documentation action))
     name))
 
