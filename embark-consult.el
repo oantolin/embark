@@ -135,16 +135,9 @@ associated to an active minibuffer for a Consult command."
 ;;; Support for consult-location
 
 (defun embark-consult--strip-prefix (string property)
-  "Remove the initial characters of STRING with the given PROPERTY.
-The prefix is stored as the `embark-consult-prefix' property of
-the first remaining character."
+  "Remove the initial characters of STRING with the given PROPERTY."
   (when (get-text-property 0 property string)
-    (let* ((i (next-single-property-change 0 property string))
-           (stripped (substring string i)))
-      (put-text-property 0 1
-                         'embark-consult-prefix (substring string 0 i)
-                         stripped)
-      stripped)))
+    (substring string (next-single-property-change 0 property string))))
 
 (defun embark-consult-location-strip-prefix (target)
   "Remove the unicode prefix character from a `consult-location' TARGET."
@@ -250,12 +243,8 @@ The elements of LINES are assumed to be values of category `consult-line'."
 This function takes a target of type `consult-multi' (from
 Consult's `consult-multi' category) and transforms it to its
 actual type."
-  (pcase (get-text-property 0 'consult-multi target)
-    (`(,category . ,stripped)
-     (put-text-property 0 1 'embark-consult-prefix (substring target 0 1)
-                        stripped)
-     (cons category stripped))
-    ('nil (cons 'general target))))
+  (or (get-text-property 0 'consult-multi target)
+      (cons 'general target)))
 
 (setf (alist-get 'consult-multi embark-transformer-alist)
       #'embark-consult-refine-multi-type)
@@ -360,22 +349,6 @@ that is a Consult async command."
 (dolist (bind (cdr embark-consult-async-search-map))
   (cl-pushnew #'embark-consult-add-async-separator
               (alist-get (cdr bind) embark-setup-overrides)))
-
-;; fix default action for tofu-prefixing commands
-
-(defun embark-consult-restore-prefix ()
-  "Replace the minibuffer contents with the untransformed target.
-This is used for default actions for types that have a
-transformer that removes a unicode prefix from the target."
-  (when-let ((pos (minibuffer-prompt-end))
-             (prefix (get-text-property pos 'embark-consult-prefix)))
-    (goto-char pos)
-    (insert prefix)))
-
-(dolist (cmd '(consult-line consult-buffer consult-isearch
-               consult-outline consult-mark consult-global-mark))
-  (cl-pushnew #'embark-consult-restore-prefix
-              (alist-get cmd embark-setup-overrides)))
 
 (provide 'embark-consult)
 ;;; embark-consult.el ends here
