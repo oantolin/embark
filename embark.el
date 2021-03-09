@@ -1909,7 +1909,11 @@ Return the category metadatum as the type of the target."
 (defun embark-insert (string)
   "Insert STRING at point."
   (interactive "sInsert: ")
-  (insert string))
+  (with-selected-window
+      (if buffer-read-only
+          (other-window-for-scrolling)
+        (selected-window))
+    (insert string)))
 
 (defun embark-save (string)
   "Save STRING in the kill ring."
