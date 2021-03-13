@@ -1929,6 +1929,11 @@ Return the category metadatum as the type of the target."
             (substitute-in-file-name file)))))
     (eshell '(4))))
 
+;; For Emacs 28 dired-jump will be moved to dired.el, but it seems
+;; that since it already has an autoload in Emacs 28, this next
+;; autoload is ignored.
+(autoload 'dired-jump "dired-x")
+
 (defun embark-dired-jump (file &optional other-window)
   "Open dired buffer in directory containg FILE and move to its line.
 When called with a prefix argument, open dired in another window."
