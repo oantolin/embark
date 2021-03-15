@@ -1841,13 +1841,7 @@ buffer for each type of completion."
 Return the category metadatum as the type of the target."
   (when (bound-and-true-p selectrum-active-p)
     (cons (selectrum--get-meta 'category)
-          (if selectrum--is-crm-session
-              (replace-regexp-in-string
-               (concat "\\`.*" crm-separator "\\(.*\\)\\'")
-               (selectrum-get-current-candidate)
-               (minibuffer-contents)
-               nil nil 1)
-	    (selectrum-get-current-candidate)))))
+	  (selectrum-get-current-candidate))))
 
 (defun embark-selectrum-candidates ()
   "Collect the current Selectrum candidates.
