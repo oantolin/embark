@@ -1453,18 +1453,15 @@ This is specially useful to tell where multi-line entries begin and end."
             (with-current-buffer embark-collect-from
               (embark--default-directory)))))
   (setq embark-collect-annotator
-        (or
-         ;; for the active minibuffer, get annotation-function metadatum
-         (when-let ((miniwin (active-minibuffer-window)))
-           (when (eq (window-buffer miniwin) embark-collect-from)
-             (or (completion-metadata-get (embark--metadata)
-                                          'annotation-function)
-                 (plist-get completion-extra-properties
-                            :annotation-function))))
-         ;; fallback on Marginalia if loaded
-         (when (boundp 'marginalia-annotators)
-           (alist-get embark--type (symbol-value
-                                    (car marginalia-annotators))))))
+        (if-let ((miniwin (active-minibuffer-window)))
+            (when (eq (window-buffer miniwin) embark-collect-from)
+              ;; for the active minibuffer, get annotation-function metadatum
+              (or
+               (completion-metadata-get (embark--metadata) 'annotation-function)
+               (plist-get completion-extra-properties :annotation-function)))
+          ;; otherwise fake some metadata for Marginalia users's benefit
+          (completion-metadata-get `((category . ,embark--type))
+                                   'annotation-function)))
   (if (eq embark-collect-view 'list)
       (embark-collect--list-view)
     (embark-collect--grid-view)))
