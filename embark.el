@@ -679,6 +679,7 @@ first line of the documentation string; otherwise use the word
          nil t))
       commands))))
 
+;;;###autoload
 (defun embark-prefix-help-command ()
   "Prompt for and run a command bound in the prefix used to reach this command.
 The prefix described consists of all but the last event of the
