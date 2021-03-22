@@ -631,13 +631,14 @@ If CMD is a symbol, use its symbol name; for lambdas, use the
 first line of the documentation string; otherwise use the word
 'unnamed'."
   (concat ; fresh copy, so we can freely add text properties
-   (or
-    (when (symbolp cmd) (symbol-name cmd))
-    (when-let ((doc (documentation cmd)))
-      (save-match-data
-        (when (string-match "^\\(.*\\)$" doc)
-          (match-string 1 doc))))
-    "<unnamed>")))
+   (cond
+    ((stringp (car-safe cmd)) (car cmd))
+    ((symbolp cmd) (symbol-name cmd))
+    ((when-let (doc (and (functionp cmd) (documentation cmd)))
+       (save-match-data
+         (when (string-match "^\\(.*\\)$" doc)
+           (match-string 1 doc)))))
+    (t "<unnamed>"))))
 
 (defun embark-completing-read-prompter (keymap)
   "Prompt via completion for a command bound in KEYMAP."
@@ -651,7 +652,10 @@ first line of the documentation string; otherwise use the word
                                   (propertize key 'face 'embark-keybinding)
                                   (substring name 0 1)))
                        name)
-                   unless (eq cmd 'embark-keymap-help)
+                   ;; Filter which-key pseudo keys
+                   ;; TODO more general filter?
+                   unless (or (eq (car-safe cmd) 'which-key)
+                              (eq cmd 'embark-keymap-help))
                    collect (cons name cmd))))
     (cdr
      (assoc
