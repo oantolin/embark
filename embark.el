@@ -679,6 +679,21 @@ first line of the documentation string; otherwise use the word
          nil t))
       commands))))
 
+(defun embark-prefix-help-command ()
+  "Prompt for and run a command bound in the prefix used to reach this command.
+The prefix described consists of all but the last event of the
+key sequence that ran this command.  This function is intended to
+be used as a value for `prefix-help-command'.
+
+In addition to using completion to select a command, you can also
+type @ and the key binding (without the prefix)."
+  (interactive)
+  (let* ((keys (this-command-keys))
+         (prefix (seq-take keys (1- (length keys)))))
+    (call-interactively
+     (embark-completing-read-prompter
+      (key-binding prefix)))))
+
 (defun embark--with-indicator (indicator prompter keymap &optional target)
   "Display INDICATOR while calling PROMPTER with KEYMAP.
 The optional argument TARGET is displayed for actions outside the
