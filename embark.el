@@ -383,6 +383,9 @@ This function is meant to be added to `minibuffer-setup-hook'."
 
 ;;; Internal variables
 
+(defvar embark--prompter-history nil
+  "History used by the `embark-completing-read-prompter'.")
+
 (defvar-local embark-collect--kind nil
   "Kind of current collect buffer.
 
@@ -689,7 +692,7 @@ first line of the documentation string; otherwise use the word
                   (if (eq action 'metadata)
                       `(metadata (category . command))
                     (complete-with-action action commands string predicate)))
-                nil t))
+                nil t nil 'embark--prompter-history))
              commands))
       (`(,cmd ,key ,_desc)
        (setq last-command-event (seq-elt key (1- (length key))))
