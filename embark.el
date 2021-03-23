@@ -721,11 +721,13 @@ type @ and the key binding (without the prefix)."
 The selected command will be executed. The set keybindings can be restricted
 by passing a PREFIX key."
   (interactive)
-  (when-let* ((keymap (if prefix
-                          (key-binding prefix)
-                        (make-composed-keymap (current-active-maps t))))
-              (command (embark-completing-read-prompter keymap 'no-default)))
-    (call-interactively command)))
+  (let ((keymap (if prefix
+                    (key-binding prefix)
+                  (make-composed-keymap (current-active-maps t)))))
+    (unless (keymapp keymap)
+      (user-error "No keybindings found"))
+    (when-let (command (embark-completing-read-prompter keymap 'no-default))
+      (call-interactively command))))
 
 (defun embark--with-indicator (indicator prompter keymap &optional target)
   "Display INDICATOR while calling PROMPTER with KEYMAP.
