@@ -691,7 +691,7 @@ first line of the documentation string; otherwise use the word
                     (complete-with-action action commands string predicate)))
                 nil t))
              commands))
-      (`(,cmd ,key)
+      (`(,cmd ,key ,_desc)
        (setq last-command-event (seq-elt key (1- (length key))))
        cmd))))
 
