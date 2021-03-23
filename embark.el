@@ -154,7 +154,8 @@ a string, or nil to indicate it found no target."
 
 (defcustom embark-transformer-alist
   '((minor-mode . embark-lookup-lighter-minor-mode)
-    (symbol . embark-refine-symbol-type))
+    (symbol . embark-refine-symbol-type)
+    (embark-keybinding . embark-keybinding-command))
   "Alist associating type to functions for transforming targets.
 Each function should take a target string and return a pair of
 the form a `cons' of the new type and the new target."
@@ -648,8 +649,7 @@ first line of the documentation string; otherwise use the word
   (let* ((commands
           (cl-loop for (key . cmd) in (embark--all-bindings keymap)
                    for name = (embark--command-name cmd)
-                   ;; Filter which-key pseudo keys
-                   ;; TODO more general filter?
+                   ;; Filter which-key pseudo keys. TODO more general filter?
                    unless (or (eq (car-safe cmd) 'which-key)
                               (eq cmd 'embark-keymap-help))
                    collect (list name
@@ -664,14 +664,13 @@ first line of the documentation string; otherwise use the word
          (def)
          (candidates
           (cl-loop for item in commands
-                   for (name _cmd key desc) = item
-                   collect
-                   (let ((formatted (format fmt
-                                            (propertize desc 'face 'embark-keybinding)
-                                            name)))
-                     (when (equal key [13])
-                       (setq def formatted))
-                     (cons formatted item)))))
+                   for (name cmd key desc) = item
+                   for formatted =
+                   (propertize
+                    (format fmt (propertize desc 'face 'embark-keybinding) name)
+                    'embark-command cmd)
+                   when (equal key [13]) do (setq def formatted)
+                   collect (cons formatted item))))
     (pcase (assoc
             (minibuffer-with-setup-hook
                 (lambda ()
@@ -826,6 +825,11 @@ minibuffer before executing the action."
                ((boundp symbol) 'variable)))
             'symbol)
         target))
+
+(defun embark-keybinding-command (target)
+  "Treat an `embark-keybinding' TARGET as a command."
+  (when-let ((cmd (get-text-property 0 'embark-command target)))
+    (cons 'command cmd)))
 
 (defun embark-lookup-lighter-minor-mode (target)
   "If TARGET is a lighter, look up its minor mode.
