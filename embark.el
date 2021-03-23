@@ -693,11 +693,10 @@ be used as a value for `prefix-help-command'.
 In addition to using completion to select a command, you can also
 type @ and the key binding (without the prefix)."
   (interactive)
-  (let* ((keys (this-command-keys))
-         (prefix (seq-take keys (1- (length keys)))))
-    (call-interactively
-     (embark-completing-read-prompter
-      (key-binding prefix)))))
+  (when-let* ((keys (this-command-keys))
+              (prefix (seq-take keys (1- (length keys))))
+              (command (embark-completing-read-prompter (key-binding prefix))))
+    (call-interactively command)))
 
 (defun embark--with-indicator (indicator prompter keymap &optional target)
   "Display INDICATOR while calling PROMPTER with KEYMAP.
