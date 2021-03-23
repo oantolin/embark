@@ -645,8 +645,7 @@ first line of the documentation string; otherwise use the word
 
 (defun embark-completing-read-prompter (keymap)
   "Prompt via completion for a command bound in KEYMAP."
-  (let* ((def (lookup-key keymap [13]))
-         (commands
+  (let* ((commands
           (cl-loop for (key . cmd) in (embark--all-bindings keymap)
                    for name = (embark--command-name cmd)
                    ;; Filter which-key pseudo keys
@@ -661,42 +660,44 @@ first line of the documentation string; otherwise use the word
                                  (concat (key-description key)))))
          (width (cl-loop for (_name _cmd _key desc) in commands
                          maximize (length desc)))
-         (fmt (format "%%-%ds %%s" width)))
-    (cl-loop for (name _cmd _key desc) in commands
-             do (add-text-properties
-                 0 1
-                 `(display ,(format fmt
-                                    (propertize desc 'face 'embark-keybinding)
-                                    (substring name 0 1)))
-                 name))
-    (pcase (cdr
-            (assoc
-             (minibuffer-with-setup-hook
-                 (lambda ()
-                   (use-local-map
-                    (make-composed-keymap
-                     (let ((map (make-sparse-keymap)))
-                       (define-key map "@"
-                         (lambda ()
-                           (interactive)
-                           (message "Action key:")
-                           (when-let ((cmd (embark-keymap-prompter keymap)))
-                             (delete-minibuffer-contents)
-                             (insert (symbol-name cmd))
-                             (add-hook 'post-command-hook
-                                       #'exit-minibuffer nil t))))
-                       map)
-                     (current-local-map))))
-               (completing-read
-                "Command: "
-                (lambda (string predicate action)
-                  (if (eq action 'metadata)
-                      `(metadata (category . command))
-                    (complete-with-action action commands string predicate)))
-                nil t nil 'embark--prompter-history
-                (and def (symbol-name def))))
-             commands))
-      (`(,cmd ,key ,_desc)
+         (fmt (format "%%-%ds %%s" width))
+         (def)
+         (candidates
+          (cl-loop for item in commands
+                   for (name _cmd key desc) = item
+                   collect
+                   (let ((formatted (format fmt
+                                            (propertize desc 'face 'embark-keybinding)
+                                            name)))
+                     (when (equal key [13])
+                       (setq def formatted))
+                     (cons formatted item)))))
+    (pcase (assoc
+            (minibuffer-with-setup-hook
+                (lambda ()
+                  (use-local-map
+                   (make-composed-keymap
+                    (let ((map (make-sparse-keymap)))
+                      (define-key map "@"
+                        (lambda ()
+                          (interactive)
+                          (message "Action key:")
+                          (when-let ((cmd (embark-keymap-prompter keymap)))
+                            (delete-minibuffer-contents)
+                            (insert (symbol-name cmd))
+                            (add-hook 'post-command-hook
+                                      #'exit-minibuffer nil t))))
+                      map)
+                    (current-local-map))))
+              (completing-read
+               "Command: "
+               (lambda (string predicate action)
+                 (if (eq action 'metadata)
+                     `(metadata (category . command))
+                   (complete-with-action action candidates string predicate)))
+               nil 'require-match nil 'embark--prompter-history def))
+            candidates)
+      (`(,_formatted ,_name ,cmd ,key ,_desc)
        (setq last-command-event (seq-elt key (1- (length key))))
        cmd))))
 
