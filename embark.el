@@ -651,7 +651,7 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
           (cl-loop for (key . cmd) in (embark--all-bindings keymap)
                    for name = (embark--command-name cmd)
                    unless (or
-                           ;; Filter which-key pseudo keys and other invalid pairs
+                           ;; skip which-key pseudo keys and other invalid pairs
                            (and (consp cmd) (not (stringp (car cmd))))
                            (eq cmd #'embark-keymap-help))
                    collect (list name
@@ -671,7 +671,8 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
                    (propertize
                     (format fmt (propertize desc 'face 'embark-keybinding) name)
                     'embark-command cmd)
-                   when (and (not no-default) (equal key [13])) do (setq def formatted)
+                   when (and (not no-default) (equal key [13]))
+                     do (setq def formatted)
                    collect (cons formatted item))))
     (pcase (assoc
             (minibuffer-with-setup-hook
