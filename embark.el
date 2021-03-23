@@ -693,7 +693,7 @@ first line of the documentation string; otherwise use the word
                "Command: "
                (lambda (string predicate action)
                  (if (eq action 'metadata)
-                     `(metadata (category . command))
+                     `(metadata (category . embark-keybinding))
                    (complete-with-action action candidates string predicate)))
                nil 'require-match nil 'embark--prompter-history def))
             candidates)
