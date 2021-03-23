@@ -645,7 +645,8 @@ first line of the documentation string; otherwise use the word
 
 (defun embark-completing-read-prompter (keymap)
   "Prompt via completion for a command bound in KEYMAP."
-  (let* ((commands
+  (let* ((def (lookup-key keymap [13]))
+         (commands
           (cl-loop for (key . cmd) in (embark--all-bindings keymap)
                    for name = (embark--command-name cmd)
                    ;; Filter which-key pseudo keys
@@ -692,7 +693,8 @@ first line of the documentation string; otherwise use the word
                   (if (eq action 'metadata)
                       `(metadata (category . command))
                     (complete-with-action action commands string predicate)))
-                nil t nil 'embark--prompter-history))
+                nil t nil 'embark--prompter-history
+                (and def (symbol-name def))))
              commands))
       (`(,cmd ,key ,_desc)
        (setq last-command-event (seq-elt key (1- (length key))))
