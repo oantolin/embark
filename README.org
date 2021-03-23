@@ -86,7 +86,7 @@ The type of actions offered depend on the type of the target:
 
 If you want a reminder of which actions are available after running
 =embark-act= type =C-h= which will prompt you for an action with
-completion, and remind you of the keybindings.
+completion, and remind you of the key bindings.
 
 Everything is easily configurable: determining the current target,
 classifying it, and deciding which actions are offered for each type
@@ -101,7 +101,7 @@ available categories and their associated keymaps, you can use =C-h v
 embark-keymap-alist= or customize that variable.) For example, in the
 default configuration the type =file= is associated with the symbol
 =embark-file-keymap=. That symbol names a keymap with single-letter
-keybindings for common Emacs file commands, for instance =c= is bound
+key bindings for common Emacs file commands, for instance =c= is bound
 to =copy-file=. This means that if you are in the minibuffer after
 running a command that prompts for a file, such as =find-file= or
 =rename-file=, you can copy a file by running =embark-act= and then
@@ -111,7 +111,7 @@ These action keymaps are very convenient but not strictly necessary
 when using =embark-act=: you can use any command that reads from the
 minibuffer as an action and the target of the action will be inserted
 at the first minibuffer prompt. After running =embark-act= all of your
-keybindings and even =execute-extended-command= can be used to run a
+key bindings and even =execute-extended-command= can be used to run a
 command. For example, if you want to replace all occurrences of the
 symbol at point, just use =M-%= as the action, there is no need to bind
 =query-replace= in one of Embark's keymaps. Also, those action keymaps
@@ -139,7 +139,7 @@ this missing metadata, is highly recommended for use with Embark.
 Embark's default configuration has actions for the following target
 types: files, buffers, symbols, packages, URLs, bookmarks, and as a
 somewhat special case, actions for when the region is active. You can
-read about the [[https://github.com/oantolin/embark/wiki/Default-Actions][default actions and their keybindings]] on the GitHub
+read about the [[https://github.com/oantolin/embark/wiki/Default-Actions][default actions and their key bindings]] on the GitHub
 project wiki.
 
 ** Working with sets of possible targets
@@ -280,16 +280,16 @@ If you want a reminder of which actions are available after running
 =embark-act=, use =embark-keymap-help=, which is bound to =C-h= in all of
 Embark's action keymaps. That command will prompt you for the name of
 an action with completion (but feel free to enter a command not among
-the offered candidates!), and will also remind you of the keybindings.
-You can press =@= at the prompt and then one of the keybindings to enter
-the name of the corresponding action.
+the offered candidates!), and will also remind you of the key
+bindings. You can press =@= at the prompt and then one of the key
+bindings to enter the name of the corresponding action.
 
 If you find you prefer entering actions that way, you can configure
 embark to always prompt you for actions by setting the variable
 =embark-prompter= to =embark-completing-read-prompter=.
 
 If you want to see the actions and their key bindings, but want to
-use the keybindings rather than completing the command name, you can
+use the key bindings rather than completing the command name, you can
 install [[https://github.com/justbur/emacs-which-key][which-key]] and configure Embark as follows:
 
 #+begin_src emacs-lisp
@@ -573,7 +573,7 @@ annotation functions for the list view in Embark Collect buffers.
   automatically.
 
 - If you don't install Marginalia, you will see only the annotations
-  that come with Emacs (such as keybindings in =M-x=, or the unicode
+  that come with Emacs (such as key bindings in =M-x=, or the unicode
   characters in =C-x 8 RET=).
 
 Other small changes:

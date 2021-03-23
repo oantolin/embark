@@ -54,7 +54,7 @@
 ;; and those keymaps containing binds for the actions.  For example,
 ;; in the default configuration the type `file' is associated with the
 ;; symbol `embark-file-keymap'.  That symbol names a keymap with
-;; single-letter keybindings for common Emacs file commands, for
+;; single-letter key bindings for common Emacs file commands, for
 ;; instance `c' is bound to `copy-file'.  This means that if while you
 ;; are in the minibuffer after running a command that prompts for a
 ;; file, such as `find-file' or `rename-file', you can copy a file by
@@ -64,7 +64,7 @@
 ;; when using `embark-act': you can use any command that reads from the
 ;; minibuffer as an action and the target of the action will be inserted
 ;; at the first minibuffer prompt.  After running `embark-act' all of your
-;; keybindings and even `execute-extended-command' can be used to run a
+;; key bindings and even `execute-extended-command' can be used to run a
 ;; command.  The action keymaps are normal Emacs keymaps and you should
 ;; feel free to bind in them whatever commands you find useful as actions.
 
@@ -606,7 +606,7 @@ the keymap and target as arguments")
 (defun embark-keymap-prompter (keymap)
   "Let the user choose an action using the bindings in KEYMAP.
 Besides the bindings in KEYMAP, the user is free to use all their
-keybindings and even \\[execute-extended-command] to select a command."
+key bindings and even \\[execute-extended-command] to select a command."
   (let* ((key (let ((overriding-terminal-local-map keymap))
                 (read-key-sequence nil)))
          (cmd (let ((overriding-terminal-local-map keymap))
@@ -717,15 +717,15 @@ type @ and the key binding (without the prefix)."
 
 ;;;###autoload
 (defun embark-bindings (&optional prefix)
-  "Explore all current keybindings and commands with `completing-read'.
-The selected command will be executed. The set keybindings can be restricted
-by passing a PREFIX key."
+  "Explore all current command key bindings with `completing-read'.
+The selected command will be executed.  The set of key bindings can
+be restricted by passing a PREFIX key."
   (interactive)
   (let ((keymap (if prefix
                     (key-binding prefix)
                   (make-composed-keymap (current-active-maps t)))))
     (unless (keymapp keymap)
-      (user-error "No keybindings found"))
+      (user-error "No key bindings found"))
     (when-let (command (embark-completing-read-prompter keymap 'no-default))
       (call-interactively command))))
 
@@ -969,7 +969,7 @@ keymap for the target's type."
 (defun embark-become (&optional full)
   "Make current command become a different command.
 Take the current minibuffer input as initial input for new
-command.  The new command can be run normally using keybindings or
+command.  The new command can be run normally using key bindings or
 \\[execute-extended-command], but if the current command is found in a keymap in
 `embark-become-keymaps', that keymap is activated to provide
 convenient access to the other commands in it.
@@ -1366,8 +1366,8 @@ For other Embark Collect buffers, run the default action on ENTRY."
 (define-derived-mode embark-collect-mode tabulated-list-mode "Embark Collect"
   "List of candidates to be acted on.
 The command `embark-act' is bound `embark-collect-mode-map', but
-you might prefer to change the keybinding to match your other
-keybinding for it.  Or alternatively you might want to enable
+you might prefer to change the key binding to match your other
+key binding for it.  Or alternatively you might want to enable
 `embark-collect-direct-action-minor-mode' in
 `embark-collect-mode-hook'.")
 
