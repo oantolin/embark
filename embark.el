@@ -645,43 +645,55 @@ first line of the documentation string; otherwise use the word
   (let* ((commands
           (cl-loop for (key . cmd) in (embark--all-bindings keymap)
                    for name = (embark--command-name cmd)
-                   do (add-text-properties
-                       0 1
-                       `(display
-                         ,(format "%-3s %s"
-                                  (propertize key 'face 'embark-keybinding)
-                                  (substring name 0 1)))
-                       name)
                    ;; Filter which-key pseudo keys
                    ;; TODO more general filter?
                    unless (or (eq (car-safe cmd) 'which-key)
                               (eq cmd 'embark-keymap-help))
-                   collect (cons name cmd))))
-    (cdr
-     (assoc
-      (minibuffer-with-setup-hook
-          (lambda ()
-            (use-local-map
-             (make-composed-keymap
-              (let ((map (make-sparse-keymap)))
-                (define-key map "@"
-                  (lambda ()
-                    (interactive)
-                    (message "Action key:")
-                    (when-let ((cmd (embark-keymap-prompter keymap)))
-                      (delete-minibuffer-contents)
-                      (insert (symbol-name cmd))
-                      (add-hook 'post-command-hook #'exit-minibuffer nil t))))
-                map)
-              (current-local-map))))
-        (completing-read
-         "Command: "
-         (lambda (string predicate action)
-           (if (eq action 'metadata)
-               `(metadata (category . command))
-             (complete-with-action action commands string predicate)))
-         nil t))
-      commands))))
+                   collect (list name
+                                 (if (and (consp cmd) (stringp (car cmd)))
+                                     (cdr cmd)
+                                   cmd)
+                                 key
+                                 (concat (key-description key)))))
+         (width (cl-loop for (_name _cmd _key desc) in commands
+                         maximize (length desc)))
+         (fmt (format "%%-%ds %%s" width)))
+    (cl-loop for (name _cmd _key desc) in commands
+             do (add-text-properties
+                 0 1
+                 `(display ,(format fmt
+                                    (propertize desc 'face 'embark-keybinding)
+                                    (substring name 0 1)))
+                 name))
+    (pcase (cdr
+            (assoc
+             (minibuffer-with-setup-hook
+                 (lambda ()
+                   (use-local-map
+                    (make-composed-keymap
+                     (let ((map (make-sparse-keymap)))
+                       (define-key map "@"
+                         (lambda ()
+                           (interactive)
+                           (message "Action key:")
+                           (when-let ((cmd (embark-keymap-prompter keymap)))
+                             (delete-minibuffer-contents)
+                             (insert (symbol-name cmd))
+                             (add-hook 'post-command-hook
+                                       #'exit-minibuffer nil t))))
+                       map)
+                     (current-local-map))))
+               (completing-read
+                "Command: "
+                (lambda (string predicate action)
+                  (if (eq action 'metadata)
+                      `(metadata (category . command))
+                    (complete-with-action action commands string predicate)))
+                nil t))
+             commands))
+      (`(,cmd ,key)
+       (setq last-command-event (seq-elt key (1- (length key))))
+       cmd))))
 
 ;;;###autoload
 (defun embark-prefix-help-command ()
@@ -1220,15 +1232,14 @@ Returns the name of the command."
     (cl-labels ((gather (keymap)
                    (map-keymap
                     (lambda (key def)
-                      (let ((desc (single-key-description key)))
-                        (cond
-                         ((null def))
-                         ((keymapp def)
-                          (dolist (bind (embark--all-bindings def))
-                            (push (cons (concat desc " " (car bind))
-                                        (cdr bind))
-                                  bindings)))
-                         (t (push (cons desc def) bindings)))))
+                      (cond
+                       ((null def))
+                       ((keymapp def)
+                        (dolist (bind (embark--all-bindings def))
+                          (push (cons (vconcat (vector key) (car bind))
+                                      (cdr bind))
+                                bindings)))
+                       (t (push (cons (vector key) def) bindings))))
                     keymap)))
       (gather (keymap-canonicalize keymap)))
     (nreverse bindings)))
@@ -1258,7 +1269,7 @@ Returns the name of the command."
       (cl-loop for (key . cmd) in (embark--all-bindings
                                    (embark--action-keymap embark--type))
                unless (eq cmd 'embark-keymap-help)
-               do (define-key map (kbd key) (embark--action-command cmd))))))
+               do (define-key map key (embark--action-command cmd))))))
 
 (define-button-type 'embark-collect-entry
   'face 'embark-collect-candidate
