@@ -644,8 +644,9 @@ first line of the documentation string; otherwise use the word
            (match-string 1 doc)))))
     (t "<unnamed>"))))
 
-(defun embark-completing-read-prompter (keymap)
-  "Prompt via completion for a command bound in KEYMAP."
+(defun embark-completing-read-prompter (keymap &optional no-default)
+  "Prompt via completion for a command bound in KEYMAP.
+If NO-DEFAULT is t, no default value is passed to `completing-read'."
   (let* ((commands
           (cl-loop for (key . cmd) in (embark--all-bindings keymap)
                    for name = (embark--command-name cmd)
@@ -670,7 +671,7 @@ first line of the documentation string; otherwise use the word
                    (propertize
                     (format fmt (propertize desc 'face 'embark-keybinding) name)
                     'embark-command cmd)
-                   when (equal key [13]) do (setq def formatted)
+                   when (and (not no-default) (equal key [13])) do (setq def formatted)
                    collect (cons formatted item))))
     (pcase (assoc
             (minibuffer-with-setup-hook
@@ -714,6 +715,7 @@ type @ and the key binding (without the prefix)."
   (let ((keys (this-command-keys-vector)))
     (embark-bindings (seq-take keys (1- (length keys))))))
 
+;;;###autoload
 (defun embark-bindings (&optional prefix)
   "Explore all current keybindings and commands with `completing-read'.
 The selected command will be executed. The set keybindings can be restricted
@@ -722,7 +724,7 @@ by passing a PREFIX key."
   (when-let* ((keymap (if prefix
                           (key-binding prefix)
                         (make-composed-keymap (current-active-maps t))))
-              (command (embark-completing-read-prompter keymap)))
+              (command (embark-completing-read-prompter keymap 'no-default)))
     (call-interactively command)))
 
 (defun embark--with-indicator (indicator prompter keymap &optional target)
