@@ -644,14 +644,16 @@ first line of the documentation string; otherwise use the word
            (match-string 1 doc)))))
     (t "<unnamed>"))))
 
-(defun embark-completing-read-prompter (keymap)
-  "Prompt via completion for a command bound in KEYMAP."
+(defun embark-completing-read-prompter (keymap &optional no-default)
+  "Prompt via completion for a command bound in KEYMAP.
+If NO-DEFAULT is t, no default value is passed to `completing-read'."
   (let* ((commands
           (cl-loop for (key . cmd) in (embark--all-bindings keymap)
                    for name = (embark--command-name cmd)
-                   ;; Filter which-key pseudo keys. TODO more general filter?
-                   unless (or (eq (car-safe cmd) 'which-key)
-                              (eq cmd 'embark-keymap-help))
+                   unless (or
+                           ;; Filter which-key pseudo keys and other invalid pairs
+                           (and (consp cmd) (not (stringp (car cmd))))
+                           (eq cmd #'embark-keymap-help))
                    collect (list name
                                  (if (and (consp cmd) (stringp (car cmd)))
                                      (cdr cmd)
@@ -669,7 +671,7 @@ first line of the documentation string; otherwise use the word
                    (propertize
                     (format fmt (propertize desc 'face 'embark-keybinding) name)
                     'embark-command cmd)
-                   when (equal key [13]) do (setq def formatted)
+                   when (and (not no-default) (equal key [13])) do (setq def formatted)
                    collect (cons formatted item))))
     (pcase (assoc
             (minibuffer-with-setup-hook
@@ -710,10 +712,22 @@ be used as a value for `prefix-help-command'.
 In addition to using completion to select a command, you can also
 type @ and the key binding (without the prefix)."
   (interactive)
-  (when-let* ((keys (this-command-keys))
-              (prefix (seq-take keys (1- (length keys))))
-              (command (embark-completing-read-prompter (key-binding prefix))))
-    (call-interactively command)))
+  (let ((keys (this-command-keys-vector)))
+    (embark-bindings (seq-take keys (1- (length keys))))))
+
+;;;###autoload
+(defun embark-bindings (&optional prefix)
+  "Explore all current keybindings and commands with `completing-read'.
+The selected command will be executed. The set keybindings can be restricted
+by passing a PREFIX key."
+  (interactive)
+  (let ((keymap (if prefix
+                    (key-binding prefix)
+                  (make-composed-keymap (current-active-maps t)))))
+    (unless (keymapp keymap)
+      (user-error "No keybindings found"))
+    (when-let (command (embark-completing-read-prompter keymap 'no-default))
+      (call-interactively command))))
 
 (defun embark--with-indicator (indicator prompter keymap &optional target)
   "Display INDICATOR while calling PROMPTER with KEYMAP.
