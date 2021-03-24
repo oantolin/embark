@@ -694,7 +694,11 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
                             (message "Action key:")
                             (when-let ((cmd (embark-keymap-prompter keymap)))
                               (delete-minibuffer-contents)
-                              (insert (symbol-name cmd))
+                              (insert
+                               (message
+                                (format fmt
+                                        (key-description (this-command-keys))
+                                        (embark--command-name cmd))))
                               (add-hook 'post-command-hook
                                         #'exit-minibuffer nil t))))
                         map)
