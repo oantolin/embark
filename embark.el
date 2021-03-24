@@ -691,16 +691,21 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
                         (define-key map embark-keymap-prompter-key
                           (lambda ()
                             (interactive)
-                            (message "Action key:")
-                            (when-let ((cmd (embark-keymap-prompter keymap)))
-                              (delete-minibuffer-contents)
-                              (insert
-                               (message
-                                (format fmt
-                                        (key-description (this-command-keys))
-                                        (embark--command-name cmd))))
-                              (add-hook 'post-command-hook
-                                        #'exit-minibuffer nil t))))
+                            (let*
+                                ((desc
+                                  (let ((overriding-terminal-local-map keymap))
+                                    (key-description
+                                     (read-key-sequence "Key:"))))
+                                 (cand
+                                  (cl-loop
+                                   for (cand _n _c _k desc1) in candidates
+                                   when (equal desc desc1) return cand)))
+                              (if (null cand)
+                                  (user-error "Unknown key")
+                                (delete-minibuffer-contents)
+                                (insert cand)
+                                (add-hook 'post-command-hook
+                                          #'exit-minibuffer nil t)))))
                         map)
                       (current-local-map)))))
               (completing-read
