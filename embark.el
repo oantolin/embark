@@ -184,6 +184,13 @@ prompts for an action with completion."
                         embark-completing-read-prompter)
                  (function :tag "Other")))
 
+(defcustom embark-keymap-prompter-key "@"
+  "Key to switch to the keymap prompter from `embark-completing-read-prompter'.
+
+The key must be either a string or a vector.
+This is the key representation accepted by `define-key'."
+  :type '(choice key-sequence (const nil)))
+
 (defface embark-keybinding '((t :inherit success))
   "Face used to display key bindings.
 Used by `embark-completing-read-prompter' and `embark-keymap-help'.")
@@ -677,20 +684,21 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
     (pcase (assoc
             (minibuffer-with-setup-hook
                 (lambda ()
-                  (use-local-map
-                   (make-composed-keymap
-                    (let ((map (make-sparse-keymap)))
-                      (define-key map "@"
-                        (lambda ()
-                          (interactive)
-                          (message "Action key:")
-                          (when-let ((cmd (embark-keymap-prompter keymap)))
-                            (delete-minibuffer-contents)
-                            (insert (symbol-name cmd))
-                            (add-hook 'post-command-hook
-                                      #'exit-minibuffer nil t))))
-                      map)
-                    (current-local-map))))
+                  (when embark-keymap-prompter-key
+                    (use-local-map
+                     (make-composed-keymap
+                      (let ((map (make-sparse-keymap)))
+                        (define-key map embark-keymap-prompter-key
+                          (lambda ()
+                            (interactive)
+                            (message "Action key:")
+                            (when-let ((cmd (embark-keymap-prompter keymap)))
+                              (delete-minibuffer-contents)
+                              (insert (symbol-name cmd))
+                              (add-hook 'post-command-hook
+                                        #'exit-minibuffer nil t))))
+                        map)
+                      (current-local-map)))))
               (completing-read
                "Command: "
                (lambda (string predicate action)
