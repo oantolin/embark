@@ -669,14 +669,15 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
                                  (concat (key-description key)))))
          (width (cl-loop for (_name _cmd _key desc) in commands
                          maximize (length desc)))
-         (fmt (format "%%-%ds %%s" width))
          (def)
          (candidates
           (cl-loop for item in commands
                    for (name cmd key desc) = item
                    for formatted =
                    (propertize
-                    (format fmt (propertize desc 'face 'embark-keybinding) name)
+                    (concat (propertize desc 'face 'embark-keybinding)
+                            (make-string (- width (length desc) -1) ? )
+                            name)
                     'embark-command cmd)
                    when (and (not no-default) (equal key [13]))
                      do (setq def formatted)
