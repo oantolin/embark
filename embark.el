@@ -1906,17 +1906,19 @@ buffer for each type of completion."
 (declare-function selectrum-get-current-candidate "selectrum")
 (declare-function selectrum-get-current-candidates "selectrum")
 
+(defvar selectrum-is-active)
+
 (defun embark-target-selectrum-selection ()
   "Target the currently selected item in Selectrum.
 Return the category metadatum as the type of the target."
-  (when (bound-and-true-p selectrum-active-p)
+  (when (bound-and-true-p selectrum-is-active)
     (cons (selectrum--get-meta 'category)
 	  (selectrum-get-current-candidate))))
 
 (defun embark-selectrum-candidates ()
   "Collect the current Selectrum candidates.
 Return the category metadatum as the type of the candidates."
-  (when (bound-and-true-p selectrum-active-p)
+  (when (bound-and-true-p selectrum-is-active)
     (cons (selectrum--get-meta 'category)
 	  (selectrum-get-current-candidates
 	   ;; Pass relative file names for dired.
