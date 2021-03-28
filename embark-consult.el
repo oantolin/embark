@@ -194,7 +194,7 @@ The elements of LINES are assumed to be values of category `consult-line'."
 ;;; Support for consult-grep
 
 (defvar wgrep-header/footer-parser)
-(declare-function wgrep-setup "wgrep")
+(declare-function wgrep-setup "ext:wgrep")
 
 (defun embark-consult-export-grep (lines)
   "Create a grep mode buffer listing LINES."
