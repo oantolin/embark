@@ -1902,9 +1902,9 @@ buffer for each type of completion."
 
 ;; selectrum
 
-(declare-function selectrum--get-meta "selectrum")
-(declare-function selectrum-get-current-candidate "selectrum")
-(declare-function selectrum-get-current-candidates "selectrum")
+(declare-function selectrum--get-meta "ext:selectrum")
+(declare-function selectrum-get-current-candidate "ext:selectrum")
+(declare-function selectrum-get-current-candidates "ext:selectrum")
 
 (defun embark-target-selectrum-selection ()
   "Target the currently selected item in Selectrum.
@@ -1928,8 +1928,8 @@ Return the category metadatum as the type of the candidates."
 
 ;; ivy
 
-(declare-function ivy--expand-file-name "ivy")
-(declare-function ivy-state-current "ivy")
+(declare-function ivy--expand-file-name "ext:ivy")
+(declare-function ivy-state-current "ext:ivy")
 (defvar ivy-text)
 (defvar ivy-last)
 (defvar ivy--old-cands) ; this stores the current candidates :)
