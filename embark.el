@@ -318,11 +318,15 @@ window should only be used if it displays `embark--target-buffer'.")
 (defvar-local embark--command nil
   "Command that started the completion session.")
 
+(defun embark--minibuffer-point ()
+  "Return length of minibuffer contents."
+  (max 0 (- (point) (minibuffer-prompt-end))))
+
 (defun embark--default-directory ()
   "Guess a reasonable default directory for the current candidates."
   (if (and (minibufferp) minibuffer-completing-file-name)
-      (let* ((end (minibuffer-prompt-end))
-             (idx (- (point) end)))
+      (let ((end (minibuffer-prompt-end))
+            (idx (embark--minibuffer-point)))
         (expand-file-name
          (buffer-substring
           end
@@ -1018,7 +1022,7 @@ point."
                       (minibuffer-contents)
                     (pcase-let ((`(,beg . ,end) (embark--boundaries)))
                       (substring (minibuffer-contents) beg
-                                 (+ end (- (point) (minibuffer-prompt-end)))))))
+                                 (+ end (embark--minibuffer-point))))))
           (become (embark--with-indicator embark-become-indicator
                                           embark-prompter
                                           (embark--become-keymap))))
@@ -1201,7 +1205,7 @@ This function is used as :after advice for `tabulated-list-revert'."
                  (minibuffer-contents)
                  minibuffer-completion-table
                  minibuffer-completion-predicate
-                 (- (point) (minibuffer-prompt-end))))
+                 (embark--minibuffer-point)))
            (last (last all)))
       (when last (setcdr last nil))
       (cons
@@ -1331,7 +1335,7 @@ Returns the name of the command."
 (defun embark--boundaries ()
   "Get current minibuffer completion boundaries."
   (let ((contents (minibuffer-contents))
-        (pt (- (point) (minibuffer-prompt-end))))
+        (pt (embark--minibuffer-point)))
     (completion-boundaries
      (substring contents 0 pt)
      minibuffer-completion-table
@@ -1369,7 +1373,7 @@ For other Embark Collect buffers, run the default action on ENTRY."
           ;; find-file). If so, don't exit.
           (unless (or current-prefix-arg
                       (= (car (embark--boundaries))
-                         (- (point) (minibuffer-prompt-end))))
+                         (embark--minibuffer-point)))
             (exit-minibuffer)))
       (embark--act (embark--default-action embark--type) text))))
 
