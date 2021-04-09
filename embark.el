@@ -1901,6 +1901,30 @@ buffer for each type of completion."
 
 ;;; Integration with external completion UIs
 
+;; vertico
+
+(declare-function vertico--candidate "ext:vertico")
+(defvar vertico--input)
+(defvar vertico--candidates)
+
+(defun embark-target-vertico-selection ()
+  "Target the currently selected item in Vertico.
+Return the category metadatum as the type of the target."
+  (when (bound-and-true-p vertico--input)
+    (cons (completion-metadata-get (embark--metadata) 'category)
+          (vertico--candidate))))
+
+(defun embark-vertico-candidates ()
+  "Collect the current Vertico candidates.
+Return the category metadatum as the type of the candidates."
+  (when (bound-and-true-p vertico--input)
+    (cons (completion-metadata-get (embark--metadata) 'category)
+          vertico--candidates)))
+
+(with-eval-after-load 'vertico
+  (add-hook 'embark-target-finders #'embark-target-vertico-selection)
+  (add-hook 'embark-candidate-collectors #'embark-vertico-candidates))
+
 ;; selectrum
 
 (declare-function selectrum--get-meta "ext:selectrum")
