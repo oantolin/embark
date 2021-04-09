@@ -518,11 +518,9 @@ Return the category metadatum as the type of the target."
 
 (defun embark-target-collect-candidate ()
   "Target the collect candidate at point."
-  (when (derived-mode-p 'embark-collect-mode)
-    (when-let ((button (button-at (point)))
-               (label (buffer-substring
-                       (button-start button)
-                       (button-end button))))
+  (when (and (derived-mode-p 'embark-collect-mode)
+             (button-at (point)))
+    (let ((label (button-label (point))))
       (cons embark--type
             (if (eq embark--type 'file)
                 (abbreviate-file-name (expand-file-name label))
