@@ -1077,10 +1077,11 @@ This is an alist associating completion types to either `list',
 `grid' or `zebra' (which means list view the Embark Collect Zebra
 minor mode activated).  Additionally you can associate t to a
 default initial view for types not mentioned separately."
-  :type '(alist :key-type symbol
-                :value-type (choice (const :tag "List view" list)
-                                    (const :tag "Grid view" grid)
-                                    (const :tag "List with Zebra stripes" zebra))))
+  :type '(alist
+          :key-type symbol
+          :value-type (choice (const :tag "List view" list)
+                              (const :tag "Grid view" grid)
+                              (const :tag "List with Zebra stripes" zebra))))
 
 (defcustom embark-exporters-alist
   '((buffer . embark-export-ibuffer)
@@ -1684,7 +1685,7 @@ the minibuffer is exited."
              (:completions
               (lambda ()
                 ;; Killing a buffer shown in a selected dedicated window will
-                ;; set-buffer to a random buffer for some reason, so preserve it.
+                ;; set-buffer to a random buffer for some reason, so preserve it
                 (save-current-buffer
                   (kill-buffer buffer))))
              (:live
@@ -2113,7 +2114,8 @@ with command output.  For replacement behaviour see
 
 (defun embark-save-unicode-character (char)
   "Save unicode character CHAR to kill ring."
-  (interactive (list (read-char-by-name "Insert character  (Unicode name or hex): ")))
+  (interactive
+   (list (read-char-by-name "Insert character  (Unicode name or hex): ")))
   (kill-new (format "%c" char)))
 
 (defun embark-isearch ()
