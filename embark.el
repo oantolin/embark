@@ -1353,7 +1353,7 @@ For other Embark Collect buffers, run the default action on ENTRY."
             (insert text))
           ;; If the boundaries changed after insertion there are new
           ;; completion candidates (like when entering a directory in
-          ;; find-file). If so, don't exit; otherwise revert.
+          ;; find-file). If so, don't exit.
           (unless (or current-prefix-arg
                       (= (car (embark--boundaries))
                          (- (point) (minibuffer-prompt-end))))
