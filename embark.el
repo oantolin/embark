@@ -1907,51 +1907,50 @@ buffer for each type of completion."
 (defvar vertico--input)
 (defvar vertico--candidates)
 
-(defun embark-target-vertico-selection ()
+(defun embark--vertico-selected ()
   "Target the currently selected item in Vertico.
 Return the category metadatum as the type of the target."
-  (when (bound-and-true-p vertico--input)
+  (when vertico--input
     (cons (completion-metadata-get (embark--metadata) 'category)
           (vertico--candidate))))
 
-(defun embark-vertico-candidates ()
+(defun embark--vertico-candidates ()
   "Collect the current Vertico candidates.
 Return the category metadatum as the type of the candidates."
-  (when (bound-and-true-p vertico--input)
+  (when vertico--input
     (cons (completion-metadata-get (embark--metadata) 'category)
           vertico--candidates)))
 
 (with-eval-after-load 'vertico
-  (add-hook 'embark-target-finders #'embark-target-vertico-selection)
-  (add-hook 'embark-candidate-collectors #'embark-vertico-candidates))
+  (add-hook 'embark-target-finders #'embark--vertico-selected)
+  (add-hook 'embark-candidate-collectors #'embark--vertico-candidates))
 
 ;; selectrum
 
 (declare-function selectrum--get-meta "ext:selectrum")
 (declare-function selectrum-get-current-candidate "ext:selectrum")
 (declare-function selectrum-get-current-candidates "ext:selectrum")
-
 (defvar selectrum-is-active)
 
-(defun embark-target-selectrum-selection ()
+(defun embark--selectrum-selected ()
   "Target the currently selected item in Selectrum.
 Return the category metadatum as the type of the target."
-  (when (bound-and-true-p selectrum-is-active)
+  (when selectrum-is-active
     (cons (selectrum--get-meta 'category)
 	  (selectrum-get-current-candidate))))
 
-(defun embark-selectrum-candidates ()
+(defun embark--selectrum-candidates ()
   "Collect the current Selectrum candidates.
 Return the category metadatum as the type of the candidates."
-  (when (bound-and-true-p selectrum-is-active)
+  (when selectrum-is-active
     (cons (selectrum--get-meta 'category)
 	  (selectrum-get-current-candidates
 	   ;; Pass relative file names for dired.
 	   minibuffer-completing-file-name))))
 
 (with-eval-after-load 'selectrum
-  (add-hook 'embark-target-finders #'embark-target-selectrum-selection)
-  (add-hook 'embark-candidate-collectors #'embark-selectrum-candidates))
+  (add-hook 'embark-target-finders #'embark--selectrum-selected)
+  (add-hook 'embark-candidate-collectors #'embark--selectrum-candidates))
 
 ;; ivy
 
@@ -1962,7 +1961,7 @@ Return the category metadatum as the type of the candidates."
 (defvar ivy--old-cands) ; this stores the current candidates :)
 (defvar ivy--length)
 
-(defun embark-target-ivy-selection ()
+(defun embark--ivy-selected ()
   "Target the currently selected item in Ivy.
 Return the category metadatum as the type of the target."
   ;; my favorite way of detecting Ivy
@@ -1975,7 +1974,7 @@ Return the category metadatum as the type of the target."
           (ivy-state-current ivy-last)
         ivy-text)))))
 
-(defun embark-ivy-candidates ()
+(defun embark--ivy-candidates ()
   "Return all current Ivy candidates."
   ;; my favorite way of detecting Ivy
   (when (eq mwheel-scroll-up-function 'ivy-next-line)
@@ -1987,8 +1986,8 @@ Return the category metadatum as the type of the target."
      ivy--old-cands)))
 
 (with-eval-after-load 'ivy
-  (add-hook 'embark-target-finders #'embark-target-ivy-selection)
-  (add-hook 'embark-candidate-collectors #'embark-ivy-candidates))
+  (add-hook 'embark-target-finders #'embark--ivy-selected)
+  (add-hook 'embark-candidate-collectors #'embark--ivy-candidates))
 
 ;;; Custom actions
 
