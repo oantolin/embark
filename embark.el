@@ -465,7 +465,9 @@ There are three kinds:
 (defun embark--metadata ()
   "Return current minibuffer completion metadata."
   (completion-metadata
-   (buffer-substring-no-properties (field-beginning) (point))
+   (buffer-substring-no-properties
+    (minibuffer-prompt-end)
+    (max (minibuffer-prompt-end) (point)))
    minibuffer-completion-table
    minibuffer-completion-predicate))
 
