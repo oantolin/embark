@@ -1343,6 +1343,8 @@ exit the minibuffer.
 
 For other Embark Collect buffers, run the default action on ENTRY."
   (let ((text (button-label entry)))
+    (when (eq embark--type 'file)
+      (setq text (abbreviate-file-name (expand-file-name text))))
     (if (and (eq embark-collect--kind :completions))
         (progn
           (select-window (active-minibuffer-window))
