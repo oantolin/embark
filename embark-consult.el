@@ -137,7 +137,9 @@ associated to an active minibuffer for a Consult command."
 (defun embark-consult--strip-suffix (string property)
   "Remove the final characters of STRING with the given PROPERTY."
   (let ((len (length string)))
-    (substring string 0 (or (previous-single-property-change len property string) len))))
+    (if (and (> len 0) (get-text-property (- len 1) property string))
+        (substring string 0 (or (previous-single-property-change len property string) len))
+      string)))
 
 (defun embark-consult--location-transform (target)
   "Remove the unicode suffix character from a `consult-location' TARGET."
