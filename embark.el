@@ -1513,8 +1513,8 @@ This is specially useful to tell where multi-line entries begin and end."
 
 (defun embark-collect--grid-view ()
   "Grid view of candidates for Embark Collect buffer."
-  (let* ((width (min (+ (embark-collect--max-width) 1)
-                     (floor (window-width) 2)))
+  (let* ((width (min (1+ (embark-collect--max-width))
+                     (1- (floor (window-width) 2))))
          (columns (/ (window-width) (1+ width))))
     (setq tabulated-list-format
           (make-vector columns `("Candidate" ,width nil)))
