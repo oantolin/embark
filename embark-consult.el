@@ -134,6 +134,18 @@ associated to an active minibuffer for a Consult command."
 
 ;;; Support for consult-location
 
+(defun embark-consult--strip-infix (string property)
+  "Strip substrings with PROPERTY from STRING."
+  (if (text-property-not-all 0 (length string) property nil string)
+      (let ((end (length string)) (pos 0) (chunks))
+        (while (< pos end)
+          (let ((next (next-single-property-change pos property string end)))
+            (unless (get-text-property pos property string)
+              (push (substring string pos next) chunks))
+            (setq pos next)))
+        (apply #'concat (nreverse chunks)))
+    string))
+
 (defun embark-consult--strip-suffix (string property)
   "Remove the final characters of STRING with the given PROPERTY."
   (let ((len (length string)))
@@ -143,7 +155,10 @@ associated to an active minibuffer for a Consult command."
 
 (defun embark-consult--location-transform (target)
   "Remove the unicode suffix character from a `consult-location' TARGET."
-  (cons 'consult-location (embark-consult--strip-suffix target 'invisible)))
+  (cons 'consult-location
+        (embark-consult--strip-infix
+         (embark-consult--strip-suffix target 'invisible)
+         'consult-location-strip)))
 
 (setf (alist-get 'consult-location embark-transformer-alist)
       #'embark-consult--location-transform)
