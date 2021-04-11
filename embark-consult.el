@@ -134,31 +134,21 @@ associated to an active minibuffer for a Consult command."
 
 ;;; Support for consult-location
 
-(defun embark-consult--strip (string property)
-  "Strip substrings with PROPERTY from STRING."
-  (if (text-property-not-all 0 (length string) property nil string)
+(defun embark-consult--strip (string)
+  "Strip substrings marked with the `consult-strip' property from STRING."
+  (if (text-property-not-all 0 (length string) 'consult-strip nil string)
       (let ((end (length string)) (pos 0) (chunks))
         (while (< pos end)
-          (let ((next (next-single-property-change pos property string end)))
-            (unless (get-text-property pos property string)
+          (let ((next (next-single-property-change pos 'consult-strip string end)))
+            (unless (get-text-property pos 'consult-strip string)
               (push (substring string pos next) chunks))
             (setq pos next)))
         (apply #'concat (nreverse chunks)))
     string))
 
-(defun embark-consult--strip-suffix (string property)
-  "Remove the final characters of STRING with the given PROPERTY."
-  (let ((len (length string)))
-    (if (and (> len 0) (get-text-property (- len 1) property string))
-        (substring string 0 (or (previous-single-property-change len property string) len))
-      string)))
-
 (defun embark-consult--location-transform (target)
   "Remove the unicode suffix character from a `consult-location' TARGET."
-  (cons 'consult-location
-        (embark-consult--strip
-         (embark-consult--strip-suffix target 'invisible)
-         'consult-location-strip)))
+  (cons 'consult-location (embark-consult--strip target)))
 
 (setf (alist-get 'consult-location embark-transformer-alist)
       #'embark-consult--location-transform)
@@ -184,7 +174,7 @@ The elements of LINES are assumed to be values of category `consult-line'."
 				 'occur-target loc
 				 'follow-link t
 				 'help-echo mouse-msg))
-             (contents (propertize (embark-consult--strip-suffix line 'invisible)
+             (contents (propertize (embark-consult--strip line)
 				   'occur-target loc
                                    'occur-match t
 				   'follow-link t
@@ -268,7 +258,7 @@ actual type."
 
 (defun embark-consult--isearch-transform (target)
   "Remove the unicode suffix character from a `consult-isearch' TARGET."
-  (cons 'consult-isearch (embark-consult--strip-suffix target 'invisible)))
+  (cons 'consult-isearch (embark-consult--strip target)))
 
 (setf (alist-get 'consult-isearch embark-transformer-alist)
       #'embark-consult--isearch-transform)
