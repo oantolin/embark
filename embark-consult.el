@@ -134,7 +134,7 @@ associated to an active minibuffer for a Consult command."
 
 ;;; Support for consult-location
 
-(defun embark-consult--strip-infix (string property)
+(defun embark-consult--strip (string property)
   "Strip substrings with PROPERTY from STRING."
   (if (text-property-not-all 0 (length string) property nil string)
       (let ((end (length string)) (pos 0) (chunks))
@@ -156,7 +156,7 @@ associated to an active minibuffer for a Consult command."
 (defun embark-consult--location-transform (target)
   "Remove the unicode suffix character from a `consult-location' TARGET."
   (cons 'consult-location
-        (embark-consult--strip-infix
+        (embark-consult--strip
          (embark-consult--strip-suffix target 'invisible)
          'consult-location-strip)))
 
