@@ -134,18 +134,24 @@ associated to an active minibuffer for a Consult command."
 
 ;;; Support for consult-location
 
-(defun embark-consult--strip-prefix (string property)
-  "Remove the initial characters of STRING with the given PROPERTY."
-  (when (get-text-property 0 property string)
-    (substring string (next-single-property-change 0 property string))))
+(defun embark-consult--strip (string)
+  "Strip substrings marked with the `consult-strip' property from STRING."
+  (if (text-property-not-all 0 (length string) 'consult-strip nil string)
+      (let ((end (length string)) (pos 0) (chunks))
+        (while (< pos end)
+          (let ((next (next-single-property-change pos 'consult-strip string end)))
+            (unless (get-text-property pos 'consult-strip string)
+              (push (substring string pos next) chunks))
+            (setq pos next)))
+        (apply #'concat (nreverse chunks)))
+    string))
 
-(defun embark-consult-location-strip-prefix (target)
-  "Remove the unicode prefix character from a `consult-location' TARGET."
-  (cons 'consult-location
-        (embark-consult--strip-prefix target 'consult-location)))
+(defun embark-consult--location-transform (target)
+  "Remove the unicode suffix character from a `consult-location' TARGET."
+  (cons 'consult-location (embark-consult--strip target)))
 
 (setf (alist-get 'consult-location embark-transformer-alist)
-      #'embark-consult-location-strip-prefix)
+      #'embark-consult--location-transform)
 
 (defun embark-consult-export-occur (lines)
   "Create an occur mode buffer listing LINES.
@@ -157,7 +163,6 @@ The elements of LINES are assumed to be values of category `consult-line'."
       (dolist (line lines)
         (pcase-let*
             ((`(,loc . ,num) (get-text-property 0 'consult-location line))
-             (prefix-len (next-single-property-change 0 'consult-location line))
              ;; the text properties added to the following strings are
              ;; taken from occur-engine
              (lineno (propertize (format "%7d:" num)
@@ -169,7 +174,7 @@ The elements of LINES are assumed to be values of category `consult-line'."
 				 'occur-target loc
 				 'follow-link t
 				 'help-echo mouse-msg))
-             (contents (propertize (substring line prefix-len)
+             (contents (propertize (embark-consult--strip line)
 				   'occur-target loc
                                    'occur-match t
 				   'follow-link t
@@ -238,7 +243,7 @@ The elements of LINES are assumed to be values of category `consult-line'."
 
 ;;; Support for consult-multi
 
-(defun embark-consult-refine-multi-type (target)
+(defun embark-consult--multi-transform (target)
   "Refine `consult-multi' TARGET to its real type.
 This function takes a target of type `consult-multi' (from
 Consult's `consult-multi' category) and transforms it to its
@@ -247,16 +252,16 @@ actual type."
       (cons 'general target)))
 
 (setf (alist-get 'consult-multi embark-transformer-alist)
-      #'embark-consult-refine-multi-type)
+      #'embark-consult--multi-transform)
 
 ;;; Support for consult-isearch
 
-(defun embark-consult-isearch-strip-prefix (target)
-  "Remove the unicode prefix character from a `consult-isearch' TARGET."
-  (cons 'consult-isearch (embark-consult--strip-prefix target 'invisible)))
+(defun embark-consult--isearch-transform (target)
+  "Remove the unicode suffix character from a `consult-isearch' TARGET."
+  (cons 'consult-isearch (embark-consult--strip target)))
 
 (setf (alist-get 'consult-isearch embark-transformer-alist)
-      #'embark-consult-isearch-strip-prefix)
+      #'embark-consult--isearch-transform)
 
 ;;; Support for consult-register
 
@@ -323,13 +328,14 @@ actions that are on `embark-allow-edit-commands'."
               (alist-get cmd embark-setup-overrides)))
 
 (defun embark-consult-accept-tofu ()
-  "Accept input if it already has the unicode prefix.
+  "Accept input if it already has the unicode suffix.
 This is intended to be used in `embark-setup-overrides' for the
 `consult-line' and `consult-outline' actions."
-  (let ((input (minibuffer-contents)))
-    (when (and (> (length input) 0)
+  (let* ((input (minibuffer-contents))
+         (len (length input)))
+    (when (and (> len 0)
                (<= consult--tofu-char
-                   (aref input 0)
+                   (aref input (- len 1))
                    (+ consult--tofu-char consult--tofu-range -1)))
       (add-hook 'post-command-hook #'exit-minibuffer nil t))))
 
