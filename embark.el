@@ -1463,7 +1463,7 @@ key binding for it.  Or alternatively you might want to enable
                                      0 length 'face nil suffix)))
                        (when facesp (add-face-text-property
                                      0 length 'default t suffix))
-                       `(,cand [(,(if prefix (concat prefix cand) cand) type embark-collect-entry)
+                       `(,cand [(,(if prefix (propertize cand 'line-prefix prefix) cand) type embark-collect-entry)
                                 (,suffix
                                  ,@(unless facesp
                                      '(face embark-collect-annotation)))])))
