@@ -1452,18 +1452,22 @@ key binding for it.  Or alternatively you might want to enable
               (with-current-buffer (embark--target-buffer)
                 (let ((default-directory dir)) ; for marginalia's file annotator
                   (mapcar
-                   (lambda (cand)
-                     (let* ((annotation (or (funcall annotator cand) ""))
-                            (length (length annotation))
+                   (lambda (ann-cand)
+                     (let* ((prefix nil) (suffix "")
+                            (cand (pcase ann-cand
+                                    (`(,c ,s) (setq suffix s) c)
+                                    (`(,c ,p ,s) (setq prefix p suffix s) c)
+                                    (c c)))
+                            (length (length suffix))
                             (facesp (text-property-not-all
-                                     0 length 'face nil annotation)))
+                                     0 length 'face nil suffix)))
                        (when facesp (add-face-text-property
-                                     0 length 'default t annotation))
-                       `(,cand [(,cand type embark-collect-entry)
-                                (,annotation
+                                     0 length 'default t suffix))
+                       `(,cand [(,(if prefix (concat prefix cand) cand) type embark-collect-entry)
+                                (,suffix
                                  ,@(unless facesp
                                      '(face embark-collect-annotation)))])))
-                   candidates))))
+                   (funcall annotator candidates)))))
           (mapcar
            (lambda (cand)
              `(,cand [(,cand type embark-collect-entry)]))
@@ -1548,15 +1552,25 @@ This is specially useful to tell where multi-line entries begin and end."
         (let ((miniwin (active-minibuffer-window)))
           (if (and miniwin (eq (window-buffer miniwin) embark-collect-from))
               ;; for the active minibuffer, get annotation-function metadatum
-              (or
-               (completion-metadata-get (embark--metadata) 'annotation-function)
-               (plist-get completion-extra-properties :annotation-function))
+              (or (completion-metadata-get (embark--metadata) 'affixation-function)
+                  (plist-get completion-extra-properties :affixation-function)
+                  (embark--to-affixation-function
+                   (or (completion-metadata-get (embark--metadata) 'annotation-function)
+                       (plist-get completion-extra-properties :annotation-function))))
             ;; otherwise fake some metadata for Marginalia users's benefit
-            (completion-metadata-get `((category . ,embark--type))
-                                     'annotation-function))))
+            (or
+             (completion-metadata-get `((category . ,embark--type))
+                                      'affixation-function)
+             (embark--to-affixation-function
+              (completion-metadata-get `((category . ,embark--type))
+                                       'annotation-function))))))
   (if (eq embark-collect-view 'list)
       (embark-collect--list-view)
     (embark-collect--grid-view)))
+
+(defun embark--to-affixation-function (ann)
+  "Create affixation function from annotation function ANN."
+  (and ann (lambda (cands) (mapcar (lambda (c) (list c (or (funcall ann c) ""))) cands))))
 
 (defun embark-collect--update-linked (&rest _)
   "Update linked Embark Collect buffer."
