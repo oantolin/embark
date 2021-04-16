@@ -846,10 +846,10 @@ minibuffer before executing the action."
                             (let ((enable-recursive-minibuffers t)
                                   (embark--command command)
                                   (this-command action)
-                                  (prefix-arg prefix)
                                   ;; the next two avoid mouse dialogs
                                   (use-dialog-box nil)
                                   (last-nonmenu-event 13))
+                              (setq prefix-arg prefix)
                               (command-execute action))
                             (setq final-window (selected-window))
                             (run-hooks 'embark-post-action-hook))
