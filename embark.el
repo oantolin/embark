@@ -1,4 +1,4 @@
-;;; embark.el --- Conveniently act on minibuffer completions   -*- lexical-binding: t; -*-
+;;; Embark.el --- Conveniently act on minibuffer completions   -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2020  Omar Antolín Camarena
 
@@ -535,9 +535,12 @@ Return the category metadatum as the type of the target."
 
 (defun embark-target-collect-candidate ()
   "Target the collect candidate at point."
-  (when (and (derived-mode-p 'embark-collect-mode)
-             (button-at (point)))
-    (let ((label (button-label (point))))
+  (when (derived-mode-p 'embark-collect-mode)
+    ;; do not use button-label since it strips text properties
+    (when-let ((button (button-at (point)))
+               (label (buffer-substring
+                       (button-start button)
+                       (button-end button))))
       (cons embark--type
             (if (eq embark--type 'file)
                 (abbreviate-file-name (expand-file-name label))
