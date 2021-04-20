@@ -1411,6 +1411,11 @@ key binding for it.  Or alternatively you might want to enable
 `embark-collect-direct-action-minor-mode' in
 `embark-collect-mode-hook'.")
 
+(defmacro embark--static-if (cond then &rest else)
+  "If COND yields non-nil at compile time, do THEN, else do ELSE."
+  (declare (indent 2))
+  (if (eval cond) then (macroexp-progn else)))
+
 (defun embark--display-width (string)
   "Return width of STRING taking display and invisible properties into account."
   (let ((len (length string)) (pos 0) (width 0))
@@ -1423,11 +1428,14 @@ key binding for it.  Or alternatively you might want to enable
             (let ((inv (next-single-property-change pos 'invisible string dis)))
               (unless (get-text-property pos 'invisible string)
                 (setq width (+ width
-                               (string-width
-                                ;; avoid allocating a substring if possible
-                                (if (and (= pos 0) (= inv len))
-                                    string
-                                  (substring string pos inv))))))
+                               ;; bug#47712: Emacs 28 can compute `string-width' of substrings
+                               (embark--static-if (= 3 (cdr (func-arity #'string-width)))
+                                   (string-width string pos inv)
+                                 (string-width
+                                  ;; Avoid allocation for the full string.
+                                  (if (and (= pos 0) (= inv len))
+                                      string
+                                    (substring-no-properties string pos inv)))))))
               (setq pos inv))))))
     width))
 
