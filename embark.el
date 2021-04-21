@@ -1485,7 +1485,7 @@ key binding for it.  Or alternatively you might want to enable
   (remove-overlays nil nil 'face 'embark-collect-zebra-highlight))
 
 (defun embark-collect--add-zebra-stripes ()
-  "Highlight alternate rows with the `embark-collect-highlight-row' face."
+  "Highlight alternate rows with the `embark-collect-zebra-highlight' face."
   (embark-collect--remove-zebra-stripes)
   (save-excursion
     (goto-char (point-min))
