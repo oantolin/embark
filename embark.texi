@@ -279,7 +279,7 @@ opened the file I had in mind yet! I'll use this situation as a
 running example to illustrate @samp{embark-become}. When this happens I can,
 of course, press @samp{C-g} and then run @samp{find-file} and open the file, but
 this requires retyping the portion of the file name you already
-typed. This process can be streamlined with @samp{embark-become}: will still
+typed. This process can be streamlined with @samp{embark-become}: while still
 in the @samp{switch-to-buffer} you can run @samp{embark-become} and effectively
 make the @samp{switch-to-buffer} command become @samp{find-file} for this run.
 
