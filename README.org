@@ -197,7 +197,7 @@ opened the file I had in mind yet! I'll use this situation as a
 running example to illustrate =embark-become=. When this happens I can,
 of course, press =C-g= and then run =find-file= and open the file, but
 this requires retyping the portion of the file name you already
-typed. This process can be streamlined with =embark-become=: will still
+typed. This process can be streamlined with =embark-become=: while still
 in the =switch-to-buffer= you can run =embark-become= and effectively
 make the =switch-to-buffer= command become =find-file= for this run.
 
