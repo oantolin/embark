@@ -155,7 +155,8 @@ a string, or nil to indicate it found no target."
 (defcustom embark-transformer-alist
   '((minor-mode . embark-lookup-lighter-minor-mode)
     (symbol . embark-refine-symbol-type)
-    (embark-keybinding . embark-keybinding-command))
+    (embark-keybinding . embark-keybinding-command)
+    (project-file . embark-project-file-full-path))
   "Alist associating type to functions for transforming targets.
 Each function should take a target string and return a pair of
 the form a `cons' of the new type and the new target."
@@ -864,6 +865,17 @@ work on them."
           (if (and symbol (boundp symbol))
               target
             (symbol-name (lookup-minor-mode-from-indicator target))))))
+
+(defun embark-project-file-full-path (target)
+  "Get full path of project file TARGET."
+  ;; TODO project-find-file can be called from outside all projects in
+  ;; which case it prompts for a project first; we don't support that
+  ;; case yet, since there is no current project.
+  (cons 'file
+        (if-let ((project (project-current))
+                 (root (project-root project)))
+            (expand-file-name target root)
+          target)))
 
 (defun embark--target ()
   "Retrieve current target.
