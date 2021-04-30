@@ -866,6 +866,9 @@ work on them."
               target
             (symbol-name (lookup-minor-mode-from-indicator target))))))
 
+(declare-function project-current "project")
+(declare-function project-roots "project")
+
 (defun embark-project-file-full-path (target)
   "Get full path of project file TARGET."
   ;; TODO project-find-file can be called from outside all projects in
@@ -873,7 +876,7 @@ work on them."
   ;; case yet, since there is no current project.
   (cons 'file
         (if-let ((project (project-current))
-                 (root (project-root project)))
+                 (root (car (project-roots project))))
             (expand-file-name target root)
           target)))
 
