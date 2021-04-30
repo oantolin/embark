@@ -25,7 +25,6 @@
 @end ifnottex
 
 @menu
-* Breaking news::
 * Overview::
 * Configuration::
 * Embark, Marginalia and Consult: Embark Marginalia and Consult. 
@@ -56,66 +55,6 @@ Defining actions for new categories of targets
 
 @end detailmenu
 @end menu
-
-@node Breaking news
-@chapter Breaking news
-
-(That is, news about things breaking!)
-
-@itemize
-@item
-The command @samp{embark-act-noexit} has been removed and a variable
-@samp{embark-quit-after-action} now controls whether @samp{embark-act} quits the
-minibuffer or not. (Also note that the word ``exit'' in
-@samp{embark-act-noexit} was used incorrectly according to Emacs's
-terminology: exiting the minibuffer means accepting the input,
-like when you press @samp{RET}; and what @samp{embark-act-noexit} did was more
-like pressing @samp{C-g} which Emacs calls aborting or quitting.)
-@item
-If a recent update to Embark made it stop working with certain
-@uref{https://github.com/minad/consult/, Consult} commands, just install and load the new embark-consult
-package (available on Melpa). In addition to the prior
-functionality for Consult, this package also contains an
-@samp{embark-consult-preview-at-point} that triggers a Consult preview
-for the entry at point in an auto-updating Embark Collect buffer,
-and an @samp{embark-consult-preview-minor-mode} to run the Consult
-preview automatically as you move around the collect buffer.
-
-@lisp
-(use-package embark-consult
-  :ensure t
-  :after (embark consult)
-  :demand t ; only necessary if you have the hook below
-  ;; if you want to have consult previews as you move around an
-  ;; auto-updating embark collect buffer
-  :hook
-  (embark-collect-mode . embark-consult-preview-minor-mode))
-@end lisp
-
-@item
-The ``occur'' subsystem has been overhauled and renamed ``collect''.
-There are aliases for the old command and variable names with
-``occur'' in them, but those will be gone in a couple of months. So
-please update your configuration.
-
-(The ``occur'' name came from @samp{ivy-occur} but since both @samp{occur} and
-@samp{helm-occur} use @samp{occur} in a different sense, and @samp{occur} is obviously
-older than @samp{ivy-occur}, I decided to avoid the @samp{embark-occur} name.
-The new @samp{embark-collect} name is much more self-explanatory too.)
-
-@item
-The system for configuring targets and candidate collections has
-been greatly simplified, so if you wrote your own target finders
-or candidate collectors, you will need to tweak them to return
-@samp{(cons type previous-return-value)}. This change means separate
-classifiers are no longer needed (or supported!).
-
-@item
-If you are already an Embark user and an update caused you to lose
-the package and symbol actions, install @uref{https://github.com/minad/marginalia, Marginalia}, activate
-@samp{marginalia-mode} and you should be good to go. If you want to read
-more about these changes see @uref{https://github.com/oantolin/embark#embark-marginalia-and-consult, the last section}.
-@end itemize
 
 @node Overview
 @chapter Overview
@@ -678,7 +617,7 @@ Some changes were made to Embark, to better cooperate with the
 @uref{https://github.com/minad/marginalia, Marginalia} and @uref{https://github.com/minad/consult, Consult} packages, and prior to being submitted to
 MELPA@. Neither of those packages is a dependency of Embark, but
 Marginalia is highly recommended, for reasons explained in the rest
-of this section
+of this section.
 
 Embark comes with actions for symbols (commands, functions, variables
 with actions such as finding the definition, looking up the
