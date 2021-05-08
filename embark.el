@@ -192,6 +192,10 @@ The key must be either a string or a vector.
 This is the key representation accepted by `define-key'."
   :type '(choice key-sequence (const nil)))
 
+(defcustom embark-general-actions-submenu nil
+  "Should the completing read prompter put general actions in a submenu?"
+  :type 'boolean)
+
 (defface embark-keybinding '((t :inherit success))
   "Face used to display key bindings.
 Used by `embark-completing-read-prompter' and `embark-keymap-help'.")
@@ -671,11 +675,12 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
                     when (and (not no-default) (equal key [13]))
                     do (setq default formatted)
                     collect (cons formatted item))))
-    (when (and (not no-default)
+    (when (and embark-general-actions-submenu
+               (not no-default)
                (cl-loop                 ; inherits from general map?
                 for map = (keymap-parent keymap) then (keymap-parent map)
                 while map thereis (eq map embark-general-map)))
-      (push '("general actions") candidates))
+      (setq candidates (append candidates (list (list "general actions")))))
     (pcase (assoc
             (minibuffer-with-setup-hook
                 (lambda ()
@@ -707,14 +712,16 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
                "Command: "
                (lambda (string predicate action)
                  (if (eq action 'metadata)
-                     `(metadata (category . embark-keybinding))
+                     `(metadata (category . embark-keybinding)
+                                (display-sort-function . identity)
+                                (cycle-sort-function . identity))
                    (complete-with-action action candidates string predicate)))
-               (lambda (cand)
-                 (or no-default
-                     (equal cand '("general actions"))
+               (when (and embark-general-actions-submenu (not no-default))
+                 (lambda (cand)
+                 (or (equal cand '("general actions"))
                      (not (where-is-internal (nth 2 cand)
                                              (list embark-general-map)
-                                             t))))
+                                             t)))))
                'require-match nil 'embark--prompter-history default))
             candidates)
       ('("general actions")
