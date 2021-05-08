@@ -702,7 +702,9 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
                "Command: "
                (lambda (string predicate action)
                  (if (eq action 'metadata)
-                     `(metadata (category . embark-keybinding))
+                     `(metadata (category . embark-keybinding)
+                                (display-sort-function . identity)
+                                (cycle-sort-function . identity))
                    (complete-with-action action candidates string predicate)))
                nil 'require-match nil 'embark--prompter-history def))
             candidates)
