@@ -186,7 +186,7 @@ prompts for an action with completion."
                  (function :tag "Other")))
 
 (defcustom embark-keymap-prompter-key "@"
-  "Key to switch to the keymap prompter from the completing read prompter.
+  "Key to switch to the keymap prompter from `embark-completing-read-prompter'.
 
 The key must be either a string or a vector.
 This is the key representation accepted by `define-key'."
@@ -658,24 +658,19 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
                                  (concat (key-description key)))))
          (width (cl-loop for (_name _cmd _key desc) in commands
                          maximize (length desc)))
-         default
+         (def)
          (candidates
           (cl-loop for item in commands
-                    for (name cmd key desc) = item
-                    for formatted =
-                    (propertize
-                     (concat (propertize desc 'face 'embark-keybinding)
-                             (make-string (- width (length desc) -1) ? )
-                             name)
-                     'embark-command cmd)
-                    when (and (not no-default) (equal key [13]))
-                    do (setq default formatted)
-                    collect (cons formatted item))))
-    (when (and (not no-default)
-               (cl-loop                 ; inherits from general map?
-                for map = (keymap-parent keymap) then (keymap-parent map)
-                while map thereis (eq map embark-general-map)))
-      (push '("general actions") candidates))
+                   for (name cmd key desc) = item
+                   for formatted =
+                   (propertize
+                    (concat (propertize desc 'face 'embark-keybinding)
+                            (make-string (- width (length desc) -1) ? )
+                            name)
+                    'embark-command cmd)
+                   when (and (not no-default) (equal key [13]))
+                     do (setq def formatted)
+                   collect (cons formatted item))))
     (pcase (assoc
             (minibuffer-with-setup-hook
                 (lambda ()
@@ -709,16 +704,8 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
                  (if (eq action 'metadata)
                      `(metadata (category . embark-keybinding))
                    (complete-with-action action candidates string predicate)))
-               (lambda (cand)
-                 (or no-default
-                     (equal cand '("general actions"))
-                     (not (where-is-internal (nth 2 cand)
-                                             (list embark-general-map)
-                                             t))))
-               'require-match nil 'embark--prompter-history default))
+               nil 'require-match nil 'embark--prompter-history def))
             candidates)
-      ('("general actions")
-       (embark-completing-read-prompter embark-general-map t))
       (`(,_formatted ,_name ,cmd ,key ,_desc)
        (setq last-command-event (seq-elt key (1- (length key))))
        cmd))))
