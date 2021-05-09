@@ -1,4 +1,4 @@
-;;; Embark.el --- Conveniently act on minibuffer completions   -*- lexical-binding: t; -*-
+;;; embark.el --- Conveniently act on minibuffer completions   -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2020  Omar Antolín Camarena
 
@@ -1238,19 +1238,16 @@ Returns the name of the command."
 (defun embark--all-bindings (keymap)
   "Return an alist of all bindings in KEYMAP."
   (let (bindings)
-    (cl-labels ((gather (keymap)
-                   (map-keymap
-                    (lambda (key def)
-                      (cond
-                       ((null def))
-                       ((keymapp def)
-                        (dolist (bind (embark--all-bindings def))
-                          (push (cons (vconcat (vector key) (car bind))
-                                      (cdr bind))
-                                bindings)))
-                       (t (push (cons (vector key) def) bindings))))
-                    keymap)))
-      (gather (keymap-canonicalize keymap)))
+    (map-keymap
+     (lambda (key def)
+       (cond
+        ((keymapp def)
+         (dolist (bind (embark--all-bindings def))
+           (push (cons (vconcat (vector key) (car bind))
+                       (cdr bind))
+                 bindings)))
+        (def (push (cons (vector key) def) bindings))))
+     (keymap-canonicalize keymap))
     (nreverse bindings)))
 
 (defvar embark-collect-direct-action-minor-mode-map (make-sparse-keymap)
@@ -1799,7 +1796,7 @@ buffer for each type of completion."
 (defvar bookmark-alist)
 
 (defun embark-export-bookmarks (bookmarks)
-  "Create a bookmark-bmenu-mode buffer listing BOOKMARKS."
+  "Create a `bookmark-bmenu-mode' buffer listing BOOKMARKS."
   (let ((bookmark-alist
          (cl-remove-if-not
           (lambda (bmark)
