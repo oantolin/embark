@@ -644,7 +644,7 @@ first line of the documentation string; otherwise use the word
   "Prompt via completion for a command bound in KEYMAP.
 If NO-DEFAULT is t, no default value is passed to `completing-read'."
   (let* ((commands
-          (cl-loop for (key . cmd) in (embark--all-bindings keymap)
+          (cl-loop for (key cmd . kname) in (embark--all-bindings keymap)
                    for name = (embark--command-name cmd)
                    unless (or
                            ;; skip which-key pseudo keys and other invalid pairs
@@ -655,16 +655,19 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
                                      (cdr cmd)
                                    cmd)
                                  key
+                                 kname
                                  (concat (key-description key)))))
-         (width (cl-loop for (_name _cmd _key desc) in commands
+         (width (cl-loop for (_name _cmd _key _kname desc) in commands
                          maximize (length desc)))
          (def)
          (candidates
           (cl-loop for item in commands
-                   for (name cmd key desc) = item
+                   for (name cmd key kname desc) = item
                    for formatted =
                    (propertize
-                    (concat (propertize desc 'face 'embark-keybinding)
+                    (concat (propertize desc
+                                        'face 'embark-keybinding
+                                        'embark--keymap-name kname)
                             (make-string (- width (length desc) -1) ? )
                             name)
                     'embark-command cmd)
@@ -704,6 +707,11 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
                  (if (eq action 'metadata)
                      `(metadata (category . embark-keybinding)
                                 (display-sort-function . identity)
+                                (x-title-function
+                                 . ,(lambda (cand transform)
+                                      (if transform
+                                          cand
+                                        (get-text-property 0 'embark--keymap-name cand))))
                                 (cycle-sort-function . identity))
                    (complete-with-action action candidates string predicate)))
                nil 'require-match nil 'embark--prompter-history def))
@@ -1235,20 +1243,69 @@ Returns the name of the command."
     (put name 'function-documentation (documentation action))
     name))
 
+(defun embark--find-keymap (keymap alist)
+  "Find KEYMAP in ALIST."
+  (cl-find-if (lambda (x)
+                (or (equal (cdr x) keymap) ;; TODO equal in order to recognize keymap?
+                    (and (fboundp (cdr x))
+                         (symbolp (cdr x))
+                         (equal (symbol-function (cdr x)) keymap)) ;; TODO equal in order to recognize keymap?
+                    (and (boundp (cdr x))
+                         (symbolp (cdr x))
+                         (equal (symbol-value (cdr x)) keymap)))) ;; TODO equal in order to recognize keymap?
+              alist))
+
+;; TODO embark keymaps are not recognized! For example buffer.
+;; TODO other default keymaps, for example under M-s
+
+(defvar embark-keymap-names nil)
+(setq embark-keymap-names nil)
+(push '("General" . embark-general-map) embark-keymap-names)
+(push '("Meta" . embark-meta-map) embark-keymap-names)
+(push '("Consult" . embark-consult-search-map) embark-keymap-names)
+
+;; Ctl-x submaps
+(push '("Window" . ctl-x-4-prefix) embark-keymap-names)
+(push '("Frame" . ctl-x-5-prefix) embark-keymap-names)
+(push '("VC" . vc-prefix-map) embark-keymap-names)
+(push '("Tab" . tab-prefix-map) embark-keymap-names)
+(push '("Register/Rectangle" . ctl-x-r-map) embark-keymap-names)
+(push '("Emacs 28 XX" . ctl-x-x-map) embark-keymap-names)
+(push '("Project" . project-prefix-map) embark-keymap-names)
+(push '("Narrow" . narrow-map) embark-keymap-names)
+(push '("Abbrev" . abbrev-map) embark-keymap-names)
+(push '("Two Column" . 2C-command) embark-keymap-names)
+(push '("KMacro" . kmacro-keymap) embark-keymap-names)
+(push '("EDebug" . edebug-global-map) embark-keymap-names)
+(push '("EDebug" . global-edebug-map) embark-keymap-names)
+(push '("Mule" . mule-keymap) embark-keymap-names)
+
 (defun embark--all-bindings (keymap)
   "Return an alist of all bindings in KEYMAP."
-  (let (bindings)
+  (let ((kname
+         (when-let (k (or (embark--find-keymap keymap embark-keymap-names)
+                          (embark--find-keymap keymap embark-keymap-alist)))
+           (capitalize (format "%s" (car k)))))
+        (bindings)
+        (parent (keymap-parent keymap)))
+    (when parent
+      (setq keymap (copy-keymap keymap))
+      (set-keymap-parent keymap nil))
     (map-keymap
      (lambda (key def)
        (cond
         ((keymapp def)
          (dolist (bind (embark--all-bindings def))
-           (push (cons (vconcat (vector key) (car bind))
-                       (cdr bind))
+           (push `(,(vconcat (vector key) (car bind))
+                   ,(cadr bind) . ,(or (cddr bind) kname))
                  bindings)))
-        (def (push (cons (vector key) def) bindings))))
-     (keymap-canonicalize keymap))
-    (nreverse bindings)))
+        (def (push `(,(vector key) ,def . ,kname) bindings))))
+     (keymap-canonicalize keymap)) ;; TODO needed because of duplicates
+    (if (not parent)
+        (nreverse bindings)
+      ;; TODO filter out keybindings shadowed from parent
+      (nconc (nreverse bindings)
+             (embark--all-bindings parent)))))
 
 (defvar embark-collect-direct-action-minor-mode-map (make-sparse-keymap)
   "Keymap for direct bindings to embark actions.")
@@ -1262,8 +1319,8 @@ Returns the name of the command."
     ;; must mutate keymap, not make new one
     (let ((map embark-collect-direct-action-minor-mode-map))
       (setcdr map nil)
-      (cl-loop for (key . cmd) in (embark--all-bindings
-                                   (embark--action-keymap embark--type))
+      (cl-loop for (key cmd . _kname) in (embark--all-bindings
+                                          (embark--action-keymap embark--type))
                unless (eq cmd 'embark-keymap-help)
                do (define-key map key (embark--action-command cmd))))))
 
