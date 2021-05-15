@@ -78,9 +78,6 @@
 
 ;;; Consult preview from Embark Collect buffers
 
-(defvar-local embark-consult-preview--last-entry nil
-  "Stores last entry previewed.")
-
 (defun embark-consult-preview--preconditions ()
   "Check if Consult preview for Embark can be used in current buffer.
 Signal an error unless current buffer is an auto-updating Embark
@@ -96,14 +93,6 @@ Consult command."
   (unless (buffer-local-value 'consult--preview-function embark-collect-from)
     (user-error "No Consult preview function found")))
 
-(defun embark-consult-preview--trigger ()
-  "Trigger Consult preview for entry at point if different from previous."
-  (let ((entry (ignore-errors (button-label (point))))) ; error at eob
-    (unless (equal entry embark-consult-preview--last-entry)
-      (setq embark-consult-preview--last-entry entry)
-      (with-selected-window (active-minibuffer-window)
-        (funcall consult--preview-function (minibuffer-contents) entry)))))
-
 (defun embark-consult-preview-at-point ()
   "Trigger Consult preview for Embark Collect entry at point.
 Must be run from an auto-updating Embark Collect buffer that is
@@ -112,7 +101,9 @@ associated to an active minibuffer for a Consult command."
   (condition-case err
       (progn
         (embark-consult-preview--preconditions)
-        (embark-consult-preview--trigger))
+        (let ((entry (ignore-errors (button-label (point))))) ; error at eob
+          (with-selected-window (active-minibuffer-window)
+            (funcall consult--preview-function (minibuffer-contents) entry))))
     (user-error
      (embark-consult-preview-minor-mode -1)
      (message "Turning off preview: %s" (cadr err)))))
