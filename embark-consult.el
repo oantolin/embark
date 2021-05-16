@@ -125,18 +125,18 @@ The elements of LINES are assumed to be values of category `consult-line'."
              ;; taken from occur-engine
              (lineno (propertize (format "%7d:" num)
                                  'occur-prefix t
-				 ;; Allow insertion of text at the end
+                                 ;; Allow insertion of text at the end
                                  ;; of the prefix (for Occur Edit mode).
-				 'front-sticky t
-				 'rear-nonsticky t
-				 'occur-target loc
-				 'follow-link t
-				 'help-echo mouse-msg))
+                                 'front-sticky t
+                                 'rear-nonsticky t
+                                 'occur-target loc
+                                 'follow-link t
+                                 'help-echo mouse-msg))
              (contents (propertize (embark-consult--strip line)
-				   'occur-target loc
+                                   'occur-target loc
                                    'occur-match t
-				   'follow-link t
-				   'help-echo mouse-msg))
+                                   'follow-link t
+                                   'help-echo mouse-msg))
              (nl (propertize "\n" 'occur-target loc))
              (this-buf (marker-buffer loc)))
           (unless (eq this-buf last-buf)
