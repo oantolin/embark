@@ -1776,11 +1776,13 @@ buffer for each type of completion."
                    (let ((file (file-name-nondirectory path)))
                      (or (string= file ".") (string= file ".."))))
                  files)))
-  (dired (cons
-          ;; TODO: is it worth finding the deepest common containing directory?
-          (if (cl-every #'file-name-absolute-p files) "/" default-directory)
-          files))
-  (rename-buffer (format "*Embark Export Dired %s*" default-directory)))
+  (let ((buf (dired-noselect (cons
+                              ;; TODO: is it worth finding the deepest common containing directory?
+                              (if (cl-every #'file-name-absolute-p files) "/" default-directory)
+                              files))))
+    (with-current-buffer buf
+      (rename-buffer (format "*Embark Export Dired %s*" default-directory)))
+    (pop-to-buffer buf)))
 
 (autoload 'package-menu-mode "package")
 (autoload 'package-menu--generate "package")
@@ -1791,7 +1793,7 @@ buffer for each type of completion."
     (with-current-buffer buf
       (package-menu-mode)
       (package-menu--generate nil (mapcar #'intern packages)))
-    (switch-to-buffer buf)))
+    (pop-to-buffer buf)))
 
 (defvar bookmark-alist)
 
