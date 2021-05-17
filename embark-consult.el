@@ -125,18 +125,18 @@ The elements of LINES are assumed to be values of category `consult-line'."
              ;; taken from occur-engine
              (lineno (propertize (format "%7d:" num)
                                  'occur-prefix t
-				 ;; Allow insertion of text at the end
+                                 ;; Allow insertion of text at the end
                                  ;; of the prefix (for Occur Edit mode).
-				 'front-sticky t
-				 'rear-nonsticky t
-				 'occur-target loc
-				 'follow-link t
-				 'help-echo mouse-msg))
+                                 'front-sticky t
+                                 'rear-nonsticky t
+                                 'occur-target loc
+                                 'follow-link t
+                                 'help-echo mouse-msg))
              (contents (propertize (embark-consult--strip line)
-				   'occur-target loc
+                                   'occur-target loc
                                    'occur-match t
-				   'follow-link t
-				   'help-echo mouse-msg))
+                                   'follow-link t
+                                   'help-echo mouse-msg))
              (nl (propertize "\n" 'occur-target loc))
              (this-buf (marker-buffer loc)))
           (unless (eq this-buf last-buf)
@@ -147,7 +147,7 @@ The elements of LINES are assumed to be values of category `consult-line'."
           (insert (concat lineno contents nl))))
       (goto-char (point-min))
       (occur-mode))
-    (switch-to-buffer buf)))
+    (pop-to-buffer buf)))
 
 (setf (alist-get 'consult-location embark-collect-initial-view-alist)
       'list)
@@ -169,7 +169,7 @@ The elements of LINES are assumed to be values of category `consult-line'."
       (grep-mode)
       (setq-local wgrep-header/footer-parser #'ignore)
       (when (fboundp 'wgrep-setup) (wgrep-setup)))
-    (switch-to-buffer buf)))
+    (pop-to-buffer buf)))
 
 (autoload 'compile-goto-error "compile")
 
