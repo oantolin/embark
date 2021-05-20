@@ -420,7 +420,8 @@ follows:
       (let ((tab-list (or (mapcar #'(lambda (tab) (cdr (assq 'name tab)))
                                   (tab-bar-tabs))
                           (user-error "No tabs found"))))
-        (consult--read "Tabs: " tab-list
+        (consult--read tab-list
+                       :prompt "Tabs: "
                        :category 'tab))))
     (tab-bar-select-tab-by-name tab))
 #+end_src
