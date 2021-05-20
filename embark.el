@@ -1105,6 +1105,10 @@ default is `embark-collect-snapshot'."
 The expected format is the same as for functions in
 `embark-exporters-alist'.")
 
+(defcustom embark-after-export-hook nil
+  "Hook run after `embark-export' in the newly created buffer."
+  :type 'hook)
+
 (defcustom embark-collect-live-update-delay 0.15
   "Wait this long for more input before updating Embark Collect Live buffer."
   :type 'number)
@@ -1753,11 +1757,14 @@ buffer for each type of completion."
 
         (if (eq exporter 'embark-collect-snapshot)
             (embark-collect-snapshot)
-          (let ((dir (embark--default-directory)))
+          (let ((dir (embark--default-directory))
+                (after embark-after-export-hook))
             (embark--quit-and-run
              (lambda ()
-               (let ((default-directory dir)) ; dired needs this info
-                 (funcall exporter candidates))))))))))
+               (let ((default-directory dir) ; dired needs this info
+                     (embark-after-export-hook after))
+                 (funcall exporter candidates)
+                 (run-hooks 'embark-after-export-hook))))))))))
 
 (defun embark-export-ibuffer (buffers)
   "Create an ibuffer buffer listing BUFFERS."
