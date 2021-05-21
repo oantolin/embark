@@ -568,23 +568,11 @@ strings as described above: if the minibuffer is active the first
 string is used and if not, the second is used.
 
 Finally, if INDICATOR is a function, this function is called with
-the KEYMAP and TARGET.* The function should return either nil, or
-a function to be called when the indicator is no longer needed.
-
-*For a limited time only, if the function only accepts one
-argument, it is called with the KEYMAP but a warning is displayed
-saying you should update it to also accept the TARGET.
-Eventually only the two argument case will be supported."
+the KEYMAP and TARGET. The function should return either nil, or
+a function to be called when the indicator is no longer needed."
   (cond
    ((functionp indicator)
-    (if target
-        (condition-case nil
-            (funcall indicator keymap target)
-          (wrong-number-of-arguments
-           (message "Update your `embark-action-indicator' to accept \
-the keymap and target as arguments")
-           (funcall indicator keymap)))
-      (funcall indicator keymap)))
+    (funcall indicator keymap target))
    ((or (stringp indicator) (consp indicator))
     (let* ((mini (active-minibuffer-window))
            (ind (format (if (consp indicator)
