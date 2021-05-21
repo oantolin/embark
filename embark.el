@@ -858,6 +858,7 @@ work on them."
 
 (declare-function project-current "project")
 (declare-function project-roots "project")
+(declare-function project-root "project")
 
 (defun embark-project-file-full-path (target)
   "Get full path of project file TARGET."
@@ -866,7 +867,10 @@ work on them."
   ;; case yet, since there is no current project.
   (cons 'file
         (if-let ((project (project-current))
-                 (root (car (project-roots project))))
+                 (root (if (fboundp 'project-root)
+                           (project-root project)
+                         (with-no-warnings
+                           (car (project-roots project))))))
             (expand-file-name target root)
           target)))
 
