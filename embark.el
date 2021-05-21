@@ -1010,14 +1010,15 @@ completion boundaries single out the path component containing
 point."
   (interactive "P")
   (when (minibufferp)
-    (let ((target (if full
-                      (minibuffer-contents)
-                    (pcase-let ((`(,beg . ,end) (embark--boundaries)))
-                      (substring (minibuffer-contents) beg
-                                 (+ end (embark--minibuffer-point))))))
-          (become (embark--with-indicator embark-become-indicator
-                                          embark-prompter
-                                          (embark--become-keymap))))
+    (let* ((target (if full
+                       (minibuffer-contents)
+                     (pcase-let ((`(,beg . ,end) (embark--boundaries)))
+                       (substring (minibuffer-contents) beg
+                                  (+ end (embark--minibuffer-point))))))
+           (become (embark--with-indicator embark-become-indicator
+                                           embark-prompter
+                                           (embark--become-keymap)
+                                           target)))
       (if (null become)
           (user-error "Canceled")
         (embark--quit-and-run
