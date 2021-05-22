@@ -2152,6 +2152,7 @@ and leaves the point to the left of it."
 
 (embark-define-keymap embark-url-map
   "Keymap for Embark url actions."
+  ("RET" browse-url)
   ("b" browse-url)
   ("e" eww))
 
@@ -2213,6 +2214,7 @@ and leaves the point to the left of it."
 
 (embark-define-keymap embark-bookmark-map
   "Keymap for Embark bookmark actions."
+  ("RET" bookmark-jump)
   ("d" bookmark-delete)
   ("r" bookmark-rename)
   ("R" bookmark-relocate)
@@ -2225,6 +2227,7 @@ and leaves the point to the left of it."
 
 (embark-define-keymap embark-unicode-name-map
   "Keymap for Embark unicode name actions."
+  ("RET" insert-char)
   ("I" insert-char)
   ("W" embark-save-unicode-character))
 
