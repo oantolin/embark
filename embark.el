@@ -1457,6 +1457,16 @@ This is specially useful to tell where multi-line entries begin and end."
                                          `(,(or (pop cands) "")
                                            type embark-collect-entry))))))))
 
+(defun embark-collect--annotator (type)
+  "Get annotator for current buffer's candidates.
+For non-minibuffers, assume candidates are of given TYPE."
+  (if (minibufferp)
+      (or
+       (completion-metadata-get (embark--metadata) 'annotation-function)
+       (plist-get completion-extra-properties :annotation-function))
+    ;; otherwise fake some metadata for Marginalia users's benefit
+    (completion-metadata-get `((category . ,type)) 'annotation-function)))
+
 (defun embark-collect--revert ()
   "Recalculate Embark Collect candidates if possible."
   (when (buffer-live-p embark-collect-from)
@@ -1466,19 +1476,13 @@ This is specially useful to tell where multi-line entries begin and end."
                     'embark-candidate-collectors))))
       (setq embark--type type
             embark-collect-candidates candidates
-            default-directory
-            (with-current-buffer embark-collect-from
-              (embark--default-directory)))))
-  (setq embark-collect-annotator
-        (let ((miniwin (active-minibuffer-window)))
-          (if (and miniwin (eq (window-buffer miniwin) embark-collect-from))
-              ;; for the active minibuffer, get annotation-function metadatum
-              (or
-               (completion-metadata-get (embark--metadata) 'annotation-function)
-               (plist-get completion-extra-properties :annotation-function))
-            ;; otherwise fake some metadata for Marginalia users's benefit
-            (completion-metadata-get `((category . ,embark--type))
-                                     'annotation-function))))
+            default-directory (with-current-buffer embark-collect-from
+                                (embark--default-directory))
+            embark-collect-annotator (or
+                                      ;; new annotator? (marginalia-cycle)
+                                      (with-current-buffer embark-collect-from
+                                        (embark-collect--annotator type))
+                                      embark-collect-annotator))))
   (if (eq embark-collect-view 'list)
       (embark-collect--list-view)
     (embark-collect--grid-view)))
@@ -1552,10 +1556,12 @@ Both :completions and :live buffer auto-update.  Additonally,
 :completions buffers will be displayed in a dedicated window
 at the bottom of the frame and are automatically killed when
 the minibuffer is exited."
-  (pcase-let ((from (current-buffer))
-              (buffer (generate-new-buffer name))
-              (`(,type . ,candidates)
-               (run-hook-with-args-until-success 'embark-candidate-collectors)))
+  (pcase-let*
+      ((from (current-buffer))
+       (buffer (generate-new-buffer name))
+       (`(,type . ,candidates)
+        (run-hook-with-args-until-success 'embark-candidate-collectors))
+       (annotator (embark-collect--annotator type)))
     (if (and (null candidates) (eq kind :snapshot))
         (user-error "No candidates to collect")
       (setq embark-collect-linked-buffer buffer)
@@ -1579,8 +1585,10 @@ the minibuffer is exited."
           ;; they can get recycled and if so revert would do the wrong thing
           (setq embark-collect-from from))
 
-        (setq embark--type type)
-        (setq embark-collect-candidates candidates)
+        (setq embark--type type
+              embark-collect-candidates candidates
+              embark-collect-annotator annotator)
+
         (add-hook 'tabulated-list-revert-hook #'embark-collect--revert nil t)
 
         (setq embark-collect-view
