@@ -305,10 +305,18 @@ This is intended to be used in `embark-setup-overrides' for the
   "Add Consult's async separator at the beginning.
 This is intended to be used in `embark-setup-hook' for any action
 that is a Consult async command."
-  (when consult-async-default-split
-    (goto-char (minibuffer-prompt-end))
-    (insert consult-async-default-split)
-    (goto-char (point-max))))
+  (let* ((style (alist-get consult-async-split-style
+                           consult-async-split-styles-alist))
+         (initial (plist-get style :initial))
+         (separator (plist-get style :separator)))
+    (cond
+     (initial
+      (goto-char (minibuffer-prompt-end))
+      (insert initial)
+      (goto-char (point-max)))
+     (separator
+      (goto-char (point-max))
+      (insert separator)))))
 
 (dolist (bind (cdr embark-consult-async-search-map))
   (cl-pushnew #'embark-consult-add-async-separator
