@@ -145,6 +145,7 @@ Embark will set the parent of this map to `embark-general-map'.")
     embark-target-completion-at-point
     embark-target-url-at-point
     embark-target-file-at-point
+    embark-target-custom-variable-at-point
     embark-target-identifier-at-point)
   "List of functions to determine the target in current context.
 Each function should take no arguments and return either a cons
@@ -464,6 +465,12 @@ There are three kinds:
   "Target the URL at point."
   (when-let ((url (ffap-url-at-point)))
     (cons 'url url)))
+
+(defun embark-target-custom-variable-at-point ()
+  "Target the variable corresponding to the customize widget at point."
+  (when (derived-mode-p 'Custom-mode)
+    (when-let ((symbol (get-text-property (point) 'custom-data)))
+      (cons 'variable (symbol-name symbol)))))
 
 (defun embark-target-identifier-at-point ()
   "Target identifier at point.
