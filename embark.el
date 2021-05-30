@@ -664,48 +664,49 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
                             name)
                     'embark-command cmd)
                    when (and (not no-default) (equal key [13]))
-                     do (setq def formatted)
-                   collect (cons formatted item))))
-    (pcase (assoc
-            (minibuffer-with-setup-hook
-                (lambda ()
-                  (when embark-keymap-prompter-key
-                    (use-local-map
-                     (make-composed-keymap
-                      (let ((map (make-sparse-keymap)))
-                        (define-key map embark-keymap-prompter-key
-                          (lambda ()
-                            (interactive)
-                            (let*
-                                ((desc
-                                  (let ((overriding-terminal-local-map keymap))
-                                    (key-description
-                                     (read-key-sequence "Key:"))))
-                                 (cand
-                                  (cl-loop
-                                   for (cand _n _c _k desc1) in candidates
-                                   when (equal desc desc1) return cand)))
-                              (if (null cand)
-                                  (user-error "Unknown key")
-                                (delete-minibuffer-contents)
-                                (insert cand)
-                                (add-hook 'post-command-hook
-                                          #'exit-minibuffer nil t)))))
-                        map)
-                      (current-local-map)))))
-              (completing-read
-               "Command: "
-               (lambda (string predicate action)
-                 (if (eq action 'metadata)
-                     `(metadata (category . embark-keybinding)
-                                (display-sort-function . identity)
-                                (cycle-sort-function . identity))
-                   (complete-with-action action candidates string predicate)))
-               nil 'require-match nil 'embark--prompter-history def))
-            candidates)
+                   do (setq def formatted)
+                   collect (cons formatted item)))
+         (choice
+          (minibuffer-with-setup-hook
+              (lambda ()
+                (when embark-keymap-prompter-key
+                  (use-local-map
+                   (make-composed-keymap
+                    (let ((map (make-sparse-keymap)))
+                      (define-key map embark-keymap-prompter-key
+                        (lambda ()
+                          (interactive)
+                          (let*
+                              ((desc
+                                (let ((overriding-terminal-local-map keymap))
+                                  (key-description
+                                   (read-key-sequence "Key:"))))
+                               (cand
+                                (cl-loop
+                                 for (cand _n _c _k desc1) in candidates
+                                 when (equal desc desc1) return cand)))
+                            (if (null cand)
+                                (user-error "Unknown key")
+                              (delete-minibuffer-contents)
+                              (insert cand)
+                              (add-hook 'post-command-hook
+                                        #'exit-minibuffer nil t)))))
+                      map)
+                    (current-local-map)))))
+            (completing-read
+             "Command: "
+             (lambda (string predicate action)
+               (if (eq action 'metadata)
+                   `(metadata (category . embark-keybinding)
+                              (display-sort-function . identity)
+                              (cycle-sort-function . identity))
+                 (complete-with-action action candidates string predicate)))
+             nil nil nil 'embark--prompter-history def))))
+    (pcase (assoc choice candidates)
       (`(,_formatted ,_name ,cmd ,key ,_desc)
        (setq last-command-event (seq-elt key (1- (length key))))
-       cmd))))
+       cmd)
+      ('nil (intern-soft choice)))))
 
 ;;;###autoload
 (defun embark-prefix-help-command ()
