@@ -2156,6 +2156,7 @@ and leaves the point to the left of it."
   ("j" embark-dired-jump)
   ("!" shell-command)
   ("&" async-shell-command)
+  ("m" chmod)
   ("=" ediff-files)
   ("e" embark-eshell)
   ("+" make-directory)
