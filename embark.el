@@ -143,6 +143,7 @@ Embark will set the parent of this map to `embark-general-map'.")
     embark-target-active-region
     embark-target-collect-candidate
     embark-target-completion-at-point
+    embark-target-bug-reference-at-point
     embark-target-url-at-point
     embark-target-file-at-point
     embark-target-custom-variable-at-point
@@ -460,6 +461,12 @@ There are three kinds:
                        (dired-get-filename t 'no-error-if-not-filep)
                      (ffap-file-at-point))))
     (cons 'file (abbreviate-file-name file))))
+
+(defun embark-target-bug-reference-at-point ()
+  "Target a bug reference at point."
+  (when-let ((url (seq-some (lambda (o) (overlay-get o 'bug-reference-url))
+                            (overlays-at (point)))))
+    (cons 'url url)))
 
 (defun embark-target-url-at-point ()
   "Target the URL at point."
