@@ -162,7 +162,7 @@ a string, or nil to indicate it found no target."
   "Alist associating type to functions for transforming targets.
 Each function should take a target string and return a pair of
 the form a `cons' of the new type and the new target."
-  :type 'hook)
+  :type '(alist :key-type symbol :value-type function))
 
 (defcustom embark-become-keymaps
   '(embark-become-help-map
