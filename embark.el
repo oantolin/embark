@@ -2198,7 +2198,8 @@ and leaves the point to the left of it."
   ("RET" xref-find-definitions)
   ("h" display-local-help)
   ("H" embark-toggle-highlight)
-  ("d" xref-find-definitions))
+  ("d" xref-find-definitions)
+  ("a" xref-find-apropos))
 
 (embark-define-keymap embark-symbol-map
   "Keymap for Embark symbol actions."
@@ -2208,7 +2209,8 @@ and leaves the point to the left of it."
   ("s" embark-info-lookup-symbol)
   ("d" embark-find-definition)
   ("b" where-is)
-  ("e" eval-expression))
+  ("e" eval-expression)
+  ("a" apropos))
 
 (embark-define-keymap embark-command-map
   "Keymap for Embark command actions."
