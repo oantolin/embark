@@ -1946,10 +1946,10 @@ Return the category metadatum as the type of the target."
         (insert string))
     (insert string)))
 
-(defun embark-save (string)
-  "Save STRING in the kill ring."
-  (interactive "sSave: ")
-  (kill-new string))
+(define-obsolete-function-alias
+  'embark-save
+  'kill-new
+  "0.11")
 
 (defun embark-eshell (file)
   "Run eshell in directory of FILE."
@@ -2121,7 +2121,7 @@ and leaves the point to the left of it."
   "Keymap for Embark general actions."
   :parent embark-meta-map
   ("i" embark-insert)
-  ("w" embark-save)
+  ("w" kill-new)
   ("E" embark-export)
   ("S" embark-collect-snapshot)
   ("L" embark-collect-live)
