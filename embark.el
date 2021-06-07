@@ -1361,15 +1361,18 @@ key binding for it.  Or alternatively you might want to enable
           (while (/= pos dis)
             (let ((inv (next-single-property-change pos 'invisible string dis)))
               (unless (get-text-property pos 'invisible string)
-                (setq width (+ width
-                               ;; bug#47712: Emacs 28 can compute `string-width' of substrings
-                               (embark--static-if (= 3 (cdr (func-arity #'string-width)))
-                                   (string-width string pos inv)
-                                 (string-width
-                                  ;; Avoid allocation for the full string.
-                                  (if (and (= pos 0) (= inv len))
-                                      string
-                                    (substring-no-properties string pos inv)))))))
+                (setq width
+                      (+ width
+                         ;; bug#47712: Emacs 28 can compute `string-width'
+                         ;; of substrings
+                         (embark--static-if (= (cdr (func-arity #'string-width))
+                                               3)
+                             (string-width string pos inv)
+                           (string-width
+                            ;; Avoid allocation for the full string.
+                            (if (and (= pos 0) (= inv len))
+                                string
+                              (substring-no-properties string pos inv)))))))
               (setq pos inv))))))
     width))
 
@@ -1799,10 +1802,12 @@ buffer for each type of completion."
                    (let ((file (file-name-nondirectory path)))
                      (or (string= file ".") (string= file ".."))))
                  files)))
-  (let ((buf (dired-noselect (cons
-                              ;; TODO: is it worth finding the deepest common containing directory?
-                              (if (cl-every #'file-name-absolute-p files) "/" default-directory)
-                              files))))
+  (let ((buf
+         (dired-noselect
+          (cons
+           ;; TODO: is it worth finding the deepest common containing directory?
+           (if (cl-every #'file-name-absolute-p files) "/" default-directory)
+           files))))
     (with-current-buffer buf
       (rename-buffer (format "*Embark Export Dired %s*" default-directory)))
     (pop-to-buffer buf)))
