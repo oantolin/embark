@@ -329,7 +329,7 @@ window should only be used if it displays `embark--target-buffer'.")
   "Guess a reasonable default directory for the current candidates."
   (if (and (minibufferp) minibuffer-completing-file-name)
       (let ((end (minibuffer-prompt-end))
-            (idx (embark--minibuffer-point)))
+            (contents (minibuffer-contents)))
         (expand-file-name
          (buffer-substring
           end
@@ -337,11 +337,12 @@ window should only be used if it displays `embark--target-buffer'.")
              (or (cdr
                   (last
                    (completion-all-completions
-                    (minibuffer-contents)
+                    contents
                     minibuffer-completion-table
                     minibuffer-completion-predicate
-                    idx)))
-                 idx)))))
+                    (embark--minibuffer-point))))
+                 (cl-position ?/ contents :from-end t)
+                 0)))))
     default-directory))
 
 (defun embark--target-buffer ()
