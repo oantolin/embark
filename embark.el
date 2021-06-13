@@ -966,7 +966,7 @@ ARG is the prefix argument."
           (user-error "Canceled"))))))
 
 ;;;###autoload
-(defun embark-dwim ()
+(defun embark-dwim (&optional arg)
   "Run the default action on the current target.
 The target of the action is chosen by `embark-target-finders'.
 
@@ -978,14 +978,18 @@ For targets that do not come from minibuffer completion
 \(typically some thing at point in a regular buffer) and whose
 type is not listed in `embark-default-action-overrides', the
 default action is given by whatever binding RET has in the action
-keymap for the target's type."
-  (interactive)
+keymap for the target's type.
+
+See `embark-act' for the meaning of the prefix ARG."
+  (interactive "P")
   (pcase-let* ((`(,type ,target ,original) (embark--target))
                (default-action (embark--default-action type)))
     (if original
-        (embark--act default-action (if (eq default-action embark--command)
-                                        original
-                                      target))
+        (embark--act default-action
+                     (if (eq default-action embark--command)
+                         original
+                       target)
+                     (if embark-quit-after-action (not arg) arg))
       (user-error "No target found"))))
 
 (define-obsolete-function-alias
