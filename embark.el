@@ -905,13 +905,12 @@ type, it is called with the initial target, and must return a
 
 The return value is 3-element list of the possibly transformed
 type, the possibly transformed target and the original target."
-  (pcase-let* ((`(,type . ,target)
-                (run-hook-with-args-until-success 'embark-target-finders))
-               (transformer (alist-get type embark-transformer-alist)))
-    (if transformer
-        (pcase-let ((`(,new-type . ,new-target) (funcall transformer target)))
-          (list new-type new-target target))
-      (list type target target))))
+  (pcase (run-hook-with-args-until-success 'embark-target-finders)
+    (`(,type . ,target)
+     (if-let (transformer (alist-get type embark-transformer-alist))
+         (pcase-let ((`(,new-type . ,new-target) (funcall transformer target)))
+           (list new-type new-target target))
+       (list type target target)))))
 
 (defun embark--default-action (type)
   "Return default action for the given TYPE of target.
@@ -948,22 +947,20 @@ whether calling `embark-act' with nil ARG quits the minibuffer,
 and if ARG is non-nil it will do the opposite.  Interactively,
 ARG is the prefix argument."
   (interactive "P")
-  (pcase-let* ((`(,type ,target ,original) (embark--target)))
-    (if (and (null type) (null target))
-        (user-error "No target found")
-      (let ((action (embark--with-indicator embark-action-indicator
-                                            embark-prompter
-                                            (embark--action-keymap type)
-                                            target))
-            (default-action (embark--default-action type)))
-        (if action
-            (embark--act action
-                         (if (and (eq action default-action)
-                                  (eq action embark--command))
-                             original
-                           target)
-                         (if embark-quit-after-action (not arg) arg))
-          (user-error "Canceled"))))))
+  (pcase-let* ((`(,type ,target ,original) (or (embark--target)
+                                               (user-error "No target found")))
+                (action (or (embark--with-indicator embark-action-indicator
+                                                    embark-prompter
+                                                    (embark--action-keymap type)
+                                                    target)
+                            (user-error "Canceled")))
+                (default-action (embark--default-action type)))
+    (embark--act action
+                 (if (and (eq action default-action)
+                          (eq action embark--command))
+                     original
+                   target)
+                 (if embark-quit-after-action (not arg) arg))))
 
 ;;;###autoload
 (defun embark-dwim (&optional arg)
@@ -982,15 +979,14 @@ keymap for the target's type.
 
 See `embark-act' for the meaning of the prefix ARG."
   (interactive "P")
-  (pcase-let* ((`(,type ,target ,original) (embark--target))
+  (pcase-let* ((`(,type ,target ,original)
+                (or (embark--target) (user-error "No target found")))
                (default-action (embark--default-action type)))
-    (if original
-        (embark--act default-action
-                     (if (eq default-action embark--command)
-                         original
-                       target)
-                     (if embark-quit-after-action (not arg) arg))
-      (user-error "No target found"))))
+    (embark--act default-action
+                 (if (eq default-action embark--command)
+                     original
+                   target)
+                 (if embark-quit-after-action (not arg) arg))))
 
 (define-obsolete-function-alias
   'embark-default-action
