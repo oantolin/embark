@@ -966,7 +966,7 @@ ARG is the prefix argument."
           (user-error "Canceled"))))))
 
 ;;;###autoload
-(defun embark-default-action ()
+(defun embark-dwim ()
   "Run the default action on the current target.
 The target of the action is chosen by `embark-target-finders'.
 
@@ -987,6 +987,11 @@ keymap for the target's type."
                                         original
                                       target))
       (user-error "No target found"))))
+
+(define-obsolete-function-alias
+  'embark-default-action
+  'embark-dwim
+  "0.11")
 
 (defun embark--become-keymap ()
   "Return keymap of commands to become for current command."

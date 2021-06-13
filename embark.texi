@@ -225,8 +225,8 @@ make the @samp{switch-to-buffer} command become @samp{find-file} for this run.
 You can bind @samp{embark-become} to a key in @samp{minibuffer-local-map}, but it is
 also available as an action under the letter @samp{B} (uppercase), so you
 don't need a binding if you already have one for @samp{embark-act}. So,
-assuming I have @samp{embark-act} bound to, say, @samp{C-S-a}, once I realize I
-haven't open the file I can type @samp{C-S-a B C-x C-f} to have
+assuming I have @samp{embark-act} bound to, say, @samp{C-.}, once I realize I
+haven't open the file I can type @samp{C-. B C-x C-f} to have
 @samp{switch-to-buffer} become @samp{find-file} without losing what I have already
 typed in the minibuffer.
 
@@ -242,7 +242,7 @@ I accidentally try to switch to a buffer for a file I haven't opened
 yet, @samp{embark-become} finds that the command I ran, @samp{switch-to-buffer}, is
 in the keymap @samp{embark-become-file+buffer-map}, so it activates that
 keymap (and any others that also contain a binding for
-@samp{switch-to-buffer}). The end result is that I can type @samp{C-S-a B f} to
+@samp{switch-to-buffer}). The end result is that I can type @samp{C-. B f} to
 switch to @samp{find-file}.
 
 @node Configuration
@@ -277,7 +277,8 @@ reasonable starting configuration:
   :ensure t
 
   :bind
-  (("C-S-a" . embark-act)       ;; pick some comfortable binding
+  (("C-." . embark-act)         ;; pick some comfortable binding
+   ("C-;" . embark-dwim)        ;; good alternative: M-.
    ("C-h B" . embark-bindings)) ;; alternative for `describe-bindings'
 
   :init
@@ -311,6 +312,12 @@ a dedicated key binding, but feel free to bind them directly if you
 so wish. If you do choose to bind them directly, you'll probably want
 to bind them in @samp{minibuffer-local-map}, since they are most useful in
 the minibuffer (in fact, @samp{embark-become} only works in the minibuffer).
+
+The command @samp{embark-dwim} executes the default action at point. Another good
+keybinding for @samp{embark-dwim} is @samp{M-.} since @samp{embark-dwim} acts like
+@samp{xref-find-definitions} on the symbol at point. @samp{C-.} can be seen as a
+right-click context menu at point and @samp{M-.} acts like left-click. The
+keybindings are mnemonic, both act at the point (@samp{.}).
 
 Embark needs to know what your minibuffer completion system considers
 to be the list of candidates and which one is the current one. Embark
