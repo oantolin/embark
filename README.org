@@ -152,8 +152,8 @@ make the =switch-to-buffer= command become =find-file= for this run.
 You can bind =embark-become= to a key in =minibuffer-local-map=, but it is
 also available as an action under the letter =B= (uppercase), so you
 don't need a binding if you already have one for =embark-act=. So,
-assuming I have =embark-act= bound to, say, =C-S-a=, once I realize I
-haven't open the file I can type =C-S-a B C-x C-f= to have
+assuming I have =embark-act= bound to, say, =C-.=, once I realize I
+haven't open the file I can type =C-. B C-x C-f= to have
 =switch-to-buffer= become =find-file= without losing what I have already
 typed in the minibuffer.
 
@@ -169,7 +169,7 @@ I accidentally try to switch to a buffer for a file I haven't opened
 yet, =embark-become= finds that the command I ran, =switch-to-buffer=, is
 in the keymap =embark-become-file+buffer-map=, so it activates that
 keymap (and any others that also contain a binding for
-=switch-to-buffer=). The end result is that I can type =C-S-a B f= to
+=switch-to-buffer=). The end result is that I can type =C-. B f= to
 switch to =find-file=.
 
 * Configuration
@@ -191,7 +191,8 @@ reasonable starting configuration:
     :ensure t
 
     :bind
-    (("C-S-a" . embark-act)       ;; pick some comfortable binding
+    (("C-." . embark-act)         ;; pick some comfortable binding
+     ("C-;" . embark-dwim)        ;; good alternative: M-.
      ("C-h B" . embark-bindings)) ;; alternative for `describe-bindings'
 
     :init
@@ -225,6 +226,12 @@ a dedicated key binding, but feel free to bind them directly if you
 so wish. If you do choose to bind them directly, you'll probably want
 to bind them in =minibuffer-local-map=, since they are most useful in
 the minibuffer (in fact, =embark-become= only works in the minibuffer).
+
+The command =embark-dwim= executes the default action at point. Another good
+keybinding for =embark-dwim= is =M-.= since =embark-dwim= acts like
+=xref-find-definitions= on the symbol at point. =C-.= can be seen as a
+right-click context menu at point and =M-.= acts like left-click. The
+keybindings are mnemonic, both act at the point (=.=).
 
 Embark needs to know what your minibuffer completion system considers
 to be the list of candidates and which one is the current one. Embark
