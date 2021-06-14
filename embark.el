@@ -2149,6 +2149,7 @@ and leaves the point to the left of it."
   ("c" capitalize-region)
   ("|" shell-command-on-region)
   ("e" eval-region)
+  ("a" align)
   ("i" indent-rigidly)
   ("TAB" indent-region)
   ("f" fill-region)
