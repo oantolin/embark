@@ -138,6 +138,12 @@ For any type not listed here, `embark-act' will use
   "Can be bound to short circuit `embark-keymap-alist'.
 Embark will set the parent of this map to `embark-general-map'.")
 
+(defcustom embark-repeat-action
+  '(embark-symbol-next
+    embark-symbol-previous)
+  "List of repeatable actions."
+  :type '(repeat function))
+
 (defcustom embark-target-finders
   '(embark-target-top-minibuffer-completion
     embark-target-active-region
@@ -960,7 +966,11 @@ ARG is the prefix argument."
                           (eq action embark--command))
                      original
                    target)
-                 (if embark-quit-after-action (not arg) arg))))
+                 (if embark-quit-after-action (not arg) arg))
+    (when (memq action embark-repeat-action)
+      ;; Terminate repeated prompter on default action
+      (let ((embark-default-action-overrides `((,type . ignore))))
+        (embark-act)))))
 
 ;;;###autoload
 (defun embark-dwim (&optional arg)
@@ -2090,6 +2100,20 @@ minibuffer, which means it can be used as an Embark action."
     (deactivate-mark)
     (embark-act)))
 
+(defun embark-symbol-next (sym)
+  "Jump to next SYM."
+  (interactive "s")
+  (condition-case nil
+      (re-search-forward (format "\\_<%s\\_>" (regexp-quote sym)))
+    (t (user-error "Symbol %s not found" sym))))
+
+(defun embark-symbol-previous (sym)
+  "Jump to previous SYM."
+  (interactive "s")
+  (condition-case nil
+      (re-search-backward (format "\\_<%s\\_>" (regexp-quote sym)))
+    (t (user-error "Symbol %s not found" sym))))
+
 (defun embark-toggle-highlight ()
   "Toggle symbol highlighting using `highlight-symbol-at-point'."
   (interactive)
@@ -2210,7 +2234,9 @@ and leaves the point to the left of it."
   ("h" display-local-help)
   ("H" embark-toggle-highlight)
   ("d" xref-find-definitions)
-  ("a" xref-find-apropos))
+  ("a" xref-find-apropos)
+  ("n" embark-symbol-next)
+  ("p" embark-symbol-previous))
 
 (embark-define-keymap embark-symbol-map
   "Keymap for Embark symbol actions."
@@ -2219,6 +2245,8 @@ and leaves the point to the left of it."
   ("H" embark-toggle-highlight)
   ("s" embark-info-lookup-symbol)
   ("d" embark-find-definition)
+  ("n" embark-symbol-next)
+  ("p" embark-symbol-previous)
   ("b" where-is)
   ("e" eval-expression)
   ("a" apropos))
