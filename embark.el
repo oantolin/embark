@@ -2166,6 +2166,7 @@ and leaves the point to the left of it."
   ("c" capitalize-region)
   ("|" shell-command-on-region)
   ("e" eval-region)
+  ("a" align)
   ("i" indent-rigidly)
   ("TAB" indent-region)
   ("f" fill-region)
@@ -2227,6 +2228,7 @@ and leaves the point to the left of it."
   ("h" display-local-help)
   ("H" embark-toggle-highlight)
   ("d" xref-find-definitions)
+  ("r" xref-find-references)
   ("a" xref-find-apropos))
 
 (embark-define-keymap embark-symbol-map
@@ -2236,6 +2238,7 @@ and leaves the point to the left of it."
   ("H" embark-toggle-highlight)
   ("s" embark-info-lookup-symbol)
   ("d" embark-find-definition)
+  ("r" xref-find-references)
   ("b" where-is)
   ("e" eval-expression)
   ("a" apropos))
