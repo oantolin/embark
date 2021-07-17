@@ -120,7 +120,9 @@
     (environment-variables . embark-file-map) ; they come up in file completion
     (url . embark-url-map)
     (buffer . embark-buffer-map)
+    (expression . embark-expression-map)
     (identifier . embark-identifier-map)
+    (defun . embark-defun-map)
     (symbol . embark-symbol-map)
     (command . embark-command-map)
     (variable . embark-variable-map)
@@ -144,6 +146,8 @@ For any type not listed here, `embark-act' will use
     embark-target-bug-reference-at-point
     embark-target-url-at-point
     embark-target-file-at-point
+    embark-target-defun-at-point
+    embark-target-expression-at-point
     embark-target-custom-variable-at-point
     embark-target-identifier-at-point)
   "List of functions to determine the target in current context.
@@ -235,7 +239,7 @@ It can be overriden by the `embark-setup-overrides' alist."
 (defcustom embark-setup-overrides
   '((async-shell-command embark--shell-prep)
     (shell-command embark--shell-prep)
-    (eval-expression embark--eval-prep)
+    (pp-eval-expression embark--eval-prep)
     (package-delete minibuffer-force-complete))
   "Alist associating commands with post-injection setup hooks.
 For commands appearing as keys in this alist, run the
@@ -285,7 +289,7 @@ When this variable is nil, it is overridden by
     shell-command
     async-shell-command
     embark-kill-buffer-and-window
-    eval-expression)
+    pp-eval-expression)
   "Allowing editing of target prior to acting for these commands.
 This list is used only when `embark-allow-edit-default' is nil."
   :type 'hook)
@@ -495,6 +499,26 @@ This function mostly relies on `ffap-file-at-point', with two exceptions:
     (when-let ((symbol (get-text-property (point) 'custom-data)))
       (cons 'variable (symbol-name symbol)))))
 
+(defun embark-target-expression-at-point ()
+  "Target expression at point."
+  (when-let (exp (and
+                  (or (derived-mode-p 'emacs-lisp-mode)
+                      (not (derived-mode-p 'prog-mode)))
+                  (or (memq (char-syntax (char-after)) '(?\( ?\"))
+                      (memq (char-syntax (char-before)) '(?\) ?\")))
+                  (thing-at-point 'sexp)))
+    (cons 'expression exp)))
+
+(defun embark-target-defun-at-point ()
+  "Target defun at point."
+  (when-let (bounds (bounds-of-thing-at-point 'defun))
+    (let ((str (buffer-substring (car bounds) (cdr bounds))))
+      (when (and
+             (string-match "\\`(\\(?:\\w\\|\\s_\\)+" str)
+             (or (>= (point) (1- (cdr bounds)))
+                 (<= (point) (+ (car bounds) (match-end 0)))))
+        (cons 'defun str)))))
+
 (defun embark-target-identifier-at-point ()
   "Target identifier at point.
 
@@ -599,6 +623,10 @@ a function to be called when the indicator is no longer needed."
    ((functionp indicator)
     (funcall indicator keymap target))
    ((or (stringp indicator) (consp indicator))
+    (unless (stringp target)
+      (setq target (format "%s" target)))
+    (when-let (pos (string-match-p "\n" target))
+      (setq target (concat (substring target 0 pos) "…")))
     (let* ((mini (active-minibuffer-window))
            (ind (format (if (consp indicator)
                             (if mini (car indicator) (cdr indicator))
@@ -2121,6 +2149,37 @@ minibuffer, which means it can be used as an Embark action."
         (unhighlight-regexp regexp)
       (highlight-symbol-at-point))))
 
+(defun embark--beginning-of-sexp ()
+  "Go to the beginning of the Sexp at point."
+  (goto-char (car (bounds-of-thing-at-point 'sexp))))
+
+(defun embark-indent-sexp ()
+  "Indent Sexp at point."
+  (interactive)
+  (save-excursion
+    (embark--beginning-of-sexp)
+    (indent-sexp)))
+
+(defun embark-kill-sexp ()
+  "Kill Sexp at point."
+  (interactive)
+  (save-excursion
+    (embark--beginning-of-sexp)
+    (kill-sexp)))
+
+(defun embark-raise-sexp ()
+  "Raise Sexp at point."
+  (interactive)
+  (save-excursion
+    (embark--beginning-of-sexp)
+    (raise-sexp)))
+
+(defun embark-mark-sexp ()
+  "Mark Sexp at point."
+  (interactive)
+  (embark--beginning-of-sexp)
+  (mark-sexp))
+
 ;;; Setup hooks for actions
 
 (defun embark--shell-prep ()
@@ -2171,6 +2230,7 @@ and leaves the point to the left of it."
   ("|" shell-command-on-region)
   ("e" eval-region)
   ("a" align)
+  ("A" align-regexp)
   ("i" indent-rigidly)
   ("TAB" indent-region)
   ("f" fill-region)
@@ -2235,6 +2295,26 @@ and leaves the point to the left of it."
   ("r" xref-find-references)
   ("a" xref-find-apropos))
 
+(embark-define-keymap embark-expression-map
+  "Keymap for Embark expression actions."
+  ("RET" pp-eval-expression)
+  ("m" pp-macroexpand-expression)
+  ("i" embark-indent-sexp)
+  ("r" embark-raise-sexp)
+  ("k" embark-kill-sexp)
+  ("@" embark-mark-sexp))
+
+(embark-define-keymap embark-defun-map
+  "Keymap for Embark defun actions."
+  :parent embark-expression-map
+  ("RET" eval-defun)
+  ("c" compile-defun)
+  ("l" elint-defun)
+  ("d" edebug-defun)
+  ("o" checkdoc-defun)
+  ("n" narrow-to-defun)
+  ("h" mark-defun))
+
 (embark-define-keymap embark-symbol-map
   "Keymap for Embark symbol actions."
   ("RET" embark-find-definition)
@@ -2244,7 +2324,7 @@ and leaves the point to the left of it."
   ("d" embark-find-definition)
   ("r" xref-find-references)
   ("b" where-is)
-  ("e" eval-expression)
+  ("e" pp-eval-expression)
   ("a" apropos))
 
 (embark-define-keymap embark-command-map
