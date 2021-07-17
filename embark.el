@@ -1075,7 +1075,7 @@ the defined keymap.  If the `:parent' keymap is absent,
          (parent (if (eq :parent (car bindings))
                      (cadr bindings)
                    'embark-general-map))
-         (bindings (if parent (cddr bindings) bindings)))
+         (bindings (if (eq :parent (car bindings)) (cddr bindings) bindings)))
     `(defvar ,name
        (let ((,map (make-sparse-keymap)))
          ,@(mapcar (pcase-lambda (`(,key ,fn))
