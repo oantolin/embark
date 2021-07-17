@@ -128,15 +128,12 @@
     (unicode-name . embark-unicode-name-map)
     (package . embark-package-map)
     (bookmark . embark-bookmark-map)
-    (region . embark-region-map))
+    (region . embark-region-map)
+    (t . embark-general-map))
   "Alist of action types and corresponding keymaps.
 For any type not listed here, `embark-act' will use
 `embark-general-map'."
   :type '(alist :key-type symbol :value-type variable))
-
-(defvar embark-overriding-keymap nil
-  "Can be bound to short circuit `embark-keymap-alist'.
-Embark will set the parent of this map to `embark-general-map'.")
 
 (defcustom embark-target-finders
   '(embark-target-top-minibuffer-completion
@@ -574,16 +571,12 @@ relative path."
                     (abbreviate-file-name (expand-file-name raw))
                   raw)))))))
 
-(defvar embark-general-map)             ; forward declarations
-
 (defun embark--action-keymap (type)
   "Return action keymap for targets of given TYPE."
-  (if embark-overriding-keymap
-      (make-composed-keymap embark-overriding-keymap embark-general-map)
-    (make-composed-keymap
-     `(keymap (13 . ,(embark--default-action type)))
-     (or (symbol-value (alist-get type embark-keymap-alist))
-         embark-general-map))))
+  (make-composed-keymap
+   `(keymap (13 . ,(embark--default-action type)))
+   (symbol-value (or (alist-get type embark-keymap-alist)
+                     (alist-get t embark-keymap-alist)))))
 
 (defun embark--show-indicator (indicator keymap target)
   "Show INDICATOR for a pending action or a instance of becoming.
@@ -941,8 +934,10 @@ type is not listed in `embark-default-action-overrides', the
 default action is given by whatever binding RET has in the action
 keymap for the given type."
   (or (alist-get type embark-default-action-overrides)
+      (alist-get t embark-default-action-overrides)
       embark--command
-      (lookup-key (symbol-value (alist-get type embark-keymap-alist))
+      (lookup-key (symbol-value (or (alist-get type embark-keymap-alist)
+                                    (alist-get t embark-keymap-alist)))
                   (kbd "RET"))))
 
 ;;;###autoload
@@ -1138,11 +1133,6 @@ The key t is also allowed in the alist, and the corresponding
 value indicates the default function to use for other types.  The
 default is `embark-collect-snapshot'."
   :type '(alist :key-type symbol :value-type function))
-
-(defvar embark-overriding-export-function nil
-  "Can be bound to short circuit `embark-exporters-alist'.
-The expected format is the same as for functions in
-`embark-exporters-alist'.")
 
 (defcustom embark-after-export-hook nil
   "Hook run after `embark-export' in the newly created buffer."
@@ -1781,13 +1771,12 @@ buffer for each type of completion."
                (run-hook-with-args-until-success 'embark-candidate-collectors)))
     (if (null candidates)
         (user-error "No candidates for export")
-      (let ((exporter (or embark-overriding-export-function
-                          (alist-get type embark-exporters-alist)
+      (let ((exporter (or (alist-get type embark-exporters-alist)
                           (alist-get t embark-exporters-alist)))
             (transformer (alist-get type embark-transformer-alist)))
 
         ;; check to see if all candidates transform to same type
-        (when (and (not embark-overriding-export-function) transformer)
+        (when transformer
           (pcase-let* ((`(,new-type . ,first-cand)
                         (funcall transformer (car candidates))))
             (unless (eq type new-type)
