@@ -124,6 +124,7 @@
     (symbol . embark-symbol-map)
     (command . embark-command-map)
     (variable . embark-variable-map)
+    (function . embark-function-map)
     (minor-mode . embark-command-map)
     (unicode-name . embark-unicode-name-map)
     (package . embark-package-map)
@@ -859,7 +860,11 @@ minibuffer before executing the action."
   (cons (or (when-let ((symbol (intern-soft target)))
               (cond
                ((commandp symbol) 'command)
-               ((boundp symbol) 'variable)))
+               ((boundp symbol) 'variable)
+               ;; Prefer variables over functions for backward compatibility.
+               ;; Command > variable > function > symbol seems like a
+               ;; reasonable order with decreasing usefulness of the actions.
+               ((fboundp symbol) 'function)))
             'symbol)
         target))
 
@@ -2256,6 +2261,12 @@ and leaves the point to the left of it."
   ("=" set-variable)
   ("c" customize-set-variable)
   ("u" customize-variable))
+
+(embark-define-keymap embark-function-map
+  "Keymap for Embark function actions."
+  :parent embark-symbol-map
+  ("t" trace-function)
+  ("T" untrace-function))
 
 (embark-define-keymap embark-package-map
   "Keymap for Embark package actions."
