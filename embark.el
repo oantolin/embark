@@ -1011,10 +1011,11 @@ See `embark-act' for the meaning of the prefix ARG."
 
 (defun embark--become-keymap ()
   "Return keymap of commands to become for current command."
-  (cl-loop for keymap-name in embark-become-keymaps
-           for keymap = (symbol-value keymap-name)
-           when (where-is-internal embark--command (list keymap))
-           collect keymap))
+  (make-composed-keymap
+   (cl-loop for keymap-name in embark-become-keymaps
+            for keymap = (symbol-value keymap-name)
+            when (where-is-internal embark--command (list keymap))
+            collect keymap)))
 
 ;;;###autoload
 (defun embark-become (&optional full)
