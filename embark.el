@@ -457,10 +457,27 @@ There are three kinds:
 (autoload 'dired-get-filename "dired")
 
 (defun embark-target-file-at-point ()
-  "Target file at point."
-  (when-let ((file (if (derived-mode-p 'dired-mode)
-                       (dired-get-filename t 'no-error-if-not-filep)
-                     (ffap-file-at-point))))
+  "Target file at point.
+This function mostly relies on `ffap-file-at-point', with two exceptions:
+
+1. In `dired-mode', it uses `dired-get-filename' instead.
+
+2. In `emacs-lisp-mode', it only calls `ffap-file-at-point' if
+   point is in a string or comment, or if it is on symbol
+   preceded by `require' or `use-package'."
+  (when-let ((file (cond
+                    ((derived-mode-p 'dired-mode)
+                     (dired-get-filename t 'no-error-if-not-filep))
+                    ((derived-mode-p 'emacs-lisp-mode)
+                     (when (or (nth 3 (syntax-ppss)) ; in a string
+                               (nth 4 (syntax-ppss)) ; or comment
+                               (save-excursion
+                                 (unless (looking-at "\\_<")
+                                   (forward-symbol -1))
+                                 (forward-symbol -1)
+                                 (looking-at "use-package\\|require")))
+                       (ffap-file-at-point)))
+                     (t (ffap-file-at-point)))))
     (cons 'file (abbreviate-file-name file))))
 
 (defun embark-target-bug-reference-at-point ()
@@ -904,13 +921,12 @@ type, it is called with the initial target, and must return a
 
 The return value is 3-element list of the possibly transformed
 type, the possibly transformed target and the original target."
-  (pcase-let* ((`(,type . ,target)
-                (run-hook-with-args-until-success 'embark-target-finders))
-               (transformer (alist-get type embark-transformer-alist)))
-    (if transformer
-        (pcase-let ((`(,new-type . ,new-target) (funcall transformer target)))
-          (list new-type new-target target))
-      (list type target target))))
+  (pcase (run-hook-with-args-until-success 'embark-target-finders)
+    (`(,type . ,target)
+     (if-let (transformer (alist-get type embark-transformer-alist))
+         (pcase-let ((`(,new-type . ,new-target) (funcall transformer target)))
+           (list new-type new-target target))
+       (list type target target)))))
 
 (defun embark--default-action (type)
   "Return default action for the given TYPE of target.
@@ -947,25 +963,23 @@ whether calling `embark-act' with nil ARG quits the minibuffer,
 and if ARG is non-nil it will do the opposite.  Interactively,
 ARG is the prefix argument."
   (interactive "P")
-  (pcase-let* ((`(,type ,target ,original) (embark--target)))
-    (if (and (null type) (null target))
-        (user-error "No target found")
-      (let ((action (embark--with-indicator embark-action-indicator
-                                            embark-prompter
-                                            (embark--action-keymap type)
-                                            target))
-            (default-action (embark--default-action type)))
-        (if action
-            (embark--act action
-                         (if (and (eq action default-action)
-                                  (eq action embark--command))
-                             original
-                           target)
-                         (if embark-quit-after-action (not arg) arg))
-          (user-error "Canceled"))))))
+  (pcase-let* ((`(,type ,target ,original) (or (embark--target)
+                                               (user-error "No target found")))
+                (action (or (embark--with-indicator embark-action-indicator
+                                                    embark-prompter
+                                                    (embark--action-keymap type)
+                                                    target)
+                            (user-error "Canceled")))
+                (default-action (embark--default-action type)))
+    (embark--act action
+                 (if (and (eq action default-action)
+                          (eq action embark--command))
+                     original
+                   target)
+                 (if embark-quit-after-action (not arg) arg))))
 
 ;;;###autoload
-(defun embark-default-action ()
+(defun embark-dwim (&optional arg)
   "Run the default action on the current target.
 The target of the action is chosen by `embark-target-finders'.
 
@@ -977,15 +991,23 @@ For targets that do not come from minibuffer completion
 \(typically some thing at point in a regular buffer) and whose
 type is not listed in `embark-default-action-overrides', the
 default action is given by whatever binding RET has in the action
-keymap for the target's type."
-  (interactive)
-  (pcase-let* ((`(,type ,target ,original) (embark--target))
+keymap for the target's type.
+
+See `embark-act' for the meaning of the prefix ARG."
+  (interactive "P")
+  (pcase-let* ((`(,type ,target ,original)
+                (or (embark--target) (user-error "No target found")))
                (default-action (embark--default-action type)))
-    (if original
-        (embark--act default-action (if (eq default-action embark--command)
-                                        original
-                                      target))
-      (user-error "No target found"))))
+    (embark--act default-action
+                 (if (eq default-action embark--command)
+                     original
+                   target)
+                 (if embark-quit-after-action (not arg) arg))))
+
+(define-obsolete-function-alias
+  'embark-default-action
+  'embark-dwim
+  "0.11")
 
 (defun embark--become-keymap ()
   "Return keymap of commands to become for current command."
@@ -2153,6 +2175,7 @@ and leaves the point to the left of it."
   ("c" capitalize-region)
   ("|" shell-command-on-region)
   ("e" eval-region)
+  ("a" align)
   ("i" indent-rigidly)
   ("TAB" indent-region)
   ("f" fill-region)
@@ -2214,6 +2237,7 @@ and leaves the point to the left of it."
   ("h" display-local-help)
   ("H" embark-toggle-highlight)
   ("d" xref-find-definitions)
+  ("r" xref-find-references)
   ("a" xref-find-apropos))
 
 (embark-define-keymap embark-symbol-map
@@ -2223,6 +2247,7 @@ and leaves the point to the left of it."
   ("H" embark-toggle-highlight)
   ("s" embark-info-lookup-symbol)
   ("d" embark-find-definition)
+  ("r" xref-find-references)
   ("b" where-is)
   ("e" eval-expression)
   ("a" apropos))
