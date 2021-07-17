@@ -1042,10 +1042,17 @@ point."
 (defmacro embark-define-keymap (name doc &rest bindings)
   "Define keymap variable NAME.
 DOC is the documentation string.
-BINDINGS is the list of bindings."
+
+BINDINGS specifies the key bindings as (string command) pairs;
+the strings are passed to `kbd' to determine which key sequence
+to bind.
+
+Before the actual list of binding pairs you can include the
+keyword `:parent' followed by a keymap, to specify a parent for
+the defined keymap."
   (declare (indent 1))
   (let* ((map (make-symbol "map"))
-         (parent (if (eq :parent (car bindings)) (cadr bindings)))
+         (parent (when (eq :parent (car bindings)) (cadr bindings)))
          (bindings (if parent (cddr bindings) bindings)))
     `(defvar ,name
        (let ((,map (make-sparse-keymap)))
