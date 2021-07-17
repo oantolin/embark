@@ -558,16 +558,15 @@ relative path."
                   raw)))))))
 
 (defvar embark-general-map)             ; forward declarations
-(defvar embark-meta-map)
 
 (defun embark--action-keymap (type)
   "Return action keymap for targets of given TYPE."
-  (make-composed-keymap
-   (or embark-overriding-keymap
-       (make-composed-keymap
-        `(keymap (13 . ,(embark--default-action type)))
-        (symbol-value (alist-get type embark-keymap-alist))))
-   (if (eq type 'region) embark-meta-map embark-general-map)))
+  (if embark-overriding-keymap
+      (make-composed-keymap embark-overriding-keymap embark-general-map)
+    (make-composed-keymap
+     `(keymap (13 . ,(embark--default-action type)))
+     (or (symbol-value (alist-get type embark-keymap-alist))
+         embark-general-map))))
 
 (defun embark--show-indicator (indicator keymap target)
   "Show INDICATOR for a pending action or a instance of becoming.
@@ -990,12 +989,10 @@ keymap for the target's type."
 
 (defun embark--become-keymap ()
   "Return keymap of commands to become for current command."
-  (make-composed-keymap
-   (cl-loop for keymap-name in embark-become-keymaps
-            for keymap = (symbol-value keymap-name)
-            when (where-is-internal embark--command (list keymap))
-            collect keymap)
-   embark-meta-map))
+  (cl-loop for keymap-name in embark-become-keymaps
+           for keymap = (symbol-value keymap-name)
+           when (where-is-internal embark--command (list keymap))
+           collect keymap))
 
 ;;;###autoload
 (defun embark-become (&optional full)
@@ -1049,10 +1046,13 @@ to bind.
 
 Before the actual list of binding pairs you can include the
 keyword `:parent' followed by a keymap, to specify a parent for
-the defined keymap."
+the defined keymap.  If the `:parent' keymap is absent,
+`embark-general-map' is used by default."
   (declare (indent 1))
   (let* ((map (make-symbol "map"))
-         (parent (when (eq :parent (car bindings)) (cadr bindings)))
+         (parent (if (eq :parent (car bindings))
+                     (cadr bindings)
+                   'embark-general-map))
          (bindings (if parent (cddr bindings) bindings)))
     `(defvar ,name
        (let ((,map (make-sparse-keymap)))
@@ -1333,6 +1333,7 @@ For other Embark Collect buffers, run the default action on ENTRY."
 
 (embark-define-keymap embark-collect-mode-map
   "Keymap for Embark collect mode."
+  :parent tabulated-list-mode-map
   ("a" embark-act)
   ("A" embark-collect-direct-action-minor-mode)
   ("z" embark-collect-zebra-minor-mode)
@@ -2128,6 +2129,7 @@ and leaves the point to the left of it."
 
 (embark-define-keymap embark-meta-map
   "Keymap for non-action Embark functions."
+  :parent nil
   ("C-h" embark-keymap-help))
 
 (embark-define-keymap embark-general-map
@@ -2272,6 +2274,7 @@ and leaves the point to the left of it."
 
 (embark-define-keymap embark-become-help-map
   "Keymap for Embark help actions."
+  :parent embark-meta-map
   ("V" apropos-variable)
   ("U" apropos-user-option)
   ("C" apropos-command)
@@ -2286,6 +2289,7 @@ and leaves the point to the left of it."
 
 (embark-define-keymap embark-become-file+buffer-map
   "Embark become keymap for files and buffers."
+  :parent embark-meta-map
   ("f" find-file)
   ("." find-file-at-point)
   ("p" project-find-file)
@@ -2296,6 +2300,7 @@ and leaves the point to the left of it."
 
 (embark-define-keymap embark-become-shell-command-map
   "Embark become keymap for shell commands."
+  :parent embark-meta-map
   ("!" shell-command)
   ("&" async-shell-command)
   ("c" comint-run)
@@ -2303,6 +2308,7 @@ and leaves the point to the left of it."
 
 (embark-define-keymap embark-become-match-map
   "Embark become keymap for search."
+  :parent embark-meta-map
   ("o" occur)
   ("k" keep-lines)
   ("f" flush-lines)
