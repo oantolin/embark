@@ -610,7 +610,7 @@ a function to be called when the indicator is no longer needed."
                                (window-buffer mini) t t)))
             (overlay-put indicator-overlay 'before-string (concat ind " "))
             indicator-overlay)
-        (message ind))))))
+        (message (replace-string "%" "%%" ind)))))))
 
 (defun embark-keymap-prompter (keymap)
   "Let the user choose an action using the bindings in KEYMAP.
