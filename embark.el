@@ -2282,6 +2282,7 @@ and leaves the point to the left of it."
 (embark-define-keymap embark-bookmark-map
   "Keymap for Embark bookmark actions."
   ("RET" bookmark-jump)
+  ("s" bookmark-set)
   ("d" bookmark-delete)
   ("r" bookmark-rename)
   ("R" bookmark-relocate)
