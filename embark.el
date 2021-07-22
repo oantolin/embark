@@ -2157,10 +2157,9 @@ before or after the sexp (those are the two locations at which
 `embark-target-expression-at-point' detects a sexp)."
   `(defun ,(intern (format "embark-%s" cmd)) ()
      ,(format "Run `%s' on the sexp at or before point." cmd)
-     (interactive)
-     (save-excursion
-       (goto-char (car (bounds-of-thing-at-point 'sexp)))
-       (,cmd))))
+     (interactive)     
+     (goto-char (car (bounds-of-thing-at-point 'sexp)))
+     (,cmd)))
 
 (embark--sexp-command indent-sexp)
 (embark--sexp-command kill-sexp)
