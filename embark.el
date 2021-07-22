@@ -2165,6 +2165,7 @@ before or after the sexp (those are the two locations at which
 (embark--sexp-command indent-sexp)
 (embark--sexp-command kill-sexp)
 (embark--sexp-command raise-sexp)
+(embark--sexp-command mark-sexp)
 
 ;;; Setup hooks for actions
 
