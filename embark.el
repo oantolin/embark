@@ -236,6 +236,7 @@ It can be overriden by the `embark-setup-overrides' alist."
   '((async-shell-command embark--shell-prep)
     (shell-command embark--shell-prep)
     (eval-expression embark--eval-prep)
+    (pp-eval-expression embark--eval-prep)
     (package-delete minibuffer-force-complete))
   "Alist associating commands with post-injection setup hooks.
 For commands appearing as keys in this alist, run the
@@ -285,7 +286,7 @@ When this variable is nil, it is overridden by
     shell-command
     async-shell-command
     embark-kill-buffer-and-window
-    eval-expression)
+    pp-eval-expression)
   "Allowing editing of target prior to acting for these commands.
 This list is used only when `embark-allow-edit-default' is nil."
   :type 'hook)
@@ -2171,6 +2172,7 @@ and leaves the point to the left of it."
   ("|" shell-command-on-region)
   ("e" eval-region)
   ("a" align)
+  ("A" align-regexp)
   ("i" indent-rigidly)
   ("TAB" indent-region)
   ("f" fill-region)
@@ -2244,7 +2246,7 @@ and leaves the point to the left of it."
   ("d" embark-find-definition)
   ("r" xref-find-references)
   ("b" where-is)
-  ("e" eval-expression)
+  ("e" pp-eval-expression)
   ("a" apropos))
 
 (embark-define-keymap embark-command-map
