@@ -2149,36 +2149,22 @@ minibuffer, which means it can be used as an Embark action."
         (unhighlight-regexp regexp)
       (highlight-symbol-at-point))))
 
-(defun embark--beginning-of-sexp ()
-  "Go to the beginning of the Sexp at point."
-  (goto-char (car (bounds-of-thing-at-point 'sexp))))
+(defmacro embark--sexp-command (cmd)
+  "Derive from CMD a command acting on the sexp before or after point.
+Given a CMD that acts on the sexp starting at point, this macro
+defines a command called embark-CMD which works with point either
+before or after the sexp (those are the two locations at which
+`embark-target-expression-at-point' detects a sexp)."
+  `(defun ,(intern (format "embark-%s" cmd)) ()
+     ,(format "Run `%s' on the sexp at or before point." cmd)
+     (interactive)
+     (save-excursion
+       (goto-char (car (bounds-of-thing-at-point 'sexp)))
+       (,cmd))))
 
-(defun embark-indent-sexp ()
-  "Indent Sexp at point."
-  (interactive)
-  (save-excursion
-    (embark--beginning-of-sexp)
-    (indent-sexp)))
-
-(defun embark-kill-sexp ()
-  "Kill Sexp at point."
-  (interactive)
-  (save-excursion
-    (embark--beginning-of-sexp)
-    (kill-sexp)))
-
-(defun embark-raise-sexp ()
-  "Raise Sexp at point."
-  (interactive)
-  (save-excursion
-    (embark--beginning-of-sexp)
-    (raise-sexp)))
-
-(defun embark-mark-sexp ()
-  "Mark Sexp at point."
-  (interactive)
-  (embark--beginning-of-sexp)
-  (mark-sexp))
+(embark--sexp-command indent-sexp)
+(embark--sexp-command kill-sexp)
+(embark--sexp-command raise-sexp)
 
 ;;; Setup hooks for actions
 
