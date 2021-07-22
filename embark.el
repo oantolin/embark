@@ -2330,6 +2330,8 @@ and leaves the point to the left of it."
   ("c" customize-set-variable)
   ("u" customize-variable))
 
+(declare-function untrace-function "trace")
+
 (embark-define-keymap embark-function-map
   "Keymap for Embark function actions."
   :parent embark-symbol-map
