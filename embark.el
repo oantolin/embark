@@ -2298,6 +2298,7 @@ and leaves the point to the left of it."
 (embark-define-keymap embark-expression-map
   "Keymap for Embark expression actions."
   ("RET" pp-eval-expression)
+  ("e" pp-eval-expression)
   ("m" pp-macroexpand-expression)
   ("i" embark-indent-sexp)
   ("r" embark-raise-sexp)
@@ -2308,6 +2309,7 @@ and leaves the point to the left of it."
   "Keymap for Embark defun actions."
   :parent embark-expression-map
   ("RET" eval-defun)
+  ("e" eval-defun)
   ("c" compile-defun)
   ("l" elint-defun)
   ("d" edebug-defun)
