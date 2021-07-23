@@ -2184,6 +2184,8 @@ before or after the sexp (those are the two locations at which
      ,(format "Run `%s' on the sexp at or before point." cmd)
      (interactive)
      (goto-char (car (bounds-of-thing-at-point 'sexp)))
+     (unless (memq (char-syntax (char-after)) '(?\( ?\"))
+       (backward-char))
      (,cmd)))
 
 (embark--sexp-command indent-sexp)
