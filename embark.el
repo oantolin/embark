@@ -1161,7 +1161,8 @@ default initial view for types not mentioned separately."
     (file . embark-export-dired)
     (package . embark-export-list-packages)
     (bookmark . embark-export-bookmarks)
-    (variable . embark-export-customize)
+    (variable . embark-export-customize-variable)
+    (face . embark-export-customize-face)
     (t . embark-collect-snapshot))
   "Alist associating completion types to export functions.
 Each function should take a list of strings which are candidates
@@ -1846,13 +1847,22 @@ buffer for each type of completion."
                  (funcall exporter candidates)
                  (run-hooks 'embark-after-export-hook))))))))))
 
-(defun embark-export-customize (variables)
-  "Create a customization buffer listing VARIABLES."
+(defun embark--export-customize (items title type pred)
+  "Create a customization buffer listing ITEMS of TYPE.
+The items are filtered with the predicate PRED."
   (custom-buffer-create
-   (cl-loop for var in variables
-            for sym = (intern-soft var)
-            when (and sym (boundp sym)) collect `(,sym custom-variable))
-   "*Embark Export Customize*"))
+   (cl-loop for item in items
+            for sym = (intern-soft item)
+            when (and sym (funcall pred sym)) collect `(,sym ,type))
+   (format "*Embark Export %s*" title)))
+
+(defun embark-export-customize-face (faces)
+  "Create a customization buffer listing FACES."
+  (embark--export-customize faces "Faces" 'custom-face #'custom-facep))
+
+(defun embark-export-customize-variable (variables)
+  "Create a customization buffer listing VARIABLES."
+  (embark--export-customize variables "Variables" 'custom-variable #'boundp))
 
 (defun embark-export-ibuffer (buffers)
   "Create an ibuffer buffer listing BUFFERS."
@@ -2172,7 +2182,7 @@ before or after the sexp (those are the two locations at which
 `embark-target-expression-at-point' detects a sexp)."
   `(defun ,(intern (format "embark-%s" cmd)) ()
      ,(format "Run `%s' on the sexp at or before point." cmd)
-     (interactive)     
+     (interactive)
      (goto-char (car (bounds-of-thing-at-point 'sexp)))
      (,cmd)))
 
