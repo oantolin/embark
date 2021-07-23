@@ -502,13 +502,18 @@ This function mostly relies on `ffap-file-at-point', with two exceptions:
 
 (defun embark-target-expression-at-point ()
   "Target expression at point."
-  (when-let (exp (and
-                  (or (derived-mode-p 'emacs-lisp-mode)
-                      (not (derived-mode-p 'prog-mode)))
-                  (or (memq (char-syntax (char-after)) '(?\( ?\"))
-                      (memq (char-syntax (char-before)) '(?\) ?\")))
-                  (thing-at-point 'sexp)))
-    (cons 'expression exp)))
+  (pcase (bounds-of-thing-at-point 'sexp)
+    (`(,begin . ,end)
+     (let ((pt (point)))
+       (when (or (and (= pt begin)
+                      (memq (syntax-class (syntax-after pt)) '(4 6 7)))
+                 (and (= pt end)
+                      (memq (syntax-class (syntax-after (1- pt))) '(5 7)))
+                 (and (= pt (1+ begin))
+                      (eq (syntax-class (syntax-after begin)) 6)
+                      (eq (syntax-class (syntax-after pt)) 4)
+                      (setq begin (1+ begin))))
+         (cons 'expression (buffer-substring begin end)))))))
 
 (defun embark-target-defun-at-point ()
   "Target defun at point."
