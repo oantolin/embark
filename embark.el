@@ -1155,6 +1155,7 @@ default initial view for types not mentioned separately."
     (file . embark-export-dired)
     (package . embark-export-list-packages)
     (bookmark . embark-export-bookmarks)
+    (variable . embark-export-customize)
     (t . embark-collect-snapshot))
   "Alist associating completion types to export functions.
 Each function should take a list of strings which are candidates
@@ -1838,6 +1839,16 @@ buffer for each type of completion."
                      (embark-after-export-hook after))
                  (funcall exporter candidates)
                  (run-hooks 'embark-after-export-hook))))))))))
+
+(defun embark-export-customize (variables)
+  "Create a customization buffer listing VARIABLES."
+  (custom-buffer-create
+   (delq nil
+         (mapcar (lambda (v)
+                   (when-let (sym (intern-soft v))
+                     (and (boundp sym) (list sym 'custom-variable))))
+                 variables))
+   "*Embark Export Customize*"))
 
 (defun embark-export-ibuffer (buffers)
   "Create an ibuffer buffer listing BUFFERS."
