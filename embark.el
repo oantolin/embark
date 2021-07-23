@@ -1841,13 +1841,18 @@ buffer for each type of completion."
                  (funcall exporter candidates)
                  (run-hooks 'embark-after-export-hook))))))))))
 
+(defvar custom-buffer-verbose-help)
+(defvar custom-search-field)
+
 (defun embark-export-customize (variables)
   "Create a customization buffer listing VARIABLES."
-  (custom-buffer-create
-   (cl-loop for var in variables
-            for sym = (intern-soft var)
-            when (and sym (boundp sym)) collect `(,sym custom-variable))
-   "*Embark Export Customize*"))
+  (let ((custom-buffer-verbose-help nil)
+        (custom-search-field nil))
+    (custom-buffer-create
+     (cl-loop for var in variables
+              for sym = (intern-soft var)
+              when (and sym (boundp sym)) collect `(,sym custom-variable))
+     "*Embark Export Customize*")))
 
 (defun embark-export-ibuffer (buffers)
   "Create an ibuffer buffer listing BUFFERS."
