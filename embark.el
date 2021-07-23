@@ -1843,11 +1843,9 @@ buffer for each type of completion."
 (defun embark-export-customize (variables)
   "Create a customization buffer listing VARIABLES."
   (custom-buffer-create
-   (delq nil
-         (mapcar (lambda (v)
-                   (when-let (sym (intern-soft v))
-                     (and (boundp sym) (list sym 'custom-variable))))
-                 variables))
+   (cl-loop for var in variables
+            for sym = (intern-soft var)
+            when (and sym (boundp sym)) collect `(,sym custom-variable))
    "*Embark Export Customize*"))
 
 (defun embark-export-ibuffer (buffers)
