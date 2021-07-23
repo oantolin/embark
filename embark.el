@@ -333,18 +333,19 @@ window should only be used if it displays `embark--target-buffer'.")
       (let ((end (minibuffer-prompt-end))
             (contents (minibuffer-contents)))
         (expand-file-name
-         (buffer-substring
-          end
-          (+ end
-             (or (cdr
-                  (last
-                   (completion-all-completions
-                    contents
-                    minibuffer-completion-table
-                    minibuffer-completion-predicate
-                    (embark--minibuffer-point))))
-                 (cl-position ?/ contents :from-end t)
-                 0)))))
+         (substitute-in-file-name
+          (buffer-substring
+           end
+           (+ end
+              (or (cdr
+                   (last
+                    (completion-all-completions
+                     contents
+                     minibuffer-completion-table
+                     minibuffer-completion-predicate
+                     (embark--minibuffer-point))))
+                  (cl-position ?/ contents :from-end t)
+                  0))))))
     default-directory))
 
 (defun embark--target-buffer ()
