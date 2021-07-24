@@ -521,7 +521,7 @@ This function mostly relies on `ffap-file-at-point', with two exceptions:
   (when-let (bounds (bounds-of-thing-at-point 'defun))
     (let ((str (buffer-substring (car bounds) (cdr bounds))))
       (when (and
-             (string-match "\\`(\\(?:\\w\\|\\s_\\)+" str)
+             (string-match "\\`(\\(?:\\w\\|\\s_\\)*def\\(?:\\w\\|\\s_\\)*" str)
              (or (>= (point) (1- (cdr bounds)))
                  (<= (point) (+ (car bounds) (match-end 0)))))
         (cons 'defun str)))))
@@ -895,6 +895,8 @@ minibuffer before executing the action."
   "Refine symbol TARGET to command or variable if possible."
   (cons (or (when-let ((symbol (intern-soft target)))
               (cond
+               ;; keywords are boundp?
+               ((keywordp symbol) 'symbol)
                ((commandp symbol) 'command)
                ((boundp symbol) 'variable)
                ;; Prefer variables over functions for backward compatibility.
