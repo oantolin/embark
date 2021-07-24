@@ -613,6 +613,10 @@ relative path."
                     (abbreviate-file-name (expand-file-name raw))
                   raw)))))))
 
+(defun embark--cycle-key ()
+  "Return the key to use for `embark-cycle'."
+  (or embark-cycle-key (car (where-is-internal #'embark-act))))
+
 (defun embark--action-keymap (type cycle)
   "Return action keymap for targets of given TYPE.
 If CYCLE is non-nil bind `embark-cycle'."
@@ -620,10 +624,7 @@ If CYCLE is non-nil bind `embark-cycle'."
    (let ((map (make-sparse-keymap)))
      (define-key map [13] (embark--default-action type))
      (when cycle
-       (define-key map
-         (or embark-cycle-key
-             (car (where-is-internal #'embark-act)))
-         #'embark-cycle))
+       (define-key map (embark--cycle-key) #'embark-cycle))
      map)
    (symbol-value (or (alist-get type embark-keymap-alist)
                      (alist-get t embark-keymap-alist)))))
@@ -753,16 +754,19 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
                 (when embark-keymap-prompter-key
                   (use-local-map
                    (make-composed-keymap
-                    (let ((map (make-sparse-keymap)))
+                    (let ((map (make-sparse-keymap))
+                          (cycle (embark--cycle-key)))
                       ;; Rebind `embark-cycle' in order allow cycling
                       ;; from the `completing-read' prompter. Additionally
                       ;; `embark-cycle' can be selected via
                       ;; `completing-read'. The downside is that this breaks
                       ;; recursively acting on the candidates of type
                       ;; embark-keybinding in the `completing-read' prompter.
-                      (when-let (key (where-is-internal
-                                      #'embark-cycle keymap))
-                        (define-key map (car key) #'embark-cycle))
+                      (define-key map cycle
+                        (if (lookup-key keymap cycle) #'embark-cycle
+                          (lambda ()
+                            (interactive)
+                            (minibuffer-message "Only a single target"))))
                       (define-key map embark-keymap-prompter-key
                         (lambda ()
                           (interactive)
