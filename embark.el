@@ -505,25 +505,49 @@ This function mostly relies on `ffap-file-at-point', with two exceptions:
   (pcase (bounds-of-thing-at-point 'sexp)
     (`(,begin . ,end)
      (let ((pt (point)))
+       ;; See (info "(elisp)Syntax Table Internals") for magic numbers below
        (when (or (and (= pt begin)
                       (memq (syntax-class (syntax-after pt)) '(4 6 7)))
                  (and (= pt end)
                       (memq (syntax-class (syntax-after (1- pt))) '(5 7)))
                  (and (= pt (1+ begin))
                       (eq (syntax-class (syntax-after begin)) 6)
-                      (eq (syntax-class (syntax-after pt)) 4)
-                      (setq begin (1+ begin))))
+                      (eq (syntax-class (syntax-after pt)) 4)))
          (cons 'expression (buffer-substring begin end)))))))
+
+(defun embark--defun-bounds ()
+  "Return bounds of defun if point is targetting a defun, or nil.
+The defun at point is considered to be target if the point is
+right after the defun, or if it is before the name of the thing
+defined in the defun.
+
+For example, the defun '(defcustom var ...)' is targetted if
+point is immediately after the closing parenthes or anywhere on
+'(defcustom '."
+  (pcase (bounds-of-thing-at-point 'defun)
+    ((and `(,begin . ,end) bounds)
+     (when (or (>= (point) (1- end))
+               (< (point)
+                  (save-excursion
+                    (goto-char begin)
+                    (if (eq (syntax-class (syntax-after begin)) 4)
+                        ;; lisp: target only in first symbol
+                        (progn
+                          (forward-char) ; skip opening parenthesis
+                          (skip-syntax-forward " " end)
+                          (skip-syntax-forward "w_" end)
+                          (forward-char))
+                      ;; other: target before the symbol followed by (, [ or :
+                      (skip-chars-forward "^({[:" end)
+                      (skip-syntax-backward " " begin)
+                      (skip-syntax-backward "w_" begin))
+                    (point))))
+       bounds))))
 
 (defun embark-target-defun-at-point ()
   "Target defun at point."
-  (when-let (bounds (bounds-of-thing-at-point 'defun))
-    (let ((str (buffer-substring (car bounds) (cdr bounds))))
-      (when (and
-             (string-match "\\`(\\(?:\\w\\|\\s_\\)+" str)
-             (or (>= (point) (1- (cdr bounds)))
-                 (<= (point) (+ (car bounds) (match-end 0)))))
-        (cons 'defun str)))))
+  (when-let ((bounds (embark--defun-bounds)))
+    (cons 'defun (buffer-substring (car bounds) (cdr bounds)))))
 
 (defun embark-target-identifier-at-point ()
   "Target identifier at point.
@@ -2174,24 +2198,35 @@ minibuffer, which means it can be used as an Embark action."
         (unhighlight-regexp regexp)
       (highlight-symbol-at-point))))
 
-(defmacro embark--sexp-command (cmd)
-  "Derive from CMD a command acting on the sexp before or after point.
-Given a CMD that acts on the sexp starting at point, this macro
-defines a command called embark-CMD which works with point either
-before or after the sexp (those are the two locations at which
-`embark-target-expression-at-point' detects a sexp)."
-  `(defun ,(intern (format "embark-%s" cmd)) ()
-     ,(format "Run `%s' on the sexp at or before point." cmd)
-     (interactive)
-     (goto-char (car (bounds-of-thing-at-point 'sexp)))
-     (unless (memq (char-syntax (char-after)) '(?\( ?\"))
-       (backward-char))
-     (,cmd)))
+(defun embark--defun/sexp-bounds ()
+  "Return bounds of defun or sexp at point."
+  (or (embark--defun-bounds) (bounds-of-thing-at-point 'sexp)))
 
-(embark--sexp-command indent-sexp)
-(embark--sexp-command kill-sexp)
-(embark--sexp-command raise-sexp)
-(embark--sexp-command mark-sexp)
+(defun embark-mark-defun/sexp ()
+  "Mark the defun or sexp at or before point."
+  (interactive)
+  (when-let ((bounds (embark--defun/sexp-bounds)))
+    (goto-char (car bounds))
+    (set-mark (cdr bounds))))
+
+(defun embark-kill-defun/sexp ()
+  "Kill the defun or sexp at or before point."
+  (interactive)
+  (when-let ((bounds (embark--defun/sexp-bounds)))
+    (kill-region (car bounds) (cdr bounds))))
+
+(defun embark-indent-defun/sexp ()
+  "Indent the defun or sexp at or before point."
+  (interactive)
+  (when-let ((bounds (embark--defun/sexp-bounds)))
+    (indent-region (car bounds) (cdr bounds))))
+
+(defun embark-raise-sexp ()
+  "Raise sexp at or before point."
+  (interactive)
+  (when-let ((bounds (bounds-of-thing-at-point 'sexp)))
+    (goto-char (car bounds))
+    (raise-sexp)))
 
 ;;; Setup hooks for actions
 
@@ -2311,12 +2346,13 @@ and leaves the point to the left of it."
 (embark-define-keymap embark-expression-map
   "Keymap for Embark expression actions."
   ("RET" pp-eval-expression)
+  ("I" embark-insert)
   ("e" pp-eval-expression)
   ("m" pp-macroexpand-expression)
-  ("i" embark-indent-sexp)
+  ("i" embark-indent-defun/sexp)
   ("r" embark-raise-sexp)
-  ("k" embark-kill-sexp)
-  ("@" embark-mark-sexp))
+  ("k" embark-kill-defun/sexp)
+  ("SPC" embark-mark-defun/sexp))
 
 (embark-define-keymap embark-defun-map
   "Keymap for Embark defun actions."
@@ -2327,8 +2363,7 @@ and leaves the point to the left of it."
   ("l" elint-defun)
   ("d" edebug-defun)
   ("o" checkdoc-defun)
-  ("n" narrow-to-defun)
-  ("h" mark-defun))
+  ("n" narrow-to-defun))
 
 (embark-define-keymap embark-symbol-map
   "Keymap for Embark symbol actions."
