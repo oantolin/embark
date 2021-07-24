@@ -829,8 +829,8 @@ be restricted by passing a PREFIX key."
     (when-let (command (embark-completing-read-prompter keymap 'no-default))
       (call-interactively command))))
 
-(defun embark--with-indicator (indicator prompter keymap targets)
-  "Display INDICATOR while calling PROMPTER with KEYMAP.
+(defun embark--prompt (indicator keymap targets)
+  "Display INDICATOR while calling the prompter with KEYMAP.
 The TARGETS are displayed for actions outside the minibuffer."
   (let ((remove-indicator (embark--show-indicator indicator keymap targets)))
     (unwind-protect
@@ -849,7 +849,7 @@ The TARGETS are displayed for actions outside the minibuffer."
                                             indicator)
                                           keymap targets))
               (let ((enable-recursive-minibuffers t))
-                (funcall prompter keymap)))
+                (funcall embark-prompter keymap)))
           (quit nil))
       (when (functionp remove-indicator)
         (funcall remove-indicator)))))
@@ -1060,11 +1060,10 @@ ARG is the prefix argument."
         (and
          (catch 'embark--cycle
            (pcase-let* ((`((,type . ,target) . (,_ . ,original)) (car targets))
-                        (action (or (embark--with-indicator embark-action-indicator
-                                                            embark-prompter
-                                                            (embark--action-keymap
-                                                             type (cdr targets))
-                                                            (mapcar #'car targets))
+                        (action (or (embark--prompt embark-action-indicator
+                                                    (embark--action-keymap
+                                                     type (cdr targets))
+                                                    (mapcar #'car targets))
                                     (user-error "Canceled")))
                         (default-action (embark--default-action type)))
              (embark--act action
@@ -1146,11 +1145,10 @@ point."
                      (pcase-let ((`(,beg . ,end) (embark--boundaries)))
                        (substring (minibuffer-contents) beg
                                   (+ end (embark--minibuffer-point))))))
-           (become (embark--with-indicator embark-become-indicator
-                                           embark-prompter
-                                           (embark--become-keymap)
-                                           ;; Pass a fake target list here
-                                           `((nil . ,target)))))
+           (become (embark--prompt embark-become-indicator
+                                   (embark--become-keymap)
+                                   ;; Pass a fake target list here
+                                   `((nil . ,target)))))
       (if (null become)
           (user-error "Canceled")
         (embark--quit-and-run
