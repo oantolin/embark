@@ -196,13 +196,23 @@ The key must be either a string or a vector.
 This is the key representation accepted by `define-key'."
   :type '(choice key-sequence (const nil)))
 
+(defcustom embark-cycle-key nil
+  "Key used for `embark-cycle'.
+
+If the key is set to nil it defaults to the global binding of
+`embark-act'. The key must be either a string or a vector. This
+is the key representation accepted by `define-key'."
+  :type '(choice key-sequence (const nil)))
+
 (defface embark-keybinding '((t :inherit success))
   "Face used to display key bindings.
 Used by `embark-completing-read-prompter' and `embark-keymap-help'.")
 
 (defcustom embark-action-indicator
   (let ((act (propertize "Act" 'face 'highlight)))
-    (cons act (concat act " on %2$s '%1$s'")))
+    (cons act (concat act " on %2$s"
+                      (propertize "%3$s" 'face 'shadow)
+                      " '%1$s'")))
   "Indicator to use when embarking upon an action.
 If set to a string it is used as a format string where %1$s will
 be replaced by the target of `embark-act' and %2$s will be
@@ -603,46 +613,60 @@ relative path."
                     (abbreviate-file-name (expand-file-name raw))
                   raw)))))))
 
-(defun embark--action-keymap (type)
-  "Return action keymap for targets of given TYPE."
+(defun embark--action-keymap (type cycle)
+  "Return action keymap for targets of given TYPE.
+If CYCLE is non-nil bind `embark-cycle'."
   (make-composed-keymap
-   `(keymap (13 . ,(embark--default-action type)))
+   (let ((map (make-sparse-keymap)))
+     (define-key map [13] (embark--default-action type))
+     (when cycle
+       (define-key map
+         (or embark-cycle-key
+             (car (where-is-internal #'embark-act)))
+         #'embark-cycle))
+     map)
    (symbol-value (or (alist-get type embark-keymap-alist)
                      (alist-get t embark-keymap-alist)))))
 
-(defun embark--show-indicator (indicator keymap target type)
+(defun embark--show-indicator (indicator keymap targets)
   "Show INDICATOR for a pending action or a instance of becoming.
 If INDICATOR is a string it is used as a format string, %1$s is
-replaced by the target and %2$s by the TYPE of the target. If the
-minibuffer is active, the formatted string is put in an overlay
-in the minibuffer prompt. If the minibuffer is inactive, then the
-formatted string is shown in the echo area and returned.
+replaced by the first target and %2$s by its type. Furthermore if
+additional shadowed TARGETS exist, %3$s is replaced by their types.
+If the minibuffer is active, the formatted string is put in an
+overlay in the minibuffer prompt. If the minibuffer is inactive,
+then the formatted string is shown in the echo area and returned.
 
 If INDICATOR is a cons of two strings, they are used as format
 strings as described above: if the minibuffer is active the first
 string is used and if not, the second is used.
 
 Finally, if INDICATOR is a function, this function is called with
-the KEYMAP, TARGET and TYPE. The function should return either
-nil, or a function to be called when the indicator is no longer
-needed."
+the KEYMAP, the current target and a list of shadowed targets.
+The function should return either nil, or a function to be called
+when the indicator is no longer needed."
   (cond
    ((functionp indicator)
     (condition-case nil
-        (funcall indicator keymap target type)
+        (funcall indicator keymap (car targets) (cdr targets))
       (wrong-number-of-arguments
-       (message "Embark: The action indicator takes three arguments, KEYMAP, TARGET and TYPE.")
-       (funcall indicator keymap target))))
+       (message "Embark: The new action indicator takes three arguments.")
+       (funcall indicator keymap (cdar targets)))))
    ((or (stringp indicator) (consp indicator))
-    (unless (stringp target)
-      (setq target (format "%s" target)))
-    (when-let (pos (string-match-p "\n" target))
-      (setq target (concat (substring target 0 pos) "…")))
-    (let* ((mini (active-minibuffer-window))
-           (ind (format (if (consp indicator)
+    (pcase-let ((`(,type . ,target) (car targets))
+                (mini (active-minibuffer-window))
+                (ind nil))
+      (unless (stringp target)
+        (setq target (format "%s" target)))
+      (when-let (pos (string-match-p "\n" target))
+        (setq target (concat (substring target 0 pos) "…")))
+      (setq ind (format (if (consp indicator)
                             (if mini (car indicator) (cdr indicator))
                           indicator)
-                        target type)))
+                        target type
+                        (if (cdr targets)
+                            (format "%S" (mapcar #'car (cdr targets)))
+                          "")))
       (if mini
           (let ((indicator-overlay
                  (make-overlay (point-min) (point-min)
@@ -730,6 +754,15 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
                   (use-local-map
                    (make-composed-keymap
                     (let ((map (make-sparse-keymap)))
+                      ;; Rebind `embark-cycle' in order allow cycling
+                      ;; from the `completing-read' prompter. Additionally
+                      ;; `embark-cycle' can be selected via
+                      ;; `completing-read'. The downside is that this breaks
+                      ;; recursively acting on the candidates of type
+                      ;; embark-keybinding in the `completing-read' prompter.
+                      (when-let (key (where-is-internal
+                                      #'embark-cycle keymap))
+                        (define-key map (car key) #'embark-cycle))
                       (define-key map embark-keymap-prompter-key
                         (lambda ()
                           (interactive)
@@ -792,30 +825,30 @@ be restricted by passing a PREFIX key."
     (when-let (command (embark-completing-read-prompter keymap 'no-default))
       (call-interactively command))))
 
-(defun embark--with-indicator (indicator prompter keymap target type)
+(defun embark--with-indicator (indicator prompter keymap targets)
   "Display INDICATOR while calling PROMPTER with KEYMAP.
-The TARGET of TYPE is displayed for actions outside the minibuffer."
-  (let* ((remove-indicator (embark--show-indicator indicator keymap target type))
-         (cmd (condition-case nil
-                  (minibuffer-with-setup-hook
-                      ;; if the prompter opens its own minibuffer, show
-                      ;; the indicator there too (don't bother with
-                      ;; removing it since the whole recursive
-                      ;; minibuffer disappears)
-                      (lambda ()
-                        ;; if the outer embark--show-indicator decided
-                        ;; to display a message, remove-indicator is a
-                        ;; string containing the message, which we use
-                        (embark--show-indicator (if (stringp remove-indicator)
-                                                    remove-indicator
-                                                  indicator)
-                                                keymap target type))
-                    (let ((enable-recursive-minibuffers t))
-                      (funcall prompter keymap)))
-                (quit nil))))
-    (when (functionp remove-indicator)
-      (funcall remove-indicator))
-    cmd))
+The TARGETS are displayed for actions outside the minibuffer."
+  (let ((remove-indicator (embark--show-indicator indicator keymap targets)))
+    (unwind-protect
+        (condition-case nil
+            (minibuffer-with-setup-hook
+                ;; if the prompter opens its own minibuffer, show
+                ;; the indicator there too (don't bother with
+                ;; removing it since the whole recursive
+                ;; minibuffer disappears)
+                (lambda ()
+                  ;; if the outer embark--show-indicator decided
+                  ;; to display a message, remove-indicator is a
+                  ;; string containing the message, which we use
+                  (embark--show-indicator (if (stringp remove-indicator)
+                                              remove-indicator
+                                            indicator)
+                                          keymap targets))
+              (let ((enable-recursive-minibuffers t))
+                (funcall prompter keymap)))
+          (quit nil))
+      (when (functionp remove-indicator)
+        (funcall remove-indicator)))))
 
 (defun embark--quit-and-run (fn &rest args)
   "Quit the minibuffer and then call FN with ARGS."
@@ -941,27 +974,45 @@ work on them."
             (expand-file-name target root)
           target)))
 
-(defun embark--target ()
+(defun embark--targets ()
   "Retrieve current target.
 
 An initial guess at the current target and its type is determined
-by running the functions in `emark-target-finders' until one
-returns a non-nil result.  Each function should either a pair of
-a type symbol and a target string, or nil.
+by running the functions in `emark-target-finders'. Each function
+should either return a pair of a type symbol and a target string,
+or nil.
 
-The initial type is then looked up as a key in the variable
-`embark-transformer-alist'.  If there is a transformer for the
-type, it is called with the initial target, and must return a
-`cons' of the transformed type and target.
+In the minibuffer only the first target finder returning non-nil
+is taken into account. When finding targets at point in other
+buffers, each target finder function is executed.
 
-The return value is 3-element list of the possibly transformed
-type, the possibly transformed target and the original target."
-  (pcase (run-hook-with-args-until-success 'embark-target-finders)
-    (`(,type . ,target)
-     (if-let (transformer (alist-get type embark-transformer-alist))
-         (pcase-let ((`(,new-type . ,new-target) (funcall transformer target)))
-           (list new-type new-target target))
-       (list type target target)))))
+For each target, the type is then looked up as a key in the
+variable `embark-transformer-alist'. If there is a transformer
+for the type, it is called with the target, and must return a
+`cons' of the transformed type and transformed target.
+
+The return value of `embark--targets' is a list of pairs, where
+each car is the transformed type and target and each cdr is the
+original type and target."
+  (let ((targets))
+    (run-hook-wrapped
+     'embark-target-finders
+     (lambda (fun)
+       (when-let (target (funcall fun))
+         (push (if-let (transformer (alist-get
+                                     (car target)
+                                     embark-transformer-alist))
+                   (cons (funcall transformer (cdr target)) target)
+                 (cons target target))
+               targets)
+         (minibufferp))))
+    ;; Delete duplicate targets. This is a rare scenario,
+    ;; but could occur if we install multiple target finders
+    ;; for the same type with different priorioties.
+    ;; 1. defun finder, restrictive, only triggered "(defun" and ")"
+    ;; 2. symbol finder
+    ;; 3. defun finder, broad, triggered on the whole defun
+    (delete-dups (nreverse targets))))
 
 (defun embark--default-action (type)
   "Return default action for the given TYPE of target.
@@ -1000,20 +1051,31 @@ whether calling `embark-act' with nil ARG quits the minibuffer,
 and if ARG is non-nil it will do the opposite.  Interactively,
 ARG is the prefix argument."
   (interactive "P")
-  (pcase-let* ((`(,type ,target ,original) (or (embark--target)
-                                               (user-error "No target found")))
-                (action (or (embark--with-indicator embark-action-indicator
-                                                    embark-prompter
-                                                    (embark--action-keymap type)
-                                                    target type)
-                            (user-error "Canceled")))
-                (default-action (embark--default-action type)))
-    (embark--act action
-                 (if (and (eq action default-action)
-                          (eq action embark--command))
-                     original
-                   target)
-                 (if embark-quit-after-action (not arg) arg))))
+  (let ((targets (or (embark--targets) (user-error "No target found"))))
+    (while
+        (and
+         (catch 'embark--cycle
+           (pcase-let* ((`((,type . ,target) . (,_ . ,original)) (car targets))
+                        (action (or (embark--with-indicator embark-action-indicator
+                                                            embark-prompter
+                                                            (embark--action-keymap
+                                                             type (cdr targets))
+                                                            (mapcar #'car targets))
+                                    (user-error "Canceled")))
+                        (default-action (embark--default-action type)))
+             (embark--act action
+                          (if (and (eq action default-action)
+                                   (eq action embark--command))
+                              original
+                            target)
+                          (if embark-quit-after-action (not arg) arg)))
+           nil)
+         (setq targets (append (cdr targets) (list (car targets))))))))
+
+(defun embark-cycle ()
+  "Cycle to the next target at point."
+  (interactive)
+  (throw 'embark--cycle t))
 
 ;;;###autoload
 (defun embark-dwim (&optional arg)
@@ -1032,8 +1094,8 @@ keymap for the target's type.
 
 See `embark-act' for the meaning of the prefix ARG."
   (interactive "P")
-  (pcase-let* ((`(,type ,target ,original)
-                (or (embark--target) (user-error "No target found")))
+  (pcase-let* ((`((,type . ,target) . (,_ . ,original))
+                (or (car (embark--targets)) (user-error "No target found")))
                (default-action (embark--default-action type)))
     (embark--act default-action
                  (if (eq default-action embark--command)
@@ -1083,7 +1145,8 @@ point."
            (become (embark--with-indicator embark-become-indicator
                                            embark-prompter
                                            (embark--become-keymap)
-                                           target nil)))
+                                           ;; Pass a fake target list here
+                                           `((nil . ,target)))))
       (if (null become)
           (user-error "Canceled")
         (embark--quit-and-run
@@ -1308,7 +1371,7 @@ Returns the name of the command."
                               (embark--command-name action)))))
     (fset name (lambda ()
                  (interactive)
-                 (embark--act action (cadr (embark--target)))))
+                 (embark--act action (cdaar (embark--targets)))))
     (put name 'function-documentation (documentation action))
     name))
 
@@ -1340,7 +1403,7 @@ Returns the name of the command."
     (let ((map embark-collect-direct-action-minor-mode-map))
       (setcdr map nil)
       (cl-loop for (key . cmd) in (embark--all-bindings
-                                   (embark--action-keymap embark--type))
+                                   (embark--action-keymap embark--type nil))
                unless (eq cmd 'embark-keymap-help)
                do (define-key map key (embark--action-command cmd))))))
 
