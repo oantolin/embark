@@ -202,12 +202,13 @@ Used by `embark-completing-read-prompter' and `embark-keymap-help'.")
 
 (defcustom embark-action-indicator
   (let ((act (propertize "Act" 'face 'highlight)))
-    (cons act (concat act " on '%s'")))
+    (cons act (concat act " on %2$s '%1$s'")))
   "Indicator to use when embarking upon an action.
-If set to a string it is used as a format string where %s will be
-replaced by the target of `embark-act', and the resulting string
-is prepended to the minibuffer prompt or shown in the echo area
-if `embark-act' was called outside of the minibuffer.
+If set to a string it is used as a format string where %1$s will
+be replaced by the target of `embark-act' and %2$s will be
+replaced by the type of the target, and the resulting string is
+prepended to the minibuffer prompt or shown in the echo area if
+`embark-act' was called outside of the minibuffer.
 
 You can also set this variable to a cons of two format strings,
 in which case the first is used if `embark-act' is called from
@@ -609,25 +610,29 @@ relative path."
    (symbol-value (or (alist-get type embark-keymap-alist)
                      (alist-get t embark-keymap-alist)))))
 
-(defun embark--show-indicator (indicator keymap target)
+(defun embark--show-indicator (indicator keymap target type)
   "Show INDICATOR for a pending action or a instance of becoming.
-If INDICATOR is a string it is used as a format string and %s is
-replaced by the target.  If the minibuffer is active, the
-formatted string is put in an overlay in the minibuffer prompt
-and the overlay is returned so it can be deleted when the
-indicator is no longer needed.  If the minibuffer is inactive,
-then the formatted string is shown in the echo area and returned.
+If INDICATOR is a string it is used as a format string, %1$s is
+replaced by the target and %2$s by the TYPE of the target. If the
+minibuffer is active, the formatted string is put in an overlay
+in the minibuffer prompt. If the minibuffer is inactive, then the
+formatted string is shown in the echo area and returned.
 
 If INDICATOR is a cons of two strings, they are used as format
 strings as described above: if the minibuffer is active the first
 string is used and if not, the second is used.
 
 Finally, if INDICATOR is a function, this function is called with
-the KEYMAP and TARGET. The function should return either nil, or
-a function to be called when the indicator is no longer needed."
+the KEYMAP, TARGET and TYPE. The function should return either
+nil, or a function to be called when the indicator is no longer
+needed."
   (cond
    ((functionp indicator)
-    (funcall indicator keymap target))
+    (condition-case nil
+        (funcall indicator keymap target type)
+      (wrong-number-of-arguments
+       (message "Embark: The action indicator takes three arguments, KEYMAP, TARGET and TYPE.")
+       (funcall indicator keymap target))))
    ((or (stringp indicator) (consp indicator))
     (unless (stringp target)
       (setq target (format "%s" target)))
@@ -637,13 +642,13 @@ a function to be called when the indicator is no longer needed."
            (ind (format (if (consp indicator)
                             (if mini (car indicator) (cdr indicator))
                           indicator)
-                        target)))
+                        target type)))
       (if mini
           (let ((indicator-overlay
                  (make-overlay (point-min) (point-min)
                                (window-buffer mini) t t)))
             (overlay-put indicator-overlay 'before-string (concat ind " "))
-            indicator-overlay)
+            (lambda () (delete-overlay indicator-overlay)))
         (message "%s" ind))))))
 
 (defun embark-keymap-prompter (keymap)
@@ -787,11 +792,10 @@ be restricted by passing a PREFIX key."
     (when-let (command (embark-completing-read-prompter keymap 'no-default))
       (call-interactively command))))
 
-(defun embark--with-indicator (indicator prompter keymap &optional target)
+(defun embark--with-indicator (indicator prompter keymap target type)
   "Display INDICATOR while calling PROMPTER with KEYMAP.
-The optional argument TARGET is displayed for actions outside the
-minibuffer."
-  (let* ((remove-indicator (embark--show-indicator indicator keymap target))
+The TARGET of TYPE is displayed for actions outside the minibuffer."
+  (let* ((remove-indicator (embark--show-indicator indicator keymap target type))
          (cmd (condition-case nil
                   (minibuffer-with-setup-hook
                       ;; if the prompter opens its own minibuffer, show
@@ -805,14 +809,12 @@ minibuffer."
                         (embark--show-indicator (if (stringp remove-indicator)
                                                     remove-indicator
                                                   indicator)
-                                                keymap
-                                                target))
+                                                keymap target type))
                     (let ((enable-recursive-minibuffers t))
                       (funcall prompter keymap)))
                 (quit nil))))
-    (cond
-     ((overlayp remove-indicator) (delete-overlay remove-indicator))
-     ((functionp remove-indicator) (funcall remove-indicator)))
+    (when (functionp remove-indicator)
+      (funcall remove-indicator))
     cmd))
 
 (defun embark--quit-and-run (fn &rest args)
@@ -1002,7 +1004,7 @@ ARG is the prefix argument."
                 (action (or (embark--with-indicator embark-action-indicator
                                                     embark-prompter
                                                     (embark--action-keymap type)
-                                                    target)
+                                                    target type)
                             (user-error "Canceled")))
                 (default-action (embark--default-action type)))
     (embark--act action
@@ -1080,7 +1082,7 @@ point."
            (become (embark--with-indicator embark-become-indicator
                                            embark-prompter
                                            (embark--become-keymap)
-                                           target)))
+                                           target nil)))
       (if (null become)
           (user-error "Canceled")
         (embark--quit-and-run
@@ -1848,8 +1850,10 @@ buffer for each type of completion."
                  (run-hooks 'embark-after-export-hook))))))))))
 
 (defun embark--export-customize (items title type pred)
-  "Create a customization buffer listing ITEMS of TYPE.
-The items are filtered with the predicate PRED."
+  "Create a customization buffer listing ITEMS.
+TYPE is the items type.
+TITLE is the buffer title.
+PRED is a predicate function used to filter the items."
   (custom-buffer-create
    (cl-loop for item in items
             for sym = (intern-soft item)
