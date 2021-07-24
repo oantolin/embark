@@ -895,6 +895,7 @@ minibuffer before executing the action."
   "Refine symbol TARGET to command or variable if possible."
   (cons (or (when-let ((symbol (intern-soft target)))
               (cond
+               ((keywordp symbol) 'symbol) ; keywords are bound to themselves!
                ((commandp symbol) 'command)
                ((boundp symbol) 'variable)
                ;; Prefer variables over functions for backward compatibility.
