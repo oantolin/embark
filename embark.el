@@ -554,8 +554,7 @@ In `dired-mode', it uses `dired-get-filename' instead."
                 ;; outer sexp.
                 (when (<= (car bounds) pt (cdr bounds))
                   (throw 'found bounds))))))))
-    (unless (pcase (cons bounds (bounds-of-thing-at-point 'defun))
-              (`((,a . ,b) . (,c . ,d)) (and (= a c) (<= (1- d) b d))))
+    (unless (eq (car bounds) (car (bounds-of-thing-at-point 'defun)))
       `(expression
         ,(buffer-substring (car bounds) (cdr bounds))
         . ,bounds))))
