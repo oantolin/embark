@@ -148,7 +148,7 @@ For any type not listed here, `embark-act' will use
     embark-target-file-at-point
     embark-target-custom-variable-at-point
     embark-target-identifier-at-point
-    embark-target-emacs-lisp-library-at-point
+    embark-target-library-at-point
     embark-target-expression-at-point
     embark-target-defun-at-point)
   "List of functions to determine the target in current context.
@@ -501,8 +501,8 @@ In `dired-mode', it uses `dired-get-filename' instead."
                ;; Unfortunately ffap does not make the bounds available.
                . ,(bounds-of-thing-at-point 'filename))))))
 
-(defun embark-target-emacs-lisp-library-at-point ()
-  "Target the Emacs Lisp library at point."
+(defun embark-target-library-at-point ()
+  "Target the Emacs Lisp library name at point."
   (when-let ((filename (thing-at-point 'filename))
              (library (ffap-el-mode filename)))
     `(file ,library . ,(bounds-of-thing-at-point 'filename))))
