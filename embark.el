@@ -490,10 +490,11 @@ In `dired-mode', it uses `dired-get-filename' instead."
                   (1+ (point)))
                . ,(point)))
     (when-let (file (ffap-file-at-point))
-      `(file ,(abbreviate-file-name file)
-             ;; TODO the boundaries may be wrong, this should be generalized.
-             ;; Unfortunately ffap does not make the bounds available.
-             . ,(bounds-of-thing-at-point 'filename)))))
+      (unless (string-match-p "^/https?:/" file)
+        `(file ,(abbreviate-file-name file)
+               ;; TODO the boundaries may be wrong, this should be generalized.
+               ;; Unfortunately ffap does not make the bounds available.
+               . ,(bounds-of-thing-at-point 'filename))))))
 
 (defun embark-target-bug-reference-at-point ()
   "Target a bug reference at point."
