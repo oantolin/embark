@@ -124,6 +124,7 @@
     (identifier . embark-identifier-map)
     (defun . embark-defun-map)
     (symbol . embark-symbol-map)
+    (face . embark-face-map)
     (command . embark-command-map)
     (variable . embark-variable-map)
     (function . embark-function-map)
@@ -985,7 +986,8 @@ minibuffer before executing the action."
                ;; Prefer variables over functions for backward compatibility.
                ;; Command > variable > function > symbol seems like a
                ;; reasonable order with decreasing usefulness of the actions.
-               ((fboundp symbol) 'function)))
+               ((fboundp symbol) 'function)
+               ((facep symbol) 'face)))
             'symbol)
         target))
 
@@ -1999,7 +2001,7 @@ PRED is a predicate function used to filter the items."
 
 (defun embark-export-customize-face (faces)
   "Create a customization buffer listing FACES."
-  (embark--export-customize faces "Faces" 'custom-face #'custom-facep))
+  (embark--export-customize faces "Faces" 'custom-face #'facep))
 
 (defun embark-export-customize-variable (variables)
   "Create a customization buffer listing VARIABLES."
@@ -2488,6 +2490,18 @@ and leaves the point to the left of it."
   ("I" Info-goto-emacs-command-node)
   ("g" global-set-key)
   ("l" local-set-key))
+
+(embark-define-keymap embark-face-map
+  "Keymap for Embark face actions."
+  :parent embark-symbol-map
+  ("c" customize-face)
+  ("b" make-face-bold)
+  ("B" make-face-unbold)
+  ("i" make-face-italic)
+  ("I" make-face-unitalic)
+  ("!" invert-face)
+  ("gf" set-face-foreground)
+  ("gb" set-face-background))
 
 (embark-define-keymap embark-variable-map
   "Keymap for Embark variable actions."
