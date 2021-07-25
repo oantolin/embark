@@ -339,6 +339,9 @@ window should only be used if it displays `embark--target-buffer'.")
 (defvar-local embark--command nil
   "Command that started the completion session.")
 
+(defvar-local embark--target-bounds nil
+  "Bounds of the current target.")
+
 (defun embark--minibuffer-point ()
   "Return length of minibuffer contents."
   (max 0 (- (point) (minibuffer-prompt-end))))
@@ -895,7 +898,7 @@ The TARGETS are displayed for actions outside the minibuffer."
   (setq ring-bell-function #'ignore)
   (abort-recursive-edit))
 
-(defun embark--act (action target &optional quit)
+(defun embark--act (action target bounds &optional quit)
   "Perform ACTION injecting the TARGET.
 If called from a minibuffer with non-nil QUIT, quit the
 minibuffer before executing the action."
@@ -944,6 +947,7 @@ minibuffer before executing the action."
                             (run-hooks 'embark-pre-action-hook)
                             (let ((enable-recursive-minibuffers t)
                                   (embark--command command)
+                                  (embark--target-bounds bounds)
                                   (this-command action)
                                   ;; the next two avoid mouse dialogs
                                   (use-dialog-box nil)
@@ -1118,6 +1122,7 @@ ARG is the prefix argument."
                                    (eq action embark--command))
                               otarget
                             target)
+                          bounds
                           (if embark-quit-after-action (not arg) arg)))
            nil)
          (setq targets (append (cdr targets) (list (car targets))))))))
@@ -1158,13 +1163,14 @@ See `embark-act' for the meaning of the prefix ARG."
   (interactive "P")
   (pcase-let* ((`((,type . ,target)
                   (,_otype . ,otarget)
-                  . ,_bounds)
+                  . ,bounds)
                 (or (car (embark--targets)) (user-error "No target found")))
                (default-action (embark--default-action type)))
     (embark--act default-action
                  (if (eq default-action embark--command)
                      otarget
                    target)
+                 bounds
                  (if embark-quit-after-action (not arg) arg))))
 
 (define-obsolete-function-alias
@@ -1434,7 +1440,9 @@ Returns the name of the command."
                               (embark--command-name action)))))
     (fset name (lambda ()
                  (interactive)
-                 (embark--act action (cdaar (embark--targets)))))
+                 (pcase (car (embark--targets))
+                   (`((,_type . ,target) (,_otype . ,_otarget) . ,bounds)
+                    (embark--act action target bounds)))))
     (put name 'function-documentation (documentation action))
     name))
 
@@ -1494,7 +1502,8 @@ in `find-file') or the command was called with a prefix argument,
 exit the minibuffer.
 
 For other Embark Collect buffers, run the default action on ENTRY."
-  (let ((text (button-label entry)))
+  (let ((text (button-label entry))
+        (bounds (cons (button-start entry) (button-end entry))))
     (when (eq embark--type 'file)
       (setq text (abbreviate-file-name (expand-file-name text))))
     (if (and (eq embark-collect--kind :completions))
@@ -1512,7 +1521,7 @@ For other Embark Collect buffers, run the default action on ENTRY."
                       (= (car (embark--boundaries))
                          (embark--minibuffer-point)))
             (exit-minibuffer)))
-      (embark--act (embark--default-action embark--type) text))))
+      (embark--act (embark--default-action embark--type) text bounds))))
 
 (embark-define-keymap embark-collect-mode-map
   "Keymap for Embark collect mode."
@@ -2314,9 +2323,7 @@ before or after the sexp (those are the two locations at which
   `(defun ,(intern (format "embark-%s" cmd)) ()
      ,(format "Run `%s' on the sexp at or before point." cmd)
      (interactive)
-     (goto-char (car (bounds-of-thing-at-point 'sexp)))
-     (unless (memq (char-syntax (char-after)) '(?\( ?\"))
-       (backward-char))
+     (goto-char (car embark--target-bounds))
      (,cmd)))
 
 (embark--sexp-command indent-sexp)
