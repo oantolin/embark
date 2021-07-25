@@ -148,6 +148,7 @@ For any type not listed here, `embark-act' will use
     embark-target-file-at-point
     embark-target-custom-variable-at-point
     embark-target-identifier-at-point
+    embark-target-emacs-lisp-library-at-point
     embark-target-expression-at-point
     embark-target-defun-at-point)
   "List of functions to determine the target in current context.
@@ -493,11 +494,17 @@ In `dired-mode', it uses `dired-get-filename' instead."
                   (1+ (point)))
                . ,(point)))
     (when-let (file (ffap-file-at-point))
-      (unless (string-match-p "^/https?:/" file)
+      (unless (or (string-match-p "^/https?:/" file)
+                  (ffap-el-mode (thing-at-point 'filename)))
         `(file ,(abbreviate-file-name file)
                ;; TODO the boundaries may be wrong, this should be generalized.
                ;; Unfortunately ffap does not make the bounds available.
                . ,(bounds-of-thing-at-point 'filename))))))
+
+(defun embark-target-emacs-lisp-library-at-point ()
+  "Target the Emacs Lisp library at point."
+  (when-let (library (ffap-el-mode (thing-at-point 'filename)))
+    `(file ,library . ,(bounds-of-thing-at-point 'filename))))
 
 (defun embark-target-bug-reference-at-point ()
   "Target a bug reference at point."
