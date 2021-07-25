@@ -2433,7 +2433,7 @@ and leaves the point to the left of it."
   ("i" embark-indent-sexp)
   ("r" embark-raise-sexp)
   ("k" embark-kill-sexp)
-  ("@" embark-mark-sexp))
+  ("SPC" embark-mark-sexp))
 
 (embark-define-keymap embark-defun-map
   "Keymap for Embark defun actions."
@@ -2445,7 +2445,7 @@ and leaves the point to the left of it."
   ("d" edebug-defun)
   ("o" checkdoc-defun)
   ("n" narrow-to-defun)
-  ("h" mark-defun))
+  ("SPC" mark-defun))
 
 (embark-define-keymap embark-symbol-map
   "Keymap for Embark symbol actions."
