@@ -529,6 +529,9 @@ In `dired-mode', it uses `dired-get-filename' instead."
                (re-search-forward ":" (line-end-position) 'noerror)
                (point)))))))
 
+;; NOTE: There is also (thing-at-point 'list), however it does
+;; not work on strings and requires the point to be inside the
+;; parentheses. This version here is slightly more general.
 (defun embark-target-expression-at-point ()
   "Target expression at point."
   (save-excursion
