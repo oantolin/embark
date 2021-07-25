@@ -503,7 +503,8 @@ In `dired-mode', it uses `dired-get-filename' instead."
 
 (defun embark-target-emacs-lisp-library-at-point ()
   "Target the Emacs Lisp library at point."
-  (when-let (library (ffap-el-mode (thing-at-point 'filename)))
+  (when-let ((filename (thing-at-point 'filename))
+             (library (ffap-el-mode filename)))
     `(file ,library . ,(bounds-of-thing-at-point 'filename))))
 
 (defun embark-target-bug-reference-at-point ()
