@@ -491,6 +491,8 @@ In `dired-mode', it uses `dired-get-filename' instead."
                . ,(point)))
     (when-let (file (ffap-file-at-point))
       `(file ,(abbreviate-file-name file)
+             ;; TODO the boundaries may be wrong, this should be generalized.
+             ;; Unfortunately ffap does not make the bounds available.
              . ,(bounds-of-thing-at-point 'filename)))))
 
 (defun embark-target-bug-reference-at-point ()
@@ -503,7 +505,10 @@ In `dired-mode', it uses `dired-get-filename' instead."
 (defun embark-target-url-at-point ()
   "Target the URL at point."
   (when-let ((url (ffap-url-at-point)))
-    `(url ,url . ,(bounds-of-thing-at-point 'url))))
+    `(url ,url
+          ;; TODO the boundaries may be wrong, this should be generalized.
+          ;; Unfortunately ffap does not make the bounds available.
+          . ,(bounds-of-thing-at-point 'url))))
 
 (declare-function widget-at "wid-edit")
 (defun embark-target-custom-variable-at-point ()
