@@ -146,10 +146,10 @@ For any type not listed here, `embark-act' will use
     embark-target-bug-reference-at-point
     embark-target-url-at-point
     embark-target-file-at-point
-    embark-target-defun-at-point
     embark-target-expression-at-point
     embark-target-custom-variable-at-point
-    embark-target-identifier-at-point)
+    embark-target-identifier-at-point
+    embark-target-defun-at-point)
   "List of functions to determine the target in current context.
 Each function should take no arguments and return either nil to
 indicate that no target has been found, a cons (type . target)
@@ -542,12 +542,7 @@ In `dired-mode', it uses `dired-get-filename' instead."
 (defun embark-target-defun-at-point ()
   "Target defun at point."
   (when-let (bounds (bounds-of-thing-at-point 'defun))
-    (let ((str (buffer-substring (car bounds) (cdr bounds))))
-      (when (and
-             (string-match "\\`(\\(?:\\w\\|\\s_\\)+" str)
-             (or (>= (point) (1- (cdr bounds)))
-                 (<= (point) (+ (car bounds) (match-end 0)))))
-        `(defun ,str . ,bounds)))))
+    `(defun ,(buffer-substring (car bounds) (cdr bounds)) . ,bounds)))
 
 (defun embark-target-identifier-at-point ()
   "Target identifier at point.
