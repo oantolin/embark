@@ -535,22 +535,27 @@ In `dired-mode', it uses `dired-get-filename' instead."
 ;; parentheses. This version here is slightly more general.
 (defun embark-target-expression-at-point ()
   "Target expression at point."
-  (save-excursion
-    (let ((pt (point)))
-      (catch 'found
-        (while
-            ;; Looking at opening parenthesis or find last one
-            (or (memq (syntax-class (syntax-after pt)) '(4 6 7))
-                (re-search-backward "\\(\\s(\\|\\s/\\|\\s\"\\)" nil 'noerror))
-          (when-let (bounds (bounds-of-thing-at-point 'sexp))
-            ;; Point must be located within the sexp at point.
-            ;; Otherwise continue the search for the next larger
-            ;; outer sexp.
-            (when (<= (car bounds) pt (cdr bounds))
-              (throw 'found
-                     `(expression
-                       ,(buffer-substring (car bounds) (cdr bounds))
-                       . ,bounds)))))))))
+  (when-let*
+      ((pt (point))
+       (bounds
+        (save-excursion
+          (catch 'found
+            (while
+                ;; Looking at opening parenthesis or find last one
+                (or (memq (syntax-class (syntax-after pt)) '(4 6 7))
+                    (re-search-backward "\\(\\s(\\|\\s/\\|\\s\"\\)"
+                                        nil 'noerror))
+              (when-let (bounds (bounds-of-thing-at-point 'sexp))
+                ;; Point must be located within the sexp at point.
+                ;; Otherwise continue the search for the next larger
+                ;; outer sexp.
+                (when (<= (car bounds) pt (cdr bounds))
+                  (throw 'found bounds))))))))
+    (unless (pcase (cons bounds (bounds-of-thing-at-point 'defun))
+              (`((,a . ,b) . (,c . ,d)) (and (= a c) (<= (1- d) b d))))
+      `(expression
+        ,(buffer-substring (car bounds) (cdr bounds))
+        . ,bounds))))
 
 (defun embark-target-defun-at-point ()
   "Target defun at point."
