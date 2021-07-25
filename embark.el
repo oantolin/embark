@@ -146,9 +146,9 @@ For any type not listed here, `embark-act' will use
     embark-target-bug-reference-at-point
     embark-target-url-at-point
     embark-target-file-at-point
-    embark-target-expression-at-point
     embark-target-custom-variable-at-point
     embark-target-identifier-at-point
+    embark-target-expression-at-point
     embark-target-defun-at-point)
   "List of functions to determine the target in current context.
 Each function should take no arguments and return either nil to
@@ -526,18 +526,22 @@ In `dired-mode', it uses `dired-get-filename' instead."
 
 (defun embark-target-expression-at-point ()
   "Target expression at point."
-  (pcase (bounds-of-thing-at-point 'sexp)
-    ((and bounds `(,begin . ,end))
-     (let ((pt (point)))
-       (when (or (and (= pt begin)
-                      (memq (syntax-class (syntax-after pt)) '(4 6 7)))
-                 (and (= pt end)
-                      (memq (syntax-class (syntax-after (1- pt))) '(5 7)))
-                 (and (= pt (1+ begin))
-                      (eq (syntax-class (syntax-after begin)) 6)
-                      (eq (syntax-class (syntax-after pt)) 4)
-                      (setq begin (1+ begin))))
-         `(expression ,(buffer-substring begin end) . ,bounds))))))
+  (save-excursion
+    (let ((pt (point)))
+      (catch 'found
+        (while
+            ;; Looking at opening parenthesis or find last one
+            (or (memq (syntax-class (syntax-after pt)) '(4 6 7))
+                (re-search-backward "\\(\\s(\\|\\s/\\|\\s\"\\)" nil 'noerror))
+          (when-let (bounds (bounds-of-thing-at-point 'sexp))
+            ;; Point must be located within the sexp at point.
+            ;; Otherwise continue the search for the next larger
+            ;; outer sexp.
+            (when (<= (car bounds) pt (cdr bounds))
+              (throw 'found
+                     `(expression
+                       ,(buffer-substring (car bounds) (cdr bounds))
+                       . ,bounds)))))))))
 
 (defun embark-target-defun-at-point ()
   "Target defun at point."
