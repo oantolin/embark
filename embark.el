@@ -1061,13 +1061,7 @@ is the optional bounds of the target at point for highlighting."
                    `(,orig ,orig . ,bounds))
                  targets)
            (minibufferp)))))
-    ;; Delete duplicate targets. This is a rare scenario,
-    ;; but could occur if we install multiple target finders
-    ;; for the same type with different priorioties.
-    ;; 1. defun finder, restrictive, only triggered "(defun" and ")"
-    ;; 2. symbol finder
-    ;; 3. defun finder, broad, triggered on the whole defun
-    (delete-dups (nreverse targets))))
+    (nreverse targets)))
 
 (defun embark--default-action (type)
   "Return default action for the given TYPE of target.
