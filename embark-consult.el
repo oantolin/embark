@@ -104,12 +104,12 @@
         (apply #'concat (nreverse chunks)))
     string))
 
-(defun embark-consult--location-transform (target)
-  "Remove the unicode suffix character from a `consult-location' TARGET."
-  (cons 'consult-location (embark-consult--strip target)))
+(defun embark-consult--target-strip (type target)
+  "Remove the unicode suffix character from a TARGET of TYPE."
+  (cons type (embark-consult--strip target)))
 
 (setf (alist-get 'consult-location embark-transformer-alist)
-      #'embark-consult--location-transform)
+      #'embark-consult--target-strip)
 
 (defun embark-consult-export-occur (lines)
   "Create an occur mode buffer listing LINES.
@@ -201,7 +201,7 @@ The elements of LINES are assumed to be values of category `consult-line'."
 
 ;;; Support for consult-multi
 
-(defun embark-consult--multi-transform (target)
+(defun embark-consult--multi-transform (_type target)
   "Refine `consult-multi' TARGET to its real type.
 This function takes a target of type `consult-multi' (from
 Consult's `consult-multi' category) and transforms it to its
@@ -214,12 +214,8 @@ actual type."
 
 ;;; Support for consult-isearch
 
-(defun embark-consult--isearch-transform (target)
-  "Remove the unicode suffix character from a `consult-isearch' TARGET."
-  (cons 'consult-isearch (embark-consult--strip target)))
-
 (setf (alist-get 'consult-isearch embark-transformer-alist)
-      #'embark-consult--isearch-transform)
+      #'embark-consult--target-strip)
 
 ;;; Support for consult-register
 

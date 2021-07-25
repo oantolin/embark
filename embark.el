@@ -162,8 +162,8 @@ a string, or nil to indicate it found no target."
     (embark-keybinding . embark-keybinding-command)
     (project-file . embark-project-file-full-path))
   "Alist associating type to functions for transforming targets.
-Each function should take a target string and return a pair of
-the form a `cons' of the new type and the new target."
+Each function should take a type and a target string and return a
+pair of the form a `cons' of the new type and the new target."
   :type '(alist :key-type symbol :value-type function))
 
 (defcustom embark-become-keymaps
@@ -928,7 +928,7 @@ minibuffer before executing the action."
           (funcall run-action)
         (embark--quit-and-run run-action)))))
 
-(defun embark-refine-symbol-type (target)
+(defun embark-refine-symbol-type (_type target)
   "Refine symbol TARGET to command or variable if possible."
   (cons (or (when-let ((symbol (intern-soft target)))
               (cond
@@ -942,12 +942,12 @@ minibuffer before executing the action."
             'symbol)
         target))
 
-(defun embark-keybinding-command (target)
+(defun embark-keybinding-command (_type target)
   "Treat an `embark-keybinding' TARGET as a command."
   (when-let ((cmd (get-text-property 0 'embark-command target)))
     (cons 'command cmd)))
 
-(defun embark-lookup-lighter-minor-mode (target)
+(defun embark-lookup-lighter-minor-mode (_type target)
   "If TARGET is a lighter, look up its minor mode.
 
 The `describe-minor-mode' command has as completion candidates
@@ -964,7 +964,7 @@ work on them."
 (declare-function project-roots "project")
 (declare-function project-root "project")
 
-(defun embark-project-file-full-path (target)
+(defun embark-project-file-full-path (_type target)
   "Get full path of project file TARGET."
   ;; TODO project-find-file can be called from outside all projects in
   ;; which case it prompts for a project first; we don't support that
@@ -992,8 +992,8 @@ buffers, each target finder function is executed.
 
 For each target, the type is then looked up as a key in the
 variable `embark-transformer-alist'. If there is a transformer
-for the type, it is called with the target, and must return a
-`cons' of the transformed type and transformed target.
+for the type, it is called with the type and target, and must
+return a `cons' of the transformed type and transformed target.
 
 The return value of `embark--targets' is a list of pairs, where
 each car is the transformed type and target and each cdr is the
@@ -1006,7 +1006,7 @@ original type and target."
          (push (if-let (transformer (alist-get
                                      (car target)
                                      embark-transformer-alist))
-                   (cons (funcall transformer (cdr target)) target)
+                   (cons (funcall transformer (car target) (cdr target)) target)
                  (cons target target))
                targets)
          (minibufferp))))
@@ -1887,7 +1887,7 @@ buffer for each type of completion."
         ;; check to see if all candidates transform to same type
         (when transformer
           (pcase-let* ((`(,new-type . ,first-cand)
-                        (funcall transformer (car candidates))))
+                        (funcall transformer type (car candidates))))
             (unless (eq type new-type)
               (when-let ((new-exporter
                           (alist-get new-type embark-exporters-alist))
@@ -1895,7 +1895,7 @@ buffer for each type of completion."
                 (when (cl-every
                        (lambda (cand)
                          (pcase-let ((`(,t-type . ,t-cand)
-                                      (funcall transformer cand)))
+                                      (funcall transformer type cand)))
                            (when (eq t-type new-type)
                              (push t-cand new-candidates)
                              t)))
