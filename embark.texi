@@ -75,16 +75,18 @@ determined by the context:
 
 @itemize
 @item
-In the minibuffer, the target is the current best completion
+In the minibuffer, the target is the current top completion
 candidate.
 @item
 In the @samp{*Completions*} buffer the target is the completion at point.
 @item
 In a regular buffer, the target is the region if active, or else the
-file, symbol or URL at point.
+file, symbol, URL, s-expression or defun at point.
 @end itemize
 
-The type of actions offered depend on the type of the target:
+Multiple targets can be present at the same location and you can cycle
+between them by repeating the @samp{embark-act} key binding. The type of
+actions offered depend on the type of the target:
 
 @itemize
 @item

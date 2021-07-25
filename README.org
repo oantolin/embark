@@ -17,20 +17,22 @@ accessed through the =embark-act= command (which you should bind to a
 convenient key), offering you relevant /actions/ to use on a /target/
 determined by the context:
 
-- In the minibuffer, the target is the current best completion
- candidate.
+- In the minibuffer, the target is the current top completion
+  candidate.
 - In the =*Completions*= buffer the target is the completion at point.
 - In a regular buffer, the target is the region if active, or else the
- file, symbol or URL at point.
+  file, symbol, URL, s-expression or defun at point.
 
-The type of actions offered depend on the type of the target:
+Multiple targets can be present at the same location and you can cycle
+between them by repeating the =embark-act= key binding. The type of
+actions offered depend on the type of the target:
 
 - For files you get offered actions like deleting, copying,
- renaming, visiting in another window, running a shell command on the
- file, etc.
+  renaming, visiting in another window, running a shell command on the
+  file, etc.
 - For buffers the actions include switching to or killing the buffer.
 - For package names the actions include installing, removing or
- visiting the homepage.
+  visiting the homepage.
 
 If you want a reminder of which actions are available after running
 =embark-act= type =C-h= which will prompt you for an action with
