@@ -1,6 +1,6 @@
 ;;; embark.el --- Conveniently act on minibuffer completions   -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2020  Omar Antolín Camarena
+;; Copyright (C) 2020, 2021  Omar Antolín Camarena
 
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Keywords: convenience
@@ -846,6 +846,105 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
        (setq last-command-event (seq-elt key (1- (length key))))
        cmd)
       ('nil (intern-soft choice)))))
+
+;;; Verbose action indicator
+
+(defvar embark--vindicator-prompt-buffer "*Embark Actions*"
+  "Buffer used by embark-verbose-indicator to display actions and keybidings.")
+
+(defvar embark--vindicator-display-alist
+  `((,(regexp-quote embark--vindicator-prompt-buffer)
+     (display-buffer-at-bottom)
+     (window-parameters (mode-line-format . none))
+     (window-height . fit-window-to-buffer)))
+  "Parameters added to display-buffer-alist for displaying the actions buffer.")
+
+(defvar embark--vindicator-excluded-commands
+  '(embark-collect-snapshot embark-collect-live embark-export
+    embark-keymap-help embark-become embark-isearch nil)
+  "Commands not displayed by embark-verbose-indicator.")
+
+(defun embark--vindicator-key-str (k)
+  "A string describing the given key or key code."
+  (if (numberp k) (single-key-description k) (key-description k)))
+
+(defun embark--vindicator-bind-desc (descs x prefix)
+  "Accumulator used by `embark--vindicator-keymap-descriptor', q.v."
+  (let ((k (car x)) (c (cdr x)))
+    (cond ((keymapp c)
+           (let* ((k-str (embark--vindicator-key-str k))
+                  (cds (embark--vindicator-keymap-descriptor c k-str)))
+             (cons (max (or (car cds) 0) (or (car descs) 0))
+                   (cons (max (or (cadr cds) 0) (or (cadr descs) 0))
+                         (append (cddr descs) (cddr cds))))))
+          ((memq c embark--vindicator-excluded-commands) descs)
+          ((symbolp c)
+           (let* ((desc (embark--vindicator-key-str k))
+                  (desc (format "%s%s" (or prefix "") desc))
+                  (doc (car (split-string
+                             (or (ignore-errors (documentation c)) "")
+                             "\n")))
+                  (fun (symbol-name c)))
+             (cons (max (length desc) (car descs))
+                   (cons (max (length fun) (cadr descs))
+                         (cons (list desc fun doc) (cddr descs)))))))))
+
+(defun embark--vindicator-keymap-descriptor (k prefix)
+  "Generate a description of keymap K, recursively.
+PREFIX is used in bindings descriptions strings, and, besides
+that string for all seen bindings, DESCS includes the maximum
+width of that string seen so far, for alignment purporses."
+  (seq-reduce `(lambda (descs x) (embark--vindicator-bind-desc descs x ,prefix))
+              (cdr (keymap-canonicalize k)) '(0 0)))
+
+(defun embark--vindicator-adjust-for-sorting (d)
+  "Auxiliary function for sorting binding descriptors before display."
+  (let ((s (cadr d)))
+    (if (string-prefix-p "embark" s) "" s)))
+
+(defface embark-keybinding-command '((t :inherit default))
+  "Face used by the verbose action indicator to display command names.
+Used by `embark-verbose-indicator'.")
+
+(defface embark-keybinding-description '((t :inherit italic))
+  "Face used by the verbose action indicator to display binding descriptions.
+Used by `embark-verbose-indicator'.")
+
+;;;###autoload
+(defun embark-verbose-indicator (keymap target _)
+  "Action indicator that displays a list of all available action key bindings."
+  (with-current-buffer (get-buffer-create embark--vindicator-prompt-buffer)
+    (read-only-mode -1)
+    (setq-local cursor-type nil
+                truncate-lines t)
+    (delete-region (point-min) (point-max))
+    (let* ((descs (embark--vindicator-keymap-descriptor keymap ""))
+           (fmt (format "%%-%ds  %%-%ds   %%s\n" (cadr descs) (car descs))))
+      (seq-each (lambda (desc)
+                  (insert (format fmt
+                                  (propertize (cadr desc)
+                                              'face
+                                              'embark-keybinding-command)
+                                  (propertize (car desc) 'face
+                                              'embark-keybinding)
+                                  (propertize (caddr desc)
+                                              'face
+                                              'embark-keybinding-description))))
+                (seq-sort-by 'embark--vindicator-adjust-for-sorting
+                             'string-greaterp (cddr descs))))
+    (if target
+        (insert (format "\nAction for %s '%s'" (car target) (cdr target)))
+      (delete-char -1))
+    (goto-char (point-min))
+    (read-only-mode 1)
+    (let ((display-buffer-alist
+           (append display-buffer-alist embark--vindicator-display-alist)))
+      (pop-to-buffer (current-buffer) nil t))
+    (lambda ()
+      (embark-kill-buffer-and-window embark--vindicator-prompt-buffer)
+      (when (or (bound-and-true-p selectrum-is-active)
+                (bound-and-true-p current-minibuffer-command))
+        (select-window (minibuffer-window))))))
 
 ;;;###autoload
 (defun embark-prefix-help-command ()
