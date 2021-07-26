@@ -915,7 +915,8 @@ Used by `embark-verbose-indicator'.")
   "Action indicator that displays a list of all available action key bindings."
   (with-current-buffer (get-buffer-create embark--vindicator-prompt-buffer)
     (read-only-mode -1)
-    (setq-local cursor-type nil)
+    (setq-local cursor-type nil
+                truncate-lines t)
     (delete-region (point-min) (point-max))
     (let* ((descs (embark--vindicator-keymap-descriptor keymap ""))
            (fmt (format "%%-%ds  %%-%ds   %%s\n" (cadr descs) (car descs))))
@@ -934,6 +935,7 @@ Used by `embark-verbose-indicator'.")
     (if target
         (insert (format "\nAction for %s '%s'" (car target) (cdr target)))
       (delete-char -1))
+    (goto-char (point-min))
     (read-only-mode 1)
     (let ((display-buffer-alist
            (append display-buffer-alist embark--vindicator-display-alist)))
