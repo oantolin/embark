@@ -737,13 +737,14 @@ Display a message in the minibuffer prompt or echo area showing the TARGETS."
     (unwind-protect
         (progn
           (when (functionp update)
-            (setq timer (run-at-time 0.05 0.05
-                                     (lambda ()
-                                       (let ((new-prefix (this-single-command-keys)))
-                                         (unless (equal prefix new-prefix)
-                                           (setq prefix new-prefix)
-                                           (when (/= (length prefix) 0)
-                                             (funcall update prefix))))))))
+            (setq timer (run-at-time
+                         0.05 0.05
+                         (lambda ()
+                           (let ((new-prefix (this-single-command-keys)))
+                             (unless (equal prefix new-prefix)
+                               (setq prefix new-prefix)
+                               (when (/= (length prefix) 0)
+                                 (funcall update prefix))))))))
           (read-key-sequence nil 'echo nil t 'cmd-loop))
       (when timer
         (cancel-timer timer)))))
@@ -798,12 +799,15 @@ If NESTED is non-nil subkeymaps are not flattened."
                    for name = (embark--command-name cmd)
                    unless (or
                            ;; skip which-key pseudo keys and other invalid pairs
-                           (and (not (keymapp cmd)) (consp cmd) (not (stringp (car cmd))))
+                           (and (not (keymapp cmd))
+                                (consp cmd)
+                                (not (stringp (car cmd))))
                            (eq cmd #'embark-keymap-help))
                    collect (list name
                                  (cond
                                   ((keymapp cmd) 'keymap)
-                                  ((and (consp cmd) (stringp (car cmd))) (cdr cmd))
+                                  ((and (consp cmd) (stringp (car cmd)))
+                                   (cdr cmd))
                                   (t cmd))
                                  key
                                  (concat (key-description key)))))
@@ -929,7 +933,8 @@ Used by `embark-verbose-indicator'.")
             embark-verbose-indicator-excluded-commands))
 
 (defun embark--verbose-indicator-update (keymap target other-targets)
-  "Update verbose indicator buffer given the current KEYMAP, TARGET and OTHER-TARGETS."
+  "Update verbose indicator buffer.
+The arguments are the new KEYMAP, TARGET and OTHER-TARGETS."
   (with-current-buffer (get-buffer-create embark--verbose-indicator-buffer)
     (let* ((inhibit-read-only t)
            (bindings (car (embark--formatted-bindings keymap 'nested)))
@@ -991,7 +996,8 @@ TARGETS is the list of targets."
       (select-window win))
     (lambda (prefix)
       (if prefix
-          (embark--verbose-indicator-update (lookup-key keymap prefix) target other-targets)
+          (embark--verbose-indicator-update (lookup-key keymap prefix)
+                                            target other-targets)
         (embark-kill-buffer-and-window embark--verbose-indicator-buffer)
         (when-let (win (active-minibuffer-window))
           (select-window win))))))
@@ -1031,8 +1037,10 @@ The TARGETS are displayed for actions outside the minibuffer."
         (condition-case nil
             (minibuffer-with-setup-hook
                 (lambda ()
-                  ;; if the prompter opens its own minibuffer, show the indicator there too
-                  (let ((inner-indicator (funcall embark-indicator keymap targets)))
+                  ;; if the prompter opens its own minibuffer, show
+                  ;; the indicator there too
+                  (let ((inner-indicator
+                         (funcall embark-indicator keymap targets)))
                     (when (functionp inner-indicator)
                       (add-hook 'minibuffer-exit-hook
                                 (lambda () (funcall inner-indicator nil))
