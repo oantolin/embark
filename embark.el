@@ -215,18 +215,6 @@ Used by `embark-completing-read-prompter' and `embark-keymap-help'.")
 (defface embark-target '((t :inherit highlight))
   "Face used to highlight the target at point during `embark-act'.")
 
-(defface embark-verbose-indicator-documentation '((t :inherit completions-annotations))
-  "Face used by the verbose action indicator to display binding descriptions.
-Used by `embark-verbose-indicator'.")
-
-(defface embark-verbose-indicator-title '((t :height 1.1 :weight bold))
-  "Face used by the verbose action indicator for the title.
-Used by `embark-verbose-indicator'.")
-
-(defface embark-verbose-indicator-shadowed '((t :inherit shadow))
-  "Face used by the verbose action indicator for the shadowed targets.
-Used by `embark-verbose-indicator'.")
-
 (defcustom embark-action-indicator
   (let ((act (propertize "Act" 'face 'highlight)))
     (cons act (concat act " on %2$s"
@@ -779,6 +767,8 @@ first line of the documentation string; otherwise use the word
     (t "<unnamed>"))))
 
 (defun embark--formatted-bindings (keymap)
+  "Return the formatted keybinding of KEYMAP.
+The keybindings are returned in their order of appearance."
   (let* ((commands
           (cl-loop for (key . cmd) in (embark--all-bindings keymap)
                    for name = (embark--command-name cmd)
@@ -871,6 +861,18 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
 
 ;;; Verbose action indicator
 
+(defface embark-verbose-indicator-documentation '((t :inherit completions-annotations))
+  "Face used by the verbose action indicator to display binding descriptions.
+Used by `embark-verbose-indicator'.")
+
+(defface embark-verbose-indicator-title '((t :height 1.1 :weight bold))
+  "Face used by the verbose action indicator for the title.
+Used by `embark-verbose-indicator'.")
+
+(defface embark-verbose-indicator-shadowed '((t :inherit shadow))
+  "Face used by the verbose action indicator for the shadowed targets.
+Used by `embark-verbose-indicator'.")
+
 (defvar embark--verbose-indicator-buffer " *Embark Actions*"
   "Buffer used by `embark-verbose-indicator' to display actions and keybidings.")
 
@@ -902,7 +904,9 @@ OTHER-TARGETS are other shadowed targets."
   (with-current-buffer (get-buffer-create embark--verbose-indicator-buffer)
     (let* ((inhibit-read-only t)
            (bindings (car (embark--formatted-bindings keymap)))
-           (max-width (apply #'max (mapcar (lambda (x) (string-width (car x))) bindings)))
+           (max-width (apply #'max (cons 0 (mapcar (lambda (x)
+                                                     (string-width (car x)))
+                                                   bindings))))
            (fmt (format "%%-%ds" (1+ max-width))))
       (setq-local cursor-type nil)
       (setq-local truncate-lines t)
@@ -910,7 +914,8 @@ OTHER-TARGETS are other shadowed targets."
       (erase-buffer)
       (insert (format "Action for %s '%s'\n" (car target)
                       (embark--truncate-target (cdr target))))
-      (add-face-text-property (point-min) (point) 'embark-verbose-indicator-title 'append)
+      (add-face-text-property (point-min) (point)
+                              'embark-verbose-indicator-title 'append)
       (when other-targets
         (insert
          (propertize
@@ -928,14 +933,15 @@ OTHER-TARGETS are other shadowed targets."
           (unless (embark--verbose-indicator-excluded-p cmd)
             (insert (format fmt (car binding))
                     (or (ignore-errors
-                          (propertize (car (split-string (documentation cmd) "\n"))
-                                      'face 'embark-verbose-indicator-documentation)) "")
+                          (propertize
+                           (car (split-string (documentation cmd) "\n"))
+                           'face 'embark-verbose-indicator-documentation)) "")
                     "\n"))))
       (goto-char (point-min))
       (let ((display-buffer-alist
-             (append display-buffer-alist
-                     `((,(regexp-quote embark--verbose-indicator-buffer)
-                        ,@embark--verbose-indicator-display-action)))))
+             `(,@display-buffer-alist
+               (,(regexp-quote embark--verbose-indicator-buffer)
+                ,@embark--verbose-indicator-display-action))))
         (pop-to-buffer (current-buffer) nil t)))
     (lambda ()
       (embark-kill-buffer-and-window embark--verbose-indicator-buffer)
