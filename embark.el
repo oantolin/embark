@@ -878,6 +878,14 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
     embark-keymap-help embark-become embark-isearch nil)
   "Commands not displayed by `embark-verbose-indicator'.")
 
+(defun embark--verbose-indicator-excluded-p (cmd)
+  "Return non-nil if CMD is excluded from the verbose indicator."
+  (seq-find (lambda (x)
+              (if (symbolp x)
+                  (eq cmd x)
+                (string-match-p x (symbol-name cmd))))
+            embark--verbose-indicator-excluded-commands))
+
 (defun embark-verbose-indicator (keymap target other-targets)
   "Action indicator that displays a list of all action key bindings.
 KEYMAP is the action keymap.
@@ -907,11 +915,7 @@ OTHER-TARGETS are other shadowed targets."
       (insert "\n")
       (dolist (binding bindings)
         (let ((cmd (caddr binding)))
-          (unless (seq-find (lambda (x)
-                              (if (symbolp x)
-                                  (eq cmd x)
-                                (string-match-p x (symbol-name cmd))))
-                            embark--verbose-indicator-excluded-commands)
+          (unless (embark--verbose-indicator-excluded-p cmd)
             (insert (format fmt (car binding))
                     (or (ignore-errors
                           (propertize (car (split-string (documentation cmd) "\n"))
