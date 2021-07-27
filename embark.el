@@ -865,9 +865,10 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
 (defvar embark--vindicator-prompt-buffer " *Embark Actions*"
   "Buffer used by `embark-verbose-indicator' to display actions and keybidings.")
 
-(defvar embark--vindicator-display-alist
-  `((,(regexp-quote embark--vindicator-prompt-buffer)
-     (display-buffer-reuse-window)))
+(defvar embark--vindicator-display-action
+  '(display-buffer-reuse-window)
+  ;;'(display-buffer-in-side-window (side . right))
+  ;;'(display-buffer-below-selected (window-height . 15))
   "Parameters added to `display-buffer-alist' for displaying the actions buffer.")
 
 (defvar embark--vindicator-excluded-commands
@@ -962,7 +963,9 @@ OTHER-TARGETS are other shadowed targets."
                                'string-greaterp (cddr descs))))
       (goto-char (point-min))
       (let ((display-buffer-alist
-             (append display-buffer-alist embark--vindicator-display-alist)))
+             (append display-buffer-alist
+                     `((,(regexp-quote embark--vindicator-prompt-buffer)
+                        ,@embark--vindicator-display-action)))))
         (pop-to-buffer (current-buffer) nil t)))
     (lambda ()
       (embark-kill-buffer-and-window embark--vindicator-prompt-buffer)
