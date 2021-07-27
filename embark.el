@@ -913,7 +913,7 @@ Used by `embark-verbose-indicator'.")
   ;;'(display-buffer-below-selected (window-height . 15))
   ;;'(display-buffer-below-selected (window-height . fit-window-to-buffer))
   "Parameters added to `display-buffer-alist' to show the actions buffer."
-  :type 'list)
+  :type 'sexp)
 
 (defcustom embark-verbose-indicator-excluded-commands
   '("\\`embark-collect-" embark-cycle embark-export
