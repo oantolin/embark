@@ -906,11 +906,12 @@ OTHER-TARGETS are other shadowed targets."
       (add-face-text-property (point-min) (point) '(:height 1.1 :weight bold) 'append)
       (when other-targets
         ;; TODO make face customizable
-        (insert (propertize (format "Shadowed targets at point: %s\n"
+        (insert (propertize (format "Shadowed targets at point: %s (%s to cycle)\n"
                                     (string-join (mapcar (lambda (x)
                                                            (symbol-name (car x)))
                                                          other-targets)
-                                                 ", "))
+                                                 ", ")
+                                    (key-description (car (where-is-internal #'embark-cycle keymap))))
                             'face 'shadow)))
       (insert "\n")
       (dolist (binding bindings)
