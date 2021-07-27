@@ -529,7 +529,6 @@ In `dired-mode', it uses `dired-get-filename' instead."
   (when (derived-mode-p 'Custom-mode)
     (save-excursion
       (beginning-of-line)
-      ;; TODO Please check, the old custom variable finder did not work for me.
       (when-let* ((widget (widget-at (point)))
                   (var (and (eq (car widget) 'custom-visibility)
                             (plist-get (cdr widget) :parent)))
@@ -670,6 +669,14 @@ If CYCLE is non-nil bind `embark-cycle'."
    (symbol-value (or (alist-get type embark-keymap-alist)
                      (alist-get t embark-keymap-alist)))))
 
+(defun embark--truncate-target (target)
+  "Truncate TARGET string."
+  (unless (stringp target)
+    (setq target (format "%s" target)))
+  (if-let (pos (string-match-p "\n" target))
+      (concat (substring target 0 pos) "…")
+    target))
+
 (defun embark--show-indicator (indicator keymap targets)
   "Show INDICATOR for a pending action or a instance of becoming.
 If INDICATOR is a string it is used as a format string, %1$s is
@@ -698,10 +705,7 @@ when the indicator is no longer needed."
     (pcase-let ((`(,type . ,target) (car targets))
                 (mini (active-minibuffer-window))
                 (ind nil))
-      (unless (stringp target)
-        (setq target (format "%s" target)))
-      (when-let (pos (string-match-p "\n" target))
-        (setq target (concat (substring target 0 pos) "…")))
+      (setq target (embark--truncate-target target))
       (setq ind (format (if (consp indicator)
                             (if mini (car indicator) (cdr indicator))
                           indicator)
@@ -762,9 +766,9 @@ first line of the documentation string; otherwise use the word
            (match-string 1 doc)))))
     (t "<unnamed>"))))
 
-(defun embark-completing-read-prompter (keymap &optional no-default)
-  "Prompt via completion for a command bound in KEYMAP.
-If NO-DEFAULT is t, no default value is passed to `completing-read'."
+(defun embark--formatted-bindings (keymap)
+  "Return the formatted keybinding of KEYMAP.
+The keybindings are returned in their order of appearance."
   (let* ((commands
           (cl-loop for (key . cmd) in (embark--all-bindings keymap)
                    for name = (embark--command-name cmd)
@@ -790,9 +794,17 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
                             (make-string (- width (length desc) -1) ? )
                             name)
                     'embark-command cmd)
-                   when (and (not no-default) (equal key [13]))
+                   when (equal key [13])
                    do (setq def formatted)
-                   collect (cons formatted item)))
+                   collect (cons formatted item))))
+    (cons candidates def)))
+
+(defun embark-completing-read-prompter (keymap &optional no-default)
+  "Prompt via completion for a command bound in KEYMAP.
+If NO-DEFAULT is t, no default value is passed to `completing-read'."
+  (let* ((candidates+def (embark--formatted-bindings keymap))
+         (candidates (car candidates+def))
+         (def (and (not no-default) (cdr candidates+def)))
          (choice
           (minibuffer-with-setup-hook
               (lambda ()
@@ -849,102 +861,98 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
 
 ;;; Verbose action indicator
 
-(defvar embark--vindicator-prompt-buffer "*Embark Actions*"
-  "Buffer used by embark-verbose-indicator to display actions and keybidings.")
-
-(defvar embark--vindicator-display-alist
-  `((,(regexp-quote embark--vindicator-prompt-buffer)
-     (display-buffer-at-bottom)
-     (window-parameters (mode-line-format . none))
-     (window-height . fit-window-to-buffer)))
-  "Parameters added to display-buffer-alist for displaying the actions buffer.")
-
-(defvar embark--vindicator-excluded-commands
-  '(embark-collect-snapshot embark-collect-live embark-export
-    embark-keymap-help embark-become embark-isearch nil)
-  "Commands not displayed by embark-verbose-indicator.")
-
-(defun embark--vindicator-key-str (k)
-  "A string describing the given key or key code."
-  (if (numberp k) (single-key-description k) (key-description k)))
-
-(defun embark--vindicator-bind-desc (descs x prefix)
-  "Accumulator used by `embark--vindicator-keymap-descriptor', q.v."
-  (let ((k (car x)) (c (cdr x)))
-    (cond ((keymapp c)
-           (let* ((k-str (embark--vindicator-key-str k))
-                  (cds (embark--vindicator-keymap-descriptor c k-str)))
-             (cons (max (or (car cds) 0) (or (car descs) 0))
-                   (cons (max (or (cadr cds) 0) (or (cadr descs) 0))
-                         (append (cddr descs) (cddr cds))))))
-          ((memq c embark--vindicator-excluded-commands) descs)
-          ((symbolp c)
-           (let* ((desc (embark--vindicator-key-str k))
-                  (desc (format "%s%s" (or prefix "") desc))
-                  (doc (car (split-string
-                             (or (ignore-errors (documentation c)) "")
-                             "\n")))
-                  (fun (symbol-name c)))
-             (cons (max (length desc) (car descs))
-                   (cons (max (length fun) (cadr descs))
-                         (cons (list desc fun doc) (cddr descs)))))))))
-
-(defun embark--vindicator-keymap-descriptor (k prefix)
-  "Generate a description of keymap K, recursively.
-PREFIX is used in bindings descriptions strings, and, besides
-that string for all seen bindings, DESCS includes the maximum
-width of that string seen so far, for alignment purporses."
-  (seq-reduce `(lambda (descs x) (embark--vindicator-bind-desc descs x ,prefix))
-              (cdr (keymap-canonicalize k)) '(0 0)))
-
-(defun embark--vindicator-adjust-for-sorting (d)
-  "Auxiliary function for sorting binding descriptors before display."
-  (let ((s (cadr d)))
-    (if (string-prefix-p "embark" s) "" s)))
-
-(defface embark-keybinding-command '((t :inherit default))
-  "Face used by the verbose action indicator to display command names.
-Used by `embark-verbose-indicator'.")
-
-(defface embark-keybinding-description '((t :inherit italic))
+(defface embark-verbose-indicator-documentation '((t :inherit completions-annotations))
   "Face used by the verbose action indicator to display binding descriptions.
 Used by `embark-verbose-indicator'.")
 
-;;;###autoload
-(defun embark-verbose-indicator (keymap target _)
-  "Action indicator that displays a list of all available action key bindings."
-  (with-current-buffer (get-buffer-create embark--vindicator-prompt-buffer)
-    (read-only-mode -1)
-    (setq-local cursor-type nil
-                truncate-lines t)
-    (delete-region (point-min) (point-max))
-    (let* ((descs (embark--vindicator-keymap-descriptor keymap ""))
-           (fmt (format "%%-%ds  %%-%ds   %%s\n" (cadr descs) (car descs))))
-      (seq-each (lambda (desc)
-                  (insert (format fmt
-                                  (propertize (cadr desc)
-                                              'face
-                                              'embark-keybinding-command)
-                                  (propertize (car desc) 'face
-                                              'embark-keybinding)
-                                  (propertize (caddr desc)
-                                              'face
-                                              'embark-keybinding-description))))
-                (seq-sort-by 'embark--vindicator-adjust-for-sorting
-                             'string-greaterp (cddr descs))))
-    (if target
-        (insert (format "\nAction for %s '%s'" (car target) (cdr target)))
-      (delete-char -1))
-    (goto-char (point-min))
-    (read-only-mode 1)
-    (let ((display-buffer-alist
-           (append display-buffer-alist embark--vindicator-display-alist)))
-      (pop-to-buffer (current-buffer) nil t))
+(defface embark-verbose-indicator-title '((t :height 1.1 :weight bold))
+  "Face used by the verbose action indicator for the title.
+Used by `embark-verbose-indicator'.")
+
+(defface embark-verbose-indicator-shadowed '((t :inherit shadow))
+  "Face used by the verbose action indicator for the shadowed targets.
+Used by `embark-verbose-indicator'.")
+
+(defvar embark--verbose-indicator-buffer " *Embark Actions*"
+  "Buffer used by `embark-verbose-indicator' to display actions and keybidings.")
+
+(defvar embark--verbose-indicator-display-action
+  `(display-buffer-reuse-window
+    (window-parameters
+     (mode-line-format
+      . ,(propertize " *Embark Actions*" 'face 'bold))))
+  ;;'(display-buffer-reuse-window)
+  ;;'(display-buffer-in-side-window (side . right))
+  ;;'(display-buffer-below-selected (window-height . 15))
+  ;;'(display-buffer-below-selected (window-height . fit-window-to-buffer))
+  "Parameters added to `display-buffer-alist' for displaying the actions buffer.")
+
+(defvar embark--verbose-indicator-excluded-commands
+  '("\\`embark-collect-" embark-cycle embark-export
+    embark-keymap-help embark-become embark-isearch nil)
+  "Commands not displayed by `embark-verbose-indicator'.")
+
+(defun embark--verbose-indicator-excluded-p (cmd)
+  "Return non-nil if CMD is excluded from the verbose indicator."
+  (seq-find (lambda (x)
+              (if (symbolp x)
+                  (eq cmd x)
+                (string-match-p x (symbol-name cmd))))
+            embark--verbose-indicator-excluded-commands))
+
+(defun embark-verbose-indicator (keymap target other-targets)
+  "Action indicator that displays a list of all action key bindings.
+KEYMAP is the action keymap.
+TARGET is the current target.
+OTHER-TARGETS are other shadowed targets."
+  (with-current-buffer (get-buffer-create embark--verbose-indicator-buffer)
+    (let* ((inhibit-read-only t)
+           (bindings (car (embark--formatted-bindings keymap)))
+           (max-width (apply #'max (cons 0 (mapcar (lambda (x)
+                                                     (string-width (car x)))
+                                                   bindings))))
+           (fmt (format "%%-%ds" (1+ max-width))))
+      (setq-local cursor-type nil)
+      (setq-local truncate-lines t)
+      (setq-local buffer-read-only t)
+      (erase-buffer)
+      (insert (format "%s on %s '%s'\n"
+                      (propertize "Act" 'face 'highlight)
+                      (car target)
+                      (embark--truncate-target (cdr target))))
+      (add-face-text-property (point-min) (point)
+                              'embark-verbose-indicator-title 'append)
+      (when other-targets
+        (insert
+         (propertize
+          (format "Shadowed targets at point: %s (%s to cycle)\n"
+                  (string-join
+                   (mapcar (lambda (x)
+                             (symbol-name (car x)))
+                           other-targets)
+                   ", ")
+                  (key-description (car (where-is-internal #'embark-cycle keymap))))
+          'face 'embark-verbose-indicator-shadowed)))
+      (insert "\n")
+      (dolist (binding bindings)
+        (let ((cmd (caddr binding)))
+          (unless (embark--verbose-indicator-excluded-p cmd)
+            (insert (format fmt (car binding))
+                    (or (ignore-errors
+                          (propertize
+                           (car (split-string (documentation cmd) "\n"))
+                           'face 'embark-verbose-indicator-documentation)) "")
+                    "\n"))))
+      (goto-char (point-min))
+      (let ((display-buffer-alist
+             `(,@display-buffer-alist
+               (,(regexp-quote embark--verbose-indicator-buffer)
+                ,@embark--verbose-indicator-display-action))))
+        (pop-to-buffer (current-buffer) nil t)))
     (lambda ()
-      (embark-kill-buffer-and-window embark--vindicator-prompt-buffer)
-      (when (or (bound-and-true-p selectrum-is-active)
-                (bound-and-true-p current-minibuffer-command))
-        (select-window (minibuffer-window))))))
+      (embark-kill-buffer-and-window embark--verbose-indicator-buffer)
+      (when-let (win (active-minibuffer-window))
+        (select-window win)))))
 
 ;;;###autoload
 (defun embark-prefix-help-command ()
@@ -1008,7 +1016,8 @@ The TARGETS are displayed for actions outside the minibuffer."
 (defun embark--act (action target bounds &optional quit)
   "Perform ACTION injecting the TARGET.
 If called from a minibuffer with non-nil QUIT, quit the
-minibuffer before executing the action."
+minibuffer before executing the action. BOUNDS are the bounds of
+the target at point."
   (if (memq action '(embark-become        ; these actions should not
                      embark-collect-live  ; run in the target window
                      embark-collect-snapshot
