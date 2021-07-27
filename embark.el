@@ -688,11 +688,12 @@ If CYCLE is non-nil bind `embark-cycle'."
       (concat (substring target 0 pos) "…")
     target))
 
-(defun embark-minimal-indicator (_keymap target other-targets)
+(defun embark-minimal-indicator (_keymap targets)
   "Minimal action indicator.
-Display a message in the minibuffer prompt or echo area showing
-both the TARGET and the types of OTHER-TARGETS that may exist."
+Display a message in the minibuffer prompt or echo area showing the TARGETS."
   (let* ((act (propertize "Act" 'face 'highlight))
+         (target (car targets))
+         (other-targets (cdr targets))
          (indicator (cond
                      ((eq (car target) 'embark-become)
                       (propertize "Become" 'face 'highlight))
@@ -724,19 +725,6 @@ both the TARGET and the types of OTHER-TARGETS that may exist."
           (lambda () (delete-overlay indicator-overlay)))
       (message "%s" indicator)
       nil)))
-
-(defun embark--show-indicator (indicator keymap targets)
-  "Show INDICATOR for a pending action or an instance of becoming.
-The INDICATOR should be a function, and is called with the
-KEYMAP, and the TARGETS.  The function should return either nil,
-or a function to be called when the indicator is no longer
-needed.  See the docstring of `embark-indicator' for more
-information."
-  (condition-case nil
-      (funcall indicator keymap (car targets) (cdr targets))
-    (wrong-number-of-arguments
-     (message "Embark: The new action indicator takes three arguments.")
-     (funcall indicator keymap (cdar targets)))))
 
 (defun embark-keymap-prompter (keymap)
   "Let the user choose an action using the bindings in KEYMAP.
@@ -914,13 +902,15 @@ Used by `embark-verbose-indicator'.")
                 (string-match-p x (symbol-name cmd))))
             embark--verbose-indicator-excluded-commands))
 
-(defun embark-verbose-indicator (keymap target other-targets)
+(defun embark-verbose-indicator (keymap targets)
   "Indicator that displays a list of available key bindings.
 KEYMAP is the action keymap.
-TARGET is the current target.
+TARGETS is the list of targets.
 OTHER-TARGETS are other shadowed targets."
   (with-current-buffer (get-buffer-create embark--verbose-indicator-buffer)
     (let* ((inhibit-read-only t)
+           (target (car targets))
+           (other-targets (cdr targets))
            (bindings (car (embark--formatted-bindings keymap)))
            (max-width (apply #'max (cons 0 (mapcar (lambda (x)
                                                      (string-width (car x)))
@@ -999,10 +989,10 @@ be restricted by passing a PREFIX key."
     (when-let (command (embark-completing-read-prompter keymap 'no-default))
       (call-interactively command))))
 
-(defun embark--prompt (indicator keymap targets)
-  "Display INDICATOR while calling the prompter with KEYMAP.
+(defun embark--prompt (keymap targets)
+  "Call the prompter with KEYMAP.
 The TARGETS are displayed for actions outside the minibuffer."
-  (let ((remove-indicator (embark--show-indicator indicator keymap targets)))
+  (let ((remove-indicator (funcall embark-indicator keymap targets)))
     (unwind-protect
         (condition-case nil
             (minibuffer-with-setup-hook
@@ -1011,7 +1001,7 @@ The TARGETS are displayed for actions outside the minibuffer."
                 ;; removing it since the whole recursive
                 ;; minibuffer disappears)
                 (lambda ()
-                  (embark--show-indicator indicator keymap targets))
+                  (funcall embark-indicator keymap targets))
               (let ((enable-recursive-minibuffers t))
                 (funcall embark-prompter keymap)))
           (quit nil))
@@ -1236,7 +1226,6 @@ ARG is the prefix argument."
                         (action (or (embark--highlight-target
                                      bounds
                                      #'embark--prompt
-                                     embark-action-indicator
                                      (embark--action-keymap
                                       type (cdr targets))
                                      (mapcar #'car targets))
@@ -1337,8 +1326,7 @@ point."
                      (pcase-let ((`(,beg . ,end) (embark--boundaries)))
                        (substring (minibuffer-contents) beg
                                   (+ end (embark--minibuffer-point))))))
-           (become (embark--prompt embark-become-indicator
-                                   (embark--become-keymap)
+           (become (embark--prompt (embark--become-keymap)
                                    ;; Pass a fake target list here
                                    `((embark-become . ,target)))))
       (if (null become)
