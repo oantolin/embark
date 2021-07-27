@@ -740,7 +740,8 @@ Display a message in the minibuffer prompt or echo area showing the TARGETS."
                                            (when (/= (length prefix) 0)
                                              (funcall update prefix))))))))
           (read-key-sequence nil 'echo nil t 'cmd-loop))
-      (cancel-timer timer))))
+      (when timer
+        (cancel-timer timer)))))
 
 (defun embark-keymap-prompter (keymap update)
   "Let the user choose an action using the bindings in KEYMAP.
@@ -751,23 +752,21 @@ UPDATE is the indicator update function."
                 (embark--read-key-sequence update)))
          (cmd (let ((overriding-terminal-local-map keymap))
                 (key-binding key))))
-    (setq cmd
-          (pcase cmd
-            ((or 'minibuffer-keyboard-quit 'abort-recursive-edit)
-             nil)
-            ('self-insert-command
-             (minibuffer-message "Not an action")
-             (embark-keymap-prompter keymap update))
-            ((or 'universal-argument 'negative-argument 'digit-argument)
-             (let ((last-command-event (aref key 0)))
-               (command-execute cmd))
-             (embark-keymap-prompter keymap update))
-            ('execute-extended-command
-             (intern-soft (read-extended-command)))
-            ('embark-keymap-help
-             (embark-completing-read-prompter keymap))
-            (_ cmd)))
-    cmd))
+    (pcase cmd
+      ((or 'minibuffer-keyboard-quit 'abort-recursive-edit)
+       nil)
+      ('self-insert-command
+       (minibuffer-message "Not an action")
+       (embark-keymap-prompter keymap update))
+      ((or 'universal-argument 'negative-argument 'digit-argument)
+       (let ((last-command-event (aref key 0)))
+         (command-execute cmd))
+       (embark-keymap-prompter keymap update))
+      ('execute-extended-command
+       (intern-soft (read-extended-command)))
+      ('embark-keymap-help
+       (embark-completing-read-prompter keymap nil))
+      (_ cmd))))
 
 (defun embark--command-name (cmd)
   "Return an appropriate name for CMD.
