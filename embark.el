@@ -904,9 +904,8 @@ Used by `embark-verbose-indicator'.")
 
 (defun embark-verbose-indicator (keymap targets)
   "Indicator that displays a list of available key bindings.
-KEYMAP is the action keymap.
-TARGETS is the list of targets.
-OTHER-TARGETS are other shadowed targets."
+KEYMAP is the action (or become) keymap.
+TARGETS is the list of targets."
   (with-current-buffer (get-buffer-create embark--verbose-indicator-buffer)
     (let* ((inhibit-read-only t)
            (target (car targets))
