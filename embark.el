@@ -4,7 +4,7 @@
 
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Keywords: convenience
-;; Version: 0.11
+;; Version: 0.12
 ;; Homepage: https://github.com/oantolin/embark
 ;; Package-Requires: ((emacs "26.1"))
 
@@ -198,15 +198,15 @@ prompts for an action with completion."
 
 The key must be either a string or a vector.
 This is the key representation accepted by `define-key'."
-  :type '(choice key-sequence (const nil)))
+  :type '(choice key-sequence (const :tag "None" nil)))
 
 (defcustom embark-cycle-key nil
   "Key used for `embark-cycle'.
 
 If the key is set to nil it defaults to the global binding of
-`embark-act'. The key must be either a string or a vector. This
+`embark-act'.  The key must be either a string or a vector.  This
 is the key representation accepted by `define-key'."
-  :type '(choice key-sequence (const nil)))
+  :type '(choice key-sequence (const :tag "None" nil)))
 
 (defface embark-keybinding '((t :inherit success))
   "Face used to display key bindings.
@@ -215,39 +215,49 @@ Used by `embark-completing-read-prompter' and `embark-keymap-help'.")
 (defface embark-target '((t :inherit highlight))
   "Face used to highlight the target at point during `embark-act'.")
 
-(defcustom embark-action-indicator
-  (let ((act (propertize "Act" 'face 'highlight)))
-    (cons act (concat act " on %2$s"
-                      (propertize "%3$s" 'face 'shadow)
-                      " '%1$s'")))
-  "Indicator to use when embarking upon an action.
-If set to a string it is used as a format string where %1$s will
-be replaced by the target of `embark-act' and %2$s will be
-replaced by the type of the target, and the resulting string is
-prepended to the minibuffer prompt or shown in the echo area if
-`embark-act' was called outside of the minibuffer.
+(defcustom embark-indicator #'embark-verbose-indicator
+  "Indicator function to use when acting or becoming.
+The indicator function is called from both `embark-act' and from
+`embark-become' and should display information about this to the
+user, such as: which of those two commands is running; a
+description of the key bindings that are available for actions or
+commands to become; and, in the case of `embark-act', the type
+and value of the targets, and whether other targets are available
+via `embark-cycle'.  The indicator function is free to display as
+much or as little of this information as desired and can use any
+Emacs interface elements to do so.
 
-You can also set this variable to a cons of two format strings,
-in which case the first is used if `embark-act' is called from
-the minibuffer and the second is used otherwise.
+Embark comes with two such indicators:
 
-Finally, you can set this variable to a function, which will be
-called with the action keymap and the target.  The function
-should return either nil or a function to be called when the
-indicator is no longer needed.  Finally, if this variable is set
-to nil no indication is shown."
-  :type '(choice function string (cons string string) nil))
+- `embark-minimal-indicator', which does not display any
+  information about keybindings, but does display types and
+  values of acton targets, and
 
-(defcustom embark-become-indicator (propertize "Become" 'face 'highlight)
-  "Indicator to use when using `embark-become'.
-If set to a string, it is prepended to the minibuffer prompt when
-you call `embark-become'.  If set to a function it will be called
-with one of the keymaps listed in `embark-become-keymaps'
-containing the currently executing command (or nil, if no such
-keymap exists).  The function should return either nil or a
-function to be called when the indicator is no longer needed.
-Finally, if this variable is set to nil no indication is shown."
-  :type '(choice function string nil))
+- `embark-verbose-indicator', which pops up a buffer containing
+  detailed information including key bindings and the first line
+  of the docstring of the commands they run.
+
+The calling convention for indicator functions is as follows:
+
+When called from `embark-act', the indicator function will be
+called with the action keymap, the target (in the form of a cons
+of the type and value) and a list of other shadowed targets (each
+of which is also a cons).  When called from `embark-become', the
+indicator function will be called the keymap of commands to
+become, with a fake target of type `embark-become' and whose
+value is the minibuffer input, and with nil.  Note, in
+particular, that if an indicator function wishes to distinguish
+between `embark-act' and `embark-become' it should check whether
+the `car' of its target argument is `embark-become'.
+
+The function should return either nil or a function to be called
+when the indicator is no longer needed to clean up the display.
+For example, if the indicator works by adding overlays, it should
+return a function that removes those overlays."
+  :type '(choice
+          (const :tag "Verbose indicator" embark-verbose-indicator)
+          (const :tag "Minimal indicator" embark-minimal-indicator)
+          (function :tag "Other")))
 
 (defcustom embark-setup-hook nil
   "Hook to run after injecting target into minibuffer.
@@ -336,7 +346,8 @@ This list is used only when `embark-allow-edit-default' is t."
 (defvar-local embark--target-window nil
   "Cache for the previous window, meant to be set buffer-locally.
 Since windows can be reused to display different buffers, this
-window should only be used if it displays `embark--target-buffer'.")
+window should only be used if it displays the buffer stored in
+the variable `embark--target-buffer'.")
 
 (defvar-local embark--command nil
   "Command that started the completion session.")
@@ -677,53 +688,55 @@ If CYCLE is non-nil bind `embark-cycle'."
       (concat (substring target 0 pos) "…")
     target))
 
+(defun embark-minimal-indicator (_keymap target other-targets)
+  "Minimal action indicator.
+Display a message in the minibuffer prompt or echo area showing
+both the TARGET and the types of OTHER-TARGETS that may exist."
+  (let* ((act (propertize "Act" 'face 'highlight))
+         (indicator (cond
+                     ((eq (car target) 'embark-become)
+                      (propertize "Become" 'face 'highlight))
+                     ((and (minibufferp)
+                           (not (eq 'embark-keybinding
+                                    (completion-metadata-get
+                                     (embark--metadata)
+                                     'category))))
+                      ;; we are in a minibuffer but not from the
+                      ;; completing-read prompter, use just "Act"
+                      act)
+                     (t (format
+                         "%s on%s%s '%s'"
+                         act
+                         (if (car target) (format " %s" (car target)) "")
+                         (if other-targets
+                             (format (propertize "(%s)" 'face 'shadow)
+                                     (string-join
+                                      (mapcar (lambda (x)
+                                                (symbol-name (car x)))
+                                              other-targets)
+                                      ", "))
+                           "")
+                         (embark--truncate-target (cdr target)))))))
+    (if (minibufferp)
+        (let ((indicator-overlay
+               (make-overlay (point-min) (point-min) (current-buffer) t t)))
+          (overlay-put indicator-overlay 'before-string (concat indicator " "))
+          (lambda () (delete-overlay indicator-overlay)))
+      (message "%s" indicator)
+      nil)))
+
 (defun embark--show-indicator (indicator keymap targets)
-  "Show INDICATOR for a pending action or a instance of becoming.
-If INDICATOR is a string it is used as a format string, %1$s is
-replaced by the first target and %2$s by its type. Furthermore if
-additional shadowed TARGETS exist, %3$s is replaced by their types.
-If the minibuffer is active, the formatted string is put in an
-overlay in the minibuffer prompt. If the minibuffer is inactive,
-then the formatted string is shown in the echo area and returned.
-
-If INDICATOR is a cons of two strings, they are used as format
-strings as described above: if the minibuffer is active the first
-string is used and if not, the second is used.
-
-Finally, if INDICATOR is a function, this function is called with
-the KEYMAP, the current target and a list of shadowed targets.
-The function should return either nil, or a function to be called
-when the indicator is no longer needed."
-  (cond
-   ((functionp indicator)
-    (condition-case nil
-        (funcall indicator keymap (car targets) (cdr targets))
-      (wrong-number-of-arguments
-       (message "Embark: The new action indicator takes three arguments.")
-       (funcall indicator keymap (cdar targets)))))
-   ((or (stringp indicator) (consp indicator))
-    (pcase-let ((`(,type . ,target) (car targets))
-                (mini (active-minibuffer-window))
-                (ind nil))
-      (setq target (embark--truncate-target target))
-      (setq ind (format (if (consp indicator)
-                            (if mini (car indicator) (cdr indicator))
-                          indicator)
-                        target type
-                        (if (cdr targets)
-                            ;; This is a weird feature of format/prin1-to-string
-                            ;; A symbol list (function weird arbitrary symbols)
-                            ;; is printed as #'weird!
-                            (let ((print-quoted nil))
-                              (prin1-to-string (mapcar #'car (cdr targets))))
-                          "")))
-      (if mini
-          (let ((indicator-overlay
-                 (make-overlay (point-min) (point-min)
-                               (window-buffer mini) t t)))
-            (overlay-put indicator-overlay 'before-string (concat ind " "))
-            (lambda () (delete-overlay indicator-overlay)))
-        (message "%s" ind))))))
+  "Show INDICATOR for a pending action or an instance of becoming.
+The INDICATOR should be a function, and is called with the
+KEYMAP, and the TARGETS.  The function should return either nil,
+or a function to be called when the indicator is no longer
+needed.  See the docstring of `embark-indicator' for more
+information."
+  (condition-case nil
+      (funcall indicator keymap (car targets) (cdr targets))
+    (wrong-number-of-arguments
+     (message "Embark: The new action indicator takes three arguments.")
+     (funcall indicator keymap (cdar targets)))))
 
 (defun embark-keymap-prompter (keymap)
   "Let the user choose an action using the bindings in KEYMAP.
@@ -902,7 +915,7 @@ Used by `embark-verbose-indicator'.")
             embark--verbose-indicator-excluded-commands))
 
 (defun embark-verbose-indicator (keymap target other-targets)
-  "Action indicator that displays a list of all action key bindings.
+  "Indicator that displays a list of available key bindings.
 KEYMAP is the action keymap.
 TARGET is the current target.
 OTHER-TARGETS are other shadowed targets."
@@ -917,10 +930,13 @@ OTHER-TARGETS are other shadowed targets."
       (setq-local truncate-lines t)
       (setq-local buffer-read-only t)
       (erase-buffer)
-      (insert (format "%s on %s '%s'\n"
-                      (propertize "Act" 'face 'highlight)
-                      (car target)
-                      (embark--truncate-target (cdr target))))
+      (insert
+       (if (eq (car target) 'embark-become)
+           (concat (propertize "Become" 'face 'highlight) "\n")
+         (format "%s on%s '%s'\n"
+                 (propertize "Act" 'face 'highlight)
+                 (if (car target) (format " %s" (car target)) "")
+                 (embark--truncate-target (cdr target)))))
       (add-face-text-property (point-min) (point)
                               'embark-verbose-indicator-title 'append)
       (when other-targets
@@ -995,13 +1011,7 @@ The TARGETS are displayed for actions outside the minibuffer."
                 ;; removing it since the whole recursive
                 ;; minibuffer disappears)
                 (lambda ()
-                  ;; if the outer embark--show-indicator decided
-                  ;; to display a message, remove-indicator is a
-                  ;; string containing the message, which we use
-                  (embark--show-indicator (if (stringp remove-indicator)
-                                              remove-indicator
-                                            indicator)
-                                          keymap targets))
+                  (embark--show-indicator indicator keymap targets))
               (let ((enable-recursive-minibuffers t))
                 (funcall embark-prompter keymap)))
           (quit nil))
@@ -1018,7 +1028,7 @@ The TARGETS are displayed for actions outside the minibuffer."
 (defun embark--act (action target bounds &optional quit)
   "Perform ACTION injecting the TARGET.
 If called from a minibuffer with non-nil QUIT, quit the
-minibuffer before executing the action. BOUNDS are the bounds of
+minibuffer before executing the action.  BOUNDS are the bounds of
 the target at point."
   (if (memq action '(embark-become        ; these actions should not
                      embark-collect-live  ; run in the target window
@@ -1141,21 +1151,21 @@ work on them."
   "Retrieve current target.
 
 An initial guess at the current target and its type is determined
-by running the functions in `embark-target-finders'. Each
+by running the functions in `embark-target-finders'.  Each
 function should either return nil, a pair of a type symbol and
 target string or a triple of a type symbol, target string and
 target bounds.
 
 In the minibuffer only the first target finder returning non-nil
-is taken into account. When finding targets at point in other
+is taken into account.  When finding targets at point in other
 buffers, each target finder function is executed.
 
 For each target, the type is then looked up as a key in the
-variable `embark-transformer-alist'. If there is a transformer
+variable `embark-transformer-alist'.  If there is a transformer
 for the type, it is called with the type and target, and must
 return a `cons' of the transformed type and transformed target.
 
-The return value of `embark--targets' is a list. Each list
+The return value of `embark--targets' is a list.  Each list
 element has the form (target original-target . bounds), where
 target and original-target are (type . string) pairs and bounds
 is the optional bounds of the target at point for highlighting."
@@ -1330,7 +1340,7 @@ point."
            (become (embark--prompt embark-become-indicator
                                    (embark--become-keymap)
                                    ;; Pass a fake target list here
-                                   `((nil . ,target)))))
+                                   `((embark-become . ,target)))))
       (if (null become)
           (user-error "Canceled")
         (embark--quit-and-run
@@ -1446,7 +1456,7 @@ default is `embark-collect-snapshot'."
      :background "#efefef")
     (((class color) (min-colors 88) (background dark))
      :background "#242424"))
-  "Face to highlight alternate rows in `embark-collect-zebra-minor-mode'")
+  "Face to highlight alternate rows in `embark-collect-zebra-minor-mode'.")
 
 (defface embark-collect-annotation '((t :inherit completions-annotations))
   "Face for annotations in Embark Collect.
