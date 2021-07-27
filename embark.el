@@ -721,7 +721,12 @@ Display a message in the minibuffer prompt or echo area showing the TARGETS."
     (if (minibufferp)
         (let ((indicator-overlay
                (make-overlay (point-min) (point-min) (current-buffer) t t)))
-          (overlay-put indicator-overlay 'before-string (concat indicator " "))
+          (overlay-put indicator-overlay
+                       'before-string (concat indicator
+                                              (if (<= (length indicator)
+                                                      (* 0.4 (frame-width)))
+                                                  " "
+                                                "\n")))
           (lambda (_) (delete-overlay indicator-overlay)))
       (message "%s" indicator)
       nil)))
