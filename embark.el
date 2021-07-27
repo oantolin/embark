@@ -711,7 +711,7 @@ when the indicator is no longer needed."
                           indicator)
                         target type
                         (if (cdr targets)
-                            ;; This is a weird feature of format/prin1-to-string.
+                            ;; This is a weird feature of format/prin1-to-string
                             ;; A symbol list (function weird arbitrary symbols)
                             ;; is printed as #'weird!
                             (let ((print-quoted nil))
@@ -861,7 +861,8 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
 
 ;;; Verbose action indicator
 
-(defface embark-verbose-indicator-documentation '((t :inherit completions-annotations))
+(defface embark-verbose-indicator-documentation
+  '((t :inherit completions-annotations))
   "Face used by the verbose action indicator to display binding descriptions.
 Used by `embark-verbose-indicator'.")
 
@@ -885,7 +886,7 @@ Used by `embark-verbose-indicator'.")
   ;;'(display-buffer-in-side-window (side . right))
   ;;'(display-buffer-below-selected (window-height . 15))
   ;;'(display-buffer-below-selected (window-height . fit-window-to-buffer))
-  "Parameters added to `display-buffer-alist' for displaying the actions buffer.")
+  "Parameters added to `display-buffer-alist' to show the actions buffer.")
 
 (defvar embark--verbose-indicator-excluded-commands
   '("\\`embark-collect-" embark-cycle embark-export
@@ -931,7 +932,8 @@ OTHER-TARGETS are other shadowed targets."
                              (symbol-name (car x)))
                            other-targets)
                    ", ")
-                  (key-description (car (where-is-internal #'embark-cycle keymap))))
+                  (key-description
+                   (car (where-is-internal #'embark-cycle keymap))))
           'face 'embark-verbose-indicator-shadowed)))
       (insert "\n")
       (dolist (binding bindings)
@@ -1164,7 +1166,9 @@ is the optional bounds of the target at point for highlighting."
        (when-let (found (funcall fun))
          (let* ((type (car found))
                 (target+bounds (cdr found))
-                (target (if (consp target+bounds) (car target+bounds) target+bounds))
+                (target (if (consp target+bounds)
+                            (car target+bounds)
+                          target+bounds))
                 (bounds (and (consp target+bounds) (cdr target+bounds)))
                 (orig (cons type target)))
            (push (if-let (transformer (alist-get type embark-transformer-alist))
