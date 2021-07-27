@@ -877,7 +877,11 @@ Used by `embark-verbose-indicator'.")
   "Buffer used by `embark-verbose-indicator' to display actions and keybidings.")
 
 (defvar embark--verbose-indicator-display-action
-  '(display-buffer-reuse-window)
+  `(display-buffer-reuse-window
+    (window-parameters
+     (mode-line-format
+      . ,(propertize " *Embark Actions*" 'face 'bold))))
+  ;;'(display-buffer-reuse-window)
   ;;'(display-buffer-in-side-window (side . right))
   ;;'(display-buffer-below-selected (window-height . 15))
   ;;'(display-buffer-below-selected (window-height . fit-window-to-buffer))
@@ -912,7 +916,9 @@ OTHER-TARGETS are other shadowed targets."
       (setq-local truncate-lines t)
       (setq-local buffer-read-only t)
       (erase-buffer)
-      (insert (format "Action for %s '%s'\n" (car target)
+      (insert (format "%s on %s '%s'\n"
+                      (propertize "Act" 'face 'highlight)
+                      (car target)
                       (embark--truncate-target (cdr target))))
       (add-face-text-property (point-min) (point)
                               'embark-verbose-indicator-title 'append)
