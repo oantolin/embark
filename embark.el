@@ -981,7 +981,8 @@ TARGETS is the list of targets."
            `(,@display-buffer-alist
              (,(regexp-quote embark--verbose-indicator-buffer)
               ,@embark-verbose-indicator-display-action))))
-      (pop-to-buffer embark--verbose-indicator-buffer nil t))
+      (save-excursion
+        (pop-to-buffer embark--verbose-indicator-buffer nil t)))
     (when-let (win (active-minibuffer-window))
       (select-window win))
     (lambda (prefix)
