@@ -1079,7 +1079,7 @@ the target at point."
                 (let ((embark-setup-hook setup-hook))
                   (run-hooks 'embark-setup-hook))
                 (unless allow-edit
-                  (if (eq mwheel-scroll-up-function 'ivy-next-line)
+                  (if (memq 'ivy--queue-exhibit post-command-hook)
                       ;; Ivy has special needs: (1) for file names
                       ;; ivy-immediate-done is not equivalent to
                       ;; exit-minibuffer, (2) it needs a chance to run
@@ -2274,7 +2274,7 @@ Return the category metadatum as the type of the candidates."
   "Target the currently selected item in Ivy.
 Return the category metadatum as the type of the target."
   ;; my favorite way of detecting Ivy
-  (when (eq mwheel-scroll-up-function 'ivy-next-line)
+  (when (memq 'ivy--queue-exhibit post-command-hook)
     (cons
      (completion-metadata-get (embark--metadata) 'category)
      (ivy--expand-file-name
@@ -2286,7 +2286,7 @@ Return the category metadatum as the type of the target."
 (defun embark--ivy-candidates ()
   "Return all current Ivy candidates."
   ;; my favorite way of detecting Ivy
-  (when (eq mwheel-scroll-up-function 'ivy-next-line)
+  (when (memq 'ivy--queue-exhibit post-command-hook)
     (cons
      ;; swiper-isearch uses swiper-isearch-function as a completion
      ;; table, but it doesn't understand metadata queries
