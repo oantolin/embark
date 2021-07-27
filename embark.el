@@ -871,6 +871,7 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
   '(display-buffer-reuse-window)
   ;;'(display-buffer-in-side-window (side . right))
   ;;'(display-buffer-below-selected (window-height . 15))
+  ;;'(display-buffer-below-selected (window-height . fit-window-to-buffer))
   "Parameters added to `display-buffer-alist' for displaying the actions buffer.")
 
 (defvar embark--verbose-indicator-excluded-commands
