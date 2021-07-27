@@ -212,12 +212,20 @@ is the key representation accepted by `define-key'."
   "Face used to display key bindings.
 Used by `embark-completing-read-prompter' and `embark-keymap-help'.")
 
-(defface embark-documentation '((t :inherit completions-annotations))
+(defface embark-target '((t :inherit highlight))
+  "Face used to highlight the target at point during `embark-act'.")
+
+(defface embark-verbose-indicator-documentation '((t :inherit completions-annotations))
   "Face used by the verbose action indicator to display binding descriptions.
 Used by `embark-verbose-indicator'.")
 
-(defface embark-target '((t :inherit highlight))
-  "Face used to highlight the target at point during `embark-act'.")
+(defface embark-verbose-indicator-title '((t :height 1.1 :weight bold))
+  "Face used by the verbose action indicator for the title.
+Used by `embark-verbose-indicator'.")
+
+(defface embark-verbose-indicator-shadowed '((t :inherit shadow))
+  "Face used by the verbose action indicator for the shadowed targets.
+Used by `embark-verbose-indicator'.")
 
 (defcustom embark-action-indicator
   (let ((act (propertize "Act" 'face 'highlight)))
@@ -533,7 +541,6 @@ In `dired-mode', it uses `dired-get-filename' instead."
   (when (derived-mode-p 'Custom-mode)
     (save-excursion
       (beginning-of-line)
-      ;; TODO Please check, the old custom variable finder did not work for me.
       (when-let* ((widget (widget-at (point)))
                   (var (and (eq (car widget) 'custom-visibility)
                             (plist-get (cdr widget) :parent)))
@@ -903,17 +910,18 @@ OTHER-TARGETS are other shadowed targets."
       (erase-buffer)
       (insert (format "Action for %s '%s'\n" (car target)
                       (embark--truncate-target (cdr target))))
-      ;; TODO make face customizable
-      (add-face-text-property (point-min) (point) '(:height 1.1 :weight bold) 'append)
+      (add-face-text-property (point-min) (point) 'embark-verbose-indicator-title 'append)
       (when other-targets
-        ;; TODO make face customizable
-        (insert (propertize (format "Shadowed targets at point: %s (%s to cycle)\n"
-                                    (string-join (mapcar (lambda (x)
-                                                           (symbol-name (car x)))
-                                                         other-targets)
-                                                 ", ")
-                                    (key-description (car (where-is-internal #'embark-cycle keymap))))
-                            'face 'shadow)))
+        (insert
+         (propertize
+          (format "Shadowed targets at point: %s (%s to cycle)\n"
+                  (string-join
+                   (mapcar (lambda (x)
+                             (symbol-name (car x)))
+                           other-targets)
+                   ", ")
+                  (key-description (car (where-is-internal #'embark-cycle keymap))))
+          'face 'embark-verbose-indicator-shadowed)))
       (insert "\n")
       (dolist (binding bindings)
         (let ((cmd (caddr binding)))
@@ -921,7 +929,7 @@ OTHER-TARGETS are other shadowed targets."
             (insert (format fmt (car binding))
                     (or (ignore-errors
                           (propertize (car (split-string (documentation cmd) "\n"))
-                                      'face 'embark-documentation)) "")
+                                      'face 'embark-verbose-indicator-documentation)) "")
                     "\n"))))
       (goto-char (point-min))
       (let ((display-buffer-alist
