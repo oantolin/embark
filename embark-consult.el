@@ -240,8 +240,9 @@ actual type."
   :parent nil
   ("o" consult-outline)
   ("i" consult-imenu)
-  ("p" consult-project-imenu)
-  ("l" consult-line))
+  ("I" consult-imenu-project)
+  ("l" consult-line)
+  ("L" consult-line-multi))
 
 (embark-define-keymap embark-consult-async-search-map
   "Keymap for Consult async search commands"
@@ -250,7 +251,7 @@ actual type."
   ("r" consult-ripgrep)
   ("G" consult-git-grep)
   ("f" consult-find)
-  ("L" consult-locate))
+  ("F" consult-locate))
 
 (defvar embark-consult-search-map
   (keymap-canonicalize
