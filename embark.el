@@ -722,16 +722,33 @@ Display a message in the minibuffer prompt or echo area showing the TARGETS."
         (let ((indicator-overlay
                (make-overlay (point-min) (point-min) (current-buffer) t t)))
           (overlay-put indicator-overlay 'before-string (concat indicator " "))
-          (lambda () (delete-overlay indicator-overlay)))
+          (lambda (_) (delete-overlay indicator-overlay)))
       (message "%s" indicator)
       nil)))
 
-(defun embark-keymap-prompter (keymap)
+(defun embark--read-key-sequence (update)
+  "Read key sequence, call UPDATE function with prefix keys."
+  (let ((timer) (prefix))
+    (unwind-protect
+        (progn
+          (when (functionp update)
+            (setq timer (run-at-time 0.05 0.05
+                                     (lambda ()
+                                       (let ((new-prefix (this-single-command-keys)))
+                                         (unless (equal prefix new-prefix)
+                                           (setq prefix new-prefix)
+                                           (when (/= (length prefix) 0)
+                                             (funcall update prefix))))))))
+          (read-key-sequence nil 'echo nil t 'cmd-loop))
+      (cancel-timer timer))))
+
+(defun embark-keymap-prompter (keymap update)
   "Let the user choose an action using the bindings in KEYMAP.
 Besides the bindings in KEYMAP, the user is free to use all their
-key bindings and even \\[execute-extended-command] to select a command."
+key bindings and even \\[execute-extended-command] to select a command.
+UPDATE is the indicator update function."
   (let* ((key (let ((overriding-terminal-local-map keymap))
-                (read-key-sequence nil)))
+                (embark--read-key-sequence update)))
          (cmd (let ((overriding-terminal-local-map keymap))
                 (key-binding key))))
     (setq cmd
@@ -740,11 +757,11 @@ key bindings and even \\[execute-extended-command] to select a command."
              nil)
             ('self-insert-command
              (minibuffer-message "Not an action")
-             (embark-keymap-prompter keymap))
+             (embark-keymap-prompter keymap update))
             ((or 'universal-argument 'negative-argument 'digit-argument)
              (let ((last-command-event (aref key 0)))
                (command-execute cmd))
-             (embark-keymap-prompter keymap))
+             (embark-keymap-prompter keymap update))
             ('execute-extended-command
              (intern-soft (read-extended-command)))
             ('embark-keymap-help
@@ -761,26 +778,29 @@ first line of the documentation string; otherwise use the word
    (cond
     ((stringp (car-safe cmd)) (car cmd))
     ((symbolp cmd) (symbol-name cmd))
+    ((keymapp cmd) "<keymap>")
     ((when-let (doc (and (functionp cmd) (documentation cmd)))
        (save-match-data
          (when (string-match "^\\(.*\\)$" doc)
            (match-string 1 doc)))))
     (t "<unnamed>"))))
 
-(defun embark--formatted-bindings (keymap)
+(defun embark--formatted-bindings (keymap &optional nested)
   "Return the formatted keybinding of KEYMAP.
-The keybindings are returned in their order of appearance."
+The keybindings are returned in their order of appearance.
+If NESTED is non-nil subkeymaps are not flattened."
   (let* ((commands
-          (cl-loop for (key . cmd) in (embark--all-bindings keymap)
+          (cl-loop for (key . cmd) in (embark--all-bindings keymap nested)
                    for name = (embark--command-name cmd)
                    unless (or
                            ;; skip which-key pseudo keys and other invalid pairs
-                           (and (consp cmd) (not (stringp (car cmd))))
+                           (and (not (keymapp cmd)) (consp cmd) (not (stringp (car cmd))))
                            (eq cmd #'embark-keymap-help))
                    collect (list name
-                                 (if (and (consp cmd) (stringp (car cmd)))
-                                     (cdr cmd)
-                                   cmd)
+                                 (cond
+                                  ((keymapp cmd) 'keymap)
+                                  ((and (consp cmd) (stringp (car cmd))) (cdr cmd))
+                                  (t cmd))
                                  key
                                  (concat (key-description key)))))
          (width (cl-loop for (_name _cmd _key desc) in commands
@@ -800,7 +820,7 @@ The keybindings are returned in their order of appearance."
                    collect (cons formatted item))))
     (cons candidates def)))
 
-(defun embark-completing-read-prompter (keymap &optional no-default)
+(defun embark-completing-read-prompter (keymap _update &optional no-default)
   "Prompt via completion for a command bound in KEYMAP.
 If NO-DEFAULT is t, no default value is passed to `completing-read'."
   (let* ((candidates+def (embark--formatted-bindings keymap))
@@ -875,10 +895,7 @@ Used by `embark-verbose-indicator'.")
   "Face used by the verbose action indicator for the shadowed targets.
 Used by `embark-verbose-indicator'.")
 
-(defvar embark--verbose-indicator-buffer " *Embark Actions*"
-  "Buffer used by `embark-verbose-indicator' to display actions and keybidings.")
-
-(defvar embark--verbose-indicator-display-action
+(defcustom embark-verbose-indicator-display-action
   `(display-buffer-reuse-window
     (window-parameters
      (mode-line-format
@@ -887,12 +904,17 @@ Used by `embark-verbose-indicator'.")
   ;;'(display-buffer-in-side-window (side . right))
   ;;'(display-buffer-below-selected (window-height . 15))
   ;;'(display-buffer-below-selected (window-height . fit-window-to-buffer))
-  "Parameters added to `display-buffer-alist' to show the actions buffer.")
+  "Parameters added to `display-buffer-alist' to show the actions buffer."
+  :type 'list)
 
-(defvar embark--verbose-indicator-excluded-commands
+(defcustom embark-verbose-indicator-excluded-commands
   '("\\`embark-collect-" embark-cycle embark-export
     embark-keymap-help embark-become embark-isearch nil)
-  "Commands not displayed by `embark-verbose-indicator'.")
+  "Commands not displayed by `embark-verbose-indicator'."
+  :type '(repeat (choice regexp symbol)))
+
+(defvar embark--verbose-indicator-buffer " *Embark Actions*"
+  "Buffer used by `embark-verbose-indicator' to display actions and keybidings.")
 
 (defun embark--verbose-indicator-excluded-p (cmd)
   "Return non-nil if CMD is excluded from the verbose indicator."
@@ -900,17 +922,13 @@ Used by `embark-verbose-indicator'.")
               (if (symbolp x)
                   (eq cmd x)
                 (string-match-p x (symbol-name cmd))))
-            embark--verbose-indicator-excluded-commands))
+            embark-verbose-indicator-excluded-commands))
 
-(defun embark-verbose-indicator (keymap targets)
-  "Indicator that displays a list of available key bindings.
-KEYMAP is the action (or become) keymap.
-TARGETS is the list of targets."
+(defun embark--verbose-indicator-update (keymap target other-targets)
+  "Update verbose indicator buffer given the current KEYMAP, TARGET and OTHER-TARGETS."
   (with-current-buffer (get-buffer-create embark--verbose-indicator-buffer)
     (let* ((inhibit-read-only t)
-           (target (car targets))
-           (other-targets (cdr targets))
-           (bindings (car (embark--formatted-bindings keymap)))
+           (bindings (car (embark--formatted-bindings keymap 'nested)))
            (max-width (apply #'max (cons 0 (mapcar (lambda (x)
                                                      (string-width (car x)))
                                                    bindings))))
@@ -919,27 +937,11 @@ TARGETS is the list of targets."
       (setq-local truncate-lines t)
       (setq-local buffer-read-only t)
       (erase-buffer)
-      (insert
-       (if (eq (car target) 'embark-become)
-           (concat (propertize "Become" 'face 'highlight) "\n")
-         (format "%s on%s '%s'\n"
-                 (propertize "Act" 'face 'highlight)
-                 (if (car target) (format " %s" (car target)) "")
-                 (embark--truncate-target (cdr target)))))
+      (insert target)
       (add-face-text-property (point-min) (point)
                               'embark-verbose-indicator-title 'append)
-      (when other-targets
-        (insert
-         (propertize
-          (format "Shadowed targets at point: %s (%s to cycle)\n"
-                  (string-join
-                   (mapcar (lambda (x)
-                             (symbol-name (car x)))
-                           other-targets)
-                   ", ")
-                  (key-description
-                   (car (where-is-internal #'embark-cycle keymap))))
-          'face 'embark-verbose-indicator-shadowed)))
+      (when (and other-targets (where-is-internal #'embark-cycle keymap))
+        (insert other-targets))
       (insert "\n")
       (dolist (binding bindings)
         (let ((cmd (caddr binding)))
@@ -950,16 +952,45 @@ TARGETS is the list of targets."
                            (car (split-string (documentation cmd) "\n"))
                            'face 'embark-verbose-indicator-documentation)) "")
                     "\n"))))
-      (goto-char (point-min))
-      (let ((display-buffer-alist
-             `(,@display-buffer-alist
-               (,(regexp-quote embark--verbose-indicator-buffer)
-                ,@embark--verbose-indicator-display-action))))
-        (pop-to-buffer (current-buffer) nil t)))
-    (lambda ()
-      (embark-kill-buffer-and-window embark--verbose-indicator-buffer)
-      (when-let (win (active-minibuffer-window))
-        (select-window win)))))
+      (goto-char (point-min)))))
+
+(defun embark-verbose-indicator (keymap targets)
+  "Indicator that displays a list of available key bindings.
+KEYMAP is the action (or become) keymap.
+TARGETS is the list of targets."
+  (let* ((target (car targets))
+         (target (if (eq (car target) 'embark-become)
+                     (concat (propertize "Become" 'face 'highlight) "\n")
+                   (format "%s on%s '%s'\n"
+                           (propertize "Act" 'face 'highlight)
+                           (if (car target) (format " %s" (car target)) "")
+                           (embark--truncate-target (cdr target)))))
+         (other-targets
+          (and (cdr targets)
+               (propertize
+                (format "Shadowed targets at point: %s (%s to cycle)\n"
+                        (string-join
+                         (mapcar (lambda (x)
+                                   (symbol-name (car x)))
+                                 (cdr targets))
+                         ", ")
+                        (key-description
+                         (car (where-is-internal #'embark-cycle keymap))))
+                'face 'embark-verbose-indicator-shadowed))))
+    (embark--verbose-indicator-update keymap target other-targets)
+    (let ((display-buffer-alist
+           `(,@display-buffer-alist
+             (,(regexp-quote embark--verbose-indicator-buffer)
+              ,@embark-verbose-indicator-display-action))))
+      (pop-to-buffer embark--verbose-indicator-buffer nil t))
+    (when-let (win (active-minibuffer-window))
+      (select-window win))
+    (lambda (prefix)
+      (if prefix
+          (embark--verbose-indicator-update (lookup-key keymap prefix) target other-targets)
+        (embark-kill-buffer-and-window embark--verbose-indicator-buffer)
+        (when-let (win (active-minibuffer-window))
+          (select-window win))))))
 
 ;;;###autoload
 (defun embark-prefix-help-command ()
@@ -985,27 +1016,28 @@ be restricted by passing a PREFIX key."
                   (make-composed-keymap (current-active-maps t)))))
     (unless (keymapp keymap)
       (user-error "No key bindings found"))
-    (when-let (command (embark-completing-read-prompter keymap 'no-default))
+    (when-let (command (embark-completing-read-prompter keymap nil 'no-default))
       (call-interactively command))))
 
 (defun embark--prompt (keymap targets)
   "Call the prompter with KEYMAP.
 The TARGETS are displayed for actions outside the minibuffer."
-  (let ((remove-indicator (funcall embark-indicator keymap targets)))
+  (let ((indicator (funcall embark-indicator keymap targets)))
     (unwind-protect
         (condition-case nil
             (minibuffer-with-setup-hook
-                ;; if the prompter opens its own minibuffer, show
-                ;; the indicator there too (don't bother with
-                ;; removing it since the whole recursive
-                ;; minibuffer disappears)
                 (lambda ()
-                  (funcall embark-indicator keymap targets))
+                  ;; if the prompter opens its own minibuffer, show the indicator there too
+                  (let ((inner-indicator (funcall embark-indicator keymap targets)))
+                    (when (functionp inner-indicator)
+                      (add-hook 'minibuffer-exit-hook
+                                (lambda () (funcall inner-indicator nil))
+                                nil 'local))))
               (let ((enable-recursive-minibuffers t))
-                (funcall embark-prompter keymap)))
+                (funcall embark-prompter keymap indicator)))
           (quit nil))
-      (when (functionp remove-indicator)
-        (funcall remove-indicator)))))
+      (when (functionp indicator)
+        (funcall indicator nil)))))
 
 (defun embark--quit-and-run (fn &rest args)
   "Quit the minibuffer and then call FN with ARGS."
@@ -1558,13 +1590,14 @@ Returns the name of the command."
     (put name 'function-documentation (documentation action))
     name))
 
-(defun embark--all-bindings (keymap)
-  "Return an alist of all bindings in KEYMAP."
+(defun embark--all-bindings (keymap &optional nested)
+  "Return an alist of all bindings in KEYMAP.
+If NESTED is non-nil subkeymaps are not flattened."
   (let (bindings)
     (map-keymap
      (lambda (key def)
        (cond
-        ((keymapp def)
+        ((and (not nested) (keymapp def))
          (dolist (bind (embark--all-bindings def))
            (push (cons (vconcat (vector key) (car bind))
                        (cdr bind))
