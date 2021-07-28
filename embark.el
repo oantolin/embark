@@ -215,7 +215,7 @@ Used by `embark-completing-read-prompter' and `embark-keymap-help'.")
 (defface embark-target '((t :inherit highlight))
   "Face used to highlight the target at point during `embark-act'.")
 
-(defcustom embark-indicator #'embark-verbose-indicator
+(defcustom embark-indicator #'embark-mixed-indicator
   "Indicator function to use when acting or becoming.
 The indicator function is called from both `embark-act' and from
 `embark-become' and should display information about this to the
@@ -237,6 +237,10 @@ Embark comes with two such indicators:
   detailed information including key bindings and the first line
   of the docstring of the commands they run.
 
+- `embark-mixed-indicator', which combines the minimal and the
+  verbose indicator. The verbose popup is shown after
+  `embark-mixed-indicator-delay' seconds.
+
 The calling convention for indicator functions is as follows:
 
 When called from `embark-act', the indicator function will be
@@ -257,6 +261,7 @@ return a function that removes those overlays."
   :type '(choice
           (const :tag "Verbose indicator" embark-verbose-indicator)
           (const :tag "Minimal indicator" embark-minimal-indicator)
+          (const :tag "Mixed indicator" embark-mixed-indicator)
           (function :tag "Other")))
 
 (defcustom embark-setup-hook nil
@@ -1011,6 +1016,35 @@ TARGETS is the list of targets."
           (quit-window 'kill-buffer indicator-window)
           (when-let (win (active-minibuffer-window))
             (select-window win)))))))
+
+(defcustom embark-mixed-indicator-delay 0.5
+  "Time in seconds after which the verbose indicator is shown."
+  :type '(choice (const :tag "No delay" 0)
+                 (number :tag "Delay in seconds")))
+
+(defun embark-mixed-indicator (keymap targets)
+  "Mixed indicator showing KEYMAP and TARGETS.
+
+The indicator shows the `embark-minimal-indicator' by default.
+After `embark-mixed-indicator-delay' seconds, the
+`embark-verbose-indicator' is shown. This which-key-like approach
+ensures that Embark stays out of the way for quick actions. The
+helpful keybinding reminder still pops up automatically without
+further user intervention."
+  (let ((vtimer) (vindicator) (mindicator))
+    (if (> embark-mixed-indicator-delay 0)
+        (setq vtimer (run-at-time embark-mixed-indicator-delay nil
+                                 (lambda ()
+                                   (setq vindicator (embark-verbose-indicator keymap targets)))))
+      (setq vindicator (embark-verbose-indicator keymap targets)))
+    (setq mindicator (embark-minimal-indicator keymap targets))
+    (lambda (prefix)
+      (when (and (not prefix) vtimer)
+        (cancel-timer vtimer))
+      (when (functionp vindicator)
+        (funcall vindicator prefix))
+      (when (functionp mindicator)
+        (funcall mindicator prefix)))))
 
 ;;;###autoload
 (defun embark-prefix-help-command ()
