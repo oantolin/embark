@@ -904,46 +904,25 @@ Used by `embark-verbose-indicator'.")
 Used by `embark-verbose-indicator'.")
 
 (defcustom embark-verbose-indicator-display-action
-  `(display-buffer-below-selected
-    (window-height . fit-window-to-buffer)
-    (window-parameters
-     (mode-line-format
-      . ,(propertize " *Embark Actions*" 'face 'bold))))
+  '(display-buffer-reuse-window)
   "Parameters added to `display-buffer-alist' to show the actions buffer.
 See the docstring of `display-buffer' for information on what
 display actions and parameters are available."
   :type `(choice
-          (const :tag "Below target buffer"
-                 (display-buffer-below-selected
-                  (window-height . fit-window-to-buffer)
-                  (window-parameters
-                   (mode-line-format
-                    . ,(propertize " *Embark Actions*" 'face 'bold)))))
-          (const :tag "Bottom of frame (fixed-size)"
-                 (display-buffer-at-bottom
-                  (window-parameters
-                   (mode-line-format
-                    . ,(propertize " *Embark Actions*" 'face 'bold)))))
-          (const :tag "Bottom of frame (resizes during cycling)"
-                 (display-buffer-at-bottom
-                  (window-height . fit-window-to-buffer)
-                  (window-parameters
-                   (mode-line-format
-                    . ,(propertize " *Embark Actions*" 'face 'bold)))))
-          (const :tag "Side window on the right"
-                 (display-buffer-in-side-window
-                  (side . right)
-                  (window-parameters
-                   (mode-line-format
-                    . ,(propertize " *Embark Actions*" 'face 'bold)))))
-          (const :tag "Side window on the left"
-                 (display-buffer-in-side-window
-                  (side . left)
-                  (window-parameters
-                   (mode-line-format
-                    . ,(propertize " *Embark Actions*" 'face 'bold)))))
           (const :tag "Reuse some window"
                  (display-buffer-reuse-window))
+          (const :tag "Below target buffer"
+                 (display-buffer-below-selected
+                  (window-height . fit-window-to-buffer)))
+          (const :tag "Bottom of frame (fixed-size)"
+                 (display-buffer-at-bottom))
+          (const :tag "Bottom of frame (resizes during cycling)"
+                 (display-buffer-at-bottom
+                  (window-height . fit-window-to-buffer)))
+          (const :tag "Side window on the right"
+                 (display-buffer-in-side-window (side . right)))
+          (const :tag "Side window on the left"
+                 (display-buffer-in-side-window (side . left)))
           (sexp :tag "Other")))
 
 (defcustom embark-verbose-indicator-excluded-commands
