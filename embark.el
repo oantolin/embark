@@ -931,11 +931,14 @@ display actions and parameters are available."
                  (display-buffer-in-side-window (side . left)))
           (sexp :tag "Other")))
 
-(defcustom embark-verbose-indicator-excluded-commands
-  '("\\`embark-collect-" embark-cycle embark-export
-    embark-keymap-help embark-become embark-isearch nil)
+(defcustom embark-verbose-indicator-excluded-commands nil
   "Commands not displayed by `embark-verbose-indicator'."
-  :type '(repeat (choice regexp symbol)))
+  :type '(choice
+          (const :tag "Exclude nothing" nil)
+          (const :tag "Exclude Embark general actions"
+                 ("\\`embark-collect-" embark-cycle embark-export
+                  embark-keymap-help embark-become embark-isearch))
+          (repeat :tag "Other" (choice regexp symbol))))
 
 (defvar embark--verbose-indicator-shadow-str
   (propertize "Shadowed targets at point: "
