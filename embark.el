@@ -597,12 +597,18 @@ which more actions are available.  Identifiers are also promoted
 to symbols if they are interned Emacs Lisp symbols and found in a
 buffer whose major mode does not inherit from `prog-mode'.
 
-As a convenience, in Org Mode surrounding == or ~~ are removed."
+As a convenience, in Org Mode an initial ' or surrounding == or
+~~ are removed."
   (when-let (bounds (bounds-of-thing-at-point 'symbol))
     (let ((name (buffer-substring (car bounds) (cdr bounds))))
-      (when (and (derived-mode-p 'org-mode)
-                 (string-match-p "^\\([~=]\\).*\\1$" name))
-        (setq name (substring name 1 -1)))
+      (when (derived-mode-p 'org-mode)
+        (cond ((string-prefix-p "'" name)
+               (setq name (substring name 1))
+               (cl-incf (car bounds)))
+              ((string-match-p "^\\([=~]\\).*\\1$" name)
+               (setq name (substring name 1 -1))
+               (cl-incf (car bounds))
+               (cl-decf (cdr bounds)))))
       `(,(if (or (derived-mode-p 'emacs-lisp-mode)
                  (and (intern-soft name)
                       (not (derived-mode-p 'prog-mode))))
