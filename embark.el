@@ -944,13 +944,17 @@ display actions and parameters are available."
 (defcustom embark-verbose-indicator-buffer-sections
   `(target newline ,embark--verbose-indicator-shadow-str other-targets
     " " cycle newline newline bindings)
-  "List of sections to display in the verbose indicator buffer, in order."
+  "List of sections to display in the verbose indicator buffer, in order.
+You can use either a symbol designating a concrete section, a string literal
+or a function that will take the list of targets, bindings and the cycle key
+and should insert at point anything it wants."
   :type '(repeat (choice (const :tag "Current target name" target)
                          (const :tag "List of other targets" other-targets)
                          (const :tag "Key bindings" bindings)
                          (const :tag "Cycle indicator" cycle)
                          (const :tag "New line" newline)
-                         (string :tag "Literal string"))))
+                         (string :tag "Literal string")
+                         (function :tag "Insertion function"))))
 
 (defvar embark--verbose-indicator-buffer " *Embark Actions*"
   "Buffer used by `embark-verbose-indicator' to display actions and keybidings.")
@@ -1007,26 +1011,26 @@ MAX-WIDTH is the maximumb width of the command names."
 The arguments are the new KEYMAP, TARGET and other TARGETS."
   (with-current-buffer (get-buffer-create embark--verbose-indicator-buffer)
     (let* ((inhibit-read-only t)
-           (bindings (car (embark--formatted-bindings keymap 'nested))))
+           (bindings (car (embark--formatted-bindings keymap 'nested)))
+           (ck (let ((ck (where-is-internal #'embark-cycle keymap)))
+                 (and ck (key-description (car ck))))))
       (setq-local cursor-type nil)
       (setq-local truncate-lines t)
       (setq-local buffer-read-only t)
       (erase-buffer)
       (dolist (section embark-verbose-indicator-buffer-sections)
-        (if (stringp section)
-            (insert section)
-          (case section
-            (newline (insert "\n"))
-            (target
-             (embark--verbose-indicator-insert-target (car target) (cdr target)))
-            (other-targets
-             (embark--verbose-indicator-insert-other-targets targets))
-            (cycle
-             (when-let (ck (let ((ck (where-is-internal #'embark-cycle keymap)))
-                             (and ck (key-description (car ck)))))
-               (embark--verbose-indicator-insert-cycle-key ck)))
-            (bindings
-             (embark--verbose-indicator-insert-bindings bindings)))))
+        (cond ((stringp section) (insert section))
+              ((symbolp section)
+               (case section
+                 (newline (insert "\n"))
+                 (target
+                  (embark--verbose-indicator-insert-target (car target) (cdr target)))
+                 (other-targets
+                  (embark--verbose-indicator-insert-other-targets targets))
+                 (cycle (embark--verbose-indicator-insert-cycle-key ck))
+                 (bindings (embark--verbose-indicator-insert-bindings bindings))
+                 (t (when (fboundp section)
+                      (funcall section (cons target targets) bindings ck)))))))
       (goto-char (point-min)))))
 
 (defun embark-verbose-indicator (keymap targets)
