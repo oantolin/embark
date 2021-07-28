@@ -937,6 +937,21 @@ display actions and parameters are available."
   "Commands not displayed by `embark-verbose-indicator'."
   :type '(repeat (choice regexp symbol)))
 
+(defvar embark--verbose-indicator-shadow-str
+  (propertize "Shadowed targets at point: "
+              'face 'embark-verbose-indicator-shadowed))
+
+(defcustom embark-verbose-indicator-buffer-sections
+  `(target newline ,embark--verbose-indicator-shadow-str other-targets
+    " " cycle newline newline bindings)
+  "List of sections to display in the verbose indicator buffer, in order."
+  :type '(repeat (choice (const :tag "Current target name" target)
+                         (const :tag "List of other targets" other-targets)
+                         (const :tag "Key bindings" bindings)
+                         (const :tag "Cycle indicator" cycle)
+                         (const :tag "New line" newline)
+                         (string :tag "Literal string"))))
+
 (defvar embark--verbose-indicator-buffer " *Embark Actions*"
   "Buffer used by `embark-verbose-indicator' to display actions and keybidings.")
 
@@ -948,60 +963,80 @@ display actions and parameters are available."
                 (string-match-p x (symbol-name cmd))))
             embark-verbose-indicator-excluded-commands))
 
-(defun embark--verbose-indicator-update (keymap target other-targets)
+(defun embark--verbose-indicator-insert-target (kind target)
+  "Insert the TARGET of kind KIND section in the indicator buffer."
+  (let ((target (if (eq kind 'embark-become)
+                    (concat (propertize "Become" 'face 'highlight))
+                  (format "%s on%s '%s'"
+                          (propertize "Act" 'face 'highlight)
+                          (if kind (format " %s" kind) "")
+                          (embark--truncate-target target))))
+        (p (point)))
+    (insert target)
+    (add-face-text-property p (point) 'embark-verbose-indicator-title 'append)))
+
+(defun embark--verbose-indicator-insert-cycle-key (cycle-key)
+  "Insert the CYCLE section in the indicator buffer."
+  (insert (propertize (format "(%s to cycle)" cycle-key)
+                      'face 'embark-verbose-indicator-shadowed)))
+
+(defun embark--verbose-indicator-insert-other-targets (targets)
+  "Insert the OTHER-TARGETS section in the indicator buffer."
+  (insert (propertize (string-join targets ", ")
+                      'face 'embark-verbose-indicator-shadowed)))
+
+(defun embark--verbose-indicator-insert-bindings (bindings)
+  "Insert the BINDINGS section in the indicator buffer.
+MAX-WIDTH is the maximumb width of the command names."
+  (let* ((max-width (apply #'max (cons 0 (mapcar (lambda (x)
+                                                  (string-width (car x)))
+                                                bindings))))
+         (fmt (format "%%-%ds" (1+ max-width))))
+    (dolist (binding bindings)
+      (let ((cmd (caddr binding)))
+        (unless (embark--verbose-indicator-excluded-p cmd)
+          (let ((keys (format fmt (car binding)))
+                (doc (ignore-errors
+                       (propertize
+                        (car (split-string (documentation cmd) "\n"))
+                        'face 'embark-verbose-indicator-documentation))))
+            (insert keys (or doc "") "\n")))))))
+
+(defun embark--verbose-indicator-update (keymap target targets)
   "Update verbose indicator buffer.
-The arguments are the new KEYMAP, TARGET and OTHER-TARGETS."
+The arguments are the new KEYMAP, TARGET and other TARGETS."
   (with-current-buffer (get-buffer-create embark--verbose-indicator-buffer)
     (let* ((inhibit-read-only t)
-           (bindings (car (embark--formatted-bindings keymap 'nested)))
-           (max-width (apply #'max (cons 0 (mapcar (lambda (x)
-                                                     (string-width (car x)))
-                                                   bindings))))
-           (fmt (format "%%-%ds" (1+ max-width))))
+           (bindings (car (embark--formatted-bindings keymap 'nested))))
       (setq-local cursor-type nil)
       (setq-local truncate-lines t)
       (setq-local buffer-read-only t)
       (erase-buffer)
-      (insert target)
-      (add-face-text-property (point-min) (point)
-                              'embark-verbose-indicator-title 'append)
-      (when (and other-targets (where-is-internal #'embark-cycle keymap))
-        (insert other-targets))
-      (insert "\n")
-      (dolist (binding bindings)
-        (let ((cmd (caddr binding)))
-          (unless (embark--verbose-indicator-excluded-p cmd)
-            (insert (format fmt (car binding))
-                    (or (ignore-errors
-                          (propertize
-                           (car (split-string (documentation cmd) "\n"))
-                           'face 'embark-verbose-indicator-documentation)) "")
-                    "\n"))))
+      (dolist (section embark-verbose-indicator-buffer-sections)
+        (if (stringp section)
+            (insert section)
+          (case section
+            (newline (insert "\n"))
+            (target
+             (embark--verbose-indicator-insert-target (car target) (cdr target)))
+            (other-targets
+             (embark--verbose-indicator-insert-other-targets targets))
+            (cycle
+             (when-let (ck (let ((ck (where-is-internal #'embark-cycle keymap)))
+                             (and ck (key-description (car ck)))))
+               (embark--verbose-indicator-insert-cycle-key ck)))
+            (bindings
+             (embark--verbose-indicator-insert-bindings bindings)))))
       (goto-char (point-min)))))
 
 (defun embark-verbose-indicator (keymap targets)
   "Indicator that displays a list of available key bindings.
 KEYMAP is the action (or become) keymap.
 TARGETS is the list of targets."
-  (let* ((target (car targets))
-         (target (if (eq (car target) 'embark-become)
-                     (concat (propertize "Become" 'face 'highlight) "\n")
-                   (format "%s on%s '%s'\n"
-                           (propertize "Act" 'face 'highlight)
-                           (if (car target) (format " %s" (car target)) "")
-                           (embark--truncate-target (cdr target)))))
-         (other-targets
-          (and (cdr targets)
-               (propertize
-                (format "Shadowed targets at point: %s (%s to cycle)\n"
-                        (string-join
-                         (mapcar (lambda (x)
-                                   (symbol-name (car x)))
-                                 (cdr targets))
-                         ", ")
-                        (key-description
-                         (car (where-is-internal #'embark-cycle keymap))))
-                'face 'embark-verbose-indicator-shadowed))))
+  (let ((target (car targets))
+        (other-targets
+         (and (cdr targets)
+              (mapcar (lambda (x) (symbol-name (car x))) (cdr targets)))))
     (embark--verbose-indicator-update keymap target other-targets)
     (let* ((display-buffer-alist
             `(,@display-buffer-alist
