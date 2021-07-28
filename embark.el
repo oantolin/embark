@@ -942,6 +942,8 @@ display actions and parameters are available."
                   (window-parameters
                    (mode-line-format
                     . ,(propertize " *Embark Actions*" 'face 'bold)))))
+          (const :tag "Reuse some window"
+                 (display-buffer-reuse-window))
           (sexp :tag "Other")))
 
 (defcustom embark-verbose-indicator-excluded-commands
@@ -1016,20 +1018,20 @@ TARGETS is the list of targets."
                          (car (where-is-internal #'embark-cycle keymap))))
                 'face 'embark-verbose-indicator-shadowed))))
     (embark--verbose-indicator-update keymap target other-targets)
-    (let ((display-buffer-alist
-           `(,@display-buffer-alist
-             (,(regexp-quote embark--verbose-indicator-buffer)
-              ,@embark-verbose-indicator-display-action))))
-      (display-buffer embark--verbose-indicator-buffer))
-    (when-let (win (active-minibuffer-window))
-      (select-window win))
-    (lambda (prefix)
-      (if prefix
-          (embark--verbose-indicator-update (lookup-key keymap prefix)
-                                            target other-targets)
-        (embark-kill-buffer-and-window embark--verbose-indicator-buffer)
-        (when-let (win (active-minibuffer-window))
-          (select-window win))))))
+    (let* ((display-buffer-alist
+            `(,@display-buffer-alist
+              (,(regexp-quote embark--verbose-indicator-buffer)
+               ,@embark-verbose-indicator-display-action)))
+           (indicator-window (display-buffer embark--verbose-indicator-buffer)))
+      (when-let (win (active-minibuffer-window))
+        (select-window win))
+      (lambda (prefix)
+        (if prefix
+            (embark--verbose-indicator-update (lookup-key keymap prefix)
+                                              target other-targets)
+          (quit-window 'kill-buffer indicator-window)
+          (when-let (win (active-minibuffer-window))
+            (select-window win)))))))
 
 ;;;###autoload
 (defun embark-prefix-help-command ()
