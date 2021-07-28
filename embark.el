@@ -227,19 +227,20 @@ via `embark-cycle'.  The indicator function is free to display as
 much or as little of this information as desired and can use any
 Emacs interface elements to do so.
 
-Embark comes with two such indicators:
+Embark comes with three such indicators:
 
 - `embark-minimal-indicator', which does not display any
   information about keybindings, but does display types and
-  values of acton targets, and
+  values of acton targets,
 
 - `embark-verbose-indicator', which pops up a buffer containing
   detailed information including key bindings and the first line
-  of the docstring of the commands they run.
+  of the docstring of the commands they run, and
 
 - `embark-mixed-indicator', which combines the minimal and the
-  verbose indicator. The verbose popup is shown after
-  `embark-mixed-indicator-delay' seconds.
+  verbose indicator: the minimal indicator is shown first and the
+  verbose popup is shown after `embark-mixed-indicator-delay'
+  seconds.
 
 The calling convention for indicator functions is as follows:
 
