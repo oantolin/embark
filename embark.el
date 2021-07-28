@@ -1019,13 +1019,14 @@ TARGETS is the list of targets."
             (select-window win)))))))
 
 (defcustom embark-mixed-indicator-delay 0.5
-  "Time in seconds after which the verbose indicator is shown."
+  "Time in seconds after which the verbose indicator is shown.
+The mixed indicator starts by showing the minimal indicator and
+after this delay shows the verbose indicator."
   :type '(choice (const :tag "No delay" 0)
                  (number :tag "Delay in seconds")))
 
 (defun embark-mixed-indicator (keymap targets)
   "Mixed indicator showing KEYMAP and TARGETS.
-
 The indicator shows the `embark-minimal-indicator' by default.
 After `embark-mixed-indicator-delay' seconds, the
 `embark-verbose-indicator' is shown. This which-key-like approach
@@ -1034,9 +1035,11 @@ helpful keybinding reminder still pops up automatically without
 further user intervention."
   (let ((vtimer) (vindicator) (mindicator))
     (if (> embark-mixed-indicator-delay 0)
-        (setq vtimer (run-at-time embark-mixed-indicator-delay nil
-                                 (lambda ()
-                                   (setq vindicator (embark-verbose-indicator keymap targets)))))
+        (setq vtimer
+              (run-at-time
+               embark-mixed-indicator-delay nil
+               (lambda ()
+                 (setq vindicator (embark-verbose-indicator keymap targets)))))
       (setq vindicator (embark-verbose-indicator keymap targets)))
     (setq mindicator (embark-minimal-indicator keymap targets))
     (lambda (prefix)
