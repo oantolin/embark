@@ -2675,6 +2675,7 @@ and leaves the point to the left of it."
   ("o" org-table-convert-region)
   (";" comment-or-uncomment-region)
   ("w" write-region)
+  ("W" append-to-file)
   ("m" apply-macro-to-region-lines)
   ("n" narrow-to-region))
 
