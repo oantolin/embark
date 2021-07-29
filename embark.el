@@ -957,6 +957,10 @@ and should return a string or list of strings to insert."
                          (string :tag "Literal string")
                          (function :tag "Custom function"))))
 
+(defcustom embark-verbose-indicator-nested t
+  "Whether the verbose indicator should use nested keymap navigation."
+  :type 'boolean)
+
 (defvar embark--verbose-indicator-buffer " *Embark Actions*"
   "Buffer used by `embark-verbose-indicator' to display actions and keybidings.")
 
@@ -1014,7 +1018,9 @@ and should return a string or list of strings to insert."
 The arguments are the new KEYMAP, TARGET and SHADOWED-TARGETS."
   (with-current-buffer (get-buffer-create embark--verbose-indicator-buffer)
     (let* ((inhibit-read-only t)
-           (bindings (car (embark--formatted-bindings keymap 'nested)))
+           (bindings (embark--formatted-bindings keymap
+                                                 embark-verbose-indicator-nested))
+           (bindings (car bindings))
            (cycle (let ((ck (where-is-internal #'embark-cycle keymap)))
                     (and ck (key-description (car ck))))))
       (setq-local cursor-type nil)
@@ -1053,8 +1059,9 @@ TARGETS is the list of targets."
         (select-window win))
       (lambda (prefix)
         (if prefix
-            (embark--verbose-indicator-update (lookup-key keymap prefix)
-                                              target shadowed-targets)
+            (when embark-verbose-indicator-nested
+              (embark--verbose-indicator-update (lookup-key keymap prefix)
+                                                target other-targets))
           (quit-window 'kill-buffer indicator-window)
           (when-let (win (active-minibuffer-window))
             (select-window win)))))))
