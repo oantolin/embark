@@ -1068,7 +1068,7 @@ TARGETS is the list of targets."
         (if prefix
             (when embark-verbose-indicator-nested
               (embark--verbose-indicator-update (lookup-key keymap prefix)
-                                                target other-targets))
+                                                target shadowed-targets))
           (quit-window 'kill-buffer indicator-window)
           (when-let (win (active-minibuffer-window))
             (select-window win)))))))
