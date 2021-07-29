@@ -740,7 +740,7 @@ Display a message in the minibuffer prompt or echo area showing the TARGETS."
 
 (defun embark--read-key-sequence (update)
   "Read key sequence, call UPDATE function with prefix keys."
-  (let ((timer) (prefix))
+  (let (timer prefix)
     (unwind-protect
         (progn
           (when (functionp update)
@@ -752,7 +752,7 @@ Display a message in the minibuffer prompt or echo area showing the TARGETS."
                                (setq prefix new-prefix)
                                (when (/= (length prefix) 0)
                                  (funcall update prefix))))))))
-          (read-key-sequence nil 'echo nil t 'cmd-loop))
+          (read-key-sequence nil nil nil t 'cmd-loop))
       (when timer
         (cancel-timer timer)))))
 
@@ -778,6 +778,9 @@ UPDATE is the indicator update function."
               (or (get-buffer-window embark--verbose-indicator-buffer)
                   minibuffer-scroll-window)))
          (ignore-errors (command-execute cmd)))
+       (embark-keymap-prompter keymap update))
+      ((or 'scroll-bar-toolkit-scroll 'mwheel-scroll)
+       (funcall cmd (aref key (1- (length key))))
        (embark-keymap-prompter keymap update))
       ('execute-extended-command
        (intern-soft (read-extended-command)))
