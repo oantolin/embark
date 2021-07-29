@@ -1348,7 +1348,6 @@ ARG is the prefix argument."
   (let ((targets (or (embark--targets) (user-error "No target found"))))
     (while
         (and
-         (catch 'embark--cycle
            (pcase-let* ((`((,type . ,target)
                            (,_otype . ,otarget)
                            . ,bounds)
@@ -1361,14 +1360,15 @@ ARG is the prefix argument."
                                      (mapcar #'car targets))
                                     (user-error "Canceled")))
                         (default-action (embark--default-action type)))
-             (embark--act action
-                          (if (and (eq action default-action)
-                                   (eq action embark--command))
-                              otarget
-                            target)
-                          bounds
-                          (if embark-quit-after-action (not arg) arg)))
-           nil)
+             (catch 'embark--cycle
+               (embark--act action
+                            (if (and (eq action default-action)
+                                     (eq action embark--command))
+                                otarget
+                              target)
+                            bounds
+                            (if embark-quit-after-action (not arg) arg))
+               nil))
          (setq targets (append (cdr targets) (list (car targets))))))))
 
 (defun embark--highlight-target (bounds &rest fun)
