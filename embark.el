@@ -771,9 +771,13 @@ UPDATE is the indicator update function."
       ('self-insert-command
        (minibuffer-message "Not an action")
        (embark-keymap-prompter keymap update))
-      ((or 'universal-argument 'negative-argument 'digit-argument)
-       (let ((last-command-event (aref key 0)))
-         (command-execute cmd))
+      ((or 'universal-argument 'negative-argument 'digit-argument
+           'scroll-other-window 'scroll-other-window-down)
+       (let ((last-command-event (aref key 0))
+             (minibuffer-scroll-window
+              (or (get-buffer-window embark--verbose-indicator-buffer)
+                  minibuffer-scroll-window)))
+         (ignore-errors (command-execute cmd)))
        (embark-keymap-prompter keymap update))
       ('execute-extended-command
        (intern-soft (read-extended-command)))
