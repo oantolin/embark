@@ -265,21 +265,16 @@ return a function that removes those overlays."
           (const :tag "Mixed indicator" embark-mixed-indicator)
           (function :tag "Other")))
 
-(defcustom embark-setup-hook nil
-  "Hook to run after injecting target into minibuffer.
-It can be overriden by the `embark-setup-overrides' alist."
-  :type 'hook)
-
-(defcustom embark-setup-overrides
+(defcustom embark-setup-hooks
   '((async-shell-command embark--shell-prep)
     (shell-command embark--shell-prep)
     (pp-eval-expression embark--eval-prep)
     (package-delete minibuffer-force-complete))
   "Alist associating commands with post-injection setup hooks.
 For commands appearing as keys in this alist, run the
-corresponding value as a setup hook (instead of
-`embark-setup-hook') after injecting the target into in the
-minibuffer and before acting on it."
+corresponding value as a setup hook after injecting the target
+into in the minibuffer and before acting on it. The default setup
+hook is specified by the entry with the key t."
   :type '(alist :key-type command :value-type hook))
 
 (defcustom embark-quit-after-action t
@@ -326,12 +321,12 @@ When this variable is nil, it is overridden by
     pp-eval-expression)
   "Allowing editing of target prior to acting for these commands.
 This list is used only when `embark-allow-edit-default' is nil."
-  :type 'hook)
+  :type '(repeat symbol))
 
 (defcustom embark-skip-edit-commands nil
   "Skip editing of target prior to acting for these commands.
 This list is used only when `embark-allow-edit-default' is t."
-  :type 'hook)
+  :type '(repeat symbol))
 
 (defcustom embark-pre-action-hook nil
   "Hook run right before an action is embarked upon."
@@ -705,7 +700,7 @@ If CYCLE is non-nil bind `embark-cycle'."
 Display a message in the minibuffer prompt or echo area showing the TARGETS."
   (let* ((act (propertize "Act" 'face 'highlight))
          (target (car targets))
-         (other-targets (cdr targets))
+         (shadowed-targets (cdr targets))
          (indicator (cond
                      ((eq (car target) 'embark-become)
                       (propertize "Become" 'face 'highlight))
@@ -721,12 +716,12 @@ Display a message in the minibuffer prompt or echo area showing the TARGETS."
                          "%s on%s%s '%s'"
                          act
                          (if (car target) (format " %s" (car target)) "")
-                         (if other-targets
+                         (if shadowed-targets
                              (format (propertize "(%s)" 'face 'shadow)
                                      (string-join
                                       (mapcar (lambda (x)
                                                 (symbol-name (car x)))
-                                              other-targets)
+                                              shadowed-targets)
                                       ", "))
                            "")
                          (embark--truncate-target (cdr target)))))))
@@ -946,24 +941,21 @@ display actions and parameters are available."
                   embark-keymap-help embark-become embark-isearch))
           (repeat :tag "Other" (choice regexp symbol))))
 
-(defvar embark--verbose-indicator-shadow-str
-  (propertize "Shadowed targets at point: "
-              'face 'embark-verbose-indicator-shadowed))
-
 (defcustom embark-verbose-indicator-buffer-sections
-  `(target newline ,embark--verbose-indicator-shadow-str other-targets
-    " " cycle newline newline bindings)
+  (let ((shadow-str (propertize "Shadowed targets at point: "
+                                  'face 'embark-verbose-indicator-shadowed)))
+    `(target "\n" ,shadow-str shadowed-targets
+             " " cycle "\n\n" bindings))
   "List of sections to display in the verbose indicator buffer, in order.
 You can use either a symbol designating a concrete section, a string literal
 or a function that will take the list of targets, bindings and the cycle key
 and should return a string or list of strings to insert."
   :type '(repeat (choice (const :tag "Current target name" target)
-                         (const :tag "List of other targets" other-targets)
+                         (const :tag "List of other shadowed targets" shadowed-targets)
                          (const :tag "Key bindings" bindings)
                          (const :tag "Cycle indicator" cycle)
-                         (const :tag "New line" newline)
                          (string :tag "Literal string")
-                         (function :tag "Insertion function"))))
+                         (function :tag "Custom function"))))
 
 (defcustom embark-verbose-indicator-nested t
   "Whether the verbose indicator should use nested keymap navigation."
@@ -980,7 +972,7 @@ and should return a string or list of strings to insert."
                 (string-match-p x (symbol-name cmd))))
             embark-verbose-indicator-excluded-commands))
 
-(defun embark--verbose-indicator-format-target (target)
+(cl-defun embark--verbose-indicator-section-target (&key target &allow-other-keys)
   "Format the TARGET section for the indicator buffer."
   (let* ((kind (car target))
          (result (if (eq kind 'embark-become)
@@ -995,24 +987,23 @@ and should return a string or list of strings to insert."
                             result)
     result))
 
-(defun embark--verbose-indicator-format-cycle-key (cycle-key)
-  "Format the CYCLE section for the indicator buffer."
-  (propertize (format "(%s to cycle)" cycle-key)
+(cl-defun embark--verbose-indicator-section-cycle (&key cycle &allow-other-keys)
+  "Format the CYCLE key section for the indicator buffer."
+  (propertize (format "(%s to cycle)" cycle)
               'face 'embark-verbose-indicator-shadowed))
 
-(defun embark--verbose-indicator-format-other-targets (targets)
-  "Format the OTHER-TARGETS section for the indicator buffer."
-  (propertize (string-join targets ", ")
-              'face 'embark-verbose-indicator-shadowed))
+(cl-defun embark--verbose-indicator-section-shadowed-targets (&key shadowed-targets &allow-other-keys)
+  "Format the SHADOWED-TARGETS section for the indicator buffer."
+  (propertize (string-join shadowed-targets ", ") 'face 'embark-verbose-indicator-shadowed))
 
-(defun embark--verbose-indicator-format-bindings (bindings)
+(cl-defun embark--verbose-indicator-section-bindings (&key bindings &allow-other-keys)
   "Format the BINDINGS section for the indicator buffer."
   (let* ((max-width (apply #'max (cons 0 (mapcar (lambda (x)
                                                   (string-width (car x)))
                                                 bindings))))
          (fmt (format "%%-%ds" (1+ max-width)))
          (result nil))
-    (dolist (binding bindings (nreverse result))
+    (dolist (binding bindings (string-join (nreverse result)))
       (let ((cmd (caddr binding)))
         (unless (embark--verbose-indicator-excluded-p cmd)
           (let ((keys (format fmt (car binding)))
@@ -1022,25 +1013,9 @@ and should return a string or list of strings to insert."
                         'face 'embark-verbose-indicator-documentation))))
             (push (format "%s%s\n" keys (or doc "")) result)))))))
 
-(defun embark--verbose-indicator-format-section (section target targets bindings cycle)
-  "Convert the SECTION specification to a list of strings."
-  (let ((strs
-         (cond ((stringp section) section)
-               ((symbolp section)
-                (cl-case section
-                  (newline "\n")
-                  (target (embark--verbose-indicator-format-target target))
-                  (other-targets
-                   (embark--verbose-indicator-format-other-targets targets))
-                  (cycle (embark--verbose-indicator-format-cycle-key cycle))
-                  (bindings (embark--verbose-indicator-format-bindings bindings))
-                  (t (when (fboundp section)
-                       (funcall section (cons target targets) bindings cycle))))))))
-    (if (stringp strs) (list strs) strs)))
-
-(defun embark--verbose-indicator-update (keymap target targets)
+(defun embark--verbose-indicator-update (keymap target shadowed-targets)
   "Update verbose indicator buffer.
-The arguments are the new KEYMAP, TARGET and other TARGETS."
+The arguments are the new KEYMAP, TARGET and SHADOWED-TARGETS."
   (with-current-buffer (get-buffer-create embark--verbose-indicator-buffer)
     (let* ((inhibit-read-only t)
            (bindings (embark--formatted-bindings keymap
@@ -1053,12 +1028,17 @@ The arguments are the new KEYMAP, TARGET and other TARGETS."
       (setq-local buffer-read-only t)
       (erase-buffer)
       (dolist (section embark-verbose-indicator-buffer-sections)
-        (when-let (strs (embark--verbose-indicator-format-section section
-                                                                  target
-                                                                  targets
-                                                                  bindings
-                                                                  cycle))
-          (apply #'insert strs)))
+        (insert
+         (if (stringp section)
+             section
+           (funcall
+            (let ((prefixed (intern (format "embark--verbose-indicator-section-%s" section))))
+              (cond
+               ((fboundp prefixed) prefixed)
+               ((fboundp section) section)
+               (t (error "Undefined verbose indicator section `%s'" section))))
+            :target target :shadowed-targets shadowed-targets
+            :bindings bindings :cycle cycle))))
       (goto-char (point-min)))))
 
 (defun embark-verbose-indicator (keymap targets)
@@ -1066,10 +1046,10 @@ The arguments are the new KEYMAP, TARGET and other TARGETS."
 KEYMAP is the action (or become) keymap.
 TARGETS is the list of targets."
   (let ((target (car targets))
-        (other-targets
+        (shadowed-targets
          (and (cdr targets)
               (mapcar (lambda (x) (symbol-name (car x))) (cdr targets)))))
-    (embark--verbose-indicator-update keymap target other-targets)
+    (embark--verbose-indicator-update keymap target shadowed-targets)
     (let* ((display-buffer-alist
             `(,@display-buffer-alist
               (,(regexp-quote embark--verbose-indicator-buffer)
@@ -1174,6 +1154,9 @@ The TARGETS are displayed for actions outside the minibuffer."
   (setq ring-bell-function #'ignore)
   (abort-recursive-edit))
 
+(defvar embark--setup-hook nil
+  "Temporary variable used as setup hook.")
+
 (defun embark--act (action target bounds &optional quit)
   "Perform ACTION injecting the TARGET.
 If called from a minibuffer with non-nil QUIT, quit the
@@ -1187,8 +1170,8 @@ the target at point."
     (let* ((command embark--command)
            (prefix prefix-arg)
            (action-window (embark--target-window t))
-           (setup-hook (or (alist-get action embark-setup-overrides)
-                           embark-setup-hook))
+           (setup-hook (or (alist-get action embark-setup-hooks)
+                           (alist-get t embark-setup-hooks)))
            (allow-edit (if embark-allow-edit-default
                            (not (memq action embark-skip-edit-commands))
                          (memq action embark-allow-edit-commands)))
@@ -1200,8 +1183,8 @@ the target at point."
               (lambda ()
                 (delete-minibuffer-contents)
                 (insert (substring-no-properties target))
-                (let ((embark-setup-hook setup-hook))
-                  (run-hooks 'embark-setup-hook))
+                (let ((embark--setup-hook setup-hook))
+                  (run-hooks 'embark--setup-hook))
                 (unless allow-edit
                   (if (memq 'ivy--queue-exhibit post-command-hook)
                       ;; Ivy has special needs: (1) for file names
@@ -1377,7 +1360,6 @@ ARG is the prefix argument."
   (let ((targets (or (embark--targets) (user-error "No target found"))))
     (while
         (and
-         (catch 'embark--cycle
            (pcase-let* ((`((,type . ,target)
                            (,_otype . ,otarget)
                            . ,bounds)
@@ -1390,14 +1372,15 @@ ARG is the prefix argument."
                                      (mapcar #'car targets))
                                     (user-error "Canceled")))
                         (default-action (embark--default-action type)))
-             (embark--act action
-                          (if (and (eq action default-action)
-                                   (eq action embark--command))
-                              otarget
-                            target)
-                          bounds
-                          (if embark-quit-after-action (not arg) arg)))
-           nil)
+             (catch 'embark--cycle
+               (embark--act action
+                            (if (and (eq action default-action)
+                                     (eq action embark--command))
+                                otarget
+                              target)
+                            bounds
+                            (if embark-quit-after-action (not arg) arg))
+               nil))
          (setq targets (append (cdr targets) (list (car targets))))))))
 
 (defun embark--highlight-target (bounds &rest fun)
