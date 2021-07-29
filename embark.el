@@ -265,21 +265,16 @@ return a function that removes those overlays."
           (const :tag "Mixed indicator" embark-mixed-indicator)
           (function :tag "Other")))
 
-(defcustom embark-setup-hook nil
-  "Hook to run after injecting target into minibuffer.
-It can be overriden by the `embark-setup-overrides' alist."
-  :type 'hook)
-
-(defcustom embark-setup-overrides
+(defcustom embark-setup-hooks
   '((async-shell-command embark--shell-prep)
     (shell-command embark--shell-prep)
     (pp-eval-expression embark--eval-prep)
     (package-delete minibuffer-force-complete))
   "Alist associating commands with post-injection setup hooks.
 For commands appearing as keys in this alist, run the
-corresponding value as a setup hook (instead of
-`embark-setup-hook') after injecting the target into in the
-minibuffer and before acting on it."
+corresponding value as a setup hook after injecting the target
+into in the minibuffer and before acting on it. The default setup
+hook is specified by the entry with the key t."
   :type '(alist :key-type command :value-type hook))
 
 (defcustom embark-quit-after-action t
@@ -326,12 +321,12 @@ When this variable is nil, it is overridden by
     pp-eval-expression)
   "Allowing editing of target prior to acting for these commands.
 This list is used only when `embark-allow-edit-default' is nil."
-  :type 'hook)
+  :type '(repeat symbol))
 
 (defcustom embark-skip-edit-commands nil
   "Skip editing of target prior to acting for these commands.
 This list is used only when `embark-allow-edit-default' is t."
-  :type 'hook)
+  :type '(repeat symbol))
 
 (defcustom embark-pre-action-hook nil
   "Hook run right before an action is embarked upon."
@@ -992,12 +987,12 @@ and should return a string or list of strings to insert."
     result))
 
 (defun embark--verbose-indicator-format-cycle-key (cycle-key)
-  "Format the CYCLE section for the indicator buffer."
+  "Format the CYCLE-KEY section for the indicator buffer."
   (propertize (format "(%s to cycle)" cycle-key)
               'face 'embark-verbose-indicator-shadowed))
 
 (defun embark--verbose-indicator-format-other-targets (targets)
-  "Format the OTHER-TARGETS section for the indicator buffer."
+  "Format the other TARGETS section for the indicator buffer."
   (propertize (string-join targets ", ")
               'face 'embark-verbose-indicator-shadowed))
 
@@ -1167,6 +1162,9 @@ The TARGETS are displayed for actions outside the minibuffer."
   (setq ring-bell-function #'ignore)
   (abort-recursive-edit))
 
+(defvar embark--setup-hook nil
+  "Temporary variable used as setup hook.")
+
 (defun embark--act (action target bounds &optional quit)
   "Perform ACTION injecting the TARGET.
 If called from a minibuffer with non-nil QUIT, quit the
@@ -1180,8 +1178,8 @@ the target at point."
     (let* ((command embark--command)
            (prefix prefix-arg)
            (action-window (embark--target-window t))
-           (setup-hook (or (alist-get action embark-setup-overrides)
-                           embark-setup-hook))
+           (setup-hook (or (alist-get action embark-setup-hooks)
+                           (alist-get t embark-setup-hooks)))
            (allow-edit (if embark-allow-edit-default
                            (not (memq action embark-skip-edit-commands))
                          (memq action embark-allow-edit-commands)))
@@ -1193,8 +1191,8 @@ the target at point."
               (lambda ()
                 (delete-minibuffer-contents)
                 (insert (substring-no-properties target))
-                (let ((embark-setup-hook setup-hook))
-                  (run-hooks 'embark-setup-hook))
+                (let ((embark--setup-hook setup-hook))
+                  (run-hooks 'embark--setup-hook))
                 (unless allow-edit
                   (if (memq 'ivy--queue-exhibit post-command-hook)
                       ;; Ivy has special needs: (1) for file names
