@@ -954,7 +954,8 @@ and should return a string or list of strings to insert."
                          (const :tag "List of other shadowed targets" shadowed-targets)
                          (const :tag "Key bindings" bindings)
                          (const :tag "Cycle indicator" cycle)
-                         (string :tag "Literal string"))))
+                         (string :tag "Literal string")
+                         (function :tag "Custom function"))))
 
 (defvar embark--verbose-indicator-buffer " *Embark Actions*"
   "Buffer used by `embark-verbose-indicator' to display actions and keybidings.")
@@ -1025,7 +1026,11 @@ The arguments are the new KEYMAP, TARGET and SHADOWED-TARGETS."
          (if (stringp section)
              section
            (funcall
-            (intern (format "embark--verbose-indicator-section-%s" section))
+            (let ((prefixed (intern (format "embark--verbose-indicator-section-%s" section))))
+              (cond
+               ((fboundp prefixed) prefixed)
+               ((fboundp section) section)
+               (t (error "Undefined verbose indicator section `%s'" section))))
             :target target :shadowed-targets shadowed-targets
             :bindings bindings :cycle cycle))))
       (goto-char (point-min)))))
