@@ -112,7 +112,7 @@
 ;;; User facing options
 
 (defgroup embark nil
-  "Emacs Mini-Buffer Actions Rooted in Keymaps"
+  "Emacs Mini-Buffer Actions Rooted in Keymaps."
   :group 'minibuffer)
 
 (defcustom embark-keymap-alist
@@ -273,7 +273,7 @@ return a function that removes those overlays."
   "Alist associating commands with post-injection setup hooks.
 For commands appearing as keys in this alist, run the
 corresponding value as a setup hook after injecting the target
-into in the minibuffer and before acting on it. The default setup
+into in the minibuffer and before acting on it.  The default setup
 hook is specified by the entry with the key t."
   :type '(alist :key-type command :value-type hook))
 
@@ -1084,8 +1084,8 @@ after this delay shows the verbose indicator."
   "Mixed indicator showing KEYMAP and TARGETS.
 The indicator shows the `embark-minimal-indicator' by default.
 After `embark-mixed-indicator-delay' seconds, the
-`embark-verbose-indicator' is shown. This which-key-like approach
-ensures that Embark stays out of the way for quick actions. The
+`embark-verbose-indicator' is shown.  This which-key-like approach
+ensures that Embark stays out of the way for quick actions.  The
 helpful keybinding reminder still pops up automatically without
 further user intervention."
   (let ((vtimer) (vindicator) (mindicator))
@@ -1349,10 +1349,12 @@ keymap for the given type."
 ;;;###autoload
 (defun embark-act (&optional arg)
   "Prompt the user for an action and perform it.
-The target of the action is chosen by `embark-target-finders'.
+The targets of the action are chosen by `embark-target-finders'.
 By default, if called from a minibuffer the target is the top
-completion candidate, if called from an Embark Collect or a
-Completions buffer it is the candidate at point.
+completion candidate. When called from a non-minibuffer buffer
+there can multiple targets and you can cycle among them by using
+`embark-cycle' (which is bound by default to the same key
+binding `embark-act' is, but see `embark-cycle-key').
 
 This command uses `embark-prompter' to ask the user to specify an
 action, and calls it injecting the target at the first minibuffer
@@ -1362,15 +1364,28 @@ If you call this from the minibuffer, it can optionally quit the
 minibuffer.  The variable `embark-quit-after-action' controls
 whether calling `embark-act' with nil ARG quits the minibuffer,
 and if ARG is non-nil it will do the opposite.  Interactively,
-ARG is the prefix argument."
+ARG is the prefix argument.
+
+If instead you call this from outside the minibuffer, the first
+ARG targets are skipped over (if ARG is negative the skipping is
+done by cycling backwards) and cycling starts from the following
+target."
   (interactive "P")
-  (let ((targets (or (embark--targets) (user-error "No target found"))))
-    (while
-        (and
+  (let* ((targets (or (embark--targets) (user-error "No target found")))
+         (n (length targets))
+         (skip 1))
+    (cl-flet ((rotate (k)
+                (setq k (mod k n)
+                      targets (append (seq-drop targets k)
+                                      (seq-take targets k)))))
+      (when (and arg (not (minibufferp)))
+        (rotate (prefix-numeric-value arg)))
+      (while
+          (and
            (pcase-let* ((`((,type . ,target)
                            (,_otype . ,otarget)
                            . ,bounds)
-                         (car targets))
+                          (car targets))
                         (action (or (embark--highlight-target
                                      bounds
                                      #'embark--prompt
@@ -1379,16 +1394,17 @@ ARG is the prefix argument."
                                      (mapcar #'car targets))
                                     (user-error "Canceled")))
                         (default-action (embark--default-action type)))
-             (catch 'embark--cycle
-               (embark--act action
-                            (if (and (eq action default-action)
-                                     (eq action embark--command))
-                                otarget
-                              target)
-                            bounds
-                            (if embark-quit-after-action (not arg) arg))
-               nil))
-         (setq targets (append (cdr targets) (list (car targets))))))))
+             (setq skip
+                   (catch 'embark--cycle
+                     (embark--act action
+                                  (if (and (eq action default-action)
+                                           (eq action embark--command))
+                                      otarget
+                                    target)
+                                  bounds
+                                  (if embark-quit-after-action (not arg) arg))
+                     nil)))
+           (rotate skip))))))
 
 (defun embark--highlight-target (bounds &rest fun)
   "Highlight target at BOUNDS and call FUN."
@@ -1402,10 +1418,11 @@ ARG is the prefix argument."
           (delete-overlay ov)))
     (apply fun)))
 
-(defun embark-cycle ()
-  "Cycle to the next target at point."
-  (interactive)
-  (throw 'embark--cycle t))
+(defun embark-cycle (arg)
+  "Cycle over the next ARG targets at point.
+If ARG is negative, cycle backwards."
+  (interactive "p")
+  (throw 'embark--cycle arg))
 
 ;;;###autoload
 (defun embark-dwim (&optional arg)
@@ -1424,17 +1441,23 @@ keymap for the target's type.
 
 See `embark-act' for the meaning of the prefix ARG."
   (interactive "P")
-  (pcase-let* ((`((,type . ,target)
-                  (,_otype . ,otarget)
-                  . ,bounds)
-                (or (car (embark--targets)) (user-error "No target found")))
-               (default-action (embark--default-action type)))
-    (embark--act default-action
-                 (if (eq default-action embark--command)
-                     otarget
-                   target)
-                 bounds
-                 (if embark-quit-after-action (not arg) arg))))
+  (if-let ((targets (embark--targets)))
+      (pcase-let* ((`((,type . ,target)
+                      (,_otype . ,otarget)
+                      . ,bounds)
+                    (or (nth
+                         (if (or (null arg) (minibufferp))
+                             0
+                           (mod (prefix-numeric-value arg) (length targets)))
+                         targets)))
+                   (default-action (embark--default-action type)))
+        (embark--act default-action
+                     (if (eq default-action embark--command)
+                         otarget
+                       target)
+                     bounds
+                     (if embark-quit-after-action (not arg) arg)))
+    (user-error "No target found")))
 
 (define-obsolete-function-alias
   'embark-default-action
@@ -1520,7 +1543,7 @@ the defined keymap.  If the `:parent' keymap is absent,
 ;;; Embark collect
 
 (defgroup embark-collect nil
-  "Buffers for acting on collected Embark targets"
+  "Buffers for acting on collected Embark targets."
   :group 'embark)
 
 (defcustom embark-candidate-collectors
