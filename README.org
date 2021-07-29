@@ -174,8 +174,7 @@ keymap (and any others that also contain a binding for
 =switch-to-buffer=). The end result is that I can type =C-. B f= to
 switch to =find-file=.
 
-* Configuration
-** Quick start
+* Quick start
 
 The easiest way to install Embark is from Melpa. It is highly
 recommended to also install [[https://github.com/minad/marginalia][Marginalia]], so that Embark can offer you
@@ -246,6 +245,7 @@ those packages include comprehensive functionality for acting on
 minibuffer completion candidates. (Embark does come with Ivy
 integration despite this.)
 
+* Advanced configuration
 ** Showing a reminder of available actions
 
 If you want a reminder of which actions are available after running
@@ -511,13 +511,56 @@ actual-url-of-the-page)=.
   (add-to-list 'embark-target-finders 'my-short-wikipedia-link)
 #+end_src
 
+* How does Embark call the actions?
+
+  Embark actions are normal commands (functions with an interactive
+  specification). In order to execute an action command, Embark calls the
+  command with ~call-interactively~, such that the command can read user input.
+  For example it may open a minibuffer and read a string (~read-from-minibuffer~)
+  or open a completion interface (~completing-read~). If this happens, Embark
+  takes the target string and inserts it automatically into the minibuffer,
+  simulating user input this way. For this reason Embark can reuse normal
+  commands as actions, as long as the command reads user input from the
+  minibuffer. After inserting the string, Embark exits the minibuffer,
+  submitting the input. The immediate minibuffer exit can be disabled in order
+  to allow editing the input (See the ~embark-allow-edit-commands~ and
+  ~embark-allow-edit-default~ configuration variables). As an example, we bind the
+  following actions to the ~embark-symbol-map~.
+
+  #+begin_src emacs-lisp
+    (defun example-action-command1 ()
+      (interactive)
+      (message "The input was `%s'." (read-from-minibuffer "Input: ")))
+
+    (defun example-action-command2 (input)
+      (interactive "s")
+      (message "The input was `%s'." input))
+
+    (defun example-action-command3 ()
+      (interactive)
+      (message "Your selection was `%s'."
+               (completing-read "Select: " '("E" "M" "B" "A" "R" "K"))))
+
+    (define-key embark-symbol-map "X1" #'example-action-command1)
+    (define-key embark-symbol-map "X2" #'example-action-command2)
+    (define-key embark-symbol-map "X3" #'example-action-command3)
+  #+end_src
+
+  Alternatively Embark supports non-interactive functions with a single argument
+  as actions. The target is passed as argument to the function.
+
+  #+begin_src emacs-lisp
+    (defun example-action-function (target)
+      (message "The target was `%s'." target))
+
+    (define-key embark-symbol-map "X4" #'example-action-function)
+  #+end_src
+
 * Embark, Marginalia and Consult
 
-Some changes were made to Embark, to better cooperate with the
-[[https://github.com/minad/marginalia][Marginalia]] and [[https://github.com/minad/consult][Consult]] packages, and prior to being submitted to
-MELPA. Neither of those packages is a dependency of Embark, but
-Marginalia is highly recommended, for reasons explained in the rest
-of this section.
+Embark cooperates well with the [[https://github.com/minad/marginalia][Marginalia]] and [[https://github.com/minad/consult][Consult]] packages. Neither of
+those packages is a dependency of Embark, but Marginalia is highly recommended,
+for reasons explained in the rest of this section.
 
 Embark comes with actions for symbols (commands, functions, variables
 with actions such as finding the definition, looking up the
@@ -525,21 +568,18 @@ documentation, evaluating, etc.) in the =embark-symbol-map= keymap, and
 for packages (actions like install, delete, browse url, etc.) in the
 =embark-package-keymap=.
 
-Unfortunately Embark no longer automatically offers you these keymaps
+Unfortunately Embark does not automatically offers you these keymaps
 when relevant, because many built-in Emacs commands don't report
 accurate category metadata. For example, a command like
 =describe-package=, which reads a package name from the minibuffer,
 does not have metadata indicating so.
 
-Previously Embark had functions to supply this missing metadata, but
-they have been moved to Marginalia, which augments many Emacs command
-to report accurate category metadata. Simply activating
-=marginalia-mode= allows Embark to offer you the package and symbol
-actions when appropriate again.
-
-All annotation functions have been removed from Embark and moved to
-Marginalia (where they have been improved!). Embark used these old
-annotation functions for the list view in Embark Collect buffers.
+In an earlier Embark version, there were functions to supply this missing
+metadata, but they have been moved to Marginalia, which augments many Emacs
+command to report accurate category metadata. Simply activating =marginalia-mode=
+allows Embark to offer you the package and symbol actions when appropriate
+again. Candidate annotations in the Embark collect buffer are also provided by
+the Marginalia package.
 
 - If you install Marginalia and activate =marginalia-mode=, the list
   view in Embark Collect buffers will use the Marginalia annotations
@@ -549,14 +589,13 @@ annotation functions for the list view in Embark Collect buffers.
   that come with Emacs (such as key bindings in =M-x=, or the unicode
   characters in =C-x 8 RET=).
 
-Other small changes:
-
 - If you have Consult installed and call =embark-collect-snapshot= from
   =consult-line=, =consult-mark= or =consult-outline=, you will notice the
   Embark Collect buffer starts in list view by default. Similarly,
   you'll notice that the =consult-yank= family of commands start out in
   list view with zebra stripes, so you can easily tell where
   multi-line kill-ring entries start and end.
+
 - The function =embark-open-externally= has been removed following the
   policy of avoiding overlap with Consult. If you used that action,
   add [[https://github.com/minad/consult/blob/373498acb76b9395e5e590fb8e39f671a9363cd7/consult.el#L707][the small function]] to your configuration or install Consult and
