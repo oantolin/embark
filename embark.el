@@ -1062,16 +1062,12 @@ TARGETS is the list of targets."
               (,(regexp-quote embark--verbose-indicator-buffer)
                ,@embark-verbose-indicator-display-action)))
            (indicator-window (display-buffer embark--verbose-indicator-buffer)))
-      (when-let (win (active-minibuffer-window))
-        (select-window win))
       (lambda (prefix)
         (if prefix
             (when embark-verbose-indicator-nested
               (embark--verbose-indicator-update (lookup-key keymap prefix)
                                                 target shadowed-targets))
-          (quit-window 'kill-buffer indicator-window)
-          (when-let (win (active-minibuffer-window))
-            (select-window win)))))))
+          (quit-window 'kill-buffer indicator-window))))))
 
 (defcustom embark-mixed-indicator-delay 0.5
   "Time in seconds after which the verbose indicator is shown.
