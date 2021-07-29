@@ -2608,7 +2608,7 @@ before or after the sexp (those are the two locations at which
      (goto-char (car embark--target-bounds))
      (,cmd)))
 
-(embark--sexp-command indent-sexp)
+(embark--sexp-command indent-pp-sexp)
 (embark--sexp-command kill-sexp)
 (embark--sexp-command raise-sexp)
 (embark--sexp-command mark-sexp)
@@ -2733,7 +2733,7 @@ and leaves the point to the left of it."
   ("RET" pp-eval-expression)
   ("e" pp-eval-expression)
   ("m" pp-macroexpand-expression)
-  ("i" embark-indent-sexp)
+  ("TAB" embark-indent-pp-sexp)
   ("r" embark-raise-sexp)
   ("k" embark-kill-sexp)
   ("SPC" embark-mark-sexp))
