@@ -950,12 +950,13 @@ display actions and parameters are available."
 You can use either a symbol designating a concrete section, a string literal
 or a function that will take the list of targets, bindings and the cycle key
 and should return a string or list of strings to insert."
-  :type '(repeat (choice (const :tag "Current target name" target)
-                         (const :tag "List of other shadowed targets" shadowed-targets)
-                         (const :tag "Key bindings" bindings)
-                         (const :tag "Cycle indicator" cycle)
-                         (string :tag "Literal string")
-                         (function :tag "Custom function"))))
+  :type '(repeat
+          (choice (const :tag "Current target name" target)
+                  (const :tag "List of other shadowed targets" shadowed-targets)
+                  (const :tag "Key bindings" bindings)
+                  (const :tag "Cycle indicator" cycle)
+                  (string :tag "Literal string")
+                  (function :tag "Custom function"))))
 
 (defcustom embark-verbose-indicator-nested t
   "Whether the verbose indicator should use nested keymap navigation."
@@ -972,7 +973,8 @@ and should return a string or list of strings to insert."
                 (string-match-p x (symbol-name cmd))))
             embark-verbose-indicator-excluded-commands))
 
-(cl-defun embark--verbose-indicator-section-target (&key target &allow-other-keys)
+(cl-defun embark--verbose-indicator-section-target
+    (&key target &allow-other-keys)
   "Format the TARGET section for the indicator buffer."
   (let* ((kind (car target))
          (result (if (eq kind 'embark-become)
@@ -992,11 +994,14 @@ and should return a string or list of strings to insert."
   (propertize (format "(%s to cycle)" cycle)
               'face 'embark-verbose-indicator-shadowed))
 
-(cl-defun embark--verbose-indicator-section-shadowed-targets (&key shadowed-targets &allow-other-keys)
+(cl-defun embark--verbose-indicator-section-shadowed-targets
+    (&key shadowed-targets &allow-other-keys)
   "Format the SHADOWED-TARGETS section for the indicator buffer."
-  (propertize (string-join shadowed-targets ", ") 'face 'embark-verbose-indicator-shadowed))
+  (propertize (string-join shadowed-targets ", ")
+              'face 'embark-verbose-indicator-shadowed))
 
-(cl-defun embark--verbose-indicator-section-bindings (&key bindings &allow-other-keys)
+(cl-defun embark--verbose-indicator-section-bindings
+    (&key bindings &allow-other-keys)
   "Format the BINDINGS section for the indicator buffer."
   (let* ((max-width (apply #'max (cons 0 (mapcar (lambda (x)
                                                   (string-width (car x)))
@@ -1018,8 +1023,8 @@ and should return a string or list of strings to insert."
 The arguments are the new KEYMAP, TARGET and SHADOWED-TARGETS."
   (with-current-buffer (get-buffer-create embark--verbose-indicator-buffer)
     (let* ((inhibit-read-only t)
-           (bindings (embark--formatted-bindings keymap
-                                                 embark-verbose-indicator-nested))
+           (bindings
+            (embark--formatted-bindings keymap embark-verbose-indicator-nested))
            (bindings (car bindings))
            (cycle (let ((ck (where-is-internal #'embark-cycle keymap)))
                     (and ck (key-description (car ck))))))
@@ -1032,7 +1037,9 @@ The arguments are the new KEYMAP, TARGET and SHADOWED-TARGETS."
          (if (stringp section)
              section
            (funcall
-            (let ((prefixed (intern (format "embark--verbose-indicator-section-%s" section))))
+            (let ((prefixed
+                   (intern
+                    (format "embark--verbose-indicator-section-%s" section))))
               (cond
                ((fboundp prefixed) prefixed)
                ((fboundp section) section)
