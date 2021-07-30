@@ -849,53 +849,54 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
          (candidates (car candidates+def))
          (def (and (not no-default) (cdr candidates+def)))
          (choice
-          (minibuffer-with-setup-hook
-              (lambda ()
-                (when embark-keymap-prompter-key
-                  (use-local-map
-                   (make-composed-keymap
-                    (let ((map (make-sparse-keymap))
-                          (cycle (embark--cycle-key)))
-                      ;; Rebind `embark-cycle' in order allow cycling
-                      ;; from the `completing-read' prompter. Additionally
-                      ;; `embark-cycle' can be selected via
-                      ;; `completing-read'. The downside is that this breaks
-                      ;; recursively acting on the candidates of type
-                      ;; embark-keybinding in the `completing-read' prompter.
-                      (define-key map cycle
-                        (if (lookup-key keymap cycle) #'embark-cycle
+          (catch 'choice
+            (minibuffer-with-setup-hook
+                (lambda ()
+                  (when embark-keymap-prompter-key
+                    (use-local-map
+                     (make-composed-keymap
+                      (let ((map (make-sparse-keymap))
+                            (cycle (embark--cycle-key)))
+                        ;; Rebind `embark-cycle' in order allow cycling
+                        ;; from the `completing-read' prompter. Additionally
+                        ;; `embark-cycle' can be selected via
+                        ;; `completing-read'. The downside is that this breaks
+                        ;; recursively acting on the candidates of type
+                        ;; embark-keybinding in the `completing-read' prompter.
+                        (define-key map cycle
+                          (if (lookup-key keymap cycle)
+                              (lambda ()
+                                (interactive)
+                                (throw 'choice 'embark-cycle))
+                            (lambda ()
+                              (interactive)
+                              (minibuffer-message "Only a single target"))))
+                        (define-key map embark-keymap-prompter-key
                           (lambda ()
                             (interactive)
-                            (minibuffer-message "Only a single target"))))
-                      (define-key map embark-keymap-prompter-key
-                        (lambda ()
-                          (interactive)
-                          (let*
-                              ((desc
-                                (let ((overriding-terminal-local-map keymap))
-                                  (key-description
-                                   (read-key-sequence "Key:"))))
-                               (cand
-                                (cl-loop
-                                 for (cand _n _c _k desc1) in candidates
-                                 when (equal desc desc1) return cand)))
-                            (if (null cand)
-                                (user-error "Unknown key")
-                              (delete-minibuffer-contents)
-                              (insert cand)
-                              (add-hook 'post-command-hook
-                                        #'exit-minibuffer nil t)))))
-                      map)
-                    (current-local-map)))))
-            (completing-read
-             "Command: "
-             (lambda (string predicate action)
-               (if (eq action 'metadata)
-                   `(metadata (category . embark-keybinding)
-                              (display-sort-function . identity)
-                              (cycle-sort-function . identity))
-                 (complete-with-action action candidates string predicate)))
-             nil nil nil 'embark--prompter-history def))))
+                            (let*
+                                ((desc
+                                  (let ((overriding-terminal-local-map keymap))
+                                    (key-description
+                                     (read-key-sequence "Key:"))))
+                                 (cmd
+                                  (cl-loop
+                                   for (_s _n cmd _k desc1) in candidates
+                                   when (equal desc desc1) return cmd)))
+                              (if (null cmd)
+                                  (user-error "Unknown key")
+                                (throw 'choice cmd)))))
+                        map)
+                      (current-local-map)))))
+              (completing-read
+               "Command: "
+               (lambda (string predicate action)
+                 (if (eq action 'metadata)
+                     `(metadata (category . embark-keybinding)
+                                (display-sort-function . identity)
+                                (cycle-sort-function . identity))
+                   (complete-with-action action candidates string predicate)))
+               nil nil nil 'embark--prompter-history def)))))
     (pcase (assoc choice candidates)
       (`(,_formatted ,_name ,cmd ,key ,_desc)
        (setq last-command-event (seq-elt key (1- (length key))))
@@ -1064,16 +1065,18 @@ TARGETS is the list of targets."
          (and (cdr targets)
               (mapcar (lambda (x) (symbol-name (car x))) (cdr targets)))))
     (embark--verbose-indicator-update keymap target shadowed-targets)
-    (let* ((display-buffer-alist
-            `(,@display-buffer-alist
-              (,(regexp-quote embark--verbose-indicator-buffer)
-               ,@embark-verbose-indicator-display-action)))
-           (indicator-window (display-buffer embark--verbose-indicator-buffer)))
-      (lambda (prefix)
-        (if prefix
-            (when embark-verbose-indicator-nested
-              (embark--verbose-indicator-update (lookup-key keymap prefix)
-                                                target shadowed-targets))
+    (let ((display-buffer-alist
+           `(,@display-buffer-alist
+             (,(regexp-quote embark--verbose-indicator-buffer)
+              ,@embark-verbose-indicator-display-action))))
+      (display-buffer embark--verbose-indicator-buffer))
+    (lambda (prefix)
+      (if prefix
+          (when embark-verbose-indicator-nested
+            (embark--verbose-indicator-update (lookup-key keymap prefix)
+                                              target shadowed-targets))
+        (when-let ((indicator-window
+                    (get-buffer-window embark--verbose-indicator-buffer)))
           (quit-window 'kill-buffer indicator-window))))))
 
 (defcustom embark-mixed-indicator-delay 0.5
@@ -1384,30 +1387,29 @@ target."
       (when (and arg (not (minibufferp)))
         (rotate (prefix-numeric-value arg)))
       (while
-          (and
-           (pcase-let* ((`((,type . ,target)
-                           (,_otype . ,otarget)
-                           . ,bounds)
-                          (car targets))
-                        (action (or (embark--highlight-target
-                                     bounds
-                                     #'embark--prompt
-                                     (embark--action-keymap
-                                      type (cdr targets))
-                                     (mapcar #'car targets))
-                                    (user-error "Canceled")))
-                        (default-action (embark--default-action type)))
-             (setq skip
-                   (catch 'embark--cycle
-                     (embark--act action
-                                  (if (and (eq action default-action)
-                                           (eq action embark--command))
-                                      otarget
-                                    target)
-                                  bounds
-                                  (if embark-quit-after-action (not arg) arg))
-                     nil)))
-           (rotate skip))))))
+          (pcase-let* ((`((,type . ,target)
+                          (,_otype . ,otarget)
+                          . ,bounds)
+                         (car targets))
+                       (action (or (embark--highlight-target
+                                    bounds
+                                    #'embark--prompt
+                                    (embark--action-keymap
+                                     type (cdr targets))
+                                    (mapcar #'car targets))
+                                   (user-error "Canceled")))
+                       (default-action (embark--default-action type)))
+            (setq skip
+                  (catch 'embark--cycle
+                    (embark--act action
+                                 (if (and (eq action default-action)
+                                          (eq action embark--command))
+                                     otarget
+                                   target)
+                                 bounds
+                                 (if embark-quit-after-action (not arg) arg))
+                    nil)))
+        (rotate skip)))))
 
 (defun embark--highlight-target (bounds &rest fun)
   "Highlight target at BOUNDS and call FUN."
