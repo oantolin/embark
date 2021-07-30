@@ -942,10 +942,7 @@ display actions and parameters are available."
           (repeat :tag "Other" (choice regexp symbol))))
 
 (defcustom embark-verbose-indicator-buffer-sections
-  (let ((shadow-str (propertize "Shadowed targets at point: "
-                                  'face 'embark-verbose-indicator-shadowed)))
-    `(target "\n" ,shadow-str shadowed-targets
-             " " cycle "\n\n" bindings))
+  `(target "\n" shadowed-targets " " cycle "\n" bindings)
   "List of sections to display in the verbose indicator buffer, in order.
 You can use either a symbol designating a concrete section, a string literal
 or a function that will take the list of targets, bindings and the cycle key
@@ -991,14 +988,17 @@ and should return a string or list of strings to insert."
 
 (cl-defun embark--verbose-indicator-section-cycle (&key cycle &allow-other-keys)
   "Format the CYCLE key section for the indicator buffer."
-  (propertize (format "(%s to cycle)" cycle)
-              'face 'embark-verbose-indicator-shadowed))
+  (when cycle
+    (propertize (format "(%s to cycle)\n" cycle)
+                'face 'embark-verbose-indicator-shadowed)))
 
 (cl-defun embark--verbose-indicator-section-shadowed-targets
     (&key shadowed-targets &allow-other-keys)
   "Format the SHADOWED-TARGETS section for the indicator buffer."
-  (propertize (string-join shadowed-targets ", ")
-              'face 'embark-verbose-indicator-shadowed))
+  (when shadowed-targets
+    (propertize (format "Shadowed targets at point: %s"
+                        (string-join shadowed-targets ", "))
+                'face 'embark-verbose-indicator-shadowed)))
 
 (cl-defun embark--verbose-indicator-section-bindings
     (&key bindings &allow-other-keys)
@@ -1036,16 +1036,17 @@ The arguments are the new KEYMAP, TARGET and SHADOWED-TARGETS."
         (insert
          (if (stringp section)
              section
-           (funcall
-            (let ((prefixed
-                   (intern
-                    (format "embark--verbose-indicator-section-%s" section))))
-              (cond
-               ((fboundp prefixed) prefixed)
-               ((fboundp section) section)
-               (t (error "Undefined verbose indicator section `%s'" section))))
-            :target target :shadowed-targets shadowed-targets
-            :bindings bindings :cycle cycle))))
+           (or (funcall
+                (let ((prefixed
+                       (intern
+                        (format "embark--verbose-indicator-section-%s" section))))
+                  (cond
+                   ((fboundp prefixed) prefixed)
+                   ((fboundp section) section)
+                   (t (error "Undefined verbose indicator section `%s'" section))))
+                :target target :shadowed-targets shadowed-targets
+                :bindings bindings :cycle cycle)
+               ""))))
       (goto-char (point-min)))))
 
 (defun embark-verbose-indicator (keymap targets)
