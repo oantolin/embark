@@ -513,19 +513,34 @@ actual-url-of-the-page)=.
 
 * How does Embark call the actions?
 
-  Embark actions are normal commands (functions with an interactive
-  specification). In order to execute an action command, Embark calls the
-  command with ~call-interactively~, such that the command can read user input.
-  For example it may open a minibuffer and read a string (~read-from-minibuffer~)
-  or open a completion interface (~completing-read~). If this happens, Embark
-  takes the target string and inserts it automatically into the minibuffer,
-  simulating user input this way. For this reason Embark can reuse normal
-  commands as actions, as long as the command reads user input from the
-  minibuffer. After inserting the string, Embark exits the minibuffer,
-  submitting the input. The immediate minibuffer exit can be disabled in order
-  to allow editing the input (See the ~embark-allow-edit-commands~ and
-  ~embark-allow-edit-default~ configuration variables). As an example, we bind the
-  following actions to the ~embark-symbol-map~.
+  Embark actions are normal Emacs commands, that is, functions with an
+  interactive specification. In order to execute an action, Embark
+  calls the command with =call-interactively=, so the command reads user
+  input exactly as if run directly by the user. For example the
+  command may open a minibuffer and read a string
+  (=read-from-minibuffer=) or open a completion interface
+  (=completing-read=). If this happens, Embark takes the target string
+  and inserts it automatically into the minibuffer, simulating user
+  input this way. After inserting the string, Embark exits the
+  minibuffer, submitting the input. (The immediate minibuffer exit can
+  be disabled in order to allow editing the input: see the
+  =embark-allow-edit-commands= and =embark-allow-edit-default=
+  configuration variables). Embark inserts the target string at the
+  first minibuffer opened by the action command, and if the command
+  happens to prompt the user for input more than once, the user still
+  interacts with the second and further prompts in the normal fashion.
+
+  This is how Embark manages to reuse normal commands as actions. The
+  mechanism allows you to use as Embark actions commands that were not
+  written with Embark in mind (and indeed almost all actions that are
+  bound by default in Embark's action keymaps are standard Emacs
+  commands). It also allows you to write new custom actions in such a
+  way that they are useful even without Embark.
+  
+  Here is a simple example illustrating those three ways of reading
+  input from the user mentioned above. Bind the following commands to
+  the =embark-symbol-map= to be used as actions, then put the point on
+  some symbol and run them with =embark-act=:
 
   #+begin_src emacs-lisp
     (defun example-action-command1 ()
@@ -546,8 +561,11 @@ actual-url-of-the-page)=.
     (define-key embark-symbol-map "X3" #'example-action-command3)
   #+end_src
 
-  Alternatively Embark supports non-interactive functions with a single argument
-  as actions. The target is passed as argument to the function.
+** Non-interactive functions as actions
+   
+  Alternatively, Embark does support one other type of action: a
+  non-interactive function of a single argument. The target is passed
+  as argument to the function. For example:
 
   #+begin_src emacs-lisp
     (defun example-action-function (target)
@@ -556,6 +574,23 @@ actual-url-of-the-page)=.
     (define-key embark-symbol-map "X4" #'example-action-function)
   #+end_src
 
+  Note that normally binding non-interactive functions in a keymap is
+  useless, since when attempting to run them using the key binding you
+  get an error message similar to "Wrong type argument: commandp,
+  example-action-function". In general it is more flexible to write
+  any new Embark actions as commands, that is, as interactive
+  functions, because that way you can also run them directly, without
+  Embark. But there are a couple of reasons to use non-interactive
+  functions as actions:
+
+  1. You may already have the function lying around, and it is
+     convenient to simply reuse it.
+
+  2. For command actions the targets can only be simple string, with
+     no text properties. For certain advanced uses you may want the
+     action to receive a string /with/ some text properties, or even a
+     non-string target.
+  
 * Embark, Marginalia and Consult
 
 Embark cooperates well with the [[https://github.com/minad/marginalia][Marginalia]] and [[https://github.com/minad/consult][Consult]] packages. Neither of
