@@ -864,13 +864,18 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
                         ;; recursively acting on the candidates of type
                         ;; embark-keybinding in the `completing-read' prompter.
                         (define-key map cycle
-                          (if (lookup-key keymap cycle)
+                          (cond
+                           ((lookup-key keymap cycle)
                               (lambda ()
                                 (interactive)
-                                (throw 'choice 'embark-cycle))
+                                (throw 'choice 'embark-cycle)))
+                           ((null embark-cycle-key)
                             (lambda ()
                               (interactive)
-                              (minibuffer-message "Only a single target"))))
+                              (minibuffer-message
+                               "Single target; can't cycle. Press `%s' again to act."
+                               (key-description cycle))
+                              (define-key map cycle #'embark-act)))))
                         (define-key map embark-keymap-prompter-key
                           (lambda ()
                             (interactive)
