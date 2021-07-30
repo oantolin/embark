@@ -775,7 +775,7 @@ UPDATE is the indicator update function."
            'scroll-other-window 'scroll-other-window-down)
        (let ((last-command-event (aref key 0))
              (minibuffer-scroll-window
-              (or (get-buffer-window embark--verbose-indicator-buffer 'visible)
+              (or (get-buffer-window " *Embark Actions*" 'visible)
                   minibuffer-scroll-window)))
          (ignore-errors (command-execute cmd)))
        (embark-keymap-prompter keymap update))
@@ -967,9 +967,6 @@ and should return a string or list of strings to insert."
   "Whether the verbose indicator should use nested keymap navigation."
   :type 'boolean)
 
-(defvar embark--verbose-indicator-buffer " *Embark Actions*"
-  "Buffer used by `embark-verbose-indicator' to display actions and keybidings.")
-
 (defun embark--verbose-indicator-excluded-p (cmd)
   "Return non-nil if CMD is excluded from the verbose indicator."
   (seq-find (lambda (x)
@@ -1029,7 +1026,7 @@ and should return a string or list of strings to insert."
 (defun embark--verbose-indicator-update (keymap target shadowed-targets)
   "Update verbose indicator buffer.
 The arguments are the new KEYMAP, TARGET and SHADOWED-TARGETS."
-  (with-current-buffer (get-buffer-create embark--verbose-indicator-buffer)
+  (with-current-buffer (get-buffer-create " *Embark Actions*")
     (let* ((inhibit-read-only t)
            (bindings
             (embark--formatted-bindings keymap embark-verbose-indicator-nested))
@@ -1068,17 +1065,16 @@ TARGETS is the list of targets."
     (embark--verbose-indicator-update keymap target shadowed-targets)
     (let ((display-buffer-alist
            `(,@display-buffer-alist
-             (,(regexp-quote embark--verbose-indicator-buffer)
+             (,(regexp-quote " *Embark Actions*")
               ,@embark-verbose-indicator-display-action))))
-      (display-buffer embark--verbose-indicator-buffer))
+      (display-buffer " *Embark Actions*"))
     (lambda (prefix)
       (if prefix
           (when embark-verbose-indicator-nested
             (embark--verbose-indicator-update (lookup-key keymap prefix)
                                               target shadowed-targets))
         (when-let ((indicator-window
-                    (get-buffer-window embark--verbose-indicator-buffer
-                                       'visible)))
+                    (get-buffer-window " *Embark Actions*" 'visible)))
           (quit-window 'kill-buffer indicator-window))))))
 
 (defcustom embark-mixed-indicator-delay 0.5
