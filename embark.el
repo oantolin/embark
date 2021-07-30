@@ -775,7 +775,7 @@ UPDATE is the indicator update function."
            'scroll-other-window 'scroll-other-window-down)
        (let ((last-command-event (aref key 0))
              (minibuffer-scroll-window
-              (or (get-buffer-window embark--verbose-indicator-buffer)
+              (or (get-buffer-window embark--verbose-indicator-buffer 'visible)
                   minibuffer-scroll-window)))
          (ignore-errors (command-execute cmd)))
        (embark-keymap-prompter keymap update))
@@ -1076,7 +1076,8 @@ TARGETS is the list of targets."
             (embark--verbose-indicator-update (lookup-key keymap prefix)
                                               target shadowed-targets))
         (when-let ((indicator-window
-                    (get-buffer-window embark--verbose-indicator-buffer)))
+                    (get-buffer-window embark--verbose-indicator-buffer
+                                       'visible)))
           (quit-window 'kill-buffer indicator-window))))))
 
 (defcustom embark-mixed-indicator-delay 0.5
