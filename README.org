@@ -174,8 +174,7 @@ keymap (and any others that also contain a binding for
 =switch-to-buffer=). The end result is that I can type =C-. B f= to
 switch to =find-file=.
 
-* Configuration
-** Quick start
+* Quick start
 
 The easiest way to install Embark is from Melpa. It is highly
 recommended to also install [[https://github.com/minad/marginalia][Marginalia]], so that Embark can offer you
@@ -246,6 +245,7 @@ those packages include comprehensive functionality for acting on
 minibuffer completion candidates. (Embark does come with Ivy
 integration despite this.)
 
+* Advanced configuration
 ** Showing a reminder of available actions
 
 If you want a reminder of which actions are available after running
@@ -511,13 +511,91 @@ actual-url-of-the-page)=.
   (add-to-list 'embark-target-finders 'my-short-wikipedia-link)
 #+end_src
 
+* How does Embark call the actions?
+
+  Embark actions are normal Emacs commands, that is, functions with an
+  interactive specification. In order to execute an action, Embark
+  calls the command with =call-interactively=, so the command reads user
+  input exactly as if run directly by the user. For example the
+  command may open a minibuffer and read a string
+  (=read-from-minibuffer=) or open a completion interface
+  (=completing-read=). If this happens, Embark takes the target string
+  and inserts it automatically into the minibuffer, simulating user
+  input this way. After inserting the string, Embark exits the
+  minibuffer, submitting the input. (The immediate minibuffer exit can
+  be disabled in order to allow editing the input: see the
+  =embark-allow-edit-commands= and =embark-allow-edit-default=
+  configuration variables). Embark inserts the target string at the
+  first minibuffer opened by the action command, and if the command
+  happens to prompt the user for input more than once, the user still
+  interacts with the second and further prompts in the normal fashion.
+
+  This is how Embark manages to reuse normal commands as actions. The
+  mechanism allows you to use as Embark actions commands that were not
+  written with Embark in mind (and indeed almost all actions that are
+  bound by default in Embark's action keymaps are standard Emacs
+  commands). It also allows you to write new custom actions in such a
+  way that they are useful even without Embark.
+  
+  Here is a simple example illustrating those three ways of reading
+  input from the user mentioned above. Bind the following commands to
+  the =embark-symbol-map= to be used as actions, then put the point on
+  some symbol and run them with =embark-act=:
+
+  #+begin_src emacs-lisp
+    (defun example-action-command1 ()
+      (interactive)
+      (message "The input was `%s'." (read-from-minibuffer "Input: ")))
+
+    (defun example-action-command2 (input)
+      (interactive "s")
+      (message "The input was `%s'." input))
+
+    (defun example-action-command3 ()
+      (interactive)
+      (message "Your selection was `%s'."
+               (completing-read "Select: " '("E" "M" "B" "A" "R" "K"))))
+
+    (define-key embark-symbol-map "X1" #'example-action-command1)
+    (define-key embark-symbol-map "X2" #'example-action-command2)
+    (define-key embark-symbol-map "X3" #'example-action-command3)
+  #+end_src
+
+** Non-interactive functions as actions
+   
+  Alternatively, Embark does support one other type of action: a
+  non-interactive function of a single argument. The target is passed
+  as argument to the function. For example:
+
+  #+begin_src emacs-lisp
+    (defun example-action-function (target)
+      (message "The target was `%s'." target))
+
+    (define-key embark-symbol-map "X4" #'example-action-function)
+  #+end_src
+
+  Note that normally binding non-interactive functions in a keymap is
+  useless, since when attempting to run them using the key binding you
+  get an error message similar to "Wrong type argument: commandp,
+  example-action-function". In general it is more flexible to write
+  any new Embark actions as commands, that is, as interactive
+  functions, because that way you can also run them directly, without
+  Embark. But there are a couple of reasons to use non-interactive
+  functions as actions:
+
+  1. You may already have the function lying around, and it is
+     convenient to simply reuse it.
+
+  2. For command actions the targets can only be simple string, with
+     no text properties. For certain advanced uses you may want the
+     action to receive a string /with/ some text properties, or even a
+     non-string target.
+  
 * Embark, Marginalia and Consult
 
-Some changes were made to Embark, to better cooperate with the
-[[https://github.com/minad/marginalia][Marginalia]] and [[https://github.com/minad/consult][Consult]] packages, and prior to being submitted to
-MELPA. Neither of those packages is a dependency of Embark, but
-Marginalia is highly recommended, for reasons explained in the rest
-of this section.
+Embark cooperates well with the [[https://github.com/minad/marginalia][Marginalia]] and [[https://github.com/minad/consult][Consult]] packages. Neither of
+those packages is a dependency of Embark, but Marginalia is highly recommended,
+for reasons explained in the rest of this section.
 
 Embark comes with actions for symbols (commands, functions, variables
 with actions such as finding the definition, looking up the
@@ -525,21 +603,18 @@ documentation, evaluating, etc.) in the =embark-symbol-map= keymap, and
 for packages (actions like install, delete, browse url, etc.) in the
 =embark-package-keymap=.
 
-Unfortunately Embark no longer automatically offers you these keymaps
+Unfortunately Embark does not automatically offers you these keymaps
 when relevant, because many built-in Emacs commands don't report
 accurate category metadata. For example, a command like
 =describe-package=, which reads a package name from the minibuffer,
 does not have metadata indicating so.
 
-Previously Embark had functions to supply this missing metadata, but
-they have been moved to Marginalia, which augments many Emacs command
-to report accurate category metadata. Simply activating
-=marginalia-mode= allows Embark to offer you the package and symbol
-actions when appropriate again.
-
-All annotation functions have been removed from Embark and moved to
-Marginalia (where they have been improved!). Embark used these old
-annotation functions for the list view in Embark Collect buffers.
+In an earlier Embark version, there were functions to supply this missing
+metadata, but they have been moved to Marginalia, which augments many Emacs
+command to report accurate category metadata. Simply activating =marginalia-mode=
+allows Embark to offer you the package and symbol actions when appropriate
+again. Candidate annotations in the Embark collect buffer are also provided by
+the Marginalia package.
 
 - If you install Marginalia and activate =marginalia-mode=, the list
   view in Embark Collect buffers will use the Marginalia annotations
@@ -549,14 +624,13 @@ annotation functions for the list view in Embark Collect buffers.
   that come with Emacs (such as key bindings in =M-x=, or the unicode
   characters in =C-x 8 RET=).
 
-Other small changes:
-
 - If you have Consult installed and call =embark-collect-snapshot= from
   =consult-line=, =consult-mark= or =consult-outline=, you will notice the
   Embark Collect buffer starts in list view by default. Similarly,
   you'll notice that the =consult-yank= family of commands start out in
   list view with zebra stripes, so you can easily tell where
   multi-line kill-ring entries start and end.
+
 - The function =embark-open-externally= has been removed following the
   policy of avoiding overlap with Consult. If you used that action,
   add [[https://github.com/minad/consult/blob/373498acb76b9395e5e590fb8e39f671a9363cd7/consult.el#L707][the small function]] to your configuration or install Consult and
