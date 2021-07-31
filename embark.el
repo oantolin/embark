@@ -1196,7 +1196,7 @@ after this delay shows the verbose indicator."
   :type '(choice (const :tag "No delay" 0)
                  (number :tag "Delay in seconds")))
 
-(defcustom embark-mixed-indicator-both t
+(defcustom embark-mixed-indicator-both nil
   "Show both indicators, even after the verbose indicator appeared."
   :type 'boolean)
 
