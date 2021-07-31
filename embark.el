@@ -208,6 +208,16 @@ If the key is set to nil it defaults to the global binding of
 is the key representation accepted by `define-key'."
   :type '(choice key-sequence (const :tag "None" nil)))
 
+(defcustom embark-keybinding-repeat
+  (propertize "*" 'face 'embark-keybinding-repeat)
+  "Indicator string for repeatable keybindings.
+Keybindings are formatted by the `completing-read' prompter and the verbose indicator."
+  :type 'string)
+
+(defface embark-keybinding-repeat
+  '((t :inherit font-lock-builtin-face))
+  "Face used to indicate keybindings as repeatable.")
+
 (defface embark-keybinding '((t :inherit success))
   "Face used to display key bindings.
 Used by `embark-completing-read-prompter' and `embark-keymap-help'.")
@@ -347,6 +357,11 @@ This list is used only when `embark-allow-edit-default' is t."
 (defcustom embark-post-action-hook nil
   "Hook run after an embarked upon action concludes."
   :type 'hook)
+
+(defcustom embark-repeat-commands
+  '(search-forward search-backward)
+  "List of repeatable actions."
+  :type '(repeat function))
 
 ;;; Stashing information for actions in buffer local variables
 
@@ -879,10 +894,15 @@ If NESTED is non-nil subkeymaps are not flattened."
          (candidates
           (cl-loop for item in commands
                    for (name cmd key desc) = item
+                   for desc-rep =
+                   (concat
+                    (propertize desc 'face 'embark-keybinding)
+                    (and (memq cmd embark-repeat-commands)
+                         embark-keybinding-repeat))
                    for formatted =
                    (propertize
-                    (concat (propertize desc 'face 'embark-keybinding)
-                            (make-string (- width (length desc) -1) ? )
+                    (concat desc-rep
+                            (make-string (- width (length desc-rep) -1) ?\s)
                             name)
                     'embark-command cmd)
                    when (equal key [13])
@@ -1455,11 +1475,6 @@ keymap for the given type."
       (lookup-key (symbol-value (or (alist-get type embark-keymap-alist)
                                     (alist-get t embark-keymap-alist)))
                   (kbd "RET"))))
-
-(defcustom embark-repeat-commands
-  '(search-forward search-backward)
-  "List of repeatable actions."
-  :type '(repeat function))
 
 (defun embark--rotate (list k)
   "Rotate LIST by K elements and return the rotated list."
