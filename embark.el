@@ -695,8 +695,8 @@ If CYCLE is non-nil bind `embark-cycle'."
   (make-composed-keymap
    (let ((map (make-sparse-keymap)))
      (define-key map [13] (embark--default-action type))
-     (when cycle
-       (define-key map (embark--cycle-key) #'embark-cycle))
+     (when-let ((cycle-key (and cycle (embark--cycle-key))))
+       (define-key map cycle-key #'embark-cycle))
      map)
    (symbol-value (or (alist-get type embark-keymap-alist)
                      (alist-get t embark-keymap-alist)))))
