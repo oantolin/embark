@@ -208,6 +208,17 @@ If the key is set to nil it defaults to the global binding of
 is the key representation accepted by `define-key'."
   :type '(choice key-sequence (const :tag "None" nil)))
 
+(defcustom embark-keybinding-repeat
+  (propertize "*" 'face 'embark-keybinding-repeat)
+  "Indicator string for repeatable keybindings.
+Keybindings are formatted by the `completing-read' prompter and
+the verbose indicator."
+  :type 'string)
+
+(defface embark-keybinding-repeat
+  '((t :inherit font-lock-builtin-face))
+  "Face used to indicate keybindings as repeatable.")
+
 (defface embark-keybinding '((t :inherit success))
   "Face used to display key bindings.
 Used by `embark-completing-read-prompter' and `embark-keymap-help'.")
@@ -347,6 +358,11 @@ This list is used only when `embark-allow-edit-default' is t."
 (defcustom embark-post-action-hook nil
   "Hook run after an embarked upon action concludes."
   :type 'hook)
+
+(defcustom embark-repeat-commands
+  '(search-forward search-backward)
+  "List of repeatable actions."
+  :type '(repeat function))
 
 ;;; Stashing information for actions in buffer local variables
 
@@ -709,6 +725,10 @@ If CYCLE is non-nil bind `embark-cycle'."
       (concat (substring target 0 pos) "…")
     target))
 
+(defun embark--act-label (rep)
+  "Return highlighted Act/Rep string depending on REP."
+  (propertize (if rep "Rep" "Act") 'face 'highlight))
+
 (defun embark-minimal-indicator ()
   "Minimal indicator, appearing in the minibuffer prompt or echo area.
 This indicator displays a message showing the types of all
@@ -721,7 +741,7 @@ the minibuffer is open, the message is added to the prompt."
           (if indicator-overlay
               (delete-overlay indicator-overlay)
             (message nil))
-        (let* ((act (propertize "Act" 'face 'highlight))
+        (let* ((act (embark--act-label (eq (lookup-key keymap [13]) #'embark-done)))
                (target (car targets))
                (shadowed-targets (cdr targets))
                (indicator (cond
@@ -820,11 +840,33 @@ first line of the documentation string; otherwise use the word
     ((stringp (car-safe cmd)) (car cmd))
     ((symbolp cmd) (symbol-name cmd))
     ((keymapp cmd) "<keymap>")
-    ((when-let (doc (and (functionp cmd) (documentation cmd)))
+    ((when-let (doc (and (functionp cmd) (ignore-errors (documentation cmd))))
        (save-match-data
          (when (string-match "^\\(.*\\)$" doc)
            (match-string 1 doc)))))
     (t "<unnamed>"))))
+
+;; Taken from Marginalia, needed by the verbose indicator.
+;; We cannot use the completion annotators in this case.
+(defconst embark--advice-regexp
+  (rx bos
+      (1+ (seq (? "This function has ")
+               (or ":before" ":after" ":around" ":override"
+                   ":before-while" ":before-until" ":after-while"
+                   ":after-until" ":filter-args" ":filter-return")
+               " advice: " (0+ nonl) "\n"))
+      "\n")
+  "Regexp to match lines about advice in function documentation strings.")
+
+;; Taken from Marginalia, needed by the verbose indicator.
+;; We cannot use the completion annotators in this case.
+(defun embark--function-doc (sym)
+  "Documentation string of function SYM."
+  (when-let (str (ignore-errors (documentation sym)))
+    (save-match-data
+      (if (string-match embark--advice-regexp str)
+          (substring str (match-end 0))
+        str))))
 
 (defun embark--formatted-bindings (keymap &optional nested)
   "Return the formatted keybinding of KEYMAP.
@@ -853,10 +895,15 @@ If NESTED is non-nil subkeymaps are not flattened."
          (candidates
           (cl-loop for item in commands
                    for (name cmd key desc) = item
+                   for desc-rep =
+                   (concat
+                    (propertize desc 'face 'embark-keybinding)
+                    (and (memq cmd embark-repeat-commands)
+                         embark-keybinding-repeat))
                    for formatted =
                    (propertize
-                    (concat (propertize desc 'face 'embark-keybinding)
-                            (make-string (- width (length desc) -1) ? )
+                    (concat desc-rep
+                            (make-string (- width (length desc-rep) -1) ?\s)
                             name)
                     'embark-command cmd)
                    when (equal key [13])
@@ -1018,13 +1065,15 @@ of all full key sequences bound in the keymap."
             embark-verbose-indicator-excluded-commands))
 
 (cl-defun embark--verbose-indicator-section-target
-    (&key target &allow-other-keys)
-  "Format the TARGET section for the indicator buffer."
+    (&key target bindings &allow-other-keys)
+  "Format the TARGET section for the indicator buffer.
+BINDINGS is the formatted list of keybinding.s"
   (let* ((kind (car target))
          (result (if (eq kind 'embark-become)
                      (concat (propertize "Become" 'face 'highlight))
                    (format "%s on%s '%s'"
-                           (propertize "Act" 'face 'highlight)
+                           (embark--act-label
+                            (seq-find (lambda (b) (eq (caddr b) #'embark-done)) bindings))
                            (if kind (format " %s" kind) "")
                            (embark--truncate-target (cdr target))))))
     (add-face-text-property 0 (length result)
@@ -1061,11 +1110,11 @@ SHADOWED-TARGETS is the list of other targets."
       (let ((cmd (caddr binding)))
         (unless (embark--verbose-indicator-excluded-p cmd)
           (let ((keys (format fmt (car binding)))
-                (doc (ignore-errors
-                       (propertize
-                        (car (split-string (documentation cmd) "\n"))
-                        'face 'embark-verbose-indicator-documentation))))
-            (push (format "%s%s\n" keys (or doc "")) result)))))))
+                (doc (embark--function-doc cmd)))
+            (push (format "%s%s\n" keys
+                          (propertize (car (split-string (or doc "") "\n"))
+                                      'face 'embark-verbose-indicator-documentation))
+                          result)))))))
 
 (defun embark--verbose-indicator-update (keymap targets)
   "Update verbose indicator buffer.
@@ -1148,6 +1197,10 @@ after this delay shows the verbose indicator."
   :type '(choice (const :tag "No delay" 0)
                  (number :tag "Delay in seconds")))
 
+(defcustom embark-mixed-indicator-both nil
+  "Show both indicators, even after the verbose indicator appeared."
+  :type 'boolean)
+
 (defun embark-mixed-indicator ()
   "Mixed indicator showing keymap and targets.
 The indicator shows the `embark-minimal-indicator' by default.
@@ -1158,6 +1211,7 @@ helpful keybinding reminder still pops up automatically without
 further user intervention."
   (let ((vindicator (embark-verbose-indicator))
         (mindicator (embark-minimal-indicator))
+        vindicator-active
         vtimer)
     (lambda (&optional keymap targets prefix)
       ;; Always cancel the timer.
@@ -1170,18 +1224,20 @@ further user intervention."
       (if (not keymap)
           (progn
             (funcall vindicator)
-            (when (functionp mindicator)
+            (when mindicator
               (funcall mindicator)))
-        (if (null mindicator)
+        (when mindicator
+          (funcall mindicator keymap targets prefix))
+        (if vindicator-active
             (funcall vindicator keymap targets prefix)
-          (funcall mindicator keymap targets prefix)
           (setq vtimer
                 (run-at-time
                  embark-mixed-indicator-delay nil
                  (lambda ()
-                   (when mindicator
+                   (when (and (not embark-mixed-indicator-both) mindicator)
                      (funcall mindicator)
                      (setq mindicator nil))
+                   (setq vindicator-active t)
                    (funcall vindicator keymap targets prefix)))))))))
 
 ;;;###autoload
@@ -1421,6 +1477,11 @@ keymap for the given type."
                                     (alist-get t embark-keymap-alist)))
                   (kbd "RET"))))
 
+(defun embark--rotate (list k)
+  "Rotate LIST by K elements and return the rotated list."
+  (setq k (mod k (length list)))
+  (append (seq-drop list k) (seq-take list k)))
+
 ;;;###autoload
 (defun embark-act (&optional arg)
   "Prompt the user for an action and perform it.
@@ -1447,45 +1508,52 @@ done by cycling backwards) and cycling starts from the following
 target."
   (interactive "P")
   (let* ((targets (or (embark--targets) (user-error "No target found")))
-         (n (length targets))
-         (skip 1)
-         (indicator (funcall embark-indicator)))
+         (indicator (funcall embark-indicator))
+         (default-done nil))
     (unwind-protect
-        (cl-flet ((rotate (k)
-                          (setq k (mod k n)
-                                targets (append (seq-drop targets k)
-                                                (seq-take targets k)))))
-          (when (and arg (not (minibufferp)))
-            (rotate (prefix-numeric-value arg)))
-          (while
-              (pcase-let* ((`((,type . ,target)
-                              (,_otype . ,otarget)
-                              . ,bounds)
-                            (car targets))
-                           (keymap (embark--action-keymap type (cdr targets)))
-                           (targets-car (mapcar #'car targets))
-                           (action
-                            (or (embark--highlight-target
-                                 bounds
-                                 #'embark--prompt
-                                 indicator
-                                 keymap targets-car)
-                                (progn
-                                  (funcall indicator)
-                                  (user-error "Canceled"))))
-                           (default-action (embark--default-action type)))
-                (if (eq action #'embark-cycle)
-                    (setq skip (prefix-numeric-value prefix-arg))
-                  (funcall indicator)
-                  (embark--act action
-                               (if (and (eq action default-action)
-                                        (eq action embark--command))
-                                   otarget
-                                 target)
-                               bounds
-                               (if embark-quit-after-action (not arg) arg))
-                  nil))
-            (rotate skip))))))
+        (when (and arg (not (minibufferp)))
+          (setq targets (embark--rotate targets (prefix-numeric-value arg))))
+      (while
+          (pcase-let* ((`((,type . ,target)
+                          (,_otype . ,otarget)
+                          . ,bounds)
+                        (car targets))
+                       (action
+                        (or (embark--highlight-target
+                             bounds
+                             #'embark--prompt
+                             indicator
+                             (let ((embark-default-action-overrides
+                                    (if default-done
+                                        `((t . ,default-done))
+                                      embark-default-action-overrides)))
+                               (embark--action-keymap type (cdr targets)))
+                             (mapcar #'car targets))
+                            (progn
+                              (funcall indicator)
+                              (user-error "Canceled"))))
+                       (default-action (or default-done
+                                           (embark--default-action type))))
+            (if (eq action #'embark-cycle)
+                (setq targets (embark--rotate targets (prefix-numeric-value prefix-arg)))
+              ;; Do not hide the indicator when repeating
+              (unless (memq action embark-repeat-commands)
+                (funcall indicator))
+              (embark--act action
+                           (if (and (eq action default-action)
+                                    (eq action embark--command))
+                               otarget
+                             target)
+                           bounds
+                           (if embark-quit-after-action (not arg) arg))
+              (when-let (new-targets (and (memq action embark-repeat-commands)
+                                          (embark--targets)))
+                ;; Terminate repeated prompter on default action, when repeating.
+                ;; Jump to the same target type.
+                (setq default-done #'embark-done
+                      targets (embark--rotate new-targets
+                                              (or (cl-position-if (lambda (x) (eq (caar x) (caaar targets)))
+                                                                  new-targets) 0))))))))))
 
 (defun embark--highlight-target (bounds &rest fun)
   "Highlight target at BOUNDS and call FUN."
@@ -1504,6 +1572,10 @@ target."
 If ARG is negative, cycle backwards."
   (interactive "p")
   (user-error "Not meant to be called directly"))
+
+(defun embark-done ()
+  "Terminate sequence of repeated actions."
+  (interactive))
 
 ;;;###autoload
 (defun embark-dwim (&optional arg)
@@ -2851,7 +2923,9 @@ and leaves the point to the left of it."
   ("r" xref-find-references)
   ("b" where-is)
   ("e" pp-eval-expression)
-  ("a" apropos))
+  ("a" apropos)
+  ("n" search-forward)
+  ("p" search-backward))
 
 (embark-define-keymap embark-command-map
   "Keymap for Embark command actions."
