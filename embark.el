@@ -769,9 +769,6 @@ If CYCLE is non-nil bind `embark-cycle'."
       (when timer
         (cancel-timer timer)))))
 
-(defvar embark--verbose-indicator-buffer " *Embark Actions*"
-  "Buffer used by `embark-verbose-indicator' to display actions and keybidings.")
-
 (defun embark-keymap-prompter (keymap update)
   "Let the user choose an action using the bindings in KEYMAP.
 Besides the bindings in KEYMAP, the user is free to use all their
@@ -1084,24 +1081,20 @@ The arguments are the new KEYMAP and TARGETS."
 
 (defun embark-verbose-indicator ()
   "Indicator that displays a list of available key bindings."
-  (let ((indicator-window))
-    (lambda (&optional keymap targets prefix)
-      (if (not keymap)
-          (when-let ((win (get-buffer-window embark--verbose-indicator-buffer
-                                             'visible)))
-            (quit-window 'kill-buffer win))
-        (embark--verbose-indicator-update
-         (if (and prefix embark-verbose-indicator-nested)
-             (lookup-key keymap prefix)
-           keymap)
-         targets)
-        (unless indicator-window
-          (setq indicator-window
-                (let ((display-buffer-alist
-                       `(,@display-buffer-alist
-                         (,(regexp-quote " *Embark Actions*")
-                          ,@embark-verbose-indicator-display-action))))
-                  (display-buffer " *Embark Actions*"))))))))
+  (lambda (&optional keymap targets prefix)
+    (if (not keymap)
+        (when-let ((win (get-buffer-window " *Embark Actions*" 'visible)))
+          (quit-window 'kill-buffer win))
+      (embark--verbose-indicator-update
+       (if (and prefix embark-verbose-indicator-nested)
+           (lookup-key keymap prefix)
+         keymap)
+       targets)
+      (let ((display-buffer-alist
+             `(,@display-buffer-alist
+               (,(regexp-quote " *Embark Actions*")
+                ,@embark-verbose-indicator-display-action))))
+        (display-buffer " *Embark Actions*")))))
 
 (defcustom embark-mixed-indicator-delay 0.5
   "Time in seconds after which the verbose indicator is shown.
