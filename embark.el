@@ -242,30 +242,31 @@ Embark comes with three such indicators:
   verbose popup is shown after `embark-mixed-indicator-delay'
   seconds.
 
-The calling convention for indicator functions is as follows:
+The protocol for indicator functions is as follows:
 
 When called from `embark-act', the indicator function is called
-without arguments. The indicator function should then return a
-closure, which captures the indicator state. The returned closure
-must accept up to three optional arguments, the action keymap,
-the target (in the form of a cons of the type and value) and a
-list of other shadowed targets (each of which is also a cons).
-The keymap, targets and prefix keys may be updated when cycling
-targets at point. When called from `embark-become', the indicator
-closure will be called with the keymap of commands to become,
-with a fake target of type `embark-become' and whose value is the
-minibuffer input. Note, in particular, that if an indicator
-function wishes to distinguish between `embark-act' and
-`embark-become' it should check whether the `car' of its target
-argument is `embark-become'.
+without arguments.  The indicator function should then return a
+closure, which captures the indicator state.  The returned
+closure must accept up to three optional arguments, the action
+keymap, the targets (a list of conses of the type and value of
+each target, starting with the current one) and the prefix keys
+typed by the user so far.  The keymap, targets and prefix keys
+may be updated when cycling targets at point.  When called from
+`embark-become', the indicator closure will be called with the
+keymap of commands to become, a fake target list containing a
+single target of type `embark-become' and whose value is the
+minibuffer input, and the prefix set to nil.  Note, in
+particular, that if an indicator function wishes to distinguish
+between `embark-act' and `embark-become' it should check whether
+the `car' of the first target is `embark-become'.
 
 After the action has been performed the indicator closure is
 called without arguments, such that the indicator can perform the
-necessary cleanup work. For example, if the indicator adds
+necessary cleanup work.  For example, if the indicator adds
 overlays, it should remove these overlays.
 
 NOTE: Experience shows that the indicator calling convention may
-change again in order to support more action features. The
+change again in order to support more action features.  The
 calling convention should currently be considered unstable.
 Please keep this in mind when writing a custom indicator
 function, or when using the `which-key' indicator function from
@@ -709,10 +710,14 @@ If CYCLE is non-nil bind `embark-cycle'."
     target))
 
 (defun embark-minimal-indicator ()
-  "Minimal action indicator, which displays a message in the minibuffer prompt or echo area."
+  "Minimal indicator, appearing in the minibuffer prompt or echo area.
+This indicator displays a message showing the types of all
+targets, starting with the current target, and the value of the
+current target.  The message is displayed in the echo area, or if
+the minibuffer is open, the message is added to the prompt."
   (let ((indicator-overlay))
     (lambda (&optional keymap targets _prefix)
-      (if (not keymap)
+      (if (null keymap)
           (when indicator-overlay
             (delete-overlay indicator-overlay))
         (let* ((act (propertize "Act" 'face 'highlight))
@@ -962,7 +967,10 @@ display actions and parameters are available."
           (sexp :tag "Other")))
 
 (defcustom embark-verbose-indicator-excluded-commands nil
-  "Commands not displayed by `embark-verbose-indicator'."
+  "Commands not displayed by `embark-verbose-indicator'.
+This variable should be set to a list of symbols and regexps.
+The verbose indicator will exclude from its listing any commands
+matching an element of this list."
   :type '(choice
           (const :tag "Exclude nothing" nil)
           (const :tag "Exclude Embark general actions"
@@ -973,9 +981,15 @@ display actions and parameters are available."
 (defcustom embark-verbose-indicator-buffer-sections
   `(target "\n" shadowed-targets " " cycle "\n" bindings)
   "List of sections to display in the verbose indicator buffer, in order.
-You can use either a symbol designating a concrete section, a string literal
-or a function that will take the list of targets, bindings and the cycle key
-and should return a string or list of strings to insert."
+You can use either a symbol designating a concrete section (one
+of the keywords below, but without the colon), a string literal
+or a function returning a string or list of strings to insert and
+that accepts the following keyword arguments:
+
+- `:target', the target as a cons of type and value,
+- `:shadowed-targets', a list of conses for the other targets,
+- `:bindings' a list returned by `embark--formatted-bindings', and
+- `:cycle', a string describing the key binding of `embark-cycle'."
   :type '(repeat
           (choice (const :tag "Current target name" target)
                   (const :tag "List of other shadowed targets" shadowed-targets)
@@ -985,11 +999,17 @@ and should return a string or list of strings to insert."
                   (function :tag "Custom function"))))
 
 (defcustom embark-verbose-indicator-nested t
-  "Whether the verbose indicator should use nested keymap navigation."
+  "Whether the verbose indicator should use nested keymap navigation.
+When this variable is non-nil the actions buffer displayed by
+`embark-verbose-indicator' will include any prefix keys found in
+the keymap it is displaying, and will update to show what is
+bound under the prefix if the prefix is pressed.  If this
+variable is nil, then the actions buffer will contain a flat list
+of all full key sequences bound in the keymap."
   :type 'boolean)
 
 (defun embark--verbose-indicator-excluded-p (cmd)
-  "Return non-nil if CMD is excluded from the verbose indicator."
+  "Return non-nil if CMD should be excluded from the verbose indicator."
   (seq-find (lambda (x)
               (if (symbolp x)
                   (eq cmd x)
@@ -1082,10 +1102,32 @@ The arguments are the new KEYMAP and TARGETS."
       (goto-char (point-min)))))
 
 (defun embark-verbose-indicator ()
-  "Indicator that displays a list of available key bindings."
+  "Indicator that displays a table of key bindings in a buffer.
+The default display includes the type and vaue of the current
+target, the list of other target types, and a table of key
+bindings, actions and the first line of their docstrings.
+
+The order and formatting of these items is completely
+configurable through the variable
+`embark-verbose-indicator-buffer-sections'.
+
+If the keymap being shown contains prefix keys, the table of key
+bindings can either show just the prefixes and update once the
+prefix is pressed, or it can contain a flat list of all full key
+sequences bound in the keymap.  This is controlled by the
+variable `embark-verbose-indicator-nested'.
+
+To reduce clutter in the key binding table, one can set the
+variable `embark-verbose-indicator-excluded-commands' to a list
+of symbols and regexps matching commands to exclude from the
+table.
+
+To configure how a window is chosen to display this buffer, see
+the variable `embark-verbose-indicator-display-action'."
   (lambda (&optional keymap targets prefix)
     (if (not keymap)
-        (when-let ((win (get-buffer-window embark--verbose-indicator-buffer 'visible)))
+        (when-let ((win (get-buffer-window embark--verbose-indicator-buffer
+                                           'visible)))
           (quit-window 'kill-buffer win))
       (embark--verbose-indicator-update
        (if (and prefix embark-verbose-indicator-nested)
@@ -1387,7 +1429,7 @@ keymap for the given type."
   "Prompt the user for an action and perform it.
 The targets of the action are chosen by `embark-target-finders'.
 By default, if called from a minibuffer the target is the top
-completion candidate. When called from a non-minibuffer buffer
+completion candidate.  When called from a non-minibuffer buffer
 there can multiple targets and you can cycle among them by using
 `embark-cycle' (which is bound by default to the same key
 binding `embark-act' is, but see `embark-cycle-key').
