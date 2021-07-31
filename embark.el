@@ -223,6 +223,10 @@ the verbose indicator."
   "Face used to display key bindings.
 Used by `embark-completing-read-prompter' and `embark-keymap-help'.")
 
+(defface embark-keymap '((t :slant italic))
+  "Face used to display keymaps.
+Used by `embark-completing-read-prompter' and `embark-keymap-help'.")
+
 (defface embark-target '((t :inherit highlight))
   "Face used to highlight the target at point during `embark-act'.")
 
@@ -839,8 +843,10 @@ first line of the documentation string; otherwise use the word
   (concat ; fresh copy, so we can freely add text properties
    (cond
     ((stringp (car-safe cmd)) (car cmd))
+    ((keymapp cmd)
+     (propertize (if (symbolp cmd) (format "+%s" cmd) "<keymap>")
+                 'face 'embark-keymap))
     ((symbolp cmd) (symbol-name cmd))
-    ((keymapp cmd) "<keymap>")
     ((when-let (doc (and (functionp cmd) (ignore-errors (documentation cmd))))
        (save-match-data
          (when (string-match "^\\(.*\\)$" doc)
@@ -863,11 +869,16 @@ first line of the documentation string; otherwise use the word
 ;; We cannot use the completion annotators in this case.
 (defun embark--function-doc (sym)
   "Documentation string of function SYM."
-  (when-let (str (ignore-errors (documentation sym)))
-    (save-match-data
-      (if (string-match embark--advice-regexp str)
-          (substring str (match-end 0))
-        str))))
+  (let ((vstr (and (keymapp sym) (boundp sym) (eq (symbol-function sym) (symbol-value sym))
+                   (documentation-property sym 'variable-documentation))))
+    (when-let (str (or (ignore-errors (documentation sym)) vstr))
+      ;; Replace standard description with variable documentation
+      (when (and vstr (string-match-p "\\`Prefix command" str))
+        (setq str vstr))
+      (save-match-data
+        (if (string-match embark--advice-regexp str)
+            (substring str (match-end 0))
+          str)))))
 
 (defun embark--formatted-bindings (keymap &optional nested)
   "Return the formatted keybinding of KEYMAP.
@@ -884,7 +895,7 @@ If NESTED is non-nil subkeymaps are not flattened."
                            (eq cmd #'embark-keymap-help))
                    collect (list name
                                  (cond
-                                  ((keymapp cmd) 'keymap)
+                                  ((and (not (symbolp cmd)) (keymapp cmd)) 'keymap)
                                   ((and (consp cmd) (stringp (car cmd)))
                                    (cdr cmd))
                                   (t cmd))
@@ -1891,18 +1902,20 @@ Returns the name of the command."
 (defun embark--all-bindings (keymap &optional nested)
   "Return an alist of all bindings in KEYMAP.
 If NESTED is non-nil subkeymaps are not flattened."
-  (let (bindings)
+  (let (bindings maps)
     (map-keymap
      (lambda (key def)
        (cond
-        ((and (not nested) (keymapp def))
-         (dolist (bind (embark--all-bindings def))
-           (push (cons (vconcat (vector key) (car bind))
-                       (cdr bind))
-                 bindings)))
+        ((keymapp def)
+         (if nested
+             (push (cons (vector key) def) maps)
+           (dolist (bind (embark--all-bindings def))
+             (push (cons (vconcat (vector key) (car bind))
+                         (cdr bind))
+                   maps))))
         (def (push (cons (vector key) def) bindings))))
      (keymap-canonicalize keymap))
-    (nreverse bindings)))
+    (nconc (nreverse bindings) (nreverse maps))))
 
 (defvar embark-collect-direct-action-minor-mode-map (make-sparse-keymap)
   "Keymap for direct bindings to embark actions.")
