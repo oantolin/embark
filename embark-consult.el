@@ -240,7 +240,7 @@ actual type."
   :parent nil
   ("o" consult-outline)
   ("i" consult-imenu)
-  ("I" consult-imenu-project)
+  ("I" consult-imenu-multi)
   ("l" consult-line)
   ("L" consult-line-multi))
 
