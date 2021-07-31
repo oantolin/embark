@@ -1176,6 +1176,10 @@ after this delay shows the verbose indicator."
   :type '(choice (const :tag "No delay" 0)
                  (number :tag "Delay in seconds")))
 
+(defcustom embark-mixed-indicator-both t
+  "Show both indicators, even after the verbose indicator appeared."
+  :type 'boolean)
+
 (defun embark-mixed-indicator ()
   "Mixed indicator showing keymap and targets.
 The indicator shows the `embark-minimal-indicator' by default.
@@ -1186,6 +1190,7 @@ helpful keybinding reminder still pops up automatically without
 further user intervention."
   (let ((vindicator (embark-verbose-indicator))
         (mindicator (embark-minimal-indicator))
+        vindicator-active
         vtimer)
     (lambda (&optional keymap targets prefix)
       ;; Always cancel the timer.
@@ -1198,18 +1203,20 @@ further user intervention."
       (if (not keymap)
           (progn
             (funcall vindicator)
-            (when (functionp mindicator)
+            (when mindicator
               (funcall mindicator)))
-        (if (null mindicator)
+        (when mindicator
+          (funcall mindicator keymap targets prefix))
+        (if vindicator-active
             (funcall vindicator keymap targets prefix)
-          (funcall mindicator keymap targets prefix)
           (setq vtimer
                 (run-at-time
                  embark-mixed-indicator-delay nil
                  (lambda ()
-                   (when mindicator
+                   (when (and (not embark-mixed-indicator-both) mindicator)
                      (funcall mindicator)
                      (setq mindicator nil))
+                   (setq vindicator-active t)
                    (funcall vindicator keymap targets prefix)))))))))
 
 ;;;###autoload
