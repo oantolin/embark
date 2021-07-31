@@ -1215,17 +1215,15 @@ be restricted by passing a PREFIX key."
 (defun embark--prompt (indicator keymap targets)
   "Call the prompter with KEYMAP and INDICATOR.
 The TARGETS are displayed for actions outside the minibuffer."
+  (funcall indicator keymap targets)
   (condition-case nil
       (minibuffer-with-setup-hook
           (lambda ()
             ;; if the prompter opens its own minibuffer, show
             ;; the indicator there too
-            (let ((inner-indicator
-                   (funcall (funcall embark-indicator) keymap targets)))
-              (when (functionp inner-indicator)
-                (add-hook 'minibuffer-exit-hook
-                          (lambda () (funcall inner-indicator))
-                          nil 'local))))
+            (let ((inner-indicator (funcall embark-indicator)))
+              (funcall inner-indicator keymap targets)
+              (add-hook 'minibuffer-exit-hook inner-indicator nil t)))
         (let ((enable-recursive-minibuffers t))
           (funcall embark-prompter keymap
                    (lambda (prefix)
@@ -1452,7 +1450,7 @@ target."
   (let* ((targets (or (embark--targets) (user-error "No target found")))
          (n (length targets))
          (skip 1)
-         (indicator))
+         (indicator (funcall embark-indicator)))
     (unwind-protect
         (cl-flet ((rotate (k)
                           (setq k (mod k n)
@@ -1468,32 +1466,27 @@ target."
                            (keymap (embark--action-keymap type (cdr targets)))
                            (targets-car (mapcar #'car targets))
                            (action
-                            (progn
-                              (setq indicator (or indicator (funcall embark-indicator)))
-                              (funcall indicator keymap targets-car)
-                              (or (embark--highlight-target
-                                   bounds
-                                   #'embark--prompt
-                                   indicator
-                                   keymap targets-car)
+                            (or (embark--highlight-target
+                                 bounds
+                                 #'embark--prompt
+                                 indicator
+                                 keymap targets-car)
+                                (progn
+                                  (funcall indicator)
                                   (user-error "Canceled"))))
                            (default-action (embark--default-action type)))
                 (if (eq action #'embark-cycle)
                     (setq skip (prefix-numeric-value prefix-arg))
-                  (setq skip nil)
-                  (when (functionp indicator)
-                    (funcall indicator)
-                    (setq indicator nil))
+                  (funcall indicator)
                   (embark--act action
                                (if (and (eq action default-action)
                                         (eq action embark--command))
                                    otarget
                                  target)
                                bounds
-                               (if embark-quit-after-action (not arg) arg))))
-            (rotate skip)))
-      (when (functionp indicator)
-        (funcall indicator)))))
+                               (if embark-quit-after-action (not arg) arg))
+                  nil))
+            (rotate skip))))))
 
 (defun embark--highlight-target (bounds &rest fun)
   "Highlight target at BOUNDS and call FUN."
@@ -1589,11 +1582,10 @@ point."
                                   (+ end (embark--minibuffer-point))))))
            (keymap (embark--become-keymap))
            (targets `((embark-become . ,target)))
-           (indicator (funcall (funcall embark-indicator) keymap targets))
+           (indicator (funcall embark-indicator))
            (become (unwind-protect
                        (embark--prompt indicator keymap targets)
-                     (when (functionp indicator)
-                       (funcall indicator)))))
+                     (funcall indicator))))
       (if (null become)
           (user-error "Canceled")
         (embark--quit-and-run
