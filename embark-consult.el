@@ -259,11 +259,13 @@ actual type."
                          embark-consult-async-search-map))
   "Keymap for all Consult search commands.")
 
-(define-key embark-become-match-map "C" embark-consult-non-async-search-map)
+(fset 'embark-consult-non-async-search-map embark-consult-non-async-search-map)
+(define-key embark-become-match-map "C" 'embark-consult-non-async-search-map)
 
 (cl-pushnew 'embark-consult-async-search-map embark-become-keymaps)
 
-(define-key embark-general-map "C" embark-consult-search-map)
+(fset 'embark-consult-search-map embark-consult-search-map)
+(define-key embark-general-map "C" 'embark-consult-search-map)
 
 (map-keymap
  (lambda (_key cmd) (cl-pushnew cmd embark-allow-edit-commands))
