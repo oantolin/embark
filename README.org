@@ -9,6 +9,14 @@
 [[https://melpa.org/#/embark][file:https://melpa.org/packages/embark-badge.svg]]
 :END:
 
+* Breaking News
+
+Embark uses something it calls /indicators/ to notify the user of what
+the target of actions is and which actions are available. The
+indicator protocol is in a state of flux, so please update before
+reporting any bugs and, if you are using the which-key indicator,
+please check the wiki to make sure you have the latest version.
+  
 * Overview
 ** Acting on targets
 
