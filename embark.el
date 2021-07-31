@@ -488,6 +488,8 @@ There are three kinds:
 
 ;;; Core functionality
 
+(defconst embark--verbose-indicator-buffer " *Embark Actions*")
+
 (defun embark--metadata ()
   "Return current minibuffer completion metadata."
   (completion-metadata
@@ -789,7 +791,7 @@ UPDATE is the indicator update function."
        (let ((last-command-event (aref key 0))
              (minibuffer-scroll-window
               ;; NOTE: Here we special case the verbose indicator!
-              (or (get-buffer-window " *Embark Actions*" 'visible)
+              (or (get-buffer-window embark--verbose-indicator-buffer 'visible)
                   minibuffer-scroll-window)))
          (ignore-errors (command-execute cmd)))
        (embark-keymap-prompter keymap update))
@@ -1047,7 +1049,7 @@ SHADOWED-TARGETS is the list of other targets."
 (defun embark--verbose-indicator-update (keymap targets)
   "Update verbose indicator buffer.
 The arguments are the new KEYMAP and TARGETS."
-  (with-current-buffer (get-buffer-create " *Embark Actions*")
+  (with-current-buffer (get-buffer-create embark--verbose-indicator-buffer)
     (let* ((inhibit-read-only t)
            (bindings
             (embark--formatted-bindings keymap embark-verbose-indicator-nested))
@@ -1083,7 +1085,7 @@ The arguments are the new KEYMAP and TARGETS."
   "Indicator that displays a list of available key bindings."
   (lambda (&optional keymap targets prefix)
     (if (not keymap)
-        (when-let ((win (get-buffer-window " *Embark Actions*" 'visible)))
+        (when-let ((win (get-buffer-window embark--verbose-indicator-buffer 'visible)))
           (quit-window 'kill-buffer win))
       (embark--verbose-indicator-update
        (if (and prefix embark-verbose-indicator-nested)
@@ -1092,9 +1094,9 @@ The arguments are the new KEYMAP and TARGETS."
        targets)
       (let ((display-buffer-alist
              `(,@display-buffer-alist
-               (,(regexp-quote " *Embark Actions*")
+               (,(regexp-quote embark--verbose-indicator-buffer)
                 ,@embark-verbose-indicator-display-action))))
-        (display-buffer " *Embark Actions*")))))
+        (display-buffer embark--verbose-indicator-buffer)))))
 
 (defcustom embark-mixed-indicator-delay 0.5
   "Time in seconds after which the verbose indicator is shown.
