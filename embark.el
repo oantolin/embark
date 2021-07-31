@@ -820,11 +820,33 @@ first line of the documentation string; otherwise use the word
     ((stringp (car-safe cmd)) (car cmd))
     ((symbolp cmd) (symbol-name cmd))
     ((keymapp cmd) "<keymap>")
-    ((when-let (doc (and (functionp cmd) (documentation cmd)))
+    ((when-let (doc (and (functionp cmd) (ignore-errors (documentation cmd))))
        (save-match-data
          (when (string-match "^\\(.*\\)$" doc)
            (match-string 1 doc)))))
     (t "<unnamed>"))))
+
+;; Taken from Marginalia, needed by the verbose indicator.
+;; We cannot use the completion annotators in this case.
+(defconst embark--advice-regexp
+  (rx bos
+      (1+ (seq (? "This function has ")
+               (or ":before" ":after" ":around" ":override"
+                   ":before-while" ":before-until" ":after-while"
+                   ":after-until" ":filter-args" ":filter-return")
+               " advice: " (0+ nonl) "\n"))
+      "\n")
+  "Regexp to match lines about advice in function documentation strings.")
+
+;; Taken from Marginalia, needed by the verbose indicator.
+;; We cannot use the completion annotators in this case.
+(defun embark--function-doc (sym)
+  "Documentation string of function SYM."
+  (when-let (str (ignore-errors (documentation sym)))
+    (save-match-data
+      (if (string-match embark--advice-regexp str)
+          (substring str (match-end 0))
+        str))))
 
 (defun embark--formatted-bindings (keymap &optional nested)
   "Return the formatted keybinding of KEYMAP.
@@ -1061,11 +1083,11 @@ SHADOWED-TARGETS is the list of other targets."
       (let ((cmd (caddr binding)))
         (unless (embark--verbose-indicator-excluded-p cmd)
           (let ((keys (format fmt (car binding)))
-                (doc (ignore-errors
-                       (propertize
-                        (car (split-string (documentation cmd) "\n"))
-                        'face 'embark-verbose-indicator-documentation))))
-            (push (format "%s%s\n" keys (or doc "")) result)))))))
+                (doc (embark--function-doc cmd)))
+            (push (format "%s%s\n" keys
+                          (propertize (car (split-string (or doc "") "\n"))
+                                      'face 'embark-verbose-indicator-documentation))
+                          result)))))))
 
 (defun embark--verbose-indicator-update (keymap targets)
   "Update verbose indicator buffer.
