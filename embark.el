@@ -231,7 +231,7 @@ Embark comes with three such indicators:
 
 - `embark-minimal-indicator', which does not display any
   information about keybindings, but does display types and
-  values of acton targets,
+  values of acton targets in the echo area or minibuffer prompt,
 
 - `embark-verbose-indicator', which pops up a buffer containing
   detailed information including key bindings and the first line
@@ -718,8 +718,9 @@ the minibuffer is open, the message is added to the prompt."
   (let ((indicator-overlay))
     (lambda (&optional keymap targets _prefix)
       (if (null keymap)
-          (when indicator-overlay
-            (delete-overlay indicator-overlay))
+          (if indicator-overlay
+              (delete-overlay indicator-overlay)
+            (message nil))
         (let* ((act (propertize "Act" 'face 'highlight))
                (target (car targets))
                (shadowed-targets (cdr targets))
@@ -1155,7 +1156,9 @@ After `embark-mixed-indicator-delay' seconds, the
 ensures that Embark stays out of the way for quick actions.  The
 helpful keybinding reminder still pops up automatically without
 further user intervention."
-  (let ((vtimer) (vindicator) (mindicator))
+  (let ((vindicator (embark-verbose-indicator))
+        (mindicator (embark-minimal-indicator))
+        vtimer)
     (lambda (&optional keymap targets prefix)
       ;; Always cancel the timer.
       ;; 1. When updating, cancel timer, since the user has pressed
@@ -1166,24 +1169,20 @@ further user intervention."
         (setq vtimer nil))
       (if (not keymap)
           (progn
-            (when (functionp vindicator)
-              (funcall vindicator))
+            (funcall vindicator)
             (when (functionp mindicator)
               (funcall mindicator)))
-        (unless vindicator
-          (if (<= embark-mixed-indicator-delay 0)
-              (setq vindicator (embark-verbose-indicator))
-            (setq vtimer
-                  (run-at-time
-                   embark-mixed-indicator-delay nil
-                   (lambda ()
-                     (setq vindicator (embark-verbose-indicator))
-                     (funcall vindicator keymap targets prefix))))))
-        (when vindicator
-          (funcall vindicator keymap targets prefix))
-        (unless mindicator
-          (setq mindicator (embark-minimal-indicator)))
-        (funcall mindicator keymap targets prefix)))))
+        (if (null mindicator)
+            (funcall vindicator keymap targets prefix)
+          (funcall mindicator keymap targets prefix)
+          (setq vtimer
+                (run-at-time
+                 embark-mixed-indicator-delay nil
+                 (lambda ()
+                   (when mindicator
+                     (funcall mindicator)
+                     (setq mindicator nil))
+                   (funcall vindicator keymap targets prefix)))))))))
 
 ;;;###autoload
 (defun embark-prefix-help-command ()
