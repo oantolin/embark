@@ -211,7 +211,8 @@ is the key representation accepted by `define-key'."
 (defcustom embark-keybinding-repeat
   (propertize "*" 'face 'embark-keybinding-repeat)
   "Indicator string for repeatable keybindings.
-Keybindings are formatted by the `completing-read' prompter and the verbose indicator."
+Keybindings are formatted by the `completing-read' prompter and
+the verbose indicator."
   :type 'string)
 
 (defface embark-keybinding-repeat
