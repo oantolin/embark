@@ -538,7 +538,8 @@ In `dired-mode', it uses `dired-get-filename' instead."
                . ,(point)))
     (when-let (file (ffap-file-at-point))
       (unless (or (string-match-p "^/https?:/" file)
-                  (ffap-el-mode (thing-at-point 'filename)))
+                  (when-let (filename (thing-at-point 'filename))
+                    (ffap-el-mode filename)))
         `(file ,(abbreviate-file-name file)
                ;; TODO the boundaries may be wrong, this should be generalized.
                ;; Unfortunately ffap does not make the bounds available.
