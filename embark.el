@@ -792,7 +792,7 @@ UPDATE is the indicator update function."
        (let ((last-command-event (aref key 0))
              (minibuffer-scroll-window
               ;; NOTE: Here we special case the verbose indicator!
-              (or (get-buffer-window embark--verbose-indicator-buffer 'visible)
+              (or (get-buffer-window " *Embark Actions*" 'visible)
                   minibuffer-scroll-window)))
          (ignore-errors (command-execute cmd)))
        (embark-keymap-prompter keymap update))
@@ -881,13 +881,18 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
                         ;; recursively acting on the candidates of type
                         ;; embark-keybinding in the `completing-read' prompter.
                         (define-key map cycle
-                          (if (lookup-key keymap cycle)
+                          (cond
+                           ((lookup-key keymap cycle)
                               (lambda ()
                                 (interactive)
-                                (throw 'choice 'embark-cycle))
+                                (throw 'choice 'embark-cycle)))
+                           ((null embark-cycle-key)
                             (lambda ()
                               (interactive)
-                              (minibuffer-message "Only a single target"))))
+                              (minibuffer-message
+                               "Single target; can't cycle. Press `%s' again to act."
+                               (key-description cycle))
+                              (define-key map cycle #'embark-act)))))
                         (define-key map embark-keymap-prompter-key
                           (lambda ()
                             (interactive)
@@ -1045,7 +1050,7 @@ SHADOWED-TARGETS is the list of other targets."
 (defun embark--verbose-indicator-update (keymap targets)
   "Update verbose indicator buffer.
 The arguments are the new KEYMAP and TARGETS."
-  (with-current-buffer (get-buffer-create embark--verbose-indicator-buffer)
+  (with-current-buffer (get-buffer-create " *Embark Actions*")
     (let* ((inhibit-read-only t)
            (bindings
             (embark--formatted-bindings keymap embark-verbose-indicator-nested))
@@ -1094,9 +1099,9 @@ The arguments are the new KEYMAP and TARGETS."
           (setq indicator-window
                 (let ((display-buffer-alist
                        `(,@display-buffer-alist
-                         (,(regexp-quote embark--verbose-indicator-buffer)
+                         (,(regexp-quote " *Embark Actions*")
                           ,@embark-verbose-indicator-display-action))))
-                  (display-buffer embark--verbose-indicator-buffer))))))))
+                  (display-buffer " *Embark Actions*"))))))))
 
 (defcustom embark-mixed-indicator-delay 0.5
   "Time in seconds after which the verbose indicator is shown.
@@ -1839,8 +1844,10 @@ in `find-file') or the command was called with a prefix argument,
 exit the minibuffer.
 
 For other Embark Collect buffers, run the default action on ENTRY."
-  (let ((text (button-label entry))
-        (bounds (cons (button-start entry) (button-end entry))))
+  (let* ((start (button-start entry))
+         (end (button-end entry))
+         (text (buffer-substring start end)) ; keep properties
+         (bounds (cons start end)))
     (when (eq embark--type 'file)
       (setq text (abbreviate-file-name (expand-file-name text))))
     (if (and (eq embark-collect--kind :completions))
