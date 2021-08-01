@@ -746,7 +746,8 @@ the minibuffer is open, the message is added to the prompt."
           (if indicator-overlay
               (delete-overlay indicator-overlay)
             (message nil))
-        (let* ((act (embark--act-label (eq (lookup-key keymap [13]) #'embark-done)))
+        (let* ((act (embark--act-label
+                     (eq (lookup-key keymap [13]) #'embark-done)))
                (target (car targets))
                (shadowed-targets (cdr targets))
                (indicator (cond
@@ -776,7 +777,8 @@ the minibuffer is open, the message is added to the prompt."
           (if (not (minibufferp))
               (message "%s" indicator)
             (unless indicator-overlay
-              (setq indicator-overlay (make-overlay (point-min) (point-min) (current-buffer) t t)))
+              (setq indicator-overlay (make-overlay (point-min) (point-min)
+                                                    (current-buffer) t t)))
             (overlay-put indicator-overlay
                          'before-string (concat indicator
                                                 (if (<= (length indicator)
@@ -869,7 +871,8 @@ first line of the documentation string; otherwise use the word
 ;; We cannot use the completion annotators in this case.
 (defun embark--function-doc (sym)
   "Documentation string of function SYM."
-  (let ((vstr (and (keymapp sym) (boundp sym) (eq (symbol-function sym) (symbol-value sym))
+  (let ((vstr (and (keymapp sym) (boundp sym)
+                   (eq (symbol-function sym) (symbol-value sym))
                    (documentation-property sym 'variable-documentation))))
     (when-let (str (or (ignore-errors (documentation sym)) vstr))
       ;; Replace standard description with variable documentation
@@ -895,7 +898,8 @@ If NESTED is non-nil subkeymaps are not flattened."
                            (eq cmd #'embark-keymap-help))
                    collect (list name
                                  (cond
-                                  ((and (not (symbolp cmd)) (keymapp cmd)) 'keymap)
+                                  ((and (not (symbolp cmd)) (keymapp cmd))
+                                   'keymap)
                                   ((and (consp cmd) (stringp (car cmd)))
                                    (cdr cmd))
                                   (t cmd))
@@ -954,7 +958,8 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
                             (lambda ()
                               (interactive)
                               (minibuffer-message
-                               "Single target; can't cycle. Press `%s' again to act."
+                               (concat "Single target; can't cycle. "
+                                       "Press `%s' again to act.")
                                (key-description cycle))
                               (define-key map cycle #'embark-act)))))
                         (define-key map embark-keymap-prompter-key
@@ -1085,7 +1090,8 @@ BINDINGS is the formatted list of keybinding.s"
                      (concat (propertize "Become" 'face 'highlight))
                    (format "%s on%s '%s'"
                            (embark--act-label
-                            (seq-find (lambda (b) (eq (caddr b) #'embark-done)) bindings))
+                            (seq-find (lambda (b) (eq (caddr b) #'embark-done))
+                                      bindings))
                            (if kind (format " %s" kind) "")
                            (embark--truncate-target (cdr target))))))
     (add-face-text-property 0 (length result)
@@ -1094,7 +1100,8 @@ BINDINGS is the formatted list of keybinding.s"
                             result)
     result))
 
-(cl-defun embark--verbose-indicator-section-cycle (&key cycle shadowed-targets &allow-other-keys)
+(cl-defun embark--verbose-indicator-section-cycle
+    (&key cycle shadowed-targets &allow-other-keys)
   "Format the CYCLE key section for the indicator buffer.
 SHADOWED-TARGETS is the list of other targets."
   (concat
@@ -1124,8 +1131,9 @@ SHADOWED-TARGETS is the list of other targets."
           (let ((keys (format fmt (car binding)))
                 (doc (embark--function-doc cmd)))
             (push (format "%s%s\n" keys
-                          (propertize (car (split-string (or doc "") "\n"))
-                                      'face 'embark-verbose-indicator-documentation))
+                          (propertize
+                           (car (split-string (or doc "") "\n"))
+                           'face 'embark-verbose-indicator-documentation))
                           result)))))))
 
 (defun embark--verbose-indicator-update (keymap targets)
@@ -1151,13 +1159,14 @@ The arguments are the new KEYMAP and TARGETS."
          (if (stringp section)
              section
            (or (funcall
-                (let ((prefixed
-                       (intern
-                        (format "embark--verbose-indicator-section-%s" section))))
+                (let ((prefixed (intern (format
+                                         "embark--verbose-indicator-section-%s"
+                                         section))))
                   (cond
                    ((fboundp prefixed) prefixed)
                    ((fboundp section) section)
-                   (t (error "Undefined verbose indicator section `%s'" section))))
+                   (t (error "Undefined verbose indicator section `%s'"
+                             section))))
                 :target target :shadowed-targets shadowed-targets
                 :bindings bindings :cycle cycle)
                ""))))
@@ -1547,7 +1556,8 @@ target."
                        (default-action (or default-done
                                            (embark--default-action type))))
             (if (eq action #'embark-cycle)
-                (setq targets (embark--rotate targets (prefix-numeric-value prefix-arg)))
+                (setq targets (embark--rotate
+                               targets (prefix-numeric-value prefix-arg)))
               ;; Do not hide the indicator when repeating
               (unless (memq action embark-repeat-commands)
                 (funcall indicator))
@@ -1560,12 +1570,15 @@ target."
                            (if embark-quit-after-action (not arg) arg))
               (when-let (new-targets (and (memq action embark-repeat-commands)
                                           (embark--targets)))
-                ;; Terminate repeated prompter on default action, when repeating.
-                ;; Jump to the same target type.
+                ;; Terminate repeated prompter on default action, when
+                ;; repeating. Jump to the same target type.
                 (setq default-done #'embark-done
-                      targets (embark--rotate new-targets
-                                              (or (cl-position-if (lambda (x) (eq (caar x) (caaar targets)))
-                                                                  new-targets) 0))))))))))
+                      targets (embark--rotate
+                               new-targets
+                               (or (cl-position-if
+                                    (lambda (x) (eq (caar x) (caaar targets)))
+                                    new-targets)
+                                   0))))))))))
 
 (defun embark--highlight-target (bounds &rest fun)
   "Highlight target at BOUNDS and call FUN."
