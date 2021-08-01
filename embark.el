@@ -2986,13 +2986,13 @@ and leaves the point to the left of it."
   "Keymap for Embark face actions."
   :parent embark-symbol-map
   ("c" customize-face)
-  ("b" make-face-bold)
-  ("B" make-face-unbold)
+  ("+" make-face-bold)
+  ("-" make-face-unbold)
   ("/" make-face-italic)
   ("|" make-face-unitalic)
   ("!" invert-face)
-  ("gf" set-face-foreground)
-  ("gb" set-face-background))
+  ("f" set-face-foreground)
+  ("b" set-face-background))
 
 (embark-define-keymap embark-variable-map
   "Keymap for Embark variable actions."
