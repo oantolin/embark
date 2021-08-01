@@ -1561,13 +1561,19 @@ target."
               ;; Do not hide the indicator when repeating
               (unless (memq action embark-repeat-commands)
                 (funcall indicator))
-              (embark--act action
-                           (if (and (eq action default-action)
-                                    (eq action embark--command))
-                               otarget
-                             target)
-                           bounds
-                           (if embark-quit-after-action (not arg) arg))
+              (condition-case err
+                  (embark--act action
+                               (if (and (eq action default-action)
+                                        (eq action embark--command))
+                                   otarget
+                                 target)
+                               bounds
+                               (if embark-quit-after-action (not arg) arg))
+                (search-failed          ; demote this error
+                 (minibuffer-message "Search failed: %S" (cadr err)))
+                (t (when (memq action embark-repeat-commands)
+                     (funcall indicator)) ; other errors: cleanup and resignal
+                   (signal (car err) (cdr err))))
               (when-let (new-targets (and (memq action embark-repeat-commands)
                                           (embark--targets)))
                 ;; Terminate repeated prompter on default action, when
