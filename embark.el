@@ -281,8 +281,8 @@ called without arguments, such that the indicator can perform the
 necessary cleanup work.  For example, if the indicator adds
 overlays, it should remove these overlays.  The indicator should
 be written in a way that it is safe to call it for cleanup more
-than once.  However, it is guaranteed that after being called for
-cleanup it won't be called for update again.
+than once, in fact, it should be able to handle any sequence of
+update and cleanup calls ending in a call for cleanup.
 
 NOTE: Experience shows that the indicator calling convention may
 change again in order to support more action features.  The
