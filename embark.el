@@ -368,7 +368,7 @@ This list is used only when `embark-allow-edit-default' is t."
   :type 'hook)
 
 (defcustom embark-repeat-commands
-  '(search-forward search-backward)
+  '(embark-next-symbol embark-previous-symbol)
   "List of repeatable actions."
   :type '(repeat function))
 
@@ -2849,6 +2849,22 @@ before or after the sexp (those are the two locations at which
 (embark--sexp-command raise-sexp)
 (embark--sexp-command mark-sexp)
 
+(defun embark-next-symbol (sym)
+  "Jump to next SYM.
+Prints a message when the symbol is not found. The search
+respects symbol boundaries."
+  (interactive "s")
+  (unless (re-search-forward (format "\\_<%s\\_>" (regexp-quote sym)) nil t)
+    (message "Symbol `%s' not found" sym)))
+
+(defun embark-previous-symbol (sym)
+  "Jump to previous SYM.
+Prints a message when the symbol is not found. The search
+respects symbol boundaries."
+ (interactive "s")
+ (unless (re-search-backward (format "\\_<%s\\_>" (regexp-quote sym)) nil t)
+   (message "Symbol `%s' not found" sym)))
+
 ;;; Setup hooks for actions
 
 (defun embark--shell-prep ()
@@ -2963,7 +2979,9 @@ and leaves the point to the left of it."
   ("H" embark-toggle-highlight)
   ("d" xref-find-definitions)
   ("r" xref-find-references)
-  ("a" xref-find-apropos))
+  ("a" xref-find-apropos)
+  ("n" embark-next-symbol)
+  ("p" embark-previous-symbol))
 
 (embark-define-keymap embark-expression-map
   "Keymap for Embark expression actions."
@@ -2998,8 +3016,8 @@ and leaves the point to the left of it."
   ("b" where-is)
   ("e" pp-eval-expression)
   ("a" apropos)
-  ("n" search-forward)
-  ("p" search-backward))
+  ("n" embark-next-symbol)
+  ("p" embark-previous-symbol))
 
 (embark-define-keymap embark-command-map
   "Keymap for Embark command actions."
@@ -3013,13 +3031,13 @@ and leaves the point to the left of it."
   "Keymap for Embark face actions."
   :parent embark-symbol-map
   ("c" customize-face)
-  ("b" make-face-bold)
-  ("B" make-face-unbold)
-  ("i" make-face-italic)
-  ("I" make-face-unitalic)
+  ("+" make-face-bold)
+  ("-" make-face-unbold)
+  ("/" make-face-italic)
+  ("|" make-face-unitalic)
   ("!" invert-face)
-  ("gf" set-face-foreground)
-  ("gb" set-face-background))
+  ("f" set-face-foreground)
+  ("b" set-face-background))
 
 (embark-define-keymap embark-variable-map
   "Keymap for Embark variable actions."
