@@ -747,9 +747,8 @@ the minibuffer is open, the message is added to the prompt."
   (let ((indicator-overlay))
     (lambda (&optional keymap targets _prefix)
       (if (null keymap)
-          (if indicator-overlay
-              (delete-overlay indicator-overlay)
-            (message nil))
+          (when indicator-overlay
+            (delete-overlay indicator-overlay))
         (let* ((act (embark--act-label
                      (eq (lookup-key keymap [13]) #'embark-done)))
                (target (car targets))
