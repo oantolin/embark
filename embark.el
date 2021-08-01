@@ -1313,7 +1313,14 @@ The TARGETS are displayed for actions outside the minibuffer."
   "Abnormal hook, used by `embark--run-after-command'.")
 
 (defun embark--run-after-command (fn &rest args)
-  "Call FN with ARGS after the current commands finishes."
+  "Call FN with ARGS after the current commands finishes.
+Functions will be called in the order of last in, first out.
+This means that functions added later will be called earlier."
+  ;; We don't simply add FN to `post-command-hook' because FN may recursively
+  ;; call this function.  In that case, FN would modify `post-command-hook'
+  ;; from within post-command-hook, which doesn't behave properly in our case.
+  ;; We use our own abnormal hook and run it from PCH in a way that it is OK to
+  ;; modify it from within its own functions.
   (unless embark--run-after-command-functions
     (let (pch timer has-run)
       (setq pch
@@ -1325,11 +1332,17 @@ The TARGETS are displayed for actions outside the minibuffer."
                 (while embark--run-after-command-functions
                   (with-demoted-errors "embark PCH: %S"
                     (condition-case nil
+                        ;; The following funcall may recursively call
+                        ;; `embark--run-after-command', modifying
+                        ;; `embark--run-after-command-functions'.  This is why
+                        ;; this loop has to be implemented carefully and using
+                        ;; `dolist' would be incorrect.
                         (funcall (pop embark--run-after-command-functions))
                       (quit (message "Quit"))))))))
       (add-hook 'post-command-hook pch 'append)
-      ;; In some cases, `post-command-hook' isn't run after exiting a recursive
-      ;; edit, so set up this timer as a backup
+      ;; Generally we prefer `post-command-hook' because it plays well with
+      ;; keyboard macros.  In some cases, `post-command-hook' isn't run after
+      ;; exiting a recursive edit, so set up the following timer as a backup.
       (setq timer (run-at-time 0 nil pch))))
 
   (push (lambda () (apply fn args))
