@@ -1556,6 +1556,10 @@ target."
             (if (eq action #'embark-cycle)
                 (setq targets (embark--rotate
                                targets (prefix-numeric-value prefix-arg)))
+              ;; if the action is non-repeatable, cleanup indicator now
+              (unless (memq action embark-repeat-commands)
+                (funcall indicator)
+                (setq indicator nil))
               (embark--act action
                            (if (and (eq action default-action)
                                     (eq action embark--command))
@@ -1574,7 +1578,8 @@ target."
                                     (lambda (x) (eq (caar x) (caaar targets)))
                                     new-targets)
                                    0)))))))
-      (funcall indicator))))
+      (when indicator
+        (funcall indicator)))))
 
 (defun embark--highlight-target (bounds &rest fun)
   "Highlight target at BOUNDS and call FUN."
