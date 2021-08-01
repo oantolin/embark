@@ -1531,9 +1531,9 @@ target."
   (let* ((targets (or (embark--targets) (user-error "No target found")))
          (indicator (funcall embark-indicator))
          (default-done nil))
+    (when (and arg (not (minibufferp)))
+      (setq targets (embark--rotate targets (prefix-numeric-value arg))))
     (unwind-protect
-        (when (and arg (not (minibufferp)))
-          (setq targets (embark--rotate targets (prefix-numeric-value arg))))
       (while
           (pcase-let* ((`((,type . ,target)
                           (,_otype . ,otarget)
@@ -1550,17 +1550,12 @@ target."
                                       embark-default-action-overrides)))
                                (embark--action-keymap type (cdr targets)))
                              (mapcar #'car targets))
-                            (progn
-                              (funcall indicator)
-                              (user-error "Canceled"))))
+                            (user-error "Canceled")))
                        (default-action (or default-done
                                            (embark--default-action type))))
             (if (eq action #'embark-cycle)
                 (setq targets (embark--rotate
                                targets (prefix-numeric-value prefix-arg)))
-              ;; Do not hide the indicator when repeating
-              (unless (memq action embark-repeat-commands)
-                (funcall indicator))
               (embark--act action
                            (if (and (eq action default-action)
                                     (eq action embark--command))
@@ -1578,7 +1573,8 @@ target."
                                (or (cl-position-if
                                     (lambda (x) (eq (caar x) (caaar targets)))
                                     new-targets)
-                                   0))))))))))
+                                   0)))))))
+      (funcall indicator))))
 
 (defun embark--highlight-target (bounds &rest fun)
   "Highlight target at BOUNDS and call FUN."
