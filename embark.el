@@ -368,7 +368,7 @@ This list is used only when `embark-allow-edit-default' is t."
   :type 'hook)
 
 (defcustom embark-repeat-commands
-  '(search-forward search-backward)
+  '(embark-next-symbol embark-previous-symbol)
   "List of repeatable actions."
   :type '(repeat function))
 
@@ -2804,6 +2804,24 @@ before or after the sexp (those are the two locations at which
 (embark--sexp-command raise-sexp)
 (embark--sexp-command mark-sexp)
 
+(defun embark-next-symbol (sym)
+  "Jump to next SYM without an error in case the symbol is not found.
+This ensures that the command can be repeated, see
+`embark-repeat-commands'. The search respects symbol boundaries."
+  (interactive "s")
+  (condition-case nil
+      (re-search-forward (format "\\_<%s\\_>" (regexp-quote sym)))
+    (t (message "Symbol `%s' not found" sym))))
+
+(defun embark-previous-symbol (sym)
+  "Jump to previous SYM without an error in case the symbol is not found.
+This ensures that the command can be repeated, see
+`embark-repeat-commands'. The search respects symbol boundaries."
+ (interactive "s")
+  (condition-case nil
+      (re-search-backward (format "\\_<%s\\_>" (regexp-quote sym)))
+    (t (message "Symbol `%s' not found" sym))))
+
 ;;; Setup hooks for actions
 
 (defun embark--shell-prep ()
@@ -2918,7 +2936,9 @@ and leaves the point to the left of it."
   ("H" embark-toggle-highlight)
   ("d" xref-find-definitions)
   ("r" xref-find-references)
-  ("a" xref-find-apropos))
+  ("a" xref-find-apropos)
+  ("n" embark-next-symbol)
+  ("p" embark-previous-symbol))
 
 (embark-define-keymap embark-expression-map
   "Keymap for Embark expression actions."
@@ -2953,8 +2973,8 @@ and leaves the point to the left of it."
   ("b" where-is)
   ("e" pp-eval-expression)
   ("a" apropos)
-  ("n" search-forward)
-  ("p" search-backward))
+  ("n" embark-next-symbol)
+  ("p" embark-previous-symbol))
 
 (embark-define-keymap embark-command-map
   "Keymap for Embark command actions."
