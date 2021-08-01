@@ -1314,8 +1314,9 @@ The TARGETS are displayed for actions outside the minibuffer."
 
 (defun embark--run-after-command (fn &rest args)
   "Call FN with ARGS after the current commands finishes.
-Functions will be called in the order of last in, first out.
-This means that functions added later will be called earlier."
+If multiple functions are queued with this function during the
+same command, they will be called in the order from the one
+queued most recently to the one queued least recently."
   ;; We don't simply add FN to `post-command-hook' because FN may recursively
   ;; call this function.  In that case, FN would modify `post-command-hook'
   ;; from within post-command-hook, which doesn't behave properly in our case.
@@ -1330,13 +1331,15 @@ This means that functions added later will be called earlier."
               (unless has-run
                 (setq has-run t)
                 (while embark--run-after-command-functions
+                  ;; The following funcall may recursively call
+                  ;; `embark--run-after-command', modifying
+                  ;; `embark--run-after-command-functions'.  This is why this
+                  ;; loop has to be implemented carefully.  We have to pop the
+                  ;; function off the hook before calling it.  Using `dolist'
+                  ;; on the hook would also be incorrect, because it wouldn't
+                  ;; take modifications of this hook into account.
                   (with-demoted-errors "embark PCH: %S"
                     (condition-case nil
-                        ;; The following funcall may recursively call
-                        ;; `embark--run-after-command', modifying
-                        ;; `embark--run-after-command-functions'.  This is why
-                        ;; this loop has to be implemented carefully and using
-                        ;; `dolist' would be incorrect.
                         (funcall (pop embark--run-after-command-functions))
                       (quit (message "Quit"))))))))
       (add-hook 'post-command-hook pch 'append)
