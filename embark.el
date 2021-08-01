@@ -1309,12 +1309,57 @@ The TARGETS are displayed for actions outside the minibuffer."
                      (funcall indicator keymap targets prefix)))))
     (quit nil)))
 
+(defvar embark--run-after-command-functions nil
+  "Abnormal hook, used by `embark--run-after-command'.")
+
+(defun embark--run-after-command (fn &rest args)
+  "Call FN with ARGS after the current commands finishes.
+If multiple functions are queued with this function during the
+same command, they will be called in the order from the one
+queued most recently to the one queued least recently."
+  ;; We don't simply add FN to `post-command-hook' because FN may recursively
+  ;; call this function.  In that case, FN would modify `post-command-hook'
+  ;; from within post-command-hook, which doesn't behave properly in our case.
+  ;; We use our own abnormal hook and run it from PCH in a way that it is OK to
+  ;; modify it from within its own functions.
+  (unless embark--run-after-command-functions
+    (let (pch timer has-run)
+      (setq pch
+            (lambda ()
+              (remove-hook 'post-command-hook pch)
+              (cancel-timer timer)
+              (unless has-run
+                (setq has-run t)
+                (while embark--run-after-command-functions
+                  ;; The following funcall may recursively call
+                  ;; `embark--run-after-command', modifying
+                  ;; `embark--run-after-command-functions'.  This is why this
+                  ;; loop has to be implemented carefully.  We have to pop the
+                  ;; function off the hook before calling it.  Using `dolist'
+                  ;; on the hook would also be incorrect, because it wouldn't
+                  ;; take modifications of this hook into account.
+                  (with-demoted-errors "embark PCH: %S"
+                    (condition-case nil
+                        (funcall (pop embark--run-after-command-functions))
+                      (quit (message "Quit"))))))))
+      (add-hook 'post-command-hook pch 'append)
+      ;; Generally we prefer `post-command-hook' because it plays well with
+      ;; keyboard macros.  In some cases, `post-command-hook' isn't run after
+      ;; exiting a recursive edit, so set up the following timer as a backup.
+      (setq timer (run-at-time 0 nil pch))))
+
+  (push (lambda () (apply fn args))
+        embark--run-after-command-functions))
+
 (defun embark--quit-and-run (fn &rest args)
   "Quit the minibuffer and then call FN with ARGS."
-  (run-at-time 0 nil #'set 'ring-bell-function ring-bell-function)
-  (apply #'run-at-time 0 nil fn args)
+  (apply #'embark--run-after-command fn args)
+  (embark--run-after-command #'set 'ring-bell-function ring-bell-function)
+
   (setq ring-bell-function #'ignore)
-  (abort-recursive-edit))
+  (if (fboundp 'minibuffer-quit-recursive-edit)
+      (minibuffer-quit-recursive-edit)
+    (abort-recursive-edit)))
 
 (defvar embark--setup-hook nil
   "Temporary variable used as setup hook.")
@@ -2329,11 +2374,11 @@ the minibuffer is exited."
                       (rename-buffer
                        (replace-regexp-in-string " Live" "" (buffer-name))
                        t)))
-                  (run-at-time 0 nil #'pop-to-buffer buffer))))
+                  (embark--run-after-command #'pop-to-buffer buffer))))
              (:snapshot
               (lambda ()
                 (when (buffer-live-p buffer)
-                  (run-at-time 0 nil #'pop-to-buffer buffer)))))
+                  (embark--run-after-command #'pop-to-buffer buffer)))))
            nil t)
           (setq minibuffer-scroll-window window))
 
