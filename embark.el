@@ -2805,22 +2805,20 @@ before or after the sexp (those are the two locations at which
 (embark--sexp-command mark-sexp)
 
 (defun embark-next-symbol (sym)
-  "Jump to next SYM without an error in case the symbol is not found.
-This ensures that the command can be repeated, see
-`embark-repeat-commands'. The search respects symbol boundaries."
+  "Jump to next SYM.
+Prints a message when the symbol is not found. The search
+respects symbol boundaries."
   (interactive "s")
-  (condition-case nil
-      (re-search-forward (format "\\_<%s\\_>" (regexp-quote sym)))
-    (t (message "Symbol `%s' not found" sym))))
+  (unless (re-search-forward (format "\\_<%s\\_>" (regexp-quote sym)) nil t)
+    (message "Symbol `%s' not found" sym)))
 
 (defun embark-previous-symbol (sym)
-  "Jump to previous SYM without an error in case the symbol is not found.
-This ensures that the command can be repeated, see
-`embark-repeat-commands'. The search respects symbol boundaries."
+  "Jump to previous SYM.
+Prints a message when the symbol is not found. The search
+respects symbol boundaries."
  (interactive "s")
-  (condition-case nil
-      (re-search-backward (format "\\_<%s\\_>" (regexp-quote sym)))
-    (t (message "Symbol `%s' not found" sym))))
+ (unless (re-search-backward (format "\\_<%s\\_>" (regexp-quote sym)) nil t)
+   (message "Symbol `%s' not found" sym)))
 
 ;;; Setup hooks for actions
 
