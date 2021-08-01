@@ -359,7 +359,8 @@ This list is used only when `embark-allow-edit-default' is nil."
 This list is used only when `embark-allow-edit-default' is t."
   :type '(repeat symbol))
 
-(defcustom embark-pre-action-hook nil
+(defcustom embark-pre-action-hook
+  '(embark--goto-sexp-start embark--ignore-region-target)
   "Hook run right before an action is embarked upon."
   :type 'hook)
 
@@ -368,7 +369,7 @@ This list is used only when `embark-allow-edit-default' is t."
   :type 'hook)
 
 (defcustom embark-repeat-commands
-  '(embark-next-symbol embark-previous-symbol)
+  '(embark-next-symbol embark-previous-symbol backward-up-list)
   "List of repeatable actions."
   :type '(repeat function))
 
@@ -526,8 +527,10 @@ There are three kinds:
 
 (defun embark-target-active-region ()
   "Target the region if active."
-  ;; TODO consider returning a string
-  (when (use-region-p) '(region . <region>)))
+  (when (use-region-p)
+    (let ((start (region-beginning))
+          (end (region-end)))
+      `(region ,(buffer-substring start end) . (,start . ,end)))))
 
 (autoload 'dired-get-filename "dired")
 
@@ -1383,23 +1386,19 @@ the target at point."
                            (not (memq action embark-skip-edit-commands))
                          (memq action embark-allow-edit-commands)))
            (inject
-            ;; TODO consider using strings for regions,
-            ;; remove special casing?
-            (if (not (stringp target))  ; for region actions
-                #'ignore
-              (lambda ()
-                (delete-minibuffer-contents)
-                (insert (substring-no-properties target))
-                (let ((embark--setup-hook setup-hook))
-                  (run-hooks 'embark--setup-hook))
-                (unless allow-edit
-                  (if (memq 'ivy--queue-exhibit post-command-hook)
-                      ;; Ivy has special needs: (1) for file names
-                      ;; ivy-immediate-done is not equivalent to
-                      ;; exit-minibuffer, (2) it needs a chance to run
-                      ;; its post command hook first, so use depth 10
-                      (add-hook 'post-command-hook 'ivy-immediate-done 10 t)
-                    (add-hook 'post-command-hook #'exit-minibuffer nil t))))))
+            (lambda ()
+              (delete-minibuffer-contents)
+              (insert (substring-no-properties target))
+              (let ((embark--setup-hook setup-hook))
+                (run-hooks 'embark--setup-hook))
+              (unless allow-edit
+                (if (memq 'ivy--queue-exhibit post-command-hook)
+                    ;; Ivy has special needs: (1) for file names
+                    ;; ivy-immediate-done is not equivalent to
+                    ;; exit-minibuffer, (2) it needs a chance to run
+                    ;; its post command hook first, so use depth 10
+                    (add-hook 'post-command-hook 'ivy-immediate-done 10 t)
+                  (add-hook 'post-command-hook #'exit-minibuffer nil t)))))
            (dedicate (and (derived-mode-p 'embark-collect-mode)
                           (not (window-dedicated-p))
                           (selected-window)))
@@ -1411,7 +1410,6 @@ the target at point."
                       (when dedicate (set-window-dedicated-p dedicate t))
                       (unwind-protect
                           (with-selected-window action-window
-                            (run-hooks 'embark-pre-action-hook)
                             (let ((enable-recursive-minibuffers t)
                                   (embark--command command)
                                   (embark--target-bounds bounds)
@@ -1420,6 +1418,7 @@ the target at point."
                                   (use-dialog-box nil)
                                   (last-nonmenu-event 13))
                               (setq prefix-arg prefix)
+                              (run-hooks 'embark-pre-action-hook)
                               (command-execute action))
                             (setq final-window (selected-window)))
                         (run-hooks 'embark-post-action-hook)
@@ -2803,24 +2802,6 @@ minibuffer, which means it can be used as an Embark action."
   (isearch-mode t)
   (isearch-edit-string))
 
-(defun embark-act-on-region-contents ()
-  "Act on the contents of the region."
-  (interactive)
-  (let* ((contents (buffer-substring (region-beginning) (region-end)))
-         (embark-target-finders
-          (lambda ()
-            (cons
-             (if (string-match-p "\\`\\_<.*?\\_>\\'" contents)
-                 (if (or (derived-mode-p 'emacs-lisp-mode)
-                         (and (not (derived-mode-p 'prog-mode))
-                              (intern-soft contents)))
-                     'symbol
-                   'identifier)
-               'general)
-             contents))))
-    (deactivate-mark)
-    (embark-act)))
-
 (defun embark-toggle-highlight ()
   "Toggle symbol highlighting using `highlight-symbol-at-point'."
   (interactive)
@@ -2831,23 +2812,6 @@ minibuffer, which means it can be used as an Embark action."
     (if (and highlighted (assoc regexp (symbol-value highlighted)))
         (unhighlight-regexp regexp)
       (highlight-symbol-at-point))))
-
-(defmacro embark--sexp-command (cmd)
-  "Derive from CMD a command acting on the sexp before or after point.
-Given a CMD that acts on the sexp starting at point, this macro
-defines a command called embark-CMD which works with point either
-before or after the sexp (those are the two locations at which
-`embark-target-expression-at-point' detects a sexp)."
-  `(defun ,(intern (format "embark-%s" cmd)) ()
-     ,(format "Run `%s' on the sexp at or before point." cmd)
-     (interactive)
-     (goto-char (car embark--target-bounds))
-     (,cmd)))
-
-(embark--sexp-command indent-pp-sexp)
-(embark--sexp-command kill-sexp)
-(embark--sexp-command raise-sexp)
-(embark--sexp-command mark-sexp)
 
 (defun embark-next-symbol (sym)
   "Jump to next SYM.
@@ -2865,7 +2829,7 @@ respects symbol boundaries."
  (unless (re-search-backward (format "\\_<%s\\_>" (regexp-quote sym)) nil t)
    (message "Symbol `%s' not found" sym)))
 
-;;; Setup hooks for actions
+;;; Setup and pre-action hooks
 
 (defun embark--shell-prep ()
   "Prepare target for use as argument for a shell command.
@@ -2885,6 +2849,17 @@ and leaves the point to the left of it."
     (goto-char (point-max))
     (insert ")")
     (backward-char)))
+
+(defun embark--goto-sexp-start ()
+  "Put point at beginning of the target for sexp actions."
+  (when (and (string-match-p "-\\(sexp\\|list\\)" (symbol-name this-command))
+             embark--target-bounds)
+    (goto-char (car embark--target-bounds))))
+
+(defun embark--ignore-region-target ()
+  "Ignore the target for region commands that prompt for a file."
+  (when (memq this-command '(write-region append-to-file))
+    (ignore (read-from-minibuffer ""))))
 
 ;;; keymaps
 
@@ -2908,7 +2883,6 @@ and leaves the point to the left of it."
 
 (embark-define-keymap embark-region-map
   "Keymap for Embark actions on the active region."
-  ("RET" embark-act-on-region-contents)
   ("u" upcase-region)
   ("l" downcase-region)
   ("c" capitalize-region)
@@ -2926,8 +2900,8 @@ and leaves the point to the left of it."
   ("t" transpose-regions)
   ("o" org-table-convert-region)
   (";" comment-or-uncomment-region)
-  ("w" write-region)
-  ("W" append-to-file)
+  ("W" write-region)
+  ("+" append-to-file)
   ("m" apply-macro-to-region-lines)
   ("n" narrow-to-region))
 
@@ -2988,10 +2962,11 @@ and leaves the point to the left of it."
   ("RET" pp-eval-expression)
   ("e" pp-eval-expression)
   ("m" pp-macroexpand-expression)
-  ("TAB" embark-indent-pp-sexp)
-  ("r" embark-raise-sexp)
-  ("k" embark-kill-sexp)
-  ("SPC" embark-mark-sexp))
+  ("TAB" indent-pp-sexp)
+  ("r" raise-sexp)
+  ("k" kill-sexp)
+  ("u" backward-up-list)
+  ("SPC" mark-sexp))
 
 (embark-define-keymap embark-defun-map
   "Keymap for Embark defun actions."
@@ -3000,7 +2975,7 @@ and leaves the point to the left of it."
   ("e" eval-defun)
   ("c" compile-defun)
   ("l" elint-defun)
-  ("d" edebug-defun)
+  ("D" edebug-defun)
   ("o" checkdoc-defun)
   ("n" narrow-to-defun)
   ("SPC" mark-defun))
