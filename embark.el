@@ -266,19 +266,23 @@ closure must accept up to three optional arguments, the action
 keymap, the targets (a list of conses of the type and value of
 each target, starting with the current one) and the prefix keys
 typed by the user so far.  The keymap, targets and prefix keys
-may be updated when cycling targets at point.  When called from
-`embark-become', the indicator closure will be called with the
-keymap of commands to become, a fake target list containing a
-single target of type `embark-become' and whose value is the
-minibuffer input, and the prefix set to nil.  Note, in
-particular, that if an indicator function wishes to distinguish
-between `embark-act' and `embark-become' it should check whether
-the `car' of the first target is `embark-become'.
+may be updated when cycling targets at point resulting in
+multiple calls to the closure.  When called from `embark-become',
+the indicator closure will be called with the keymap of commands
+to become, a fake target list containing a single target of type
+`embark-become' and whose value is the minibuffer input, and the
+prefix set to nil.  Note, in particular, that if an indicator
+function wishes to distinguish between `embark-act' and
+`embark-become' it should check whether the `car' of the first
+target is `embark-become'.
 
 After the action has been performed the indicator closure is
 called without arguments, such that the indicator can perform the
 necessary cleanup work.  For example, if the indicator adds
-overlays, it should remove these overlays.
+overlays, it should remove these overlays.  The indicator should
+be written in a way that it is safe to call it for cleanup more
+than once.  However, it is guaranteed that after being called for
+cleanup it won't be called for update again.
 
 NOTE: Experience shows that the indicator calling convention may
 change again in order to support more action features.  The
@@ -1558,8 +1562,7 @@ target."
                                targets (prefix-numeric-value prefix-arg)))
               ;; if the action is non-repeatable, cleanup indicator now
               (unless (memq action embark-repeat-commands)
-                (funcall indicator)
-                (setq indicator nil))
+                (funcall indicator))
               (embark--act action
                            (if (and (eq action default-action)
                                     (eq action embark--command))
@@ -1578,8 +1581,7 @@ target."
                                     (lambda (x) (eq (caar x) (caaar targets)))
                                     new-targets)
                                    0)))))))
-      (when indicator
-        (funcall indicator)))))
+      (funcall indicator))))
 
 (defun embark--highlight-target (bounds &rest fun)
   "Highlight target at BOUNDS and call FUN."
