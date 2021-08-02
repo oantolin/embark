@@ -358,12 +358,12 @@ corresponding value as a setup hook after injecting the target
 into in the minibuffer and before acting on it. The hooks must
 accept three arguments, the action, the target string and the
 target bounds. The default pre-action hook is specified by the
-entry with key t. Furthermore hooks with the key nil are executed
-always."
+entry with key t. Furthermore hooks with the key :always are
+executed always."
   :type '(alist :key-type
                 (choice command
                         (const :tag "Default" t)
-                        (const :tag "Always" nil))
+                        (const :tag "Always" :always))
                 :value-type hook))
 
 (defcustom embark-pre-action-hooks
@@ -378,12 +378,12 @@ always."
 The hooks are run right before an action is embarked upon. The
 hooks must accept three arguments, the action, the target string
 and the target bounds. The default pre-action hook is specified
-by the entry with key t. Furthermore hooks with the key nil are
-executed always."
+by the entry with key t. Furthermore hooks with the key :always
+are executed always."
   :type '(alist :key-type
                 (choice command
                         (const :tag "Default" t)
-                        (const :tag "Always" nil))
+                        (const :tag "Always" :always))
                 :value-type hook))
 
 (defcustom embark-post-action-hooks nil
@@ -391,12 +391,12 @@ executed always."
 The hooks are run after an embarked upon action concludes. The
 hooks must accept three arguments, the action, the target string
 and the target bounds. The default post-action hook is specified
-by the entry with key t. Furthermore hooks with the key nil are
-executed always."
+by the entry with key t. Furthermore hooks with the key :always
+are executed always."
   :type '(alist :key-type
                 (choice command
                         (const :tag "Default" t)
-                        (const :tag "Always" nil))
+                        (const :tag "Always" :always))
                 :value-type hook))
 
 (defcustom embark-repeat-commands
@@ -1397,14 +1397,14 @@ queued most recently to the one queued least recently."
 
 (defun embark--run-action-hooks (hooks action &rest args)
   "Run HOOKS for ACTION with ARGS.
-The HOOKS argument must be an alist. The keys t and nil are
-treated specially. The nil hooks are executed always and the
+The HOOKS argument must be an alist. The keys t and :always are
+treated specially. The :always hooks are executed always and the
 t hooks are the default hooks, if there are no command-specific
 hooks."
   (let ((embark--action-hook (or (alist-get action hooks)
                                  (alist-get t hooks))))
     (apply #'run-hook-with-args 'embark--action-hook action args))
-  (let ((embark--action-hook (alist-get nil hooks)))
+  (let ((embark--action-hook (alist-get :always hooks)))
     (apply #'run-hook-with-args 'embark--action-hook action args)))
 
 (defun embark--act (action target bounds &optional quit)
