@@ -351,13 +351,15 @@ This list is used only when `embark-allow-edit-default' is t."
   '((async-shell-command embark--shell-prep)
     (shell-command embark--shell-prep)
     (pp-eval-expression embark--eval-prep)
-    (package-delete minibuffer-force-complete))
+    (package-delete (lambda (&rest _) (minibuffer-force-complete))))
   "Alist associating commands with post-injection setup hooks.
 For commands appearing as keys in this alist, run the
 corresponding value as a setup hook after injecting the target
-into in the minibuffer and before acting on it. The default setup
-hook is specified by the entry with the key t. Furthermore hooks
-with the key nil are executed always."
+into in the minibuffer and before acting on it. The hooks must
+accept three arguments, the action, the target string and the
+target bounds. The default pre-action hook is specified by the
+entry with key t. Furthermore hooks with the key nil are executed
+always."
   :type '(alist :key-type
                 (choice command
                         (const :tag "Default" t)
@@ -374,10 +376,10 @@ with the key nil are executed always."
     (mark-sexp embark--beginning-of-target))
   "Alist associating commands with pre-action hooks.
 The hooks are run right before an action is embarked upon. The
-hooks must accept two arguments, the target string and the target
-bounds. The default pre-action hook is specified by the entry
-with key t. Furthermore hooks with the key nil are executed
-always."
+hooks must accept three arguments, the action, the target string
+and the target bounds. The default pre-action hook is specified
+by the entry with key t. Furthermore hooks with the key nil are
+executed always."
   :type '(alist :key-type
                 (choice command
                         (const :tag "Default" t)
@@ -387,10 +389,10 @@ always."
 (defcustom embark-post-action-hooks nil
   "Alist associating commands with post-action hooks.
 The hooks are run after an embarked upon action concludes. The
-hooks must accept two arguments, the target string and the target
-bounds. The default post-action hook is specified by the entry
-with key t. Furthermore hooks with the key nil are executed
-always."
+hooks must accept three arguments, the action, the target string
+and the target bounds. The default post-action hook is specified
+by the entry with key t. Furthermore hooks with the key nil are
+executed always."
   :type '(alist :key-type
                 (choice command
                         (const :tag "Default" t)
@@ -1401,9 +1403,9 @@ t hooks are the default hooks, if there are no command-specific
 hooks."
   (let ((embark--action-hook (or (alist-get action hooks)
                                  (alist-get t hooks))))
-    (apply #'run-hook-with-args 'embark--action-hook args))
+    (apply #'run-hook-with-args 'embark--action-hook action args))
   (let ((embark--action-hook (alist-get nil hooks)))
-    (apply #'run-hook-with-args 'embark--action-hook args)))
+    (apply #'run-hook-with-args 'embark--action-hook action args)))
 
 (defun embark--act (action target bounds &optional quit)
   "Perform ACTION injecting the TARGET.
@@ -1428,7 +1430,7 @@ the target at point."
             (lambda ()
               (delete-minibuffer-contents)
               (insert (substring-no-properties target))
-              (embark--run-action-hooks setup-hooks action)
+              (embark--run-action-hooks setup-hooks action target bounds)
               (unless allow-edit
                 (if (memq 'ivy--queue-exhibit post-command-hook)
                     ;; Ivy has special needs: (1) for file names
@@ -2868,7 +2870,7 @@ respects symbol boundaries."
 
 ;;; Setup and pre-action hooks
 
-(defun embark--shell-prep ()
+(defun embark--shell-prep (&rest _)
   "Prepare target for use as argument for a shell command.
 This quotes the spaces, inserts an extra space at the beginning
 and leaves the point to the left of it."
@@ -2877,7 +2879,7 @@ and leaves the point to the left of it."
     (insert " " (shell-quote-wildcard-pattern contents))
     (goto-char (minibuffer-prompt-end))))
 
-(defun embark--eval-prep ()
+(defun embark--eval-prep (&rest _)
   "If target is: a variable, skip edit; a function, wrap in parens."
   (if (not (fboundp (intern (minibuffer-contents))))
       (add-hook 'post-command-hook #'exit-minibuffer nil t)
@@ -2887,7 +2889,7 @@ and leaves the point to the left of it."
     (insert ")")
     (backward-char)))
 
-(defun embark--beginning-of-target (_target bounds)
+(defun embark--beginning-of-target (_action _target bounds)
   "Go to beginning of the target BOUNDS."
   (when bounds
     (goto-char (car bounds))))
