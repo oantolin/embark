@@ -359,14 +359,27 @@ This list is used only when `embark-allow-edit-default' is nil."
 This list is used only when `embark-allow-edit-default' is t."
   :type '(repeat symbol))
 
-(defcustom embark-pre-action-hook
-  '(embark--goto-sexp-start embark--ignore-region-target)
-  "Hook run right before an action is embarked upon."
-  :type 'hook)
+(defcustom embark-pre-action-hooks
+  '((write-region . embark--ignore-target)
+    (append-to-file . embark--ignore-target)
+    (indent-pp-sexp . embark--beginning-of-target)
+    (raise-sexp . embark--beginning-of-target)
+    (kill-sexp . embark--beginning-of-target)
+    (mark-sexp . embark--beginning-of-target))
+  "Alist associating commands with pre-action hooks.
+The hooks are run right before an action is embarked upon. The
+hooks must accept two arguments, the target string and the target
+bounds. The default pre-action hook is specified by the entry
+with key t."
+  :type '(alist :key-type command :value-type hook))
 
-(defcustom embark-post-action-hook nil
-  "Hook run after an embarked upon action concludes."
-  :type 'hook)
+(defcustom embark-post-action-hooks nil
+  "Alist associating commands with post-action hooks.
+The hooks are run after an embarked upon action concludes. The
+hooks must accept two arguments, the target string and the target
+bounds. The default post-action hook is specified by the entry
+with key t."
+  :type '(alist :key-type command :value-type hook))
 
 (defcustom embark-repeat-commands
   '(embark-next-symbol embark-previous-symbol backward-up-list)
@@ -389,9 +402,6 @@ the variable `embark--target-buffer'.")
 
 (defvar-local embark--command nil
   "Command that started the completion session.")
-
-(defvar-local embark--target-bounds nil
-  "Bounds of the current target.")
 
 (defun embark--minibuffer-point ()
   "Return length of minibuffer contents."
@@ -1364,8 +1374,8 @@ queued most recently to the one queued least recently."
       (minibuffer-quit-recursive-edit)
     (abort-recursive-edit)))
 
-(defvar embark--setup-hook nil
-  "Temporary variable used as setup hook.")
+(defvar embark--hook nil
+  "Temporary variable used to run hooks.")
 
 (defun embark--act (action target bounds &optional quit)
   "Perform ACTION injecting the TARGET.
@@ -1382,6 +1392,10 @@ the target at point."
            (action-window (embark--target-window t))
            (setup-hook (or (alist-get action embark-setup-hooks)
                            (alist-get t embark-setup-hooks)))
+           (pre-hook (or (alist-get action embark-pre-action-hooks)
+                           (alist-get t embark-pre-action-hooks)))
+           (post-hook (or (alist-get action embark-post-action-hooks)
+                           (alist-get t embark-post-action-hooks)))
            (allow-edit (if embark-allow-edit-default
                            (not (memq action embark-skip-edit-commands))
                          (memq action embark-allow-edit-commands)))
@@ -1389,8 +1403,8 @@ the target at point."
             (lambda ()
               (delete-minibuffer-contents)
               (insert (substring-no-properties target))
-              (let ((embark--setup-hook setup-hook))
-                (run-hooks 'embark--setup-hook))
+              (let ((embark--hook setup-hook))
+                (run-hooks 'embark--hook))
               (unless allow-edit
                 (if (memq 'ivy--queue-exhibit post-command-hook)
                     ;; Ivy has special needs: (1) for file names
@@ -1412,24 +1426,27 @@ the target at point."
                           (with-selected-window action-window
                             (let ((enable-recursive-minibuffers t)
                                   (embark--command command)
-                                  (embark--target-bounds bounds)
                                   (this-command action)
                                   ;; the next two avoid mouse dialogs
                                   (use-dialog-box nil)
                                   (last-nonmenu-event 13))
                               (setq prefix-arg prefix)
-                              (run-hooks 'embark-pre-action-hook)
+                              (let ((embark--hook pre-hook))
+                                (run-hook-with-args 'embark--hook target bounds))
                               (command-execute action))
                             (setq final-window (selected-window)))
-                        (run-hooks 'embark-post-action-hook)
+                        (let ((embark--hook post-hook))
+                          (run-hook-with-args 'embark--hook target bounds))
                         (when dedicate (set-window-dedicated-p dedicate nil)))
                       (unless (eq final-window action-window)
                         (select-window final-window)))))
               (lambda ()
                 (with-selected-window action-window
-                  (run-hooks 'embark-pre-action-hook)
+                  (let ((embark--hook pre-hook))
+                    (run-hook-with-args 'embark--hook target bounds))
                   (unwind-protect (funcall action target)
-                    (run-hooks 'embark-post-action-hook)))))))
+                  (let ((embark--hook post-hook))
+                    (run-hook-with-args 'embark--hook target bounds))))))))
       (if (not (and quit (minibufferp)))
           (funcall run-action)
         (embark--quit-and-run run-action)))))
@@ -2850,16 +2867,14 @@ and leaves the point to the left of it."
     (insert ")")
     (backward-char)))
 
-(defun embark--goto-sexp-start ()
-  "Put point at beginning of the target for sexp actions."
-  (when (and (string-match-p "-\\(sexp\\|list\\)" (symbol-name this-command))
-             embark--target-bounds)
-    (goto-char (car embark--target-bounds))))
+(defun embark--beginning-of-target (_target bounds)
+  "Go to beginning of the target BOUNDS."
+  (when bounds
+    (goto-char (car bounds))))
 
-(defun embark--ignore-region-target ()
-  "Ignore the target for region commands that prompt for a file."
-  (when (memq this-command '(write-region append-to-file))
-    (ignore (read-from-minibuffer ""))))
+(defun embark--ignore-target (&rest _)
+  "Ignore the target."
+  (ignore (read-from-minibuffer "")))
 
 ;;; keymaps
 
