@@ -296,18 +296,6 @@ the wiki."
           (const :tag "Mixed indicator" embark-mixed-indicator)
           (function :tag "Other")))
 
-(defcustom embark-setup-hooks
-  '((async-shell-command embark--shell-prep)
-    (shell-command embark--shell-prep)
-    (pp-eval-expression embark--eval-prep)
-    (package-delete minibuffer-force-complete))
-  "Alist associating commands with post-injection setup hooks.
-For commands appearing as keys in this alist, run the
-corresponding value as a setup hook after injecting the target
-into in the minibuffer and before acting on it.  The default setup
-hook is specified by the entry with the key t."
-  :type '(alist :key-type command :value-type hook))
-
 (defcustom embark-quit-after-action t
   "Should `embark-act' quit the minibuffer?
 This controls whether calling `embark-act' without a prefix
@@ -359,28 +347,55 @@ This list is used only when `embark-allow-edit-default' is nil."
 This list is used only when `embark-allow-edit-default' is t."
   :type '(repeat symbol))
 
+(defcustom embark-setup-hooks
+  '((async-shell-command embark--shell-prep)
+    (shell-command embark--shell-prep)
+    (pp-eval-expression embark--eval-prep)
+    (package-delete minibuffer-force-complete))
+  "Alist associating commands with post-injection setup hooks.
+For commands appearing as keys in this alist, run the
+corresponding value as a setup hook after injecting the target
+into in the minibuffer and before acting on it. The default setup
+hook is specified by the entry with the key t. Furthermore hooks
+with the key nil are executed always."
+  :type '(alist :key-type
+                (choice command
+                        (const :tag "Default" t)
+                        (const :tag "Always" nil))
+                :value-type hook))
+
 (defcustom embark-pre-action-hooks
-  '((write-region . embark--ignore-target)
-    (append-to-file . embark--ignore-target)
-    (indent-pp-sexp . embark--beginning-of-target)
-    (backward-up-list . embark--beginning-of-target)
-    (raise-sexp . embark--beginning-of-target)
-    (kill-sexp . embark--beginning-of-target)
-    (mark-sexp . embark--beginning-of-target))
+  '((write-region embark--ignore-target)
+    (append-to-file embark--ignore-target)
+    (indent-pp-sexp embark--beginning-of-target)
+    (backward-up-list embark--beginning-of-target)
+    (raise-sexp embark--beginning-of-target)
+    (kill-sexp embark--beginning-of-target)
+    (mark-sexp embark--beginning-of-target))
   "Alist associating commands with pre-action hooks.
 The hooks are run right before an action is embarked upon. The
 hooks must accept two arguments, the target string and the target
 bounds. The default pre-action hook is specified by the entry
-with key t."
-  :type '(alist :key-type command :value-type hook))
+with key t. Furthermore hooks with the key nil are executed
+always."
+  :type '(alist :key-type
+                (choice command
+                        (const :tag "Default" t)
+                        (const :tag "Always" nil))
+                :value-type hook))
 
 (defcustom embark-post-action-hooks nil
   "Alist associating commands with post-action hooks.
 The hooks are run after an embarked upon action concludes. The
 hooks must accept two arguments, the target string and the target
 bounds. The default post-action hook is specified by the entry
-with key t."
-  :type '(alist :key-type command :value-type hook))
+with key t. Furthermore hooks with the key nil are executed
+always."
+  :type '(alist :key-type
+                (choice command
+                        (const :tag "Default" t)
+                        (const :tag "Always" nil))
+                :value-type hook))
 
 (defcustom embark-repeat-commands
   '(embark-next-symbol embark-previous-symbol backward-up-list)
@@ -1375,8 +1390,20 @@ queued most recently to the one queued least recently."
       (minibuffer-quit-recursive-edit)
     (abort-recursive-edit)))
 
-(defvar embark--hook nil
-  "Temporary variable used to run hooks.")
+(defvar embark--action-hook nil
+  "Temporary variable used to run action hooks.")
+
+(defun embark--run-action-hooks (hooks action &rest args)
+  "Run HOOKS for ACTION with ARGS.
+The HOOKS argument must be an alist. The keys t and nil are
+treated specially. The nil hooks are executed always and the
+t hooks are the default hooks, if there are no command-specific
+hooks."
+  (let ((embark--action-hook (or (alist-get action hooks)
+                                 (alist-get t hooks))))
+    (apply #'run-hook-with-args 'embark--action-hook args))
+  (let ((embark--action-hook (alist-get nil hooks)))
+    (apply #'run-hook-with-args 'embark--action-hook args)))
 
 (defun embark--act (action target bounds &optional quit)
   "Perform ACTION injecting the TARGET.
@@ -1391,12 +1418,9 @@ the target at point."
     (let* ((command embark--command)
            (prefix prefix-arg)
            (action-window (embark--target-window t))
-           (setup-hook (or (alist-get action embark-setup-hooks)
-                           (alist-get t embark-setup-hooks)))
-           (pre-hook (or (alist-get action embark-pre-action-hooks)
-                           (alist-get t embark-pre-action-hooks)))
-           (post-hook (or (alist-get action embark-post-action-hooks)
-                           (alist-get t embark-post-action-hooks)))
+           (setup-hooks embark-setup-hooks)
+           (pre-hooks embark-pre-action-hooks)
+           (post-hooks embark-post-action-hooks)
            (allow-edit (if embark-allow-edit-default
                            (not (memq action embark-skip-edit-commands))
                          (memq action embark-allow-edit-commands)))
@@ -1404,8 +1428,7 @@ the target at point."
             (lambda ()
               (delete-minibuffer-contents)
               (insert (substring-no-properties target))
-              (let ((embark--hook setup-hook))
-                (run-hooks 'embark--hook))
+              (embark--run-action-hooks setup-hooks action)
               (unless allow-edit
                 (if (memq 'ivy--queue-exhibit post-command-hook)
                     ;; Ivy has special needs: (1) for file names
@@ -1432,22 +1455,18 @@ the target at point."
                                   (use-dialog-box nil)
                                   (last-nonmenu-event 13))
                               (setq prefix-arg prefix)
-                              (let ((embark--hook pre-hook))
-                                (run-hook-with-args 'embark--hook target bounds))
+                              (embark--run-action-hooks pre-hooks action target bounds)
                               (command-execute action))
                             (setq final-window (selected-window)))
-                        (let ((embark--hook post-hook))
-                          (run-hook-with-args 'embark--hook target bounds))
+                        (embark--run-action-hooks post-hooks action target bounds)
                         (when dedicate (set-window-dedicated-p dedicate nil)))
                       (unless (eq final-window action-window)
                         (select-window final-window)))))
               (lambda ()
                 (with-selected-window action-window
-                  (let ((embark--hook pre-hook))
-                    (run-hook-with-args 'embark--hook target bounds))
+                  (embark--run-action-hooks pre-hooks action target bounds)
                   (unwind-protect (funcall action target)
-                  (let ((embark--hook post-hook))
-                    (run-hook-with-args 'embark--hook target bounds))))))))
+                    (embark--run-action-hooks post-hooks action target bounds)))))))
       (if (not (and quit (minibufferp)))
           (funcall run-action)
         (embark--quit-and-run run-action)))))
