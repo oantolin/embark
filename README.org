@@ -12,7 +12,7 @@
 * Breaking News
 
 - The pre-action, post-action and setup hook system has been made more
-  uniform and convenient. If you wrote your hooks of any of those
+  uniform and convenient. If you wrote your own hooks of any of those
   types you'll have to update your configuration. Updating is easy,
   see the docstrings of the new =embark-pre-action-hooks=,
   =embark-setup-action-hooks= and =embark-post-action-hooks= variables for
