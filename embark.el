@@ -366,6 +366,12 @@ executed always."
                         (const :tag "Always" :always))
                 :value-type hook))
 
+(dolist (obsolete
+         '(embark-setup-hook embark-setup-hooks embark-setup-overrides))
+  (make-obsolete obsolete
+                 "see the new `embark-setup-action-hooks' variable."
+                 "0.12"))
+
 (defcustom embark-pre-action-hooks
   '((write-region embark--ignore-target)
     (append-to-file embark--ignore-target)
@@ -386,6 +392,10 @@ are executed always."
                         (const :tag "Always" :always))
                 :value-type hook))
 
+(make-obsolete 'embark-pre-action-hook
+               "see the new `embark-pre-action-hooks' variable."
+               "0.12")
+
 (defcustom embark-post-action-hooks nil
   "Alist associating commands with post-action hooks.
 The hooks are run after an embarked upon action concludes. The
@@ -398,6 +408,10 @@ are executed always."
                         (const :tag "Default" t)
                         (const :tag "Always" :always))
                 :value-type hook))
+
+(make-obsolete 'embark-post-action-hook
+               "see the new `embark-post-action-hooks' variable."
+               "0.12")
 
 (defcustom embark-repeat-commands
   '(embark-next-symbol embark-previous-symbol backward-up-list)
