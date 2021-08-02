@@ -420,7 +420,7 @@ it, for all commands except those listed in @samp{embark-skip-edit-commands}.
 @section Running some setup after injecting the target
 
 You can customize what happens after the target is inserted at the minibuffer
-prompt of an action. There are @samp{embark-setup-hooks}, that are run by default
+prompt of an action. There are @samp{embark-setup-action-hooks}, that are run by default
 after injecting the target into the minibuffer. The hook can be specified for
 specific action commands by associating the command to the desired hook. By
 default the hooks with the key t are executed.
@@ -429,7 +429,7 @@ For example, consider using @samp{shell-command} as an action during file
 completion. It would be useful to insert a space before the target
 file name and to leave the point at the beginning, so you can
 immediately type the shell command. That's why in @samp{embark}'s default
-configuration there is an entry in @samp{embark-setup-hooks} associating
+configuration there is an entry in @samp{embark-setup-action-hooks} associating
 @samp{shell-command} to @samp{embark--shell-prep}, a simple helper command that
 quotes all the spaces in the file name, inserts an extra space at the
 beginning of the line and leaves point to the left of it.

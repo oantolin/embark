@@ -271,9 +271,9 @@ actual type."
  (lambda (_key cmd) (cl-pushnew cmd embark-allow-edit-commands))
  embark-consult-search-map)
 
-(defun embark-consult--unique-match ()
+(defun embark-consult--unique-match (&rest _)
   "If there is a unique matching candidate, accept it.
-This is intended to be used in `embark-setup-hooks' for some
+This is intended to be used in `embark-setup-action-hooks' for some
 actions that are on `embark-allow-edit-commands'."
   ;; I couldn't quickly get this to work for ivy, so just skip ivy
   (unless (eq mwheel-scroll-up-function 'ivy-next-line)
@@ -285,11 +285,11 @@ actions that are on `embark-allow-edit-commands'."
 
 (dolist (cmd '(consult-outline consult-imenu consult-project-imenu))
   (cl-pushnew #'embark-consult--unique-match
-              (alist-get cmd embark-setup-hooks)))
+              (alist-get cmd embark-setup-action-hooks)))
 
-(defun embark-consult--accept-tofu ()
+(defun embark-consult--accept-tofu (&rest _)
   "Accept input if it already has the unicode suffix.
-This is intended to be used in `embark-setup-hooks' for the
+This is intended to be used in `embark-setup-action-hooks' for the
 `consult-line' and `consult-outline' actions."
   (let* ((input (minibuffer-contents))
          (len (length input)))
@@ -301,11 +301,11 @@ This is intended to be used in `embark-setup-hooks' for the
 
 (dolist (cmd '(consult-line consult-outline))
   (cl-pushnew #'embark-consult--accept-tofu
-              (alist-get cmd embark-setup-hooks)))
+              (alist-get cmd embark-setup-action-hooks)))
 
-(defun embark-consult--add-async-separator ()
+(defun embark-consult--add-async-separator (&rest _)
   "Add Consult's async separator at the beginning.
-This is intended to be used in `embark-setup-hook' for any action
+This is intended to be used in `embark-setup-action-hooks' for any action
 that is a Consult async command."
   (let* ((style (alist-get consult-async-split-style
                            consult-async-split-styles-alist))
@@ -323,7 +323,7 @@ that is a Consult async command."
 (map-keymap
  (lambda (_key cmd)
    (cl-pushnew #'embark-consult--add-async-separator
-               (alist-get cmd embark-setup-hooks)))
+               (alist-get cmd embark-setup-action-hooks)))
  embark-consult-async-search-map)
 
 (provide 'embark-consult)
