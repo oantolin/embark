@@ -363,6 +363,7 @@ This list is used only when `embark-allow-edit-default' is t."
   '((write-region . embark--ignore-target)
     (append-to-file . embark--ignore-target)
     (indent-pp-sexp . embark--beginning-of-target)
+    (backward-up-list . embark--beginning-of-target)
     (raise-sexp . embark--beginning-of-target)
     (kill-sexp . embark--beginning-of-target)
     (mark-sexp . embark--beginning-of-target))
