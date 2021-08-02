@@ -1420,9 +1420,6 @@ the target at point."
     (let* ((command embark--command)
            (prefix prefix-arg)
            (action-window (embark--target-window t))
-           (setup-hooks embark-setup-hooks)
-           (pre-hooks embark-pre-action-hooks)
-           (post-hooks embark-post-action-hooks)
            (allow-edit (if embark-allow-edit-default
                            (not (memq action embark-skip-edit-commands))
                          (memq action embark-allow-edit-commands)))
@@ -1430,7 +1427,7 @@ the target at point."
             (lambda ()
               (delete-minibuffer-contents)
               (insert (substring-no-properties target))
-              (embark--run-action-hooks setup-hooks action target bounds)
+              (embark--run-action-hooks embark-setup-hooks action target bounds)
               (unless allow-edit
                 (if (memq 'ivy--queue-exhibit post-command-hook)
                     ;; Ivy has special needs: (1) for file names
@@ -1457,18 +1454,21 @@ the target at point."
                                   (use-dialog-box nil)
                                   (last-nonmenu-event 13))
                               (setq prefix-arg prefix)
-                              (embark--run-action-hooks pre-hooks action target bounds)
+                              (embark--run-action-hooks embark-pre-action-hooks
+                                                        action target bounds)
                               (command-execute action))
                             (setq final-window (selected-window)))
-                        (embark--run-action-hooks post-hooks action target bounds)
+                        (embark--run-action-hooks embark-post-action-hooks
+                                                  action target bounds)
                         (when dedicate (set-window-dedicated-p dedicate nil)))
                       (unless (eq final-window action-window)
                         (select-window final-window)))))
               (lambda ()
                 (with-selected-window action-window
-                  (embark--run-action-hooks pre-hooks action target bounds)
+                  (embark--run-action-hooks embark-pre-action-hooks action target bounds)
                   (unwind-protect (funcall action target)
-                    (embark--run-action-hooks post-hooks action target bounds)))))))
+                    (embark--run-action-hooks embark-post-action-hooks
+                                              action target bounds)))))))
       (if (not (and quit (minibufferp)))
           (funcall run-action)
         (embark--quit-and-run run-action)))))
