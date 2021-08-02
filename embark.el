@@ -361,7 +361,7 @@ target bounds. The default pre-action hook is specified by the
 entry with key t. Furthermore hooks with the key :always are
 executed always."
   :type '(alist :key-type
-                (choice command
+                (choice symbol
                         (const :tag "Default" t)
                         (const :tag "Always" :always))
                 :value-type hook))
@@ -381,7 +381,7 @@ and the target bounds. The default pre-action hook is specified
 by the entry with key t. Furthermore hooks with the key :always
 are executed always."
   :type '(alist :key-type
-                (choice command
+                (choice symbol
                         (const :tag "Default" t)
                         (const :tag "Always" :always))
                 :value-type hook))
@@ -394,7 +394,7 @@ and the target bounds. The default post-action hook is specified
 by the entry with key t. Furthermore hooks with the key :always
 are executed always."
   :type '(alist :key-type
-                (choice command
+                (choice symbol
                         (const :tag "Default" t)
                         (const :tag "Always" :always))
                 :value-type hook))
