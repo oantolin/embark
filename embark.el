@@ -396,7 +396,17 @@ are executed always."
                "see the new `embark-pre-action-hooks' variable."
                "0.12")
 
-(defcustom embark-post-action-hooks nil
+(defcustom embark-post-action-hooks
+  '((bookmark-delete embark--restart)
+    (bookmark-rename embark--restart)
+    (delete-file embark--restart)
+    (rename-file embark--restart)
+    (copy-file embark--restart)
+    (delete-directory embark--restart)
+    (make-directory embark--restart)
+    (kill-buffer embark--restart)
+    (embark-rename-buffer embark--restart)
+    (package-delete embark--restart))
   "Alist associating commands with post-action hooks.
 The hooks are run after an embarked upon action concludes. The
 hooks must accept three arguments, the action, the target string
@@ -1782,17 +1792,23 @@ point."
            (become (unwind-protect
                        (embark--prompt indicator keymap targets)
                      (funcall indicator))))
-      (if (null become)
-          (user-error "Canceled")
-        (embark--quit-and-run
+      (unless become
+        (user-error "Canceled"))
+      (embark--become-command become target))))
+
+(defun embark--become-command (command input)
+  "Quit current minibuffer and start COMMAND with INPUT."
+  (embark--quit-and-run
+   (lambda ()
+     (minibuffer-with-setup-hook
          (lambda ()
-           (minibuffer-with-setup-hook
-               (lambda ()
-                 (delete-minibuffer-contents)
-                 (insert target))
-             (let ((use-dialog-box nil)
-                   (this-command become))
-               (command-execute become)))))))))
+           (delete-minibuffer-contents)
+           (insert input))
+       (let ((this-command command)
+             ;; the next two avoid mouse dialogs
+             (use-dialog-box nil)
+             (last-nonmenu-event 13)))
+         (command-execute command)))))
 
 (defmacro embark-define-keymap (name doc &rest bindings)
   "Define keymap variable NAME.
@@ -2884,6 +2900,18 @@ respects symbol boundaries."
    (message "Symbol `%s' not found" sym)))
 
 ;;; Setup and pre-action hooks
+
+(defun embark--restart (&rest _)
+  "Restart current command with current input.
+Use this to refresh the list of candidates for commands that do
+not handle that themselves."
+  (when (minibufferp)
+    ;; XXX: This setter is needed in order to allow restarting
+    ;; again after the restart. I don't understand how
+    ;; embark--command is treated in Embark, sometimes it is
+    ;; let-bound, sometimes setq'ed.
+    (setq this-command embark--command)
+    (embark--become-command embark--command (minibuffer-contents))))
 
 (defun embark--shell-prep (&rest _)
   "Prepare target for use as argument for a shell command.
