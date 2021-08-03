@@ -2921,11 +2921,6 @@ respects symbol boundaries."
 Use this to refresh the list of candidates for commands that do
 not handle that themselves."
   (when (minibufferp)
-    ;; XXX: This setter is needed in order to allow restarting
-    ;; again after the restart. I don't understand how
-    ;; embark--command is treated in Embark, sometimes it is
-    ;; let-bound, sometimes setq'ed.
-    (setq this-command embark--command)
     (embark--become-command embark--command (minibuffer-contents))))
 
 (defun embark--shell-prep (&rest _)
