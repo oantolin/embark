@@ -2635,6 +2635,7 @@ PRED is a predicate function used to filter the items."
 ;; vertico
 
 (declare-function vertico--candidate "ext:vertico")
+(declare-function vertico--exhibit "ext:vertico")
 (defvar vertico--input)
 (defvar vertico--candidates)
 
@@ -2642,6 +2643,9 @@ PRED is a predicate function used to filter the items."
   "Target the currently selected item in Vertico.
 Return the category metadatum as the type of the target."
   (when vertico--input
+    ;; Force candidate computation, if candidates are not yet available.
+    (when (eq vertico--input t)
+      (vertico--exhibit))
     (cons (completion-metadata-get (embark--metadata) 'category)
           (vertico--candidate))))
 
@@ -2649,6 +2653,9 @@ Return the category metadatum as the type of the target."
   "Collect the current Vertico candidates.
 Return the category metadatum as the type of the candidates."
   (when vertico--input
+    ;; Force candidate computation, if candidates are not yet available.
+    (when (eq vertico--input t)
+      (vertico--exhibit))
     (cons (completion-metadata-get (embark--metadata) 'category)
           vertico--candidates)))
 
@@ -2661,12 +2668,17 @@ Return the category metadatum as the type of the candidates."
 (declare-function selectrum--get-meta "ext:selectrum")
 (declare-function selectrum-get-current-candidate "ext:selectrum")
 (declare-function selectrum-get-current-candidates "ext:selectrum")
+(declare-function selectrum-exhibit "ext:selectrum")
 (defvar selectrum-is-active)
+(defvar selectrum--previous-input-string)
 
 (defun embark--selectrum-selected ()
   "Target the currently selected item in Selectrum.
 Return the category metadatum as the type of the target."
   (when selectrum-is-active
+    ;; Force candidate computation, if candidates are not yet available.
+    (unless selectrum--previous-input-string
+      (selectrum-exhibit))
     (cons (selectrum--get-meta 'category)
 	  (selectrum-get-current-candidate))))
 
@@ -2674,6 +2686,9 @@ Return the category metadatum as the type of the target."
   "Collect the current Selectrum candidates.
 Return the category metadatum as the type of the candidates."
   (when selectrum-is-active
+    ;; Force candidate computation, if candidates are not yet available.
+    (unless selectrum--previous-input-string
+      (selectrum-exhibit))
     (cons (selectrum--get-meta 'category)
 	  (selectrum-get-current-candidates
 	   ;; Pass relative file names for dired.
