@@ -1807,8 +1807,8 @@ point."
        (let ((this-command command)
              ;; the next two avoid mouse dialogs
              (use-dialog-box nil)
-             (last-nonmenu-event 13)))
-         (command-execute command)))))
+             (last-nonmenu-event 13))
+         (command-execute command))))))
 
 (defmacro embark-define-keymap (name doc &rest bindings)
   "Define keymap variable NAME.
