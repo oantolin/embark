@@ -1664,6 +1664,11 @@ target."
                             (user-error "Canceled")))
                        (default-action (or default-done
                                            (embark--default-action type))))
+            ;; When acting again in the minibuffer, treat it as
+            ;; cancellation. Otherwise the next embark-act will find
+            ;; a target in the original buffer.
+            (when (eq action #'embark-act)
+              (user-error "Canceled"))
             (if (eq action #'embark-cycle)
                 (setq targets (embark--rotate
                                targets (prefix-numeric-value prefix-arg)))
