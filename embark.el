@@ -1645,49 +1645,55 @@ target."
     (when (and arg (not (minibufferp)))
       (setq targets (embark--rotate targets (prefix-numeric-value arg))))
     (unwind-protect
-      (while
-          (pcase-let* ((`((,type . ,target)
-                          (,_otype . ,otarget)
-                          . ,bounds)
-                        (car targets))
-                       (action
-                        (or (embark--highlight-target
-                             bounds
-                             #'embark--prompt
-                             indicator
-                             (let ((embark-default-action-overrides
-                                    (if default-done
-                                        `((t . ,default-done))
-                                      embark-default-action-overrides)))
-                               (embark--action-keymap type (cdr targets)))
-                             (mapcar #'car targets))
-                            (user-error "Canceled")))
-                       (default-action (or default-done
-                                           (embark--default-action type))))
-            (if (eq action #'embark-cycle)
+        (while
+            (pcase-let* ((`((,type . ,target)
+                            (,_otype . ,otarget)
+                            . ,bounds)
+                          (car targets))
+                         (action
+                          (or (embark--highlight-target
+                               bounds
+                               #'embark--prompt
+                               indicator
+                               (let ((embark-default-action-overrides
+                                      (if default-done
+                                          `((t . ,default-done))
+                                        embark-default-action-overrides)))
+                                 (embark--action-keymap type (cdr targets)))
+                               (mapcar #'car targets))
+                              (user-error "Canceled")))
+                         (default-action (or default-done
+                                             (embark--default-action type))))
+              (cond
+               ;; When acting twice in the minibuffer, do not restart `embark-act'.
+               ;; Otherwise the next `embark-act' will find a target in the original buffer.
+               ((eq action #'embark-act)
+                (message "Press an action key"))
+               ((eq action #'embark-cycle)
                 (setq targets (embark--rotate
-                               targets (prefix-numeric-value prefix-arg)))
-              ;; if the action is non-repeatable, cleanup indicator now
-              (unless (memq action embark-repeat-commands)
-                (funcall indicator))
-              (embark--act action
-                           (if (and (eq action default-action)
-                                    (eq action embark--command))
-                               otarget
-                             target)
-                           bounds
-                           (if embark-quit-after-action (not arg) arg))
-              (when-let (new-targets (and (memq action embark-repeat-commands)
-                                          (embark--targets)))
-                ;; Terminate repeated prompter on default action, when
-                ;; repeating. Jump to the same target type.
-                (setq default-done #'embark-done
-                      targets (embark--rotate
-                               new-targets
-                               (or (cl-position-if
-                                    (lambda (x) (eq (caar x) (caaar targets)))
-                                    new-targets)
-                                   0)))))))
+                               targets (prefix-numeric-value prefix-arg))))
+               (t
+                ;; if the action is non-repeatable, cleanup indicator now
+                (unless (memq action embark-repeat-commands)
+                  (funcall indicator))
+                (embark--act action
+                             (if (and (eq action default-action)
+                                      (eq action embark--command))
+                                 otarget
+                               target)
+                             bounds
+                             (if embark-quit-after-action (not arg) arg))
+                (when-let (new-targets (and (memq action embark-repeat-commands)
+                                            (embark--targets)))
+                  ;; Terminate repeated prompter on default action, when
+                  ;; repeating. Jump to the same target type.
+                  (setq default-done #'embark-done
+                        targets (embark--rotate
+                                 new-targets
+                                 (or (cl-position-if
+                                      (lambda (x) (eq (caar x) (caaar targets)))
+                                      new-targets)
+                                     0))))))))
       (funcall indicator))))
 
 (defun embark--highlight-target (bounds &rest fun)
