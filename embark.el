@@ -230,8 +230,8 @@ Used by `embark-completing-read-prompter' and `embark-keymap-help'.")
 (defface embark-target '((t :inherit highlight))
   "Face used to highlight the target at point during `embark-act'.")
 
-(defcustom embark-indicator #'embark-mixed-indicator
-  "Indicator function to use when acting or becoming.
+(defcustom embark-indicators (list #'embark-mixed-indicator)
+  "Indicator functions to use when acting or becoming.
 The indicator function is called from both `embark-act' and from
 `embark-become' and should display information about this to the
 user, such as: which of those two commands is running; a
@@ -290,11 +290,7 @@ calling convention should currently be considered unstable.
 Please keep this in mind when writing a custom indicator
 function, or when using the `which-key' indicator function from
 the wiki."
-  :type '(choice
-          (const :tag "Verbose indicator" embark-verbose-indicator)
-          (const :tag "Minimal indicator" embark-minimal-indicator)
-          (const :tag "Mixed indicator" embark-mixed-indicator)
-          (function :tag "Other")))
+  :type '(repeat function))
 
 (defcustom embark-quit-after-action t
   "Should `embark-act' quit the minibuffer?
@@ -1346,22 +1342,25 @@ be restricted by passing a PREFIX key."
     (when-let (command (embark-completing-read-prompter keymap nil 'no-default))
       (call-interactively command))))
 
-(defun embark--prompt (indicator keymap targets)
-  "Call the prompter with KEYMAP and INDICATOR.
+(defun embark--prompt (indicators keymap targets)
+  "Call the prompter with KEYMAP and INDICATORS.
 The TARGETS are displayed for actions outside the minibuffer."
-  (funcall indicator keymap targets)
+  (mapc (lambda (i) (funcall i keymap targets)) indicators)
   (condition-case nil
       (minibuffer-with-setup-hook
           (lambda ()
             ;; if the prompter opens its own minibuffer, show
             ;; the indicator there too
-            (let ((inner-indicator (funcall embark-indicator)))
-              (funcall inner-indicator keymap targets)
-              (add-hook 'minibuffer-exit-hook inner-indicator nil t)))
+            (let ((inner-indicators (mapcar #'funcall embark-indicators)))
+              (mapc (lambda (i) (funcall i keymap targets)) inner-indicators)
+              (add-hook 'minibuffer-exit-hook
+                        (lambda () (mapc #'funcall inner-indicators))
+                        nil t)))
         (let ((enable-recursive-minibuffers t))
           (funcall embark-prompter keymap
                    (lambda (prefix)
-                     (funcall indicator keymap targets prefix)))))
+                     (mapc (lambda (i) (funcall i keymap targets prefix))
+                           indicators)))))
     (quit nil)))
 
 (defvar embark--run-after-command-functions nil
@@ -1637,7 +1636,7 @@ done by cycling backwards) and cycling starts from the following
 target."
   (interactive "P")
   (let* ((targets (or (embark--targets) (user-error "No target found")))
-         (indicator (funcall embark-indicator))
+         (indicators (mapcar #'funcall embark-indicators))
          (default-done nil))
     (when (and arg (not (minibufferp)))
       (setq targets (embark--rotate targets (prefix-numeric-value arg))))
@@ -1651,7 +1650,7 @@ target."
                           (or (embark--highlight-target
                                bounds
                                #'embark--prompt
-                               indicator
+                               indicators
                                (let ((embark-default-action-overrides
                                       (if default-done
                                           `((t . ,default-done))
@@ -1672,7 +1671,7 @@ target."
                (t
                 ;; if the action is non-repeatable, cleanup indicator now
                 (unless (memq action embark-repeat-commands)
-                  (funcall indicator))
+                  (mapc #'funcall indicators))
                 (embark--act action
                              (if (and (eq action default-action)
                                       (eq action embark--command))
@@ -1691,7 +1690,7 @@ target."
                                       (lambda (x) (eq (caar x) (caaar targets)))
                                       new-targets)
                                      0))))))))
-      (funcall indicator))))
+      (mapc #'funcall indicators))))
 
 (defun embark--highlight-target (bounds &rest fun)
   "Highlight target at BOUNDS and call FUN."
@@ -1791,10 +1790,10 @@ point."
                                   (+ end (embark--minibuffer-point))))))
            (keymap (embark--become-keymap))
            (targets `((embark-become . ,target)))
-           (indicator (funcall embark-indicator))
+           (indicators (mapcar #'funcall embark-indicators))
            (become (unwind-protect
-                       (embark--prompt indicator keymap targets)
-                     (funcall indicator))))
+                       (embark--prompt indicators keymap targets)
+                     (mapc #'funcall indicators))))
       (unless become
         (user-error "Canceled"))
       (embark--become-command become target))))
