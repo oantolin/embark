@@ -872,6 +872,10 @@ UPDATE is the indicator update function."
          (cmd (let ((overriding-terminal-local-map keymap))
                 (key-binding key))))
     (pcase cmd
+      ('embark-keymap-help
+       (embark-completing-read-prompter keymap nil))
+      ((guard (lookup-key keymap key))  ; if directly bound, then obey
+       cmd)
       ((or 'minibuffer-keyboard-quit 'abort-recursive-edit)
        nil)
       ('self-insert-command
@@ -891,8 +895,6 @@ UPDATE is the indicator update function."
        (embark-keymap-prompter keymap update))
       ('execute-extended-command
        (intern-soft (read-extended-command)))
-      ('embark-keymap-help
-       (embark-completing-read-prompter keymap nil))
       (_ cmd))))
 
 (defun embark--command-name (cmd)
@@ -2764,12 +2766,6 @@ Return the category metadatum as the type of the target."
   (interactive)
   (user-error "Not meant to be called directly"))
 
-(defalias 'embark-execute-command
-  ;; this one is kind of embarrassing: embark-keymap-prompter gives
-  ;; execute-extended-command special treatment, so we need a command
-  ;; just like it... but with a different name!
-  #'execute-extended-command)
-
 (defun embark-insert (string)
   "Insert STRING at point."
   (interactive "sInsert: ")
@@ -3093,7 +3089,7 @@ and leaves the point to the left of it."
 (embark-define-keymap embark-command-map
   "Keymap for Embark command actions."
   :parent embark-symbol-map
-  ("x" embark-execute-command)
+  ("x" execute-extended-command)
   ("I" Info-goto-emacs-command-node)
   ("g" global-set-key)
   ("l" local-set-key))
