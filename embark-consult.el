@@ -111,6 +111,13 @@
 (setf (alist-get 'consult-location embark-transformer-alist)
       #'embark-consult--target-strip)
 
+(defun embark-consult-goto-location (target)
+  "Jump to consult location TARGET."
+  (consult--jump (car (get-text-property 0 'consult-location target))))
+
+(setf (alist-get 'consult-location embark-default-action-overrides)
+      #'embark-consult-goto-location)
+
 (defun embark-consult-export-occur (lines)
   "Create an occur mode buffer listing LINES.
 The elements of LINES are assumed to be values of category `consult-line'."
@@ -171,11 +178,8 @@ The elements of LINES are assumed to be values of category `consult-line'."
       (when (fboundp 'wgrep-setup) (wgrep-setup)))
     (pop-to-buffer buf)))
 
-(autoload 'compile-goto-error "compile")
-
-(defun embark-consult-goto-location (location)
+(defun embark-consult-goto-grep (location)
   "Go to LOCATION, which should be a string with a grep match."
-  (interactive "sLocation: ")
   ;; Actions are run in the target window, so in this case whatever
   ;; window was selected when the command that produced the
   ;; xref-location candidates ran.  In particular, we inherit the
@@ -183,17 +187,12 @@ The elements of LINES are assumed to be values of category `consult-line'."
   ;; want the default-directory of the minibuffer or collect window we
   ;; call the action from, which is the previous window, since the
   ;; location is given relative to that directory.
-  (with-temp-buffer
-    (setq default-directory (with-selected-window (previous-window)
-                              default-directory))
-    (insert location "\n")
-    (grep-mode)
-    (goto-char (point-min))
-    (let ((display-buffer-overriding-action '(display-buffer-same-window)))
-      (compile-goto-error))))
+  (let ((default-directory (with-selected-window (previous-window)
+                             default-directory)))
+    (consult--jump (consult--grep-position location))))
 
 (setf (alist-get 'consult-grep embark-default-action-overrides)
-      #'embark-consult-goto-location)
+      #'embark-consult-goto-grep)
 (setf (alist-get 'consult-grep embark-exporters-alist)
       #'embark-consult-export-grep)
 (setf (alist-get 'consult-grep embark-collect-initial-view-alist)
@@ -275,32 +274,14 @@ actual type."
   "If there is a unique matching candidate, accept it.
 This is intended to be used in `embark-setup-action-hooks' for some
 actions that are on `embark-allow-edit-commands'."
-  ;; I couldn't quickly get this to work for ivy, so just skip ivy
-  (unless (eq mwheel-scroll-up-function 'ivy-next-line)
-    (let ((candidates (embark-minibuffer-candidates)))
-      (unless (or (null (cdr candidates)) (cddr candidates))
-        (delete-minibuffer-contents)
-        (insert (cadr candidates))
-        (add-hook 'post-command-hook #'exit-minibuffer nil t)))))
-
-(dolist (cmd '(consult-outline consult-imenu consult-project-imenu))
-  (cl-pushnew #'embark-consult--unique-match
-              (alist-get cmd embark-setup-action-hooks)))
-
-(defun embark-consult--accept-tofu (&rest _)
-  "Accept input if it already has the unicode suffix.
-This is intended to be used in `embark-setup-action-hooks' for the
-`consult-line' and `consult-outline' actions."
-  (let* ((input (minibuffer-contents))
-         (len (length input)))
-    (when (and (> len 0)
-               (<= consult--tofu-char
-                   (aref input (- len 1))
-                   (+ consult--tofu-char consult--tofu-range -1)))
+  (let ((candidates (cdr (embark-minibuffer-candidates))))
+    (unless (or (null candidates) (cdr candidates))
+      (delete-minibuffer-contents)
+      (insert (car candidates))
       (add-hook 'post-command-hook #'exit-minibuffer nil t))))
 
-(dolist (cmd '(consult-line consult-outline))
-  (cl-pushnew #'embark-consult--accept-tofu
+(dolist (cmd '(consult-outline consult-imenu consult-imenu-multi))
+  (cl-pushnew #'embark-consult--unique-match
               (alist-get cmd embark-setup-action-hooks)))
 
 (defun embark-consult--add-async-separator (&rest _)
