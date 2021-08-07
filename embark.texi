@@ -216,17 +216,11 @@ export produces a Dired buffer; if they are buffers, you get an
 Ibuffer buffer; and if they are packages you get a buffer in
 package menu mode.
 
-There is also support for exporting a list of grep results to an
-honest grep-mode buffer, on which you can even use @uref{https://github.com/mhayashi1120/Emacs-wgrep, wgrep} if you
-wish. In order to make use of this exporter you will need a command
-that prompts you in the minibuffer for a grep result line. In the
-near future you will be able to configure Emacs 28 to use
-@samp{xref-show-definitions-completing-read} as the value of
-@samp{xref-show-xrefs-function} and @samp{xref-show-definitions-function}. With
-that configuration, @samp{project-find-regexp}, for example, with use the
-minibuffer to offers search results. Additionally, today, you can
-use the grepping commands from the @uref{https://github.com/minad/consult/, Consult} package, @samp{consult-grep},
-@samp{consult-git-grep} or @samp{consult-ripgrep}.
+If you use the grepping commands from the @uref{https://github.com/minad/consult/, Consult} package,
+@samp{consult-grep}, @samp{consult-git-grep} or @samp{consult-ripgrep}, then you'll
+probably want to install and load the @samp{embark-consult} package, which
+adds support for exporting a list of grep results to an honest
+grep-mode buffer, on which you can even use @uref{https://github.com/mhayashi1120/Emacs-wgrep, wgrep} if you wish.
 @end itemize
 
 These are always available as ``actions'' (although they do not act on
