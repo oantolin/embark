@@ -238,9 +238,9 @@ Used by `embark-completing-read-prompter' and `embark-keymap-help'.")
   (list #'embark-mixed-indicator
         #'embark-highlight-indicator)
   "Indicator functions to use when acting or becoming.
-The indicator function is called from both `embark-act' and from
-`embark-become' and should display information about this to the
-user, such as: which of those two commands is running; a
+The indicator functions are called from both `embark-act' and
+from `embark-become' and should display information about this to
+the user, such as: which of those two commands is running; a
 description of the key bindings that are available for actions or
 commands to become; and, in the case of `embark-act', the type
 and value of the targets, and whether other targets are available
@@ -248,7 +248,7 @@ via `embark-cycle'.  The indicator function is free to display as
 much or as little of this information as desired and can use any
 Emacs interface elements to do so.
 
-Embark comes with three such indicators:
+Embark comes with four such indicators:
 
 - `embark-minimal-indicator', which does not display any
   information about keybindings, but does display types and
@@ -268,7 +268,7 @@ Embark comes with three such indicators:
 
 The protocol for indicator functions is as follows:
 
-When called from `embark-act', the indicator function is called
+When called from `embark-act', an indicator function is called
 without arguments.  The indicator function should then return a
 closure, which captures the indicator state.  The returned
 closure must accept up to three optional arguments, the action
@@ -1560,17 +1560,17 @@ work on them."
           target)))
 
 (defun embark--targets ()
-  "Retrieve current target.
+  "Retrieve current targets.
 
-An initial guess at the current target and its type is determined
-by running the functions in `embark-target-finders'.  Each
-function should either return nil, a pair of a type symbol and
-target string or a triple of a type symbol, target string and
+An initial guess at the current targets and their types is
+determined by running the functions in `embark-target-finders'.
+Each function should either return nil, a pair of a type symbol
+and target string or a triple of a type symbol, target string and
 target bounds.
 
 In the minibuffer only the first target finder returning non-nil
 is taken into account.  When finding targets at point in other
-buffers, each target finder function is executed.
+buffers, all target finder function is executed.
 
 For each target, the type is then looked up as a key in the
 variable `embark-transformer-alist'.  If there is a transformer
@@ -1578,7 +1578,7 @@ for the type, it is called with the type and target, and must
 return a `cons' of the transformed type and transformed target.
 
 The return value of `embark--targets' is a list of plists. Each
-plist is a target, with the keys `:type', `:target',
+plist concerns one target, and has keys `:type', `:target',
 `:orig-type', `:orig-target' and `:bounds'."
   (let ((targets))
     (run-hook-wrapped
