@@ -235,8 +235,9 @@ Used by `embark-completing-read-prompter' and `embark-keymap-help'.")
                "0.12")
 
 (defcustom embark-indicators
-  (list #'embark-mixed-indicator
-        #'embark-highlight-indicator)
+  '(embark-mixed-indicator
+    embark-highlight-indicator
+    embark-isearch-highlight-indicator)
   "Indicator functions to use when acting or becoming.
 The indicator functions are called from both `embark-act' and
 from `embark-become' and should display information about this to
@@ -248,7 +249,7 @@ via `embark-cycle'.  The indicator function is free to display as
 much or as little of this information as desired and can use any
 Emacs interface elements to do so.
 
-Embark comes with four such indicators:
+Embark comes with five such indicators:
 
 - `embark-minimal-indicator', which does not display any
   information about keybindings, but does display types and
@@ -265,6 +266,10 @@ Embark comes with four such indicators:
 
 - `embark-highlight-indicator', which highlights the target
   at point.
+
+- `embark-isearch-highlight-indicator', which when the target at
+  point is an indentifier or symbol, lazily highlights all
+  occurrences of it.
 
 The protocol for indicator functions is as follows:
 
@@ -304,6 +309,8 @@ the wiki."
            (const :tag "Minimal indicator" embark-minimal-indicator)
            (const :tag "Mixed indicator" embark-mixed-indicator)
            (const :tag "Highlight target" embark-highlight-indicator)
+           (const :tag "Highlight all occurrences"
+                  embark-isearch-highlight-indicator)
            (function :tag "Other"))))
 
 (defcustom embark-quit-after-action t
@@ -1579,7 +1586,7 @@ variable `embark-transformer-alist'.  If there is a transformer
 for the type, it is called with the type and target, and must
 return a `cons' of the transformed type and transformed target.
 
-The return value of `embark--targets' is a list of plists. Each
+The return value of `embark--targets' is a list of plists.  Each
 plist concerns one target, and has keys `:type', `:target',
 `:orig-type', `:orig-target' and `:bounds'."
   (let ((targets))
@@ -1726,7 +1733,25 @@ target."
           (overlay-put overlay 'face 'embark-target)
           (overlay-put overlay 'window (selected-window))
           ;; high priority to override bug reference
-          (overlay-put overlay 'priority 100))))))
+          (overlay-put overlay 'priority 1001))))))
+
+(defun embark-isearch-highlight-indicator ()
+  "Action indicator highlighting all occurrences of the identifier at point.
+This indicator only does something for targets which are
+identifiers or symbols.  For those it uses `isearch''s lazy
+highlighting feature to highlight all occurences of the target in
+the buffer.  This indicator is best used in conjunction with
+`embark-highlight-indicator': by using them both you get the
+target and the other occurrences of it higlighted in different
+colors."
+  (lambda (&optional _keymap targets _prefix)
+    (if (and (not (minibufferp))
+             (memq (plist-get (car targets) :orig-type) '(symbol identifier)))
+        (let ((isearch-string (plist-get (car targets) :target))
+              (isearch-regexp-function #'isearch-symbol-regexp))
+          (isearch-lazy-highlight-new-loop))
+      (setq isearch-lazy-highlight-last-string nil)
+      (lazy-highlight-cleanup t))))
 
 (defun embark-cycle (_arg)
   "Cycle over the next ARG targets at point.
