@@ -298,7 +298,13 @@ calling convention should currently be considered unstable.
 Please keep this in mind when writing a custom indicator
 function, or when using the `which-key' indicator function from
 the wiki."
-  :type '(repeat function))
+  :type '(repeat
+          (choice
+           (const :tag "Verbose indicator" embark-verbose-indicator)
+           (const :tag "Minimal indicator" embark-minimal-indicator)
+           (const :tag "Mixed indicator" embark-mixed-indicator)
+           (const :tag "Highlight target" embark-highlight-indicator)
+           (function :tag "Other"))))
 
 (defcustom embark-quit-after-action t
   "Should `embark-act' quit the minibuffer?
