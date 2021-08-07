@@ -1732,7 +1732,8 @@ target."
             (setq overlay (make-overlay (car bounds) (cdr bounds))))
           (overlay-put overlay 'face 'embark-target)
           (overlay-put overlay 'window (selected-window))
-          ;; high priority to override bug reference
+          ;; high priority to override both bug reference and the lazy
+          ;; isearch highlights in embark-isearch-highlight-indicator
           (overlay-put overlay 'priority 1001))))))
 
 (defun embark-isearch-highlight-indicator ()
