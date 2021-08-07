@@ -230,7 +230,7 @@ Used by `embark-completing-read-prompter' and `embark-keymap-help'.")
 (defface embark-target '((t :inherit highlight))
   "Face used to highlight the target at point during `embark-act'.")
 
-(make-obsolete embark-indicator
+(make-obsolete 'embark-indicator
                "see the new `embark-indicators' variable."
                "0.12")
 
