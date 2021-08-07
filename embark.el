@@ -230,7 +230,9 @@ Used by `embark-completing-read-prompter' and `embark-keymap-help'.")
 (defface embark-target '((t :inherit highlight))
   "Face used to highlight the target at point during `embark-act'.")
 
-(defcustom embark-indicators (list #'embark-mixed-indicator)
+(defcustom embark-indicators
+  (list #'embark-mixed-indicator
+        #'embark-highlight-indicator)
   "Indicator functions to use when acting or becoming.
 The indicator function is called from both `embark-act' and from
 `embark-become' and should display information about this to the
@@ -257,24 +259,26 @@ Embark comes with three such indicators:
   verbose popup is shown after `embark-mixed-indicator-delay'
   seconds.
 
+- `embark-highlight-indicator', which highlights the target
+  at point.
+
 The protocol for indicator functions is as follows:
 
 When called from `embark-act', the indicator function is called
-without arguments.  The indicator function should then return a
-closure, which captures the indicator state.  The returned
-closure must accept up to three optional arguments, the action
-keymap, the targets (a list of conses of the type and value of
-each target, starting with the current one) and the prefix keys
-typed by the user so far.  The keymap, targets and prefix keys
-may be updated when cycling targets at point resulting in
-multiple calls to the closure.  When called from `embark-become',
-the indicator closure will be called with the keymap of commands
-to become, a fake target list containing a single target of type
-`embark-become' and whose value is the minibuffer input, and the
-prefix set to nil.  Note, in particular, that if an indicator
-function wishes to distinguish between `embark-act' and
-`embark-become' it should check whether the `car' of the first
-target is `embark-become'.
+without arguments. The indicator function should then return a
+closure, which captures the indicator state. The returned closure
+must accept up to three optional arguments, the action keymap,
+the targets (triples of type, value and bounds of each target,
+starting with the current one) and the prefix keys typed by the
+user so far. The keymap, targets and prefix keys may be updated
+when cycling targets at point resulting in multiple calls to the
+closure. When called from `embark-become', the indicator closure
+will be called with the keymap of commands to become, a fake
+target list containing a single target of type `embark-become'
+and whose value is the minibuffer input, and the prefix set to
+nil. Note, in particular, that if an indicator function wishes to
+distinguish between `embark-act' and `embark-become' it should
+check whether the `car' of the first target is `embark-become'.
 
 After the action has been performed the indicator closure is
 called without arguments, such that the indicator can perform the
@@ -827,7 +831,7 @@ the minibuffer is open, the message is added to the prompt."
                                                     shadowed-targets)
                                             ", "))
                                  "")
-                               (embark--truncate-target (cdr target)))))))
+                               (embark--truncate-target (cadr target)))))))
           (if (not (minibufferp))
               (message "%s" indicator)
             (unless indicator-overlay
@@ -1198,7 +1202,7 @@ The arguments are the new KEYMAP and TARGETS."
            (bindings
             (embark--formatted-bindings keymap embark-verbose-indicator-nested))
            (bindings (car bindings))
-           (target (car targets))
+           (target (cons (caar targets) (cadar targets)))
            (shadowed-targets
             (and (cdr targets)
                  (mapcar (lambda (x) (symbol-name (car x))) (cdr targets))))
@@ -1647,16 +1651,16 @@ target."
                             . ,bounds)
                           (car targets))
                          (action
-                          (or (embark--highlight-target
-                               bounds
-                               #'embark--prompt
+                          (or (embark--prompt
                                indicators
                                (let ((embark-default-action-overrides
                                       (if default-done
                                           `((t . ,default-done))
                                         embark-default-action-overrides)))
                                  (embark--action-keymap type (cdr targets)))
-                               (mapcar #'car targets))
+                               (mapcar (pcase-lambda (`((,type . ,target) ,_ . ,bounds))
+                                         `(,type ,target . ,bounds))
+                                       targets))
                               (user-error "Canceled")))
                          (default-action (or default-done
                                              (embark--default-action type))))
@@ -1692,17 +1696,22 @@ target."
                                      0))))))))
       (mapc #'funcall indicators))))
 
-(defun embark--highlight-target (bounds &rest fun)
-  "Highlight target at BOUNDS and call FUN."
-  (if bounds
-      (let ((ov (make-overlay (car bounds) (cdr bounds) nil)))
-        (overlay-put ov 'face 'embark-target)
-        (overlay-put ov 'window (selected-window))
-        (overlay-put ov 'priority 100) ;; override bug reference
-        (unwind-protect
-            (apply fun)
-          (delete-overlay ov)))
-    (apply fun)))
+(defun embark-highlight-indicator ()
+  "Action indicator which highlights the target at point."
+  (let (overlay)
+    (lambda (&optional keymap targets _prefix)
+      (let ((bounds (cddar targets)))
+        (when (and overlay (or (not keymap) (not bounds)))
+          (delete-overlay overlay)
+          (setq overlay nil))
+        (when bounds
+          (if overlay
+              (move-overlay overlay (car bounds) (cdr bounds))
+            (setq overlay (make-overlay (car bounds) (cdr bounds))))
+          (overlay-put overlay 'face 'embark-target)
+          (overlay-put overlay 'window (selected-window))
+          ;; high priority to override bug reference
+          (overlay-put overlay 'priority 100))))))
 
 (defun embark-cycle (_arg)
   "Cycle over the next ARG targets at point.
