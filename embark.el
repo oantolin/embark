@@ -1740,7 +1740,7 @@ target."
   "Action indicator highlighting all occurrences of the identifier at point.
 This indicator only does something for targets which are
 identifiers or symbols.  For those it uses `isearch''s lazy
-highlighting feature to highlight all occurences of the target in
+highlighting feature to highlight all occurrences of the target in
 the buffer.  This indicator is best used in conjunction with
 `embark-highlight-indicator': by using them both you get the
 target and the other occurrences of it higlighted in different
@@ -2946,7 +2946,7 @@ minibuffer, which means it can be used as an Embark action."
       (highlight-symbol-at-point))))
 
 (defun embark-next-symbol (symbol)
-  "Jump to next occurence of SYMBOL.
+  "Jump to next occurrence of SYMBOL.
 Prints a message when the symbol is not found.  The search
 respects symbol boundaries."
   (interactive "sSymbol: ")
