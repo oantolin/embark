@@ -265,20 +265,20 @@ Embark comes with three such indicators:
 The protocol for indicator functions is as follows:
 
 When called from `embark-act', the indicator function is called
-without arguments. The indicator function should then return a
-closure, which captures the indicator state. The returned closure
-must accept up to three optional arguments, the action keymap,
-the targets (plists as returned by `embark--targets') and the
-prefix keys typed by the user so far. The keymap, targets and
-prefix keys may be updated when cycling targets at point
-resulting in multiple calls to the closure. When called from
+without arguments.  The indicator function should then return a
+closure, which captures the indicator state.  The returned
+closure must accept up to three optional arguments, the action
+keymap, the targets (plists as returned by `embark--targets') and
+the prefix keys typed by the user so far.  The keymap, targets
+and prefix keys may be updated when cycling targets at point
+resulting in multiple calls to the closure.  When called from
 `embark-become', the indicator closure will be called with the
 keymap of commands to become, a fake target list containing a
 single target of type `embark-become' and whose value is the
-minibuffer input, and the prefix set to nil. Note, in particular,
-that if an indicator function wishes to distinguish between
-`embark-act' and `embark-become' it should check whether the
-`car' of the first target is `embark-become'.
+minibuffer input, and the prefix set to nil.  Note, in
+particular, that if an indicator function wishes to distinguish
+between `embark-act' and `embark-become' it should check whether
+the `car' of the first target is `embark-become'.
 
 After the action has been performed the indicator closure is
 called without arguments, such that the indicator can perform the
@@ -355,10 +355,10 @@ This list is used only when `embark-allow-edit-default' is t."
   "Alist associating commands with post-injection setup hooks.
 For commands appearing as keys in this alist, run the
 corresponding value as a setup hook after injecting the target
-into in the minibuffer and before acting on it. The hooks must
+into in the minibuffer and before acting on it.  The hooks must
 accept three arguments, the action, the target string and the
-target bounds. The default pre-action hook is specified by the
-entry with key t. Furthermore hooks with the key :always are
+target bounds.  The default pre-action hook is specified by the
+entry with key t.  Furthermore hooks with the key :always are
 executed always."
   :type '(alist :key-type
                 (choice symbol
@@ -381,10 +381,10 @@ executed always."
     (kill-sexp embark--beginning-of-target)
     (mark-sexp embark--beginning-of-target))
   "Alist associating commands with pre-action hooks.
-The hooks are run right before an action is embarked upon. The
+The hooks are run right before an action is embarked upon.  The
 hooks must accept three arguments, the action, the target string
-and the target bounds. The default pre-action hook is specified
-by the entry with key t. Furthermore hooks with the key :always
+and the target bounds.  The default pre-action hook is specified
+by the entry with key t.  Furthermore hooks with the key :always
 are executed always."
   :type '(alist :key-type
                 (choice symbol
@@ -408,10 +408,10 @@ are executed always."
     (embark-rename-buffer embark--restart)
     (package-delete embark--restart))
   "Alist associating commands with post-action hooks.
-The hooks are run after an embarked upon action concludes. The
+The hooks are run after an embarked upon action concludes.  The
 hooks must accept three arguments, the action, the target string
-and the target bounds. The default post-action hook is specified
-by the entry with key t. Furthermore hooks with the key :always
+and the target bounds.  The default post-action hook is specified
+by the entry with key t.  Furthermore hooks with the key :always
 are executed always."
   :type '(alist :key-type
                 (choice symbol
@@ -1421,8 +1421,8 @@ queued most recently to the one queued least recently."
 
 (defun embark--run-action-hooks (hooks action &rest args)
   "Run HOOKS for ACTION with ARGS.
-The HOOKS argument must be an alist. The keys t and :always are
-treated specially. The :always hooks are executed always and the
+The HOOKS argument must be an alist.  The keys t and :always are
+treated specially.  The :always hooks are executed always and the
 t hooks are the default hooks, if there are no command-specific
 hooks."
   (mapc (lambda (h) (apply h action args))
