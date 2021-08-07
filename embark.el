@@ -268,17 +268,17 @@ When called from `embark-act', the indicator function is called
 without arguments. The indicator function should then return a
 closure, which captures the indicator state. The returned closure
 must accept up to three optional arguments, the action keymap,
-the targets (triples of type, value and bounds of each target,
-starting with the current one) and the prefix keys typed by the
-user so far. The keymap, targets and prefix keys may be updated
-when cycling targets at point resulting in multiple calls to the
-closure. When called from `embark-become', the indicator closure
-will be called with the keymap of commands to become, a fake
-target list containing a single target of type `embark-become'
-and whose value is the minibuffer input, and the prefix set to
-nil. Note, in particular, that if an indicator function wishes to
-distinguish between `embark-act' and `embark-become' it should
-check whether the `car' of the first target is `embark-become'.
+the targets (plists as returned by `embark--targets') and the
+prefix keys typed by the user so far. The keymap, targets and
+prefix keys may be updated when cycling targets at point
+resulting in multiple calls to the closure. When called from
+`embark-become', the indicator closure will be called with the
+keymap of commands to become, a fake target list containing a
+single target of type `embark-become' and whose value is the
+minibuffer input, and the prefix set to nil. Note, in particular,
+that if an indicator function wishes to distinguish between
+`embark-act' and `embark-become' it should check whether the
+`car' of the first target is `embark-become'.
 
 After the action has been performed the indicator closure is
 called without arguments, such that the indicator can perform the
@@ -820,18 +820,18 @@ the minibuffer is open, the message is added to the prompt."
                             ;; completing-read prompter, use just "Act"
                             act)
                            (t (format
-                               "%s on%s%s '%s'"
+                               "%s on %s%s '%s'"
                                act
-                               (if (car target) (format " %s" (car target)) "")
+                               (plist-get target :type)
                                (if shadowed-targets
                                    (format (propertize "(%s)" 'face 'shadow)
                                            (string-join
                                             (mapcar (lambda (x)
-                                                      (symbol-name (car x)))
+                                                      (symbol-name (plist-get x :type)))
                                                     shadowed-targets)
                                             ", "))
                                  "")
-                               (embark--truncate-target (cadr target)))))))
+                               (embark--truncate-target (plist-get target :target)))))))
           (if (not (minibufferp))
               (message "%s" indicator)
             (unless indicator-overlay
@@ -1202,10 +1202,10 @@ The arguments are the new KEYMAP and TARGETS."
            (bindings
             (embark--formatted-bindings keymap embark-verbose-indicator-nested))
            (bindings (car bindings))
-           (target (cons (caar targets) (cadar targets)))
+           (target (cons (plist-get (car targets) :type)
+                         (plist-get (car targets) :target)))
            (shadowed-targets
-            (and (cdr targets)
-                 (mapcar (lambda (x) (symbol-name (car x))) (cdr targets))))
+            (mapcar (lambda (x) (symbol-name (plist-get x :type))) (cdr targets)))
            (cycle (let ((ck (where-is-internal #'embark-cycle keymap)))
                     (and ck (key-description (car ck))))))
       (setq-local cursor-type nil)
@@ -1567,10 +1567,9 @@ variable `embark-transformer-alist'.  If there is a transformer
 for the type, it is called with the type and target, and must
 return a `cons' of the transformed type and transformed target.
 
-The return value of `embark--targets' is a list.  Each list
-element has the form (target original-target . bounds), where
-target and original-target are (type . string) pairs and bounds
-is the optional bounds of the target at point for highlighting."
+The return value of `embark--targets' is a list of plists. Each
+plist is a target, with the keys `:type', `:target',
+`:orig-type', `:orig-target' and `:bounds'."
   (let ((targets))
     (run-hook-wrapped
      'embark-target-finders
@@ -1581,12 +1580,17 @@ is the optional bounds of the target at point for highlighting."
                 (target (if (consp target+bounds)
                             (car target+bounds)
                           target+bounds))
-                (bounds (and (consp target+bounds) (cdr target+bounds)))
-                (orig (cons type target)))
-           (push (if-let (transformer (alist-get type embark-transformer-alist))
-                     `(,(funcall transformer type target) ,orig . ,bounds)
-                   `(,orig ,orig . ,bounds))
-                 targets)
+                (bounds (and (consp target+bounds) (cdr target+bounds))))
+           (push
+            (append
+             (list :orig-type type
+                   :orig-target target
+                   :bounds bounds)
+             (if-let (transformer (alist-get type embark-transformer-alist))
+                 (let ((trans (funcall transformer type target)))
+                   (list :type (car trans) :target (cdr trans)))
+               (list :type type :target target)))
+            targets)
            (minibufferp)))))
     (nreverse targets)))
 
@@ -1646,24 +1650,21 @@ target."
       (setq targets (embark--rotate targets (prefix-numeric-value arg))))
     (unwind-protect
         (while
-            (pcase-let* ((`((,type . ,target)
-                            (,_otype . ,otarget)
-                            . ,bounds)
-                          (car targets))
-                         (action
-                          (or (embark--prompt
-                               indicators
-                               (let ((embark-default-action-overrides
-                                      (if default-done
-                                          `((t . ,default-done))
-                                        embark-default-action-overrides)))
-                                 (embark--action-keymap type (cdr targets)))
-                               (mapcar (pcase-lambda (`((,type . ,target) ,_ . ,bounds))
-                                         `(,type ,target . ,bounds))
-                                       targets))
-                              (user-error "Canceled")))
-                         (default-action (or default-done
-                                             (embark--default-action type))))
+            (let* ((target (car targets))
+                   (action
+                    (or (embark--prompt
+                         indicators
+                         (let ((embark-default-action-overrides
+                                (if default-done
+                                    `((t . ,default-done))
+                                  embark-default-action-overrides)))
+                           (embark--action-keymap (plist-get target :type)
+                                                  (cdr targets)))
+                         targets)
+                        (user-error "Canceled")))
+                   (default-action (or default-done
+                                       (embark--default-action
+                                        (plist-get target :type)))))
               (cond
                ;; When acting twice in the minibuffer, do not restart `embark-act'.
                ;; Otherwise the next `embark-act' will find a target in the original buffer.
@@ -1677,11 +1678,12 @@ target."
                 (unless (memq action embark-repeat-commands)
                   (mapc #'funcall indicators))
                 (embark--act action
-                             (if (and (eq action default-action)
-                                      (eq action embark--command))
-                                 otarget
-                               target)
-                             bounds
+                             (plist-get target
+                                        (if (and (eq action default-action)
+                                                 (eq action embark--command))
+                                            :orig-target
+                                          :target))
+                             (plist-get target :bounds)
                              (if embark-quit-after-action (not arg) arg))
                 (when-let (new-targets (and (memq action embark-repeat-commands)
                                             (embark--targets)))
@@ -1691,16 +1693,17 @@ target."
                         targets (embark--rotate
                                  new-targets
                                  (or (cl-position-if
-                                      (lambda (x) (eq (caar x) (caaar targets)))
+                                      (lambda (x) (eq (plist-get x :type)
+                                                      (plist-get (car targets) :type)))
                                       new-targets)
                                      0))))))))
       (mapc #'funcall indicators))))
 
 (defun embark-highlight-indicator ()
-  "Action indicator which highlights the target at point."
+  "Action indicator highlighting the target at point."
   (let (overlay)
     (lambda (&optional keymap targets _prefix)
-      (let ((bounds (cddar targets)))
+      (let ((bounds (plist-get (car targets) :bounds)))
         (when (and overlay (or (not keymap) (not bounds)))
           (delete-overlay overlay)
           (setq overlay nil))
@@ -1741,20 +1744,20 @@ keymap for the target's type.
 See `embark-act' for the meaning of the prefix ARG."
   (interactive "P")
   (if-let ((targets (embark--targets)))
-      (pcase-let* ((`((,type . ,target)
-                      (,_otype . ,otarget)
-                      . ,bounds)
-                    (or (nth
-                         (if (or (null arg) (minibufferp))
-                             0
-                           (mod (prefix-numeric-value arg) (length targets)))
-                         targets)))
-                   (default-action (embark--default-action type)))
+      (let* ((target
+              (or (nth
+                   (if (or (null arg) (minibufferp))
+                       0
+                     (mod (prefix-numeric-value arg) (length targets)))
+                   targets)))
+             (default-action (embark--default-action
+                              (plist-get target :type))))
         (embark--act default-action
-                     (if (eq default-action embark--command)
-                         otarget
-                       target)
-                     bounds
+                     (plist-get target
+                                (if (eq default-action embark--command)
+                                    :orig-target
+                                  :target))
+                     (plist-get target :bound)
                      (if embark-quit-after-action (not arg) arg)))
     (user-error "No target found")))
 
@@ -1798,7 +1801,7 @@ point."
                        (substring (minibuffer-contents) beg
                                   (+ end (embark--minibuffer-point))))))
            (keymap (embark--become-keymap))
-           (targets `((embark-become . ,target)))
+           (targets `((:type embark-become :target ,target)))
            (indicators (mapcar #'funcall embark-indicators))
            (become (unwind-protect
                        (embark--prompt indicators keymap targets)
@@ -2033,9 +2036,10 @@ Returns the name of the command."
                               (embark--command-name action)))))
     (fset name (lambda ()
                  (interactive)
-                 (pcase (car (embark--targets))
-                   (`((,_type . ,target) (,_otype . ,_otarget) . ,bounds)
-                    (embark--act action target bounds)))))
+                 (when-let (target (car (embark--targets)))
+                   (embark--act action
+                                (plist-get target :target)
+                                (plist-get target :bounds)))))
     (put name 'function-documentation (documentation action))
     name))
 
