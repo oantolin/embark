@@ -1416,20 +1416,17 @@ queued most recently to the one queued least recently."
       (minibuffer-quit-recursive-edit)
     (abort-recursive-edit)))
 
-(defvar embark--action-hook nil
-  "Temporary variable used to run action hooks.")
-
 (defun embark--run-action-hooks (hooks action &rest args)
   "Run HOOKS for ACTION with ARGS.
 The HOOKS argument must be an alist. The keys t and :always are
 treated specially. The :always hooks are executed always and the
 t hooks are the default hooks, if there are no command-specific
 hooks."
-  (let ((embark--action-hook (or (alist-get action hooks)
-                                 (alist-get t hooks))))
-    (apply #'run-hook-with-args 'embark--action-hook action args))
-  (let ((embark--action-hook (alist-get :always hooks)))
-    (apply #'run-hook-with-args 'embark--action-hook action args)))
+  (mapc (lambda (h) (apply h action args))
+        (or (alist-get action hooks)
+            (alist-get t hooks)))
+  (mapc (lambda (h) (apply h action args))
+        (alist-get :always hooks)))
 
 (defun embark--act (action target bounds &optional quit)
   "Perform ACTION injecting the TARGET.
