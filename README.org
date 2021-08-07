@@ -538,6 +538,12 @@ actual-url-of-the-page)=.
   first minibuffer opened by the action command, and if the command
   happens to prompt the user for input more than once, the user still
   interacts with the second and further prompts in the normal fashion.
+  Note that if a command does not prompt the user for input in the
+  minibuffer, Embark still allows you to use it as an action, but of
+  course, never inserts the target anywhere. (There are plenty of
+  examples in the default configuration of commands that do not prompt
+  the user bound to keys in the action maps, most of the region
+  actions, for instance.)
 
   This is how Embark manages to reuse normal commands as actions. The
   mechanism allows you to use as Embark actions commands that were not
@@ -545,8 +551,17 @@ actual-url-of-the-page)=.
   bound by default in Embark's action keymaps are standard Emacs
   commands). It also allows you to write new custom actions in such a
   way that they are useful even without Embark.
+
+  Staring from version 28.1, Emacs has a variable
+  =y-or-n-p-use-read-key=, which when set to =t= causes =y-or-n-p= to use
+  =read-key= instead of =read-from-minibuffer=. Setting
+  =y-or-n-p-use-read-key= to =t= is recommended for Embark users because
+  it keeps Embark from attempting to insert the target at a =y-or-n-p=
+  prompt, which would almost never be sensible. Also consider this as
+  a warning to structure your own action commands so that if they use
+  =y-or-n-p=, they do so only after the prompting for the target.
   
-  Here is a simple example illustrating those three ways of reading
+  Here is a simple example illustrating the various ways of reading
   input from the user mentioned above. Bind the following commands to
   the =embark-symbol-map= to be used as actions, then put the point on
   some symbol and run them with =embark-act=:
@@ -555,21 +570,37 @@ actual-url-of-the-page)=.
     (defun example-action-command1 ()
       (interactive)
       (message "The input was `%s'." (read-from-minibuffer "Input: ")))
-
-    (defun example-action-command2 (input)
-      (interactive "s")
-      (message "The input was `%s'." input))
-
+    
+    (defun example-action-command2 (arg input1 input2)
+      (interactive "P\nsInput 1: \nsInput 2: ")
+      (message "The first input %swas `%s', and the second was `%s'."
+               (if arg "truly " "")
+               input1
+               input2))
+    
     (defun example-action-command3 ()
       (interactive)
       (message "Your selection was `%s'."
                (completing-read "Select: " '("E" "M" "B" "A" "R" "K"))))
-
+    
+    (defun example-action-command4 ()
+      (interactive)
+      (message "I don't prompt you for input and thus ignore the target!"))
+    
     (define-key embark-symbol-map "X1" #'example-action-command1)
     (define-key embark-symbol-map "X2" #'example-action-command2)
     (define-key embark-symbol-map "X3" #'example-action-command3)
+    (define-key embark-symbol-map "X4" #'example-action-command4)
   #+end_src
 
+  Also note that if you are using the key bindings to call actions,
+  you can pass prefix arguments to actions in the normal way. For
+  example, you can use =C-u X2= with the above demonstration actions to
+  make the message printed by =example-action-command2= more emphatic.
+  This ability to pass prefix arguments to actions is useful for some
+  actions in the default configuration, such as
+  =embark-shell-command-on-buffer=.
+  
 ** Non-interactive functions as actions
    
   Alternatively, Embark does support one other type of action: a
