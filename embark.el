@@ -890,7 +890,7 @@ UPDATE is the indicator update function."
                   minibuffer-scroll-window)))
          (ignore-errors (command-execute cmd)))
        (embark-keymap-prompter keymap update))
-      ((or 'scroll-bar-toolkit-scroll 'mwheel-scroll)
+      ((or 'scroll-bar-toolkit-scroll 'mwheel-scroll 'mac-mwheel-scroll)
        (funcall cmd (aref key (1- (length key))))
        (embark-keymap-prompter keymap update))
       ('execute-extended-command
