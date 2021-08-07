@@ -2919,21 +2919,27 @@ minibuffer, which means it can be used as an Embark action."
         (unhighlight-regexp regexp)
       (highlight-symbol-at-point))))
 
-(defun embark-next-symbol (sym)
-  "Jump to next SYM.
-Prints a message when the symbol is not found. The search
+(defun embark-next-symbol (symbol)
+  "Jump to next occurence of SYMBOL.
+Prints a message when the symbol is not found.  The search
 respects symbol boundaries."
-  (interactive "s")
-  (unless (re-search-forward (format "\\_<%s\\_>" (regexp-quote sym)) nil t)
-    (message "Symbol `%s' not found" sym)))
+  (interactive "sSymbol: ")
+  (let ((regexp (format "\\_<%s\\_>" (regexp-quote symbol))))
+    (when (looking-at regexp)
+      (forward-symbol 1))
+    (unless (re-search-forward regexp nil t)
+      (message "Symbol `%s' not found" symbol))))
 
-(defun embark-previous-symbol (sym)
-  "Jump to previous SYM.
-Prints a message when the symbol is not found. The search
+(defun embark-previous-symbol (symbol)
+  "Jump to previous occurrence SYMBOL.
+Prints a message when the symbol is not found.  The search
 respects symbol boundaries."
- (interactive "s")
- (unless (re-search-backward (format "\\_<%s\\_>" (regexp-quote sym)) nil t)
-   (message "Symbol `%s' not found" sym)))
+  (interactive "sSymbol: ")
+  (let ((regexp (format "\\_<%s\\_>" (regexp-quote symbol))))
+    (when (looking-back regexp (- (point) (length symbol)))
+      (forward-symbol -1))
+    (unless (re-search-backward regexp nil t)
+      (message "Symbol `%s' not found" symbol))))
 
 ;;; Setup and pre-action hooks
 
