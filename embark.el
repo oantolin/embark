@@ -1535,7 +1535,7 @@ the target at point."
 (defun embark--keybinding-command (_type target)
   "Treat an `embark-keybinding' TARGET as a command."
   (when-let ((cmd (get-text-property 0 'embark-command target)))
-    (cons 'command cmd)))
+    (cons 'command (format "%s" cmd))))
 
 (defun embark--lookup-lighter-minor-mode (_type target)
   "If TARGET is a lighter, look up its minor mode.
