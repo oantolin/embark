@@ -374,10 +374,11 @@ replaced by the single `embark-allow-edit-actions' variable."
 For commands appearing as keys in this alist, run the
 corresponding value as a setup hook after injecting the target
 into in the minibuffer and before acting on it.  The hooks must
-accept three arguments, the action, the target string and the
-target bounds.  The default pre-action hook is specified by the
-entry with key t.  Furthermore hooks with the key :always are
-executed always."
+accept arbitrary keyword argument. The :action symbol, the
+:target string and target :type are always present.  For actions
+at point the target bounds are passed too.  The default pre-action
+hook is specified by the entry with key t.  Furthermore hooks with
+the key :always are executed always."
   :type '(alist :key-type
                 (choice symbol
                         (const :tag "Default" t)
@@ -399,11 +400,9 @@ executed always."
     (kill-sexp embark--beginning-of-target)
     (mark-sexp embark--beginning-of-target))
   "Alist associating commands with pre-action hooks.
-The hooks are run right before an action is embarked upon.  The
-hooks must accept three arguments, the action, the target string
-and the target bounds.  The default pre-action hook is specified
-by the entry with key t.  Furthermore hooks with the key :always
-are executed always."
+The hooks are run right before an action is embarked upon.  See
+`embark-setup-action-hooks' for information about the hook
+arguments and more details."
   :type '(alist :key-type
                 (choice symbol
                         (const :tag "Default" t)
@@ -426,11 +425,9 @@ are executed always."
     (embark-rename-buffer embark--restart)
     (package-delete embark--restart))
   "Alist associating commands with post-action hooks.
-The hooks are run after an embarked upon action concludes.  The
-hooks must accept three arguments, the action, the target string
-and the target bounds.  The default post-action hook is specified
-by the entry with key t.  Furthermore hooks with the key :always
-are executed always."
+The hooks are run after an embarked upon action concludes.  See
+`embark-setup-action-hooks' for information about the hook
+arguments and more details."
   :type '(alist :key-type
                 (choice symbol
                         (const :tag "Default" t)
@@ -1443,23 +1440,23 @@ queued most recently to the one queued least recently."
       (minibuffer-quit-recursive-edit)
     (abort-recursive-edit)))
 
-(defun embark--run-action-hooks (hooks action &rest args)
-  "Run HOOKS for ACTION with ARGS.
-The HOOKS argument must be an alist.  The keys t and :always are
+(defun embark--run-action-hooks (hooks action target quit)
+  "Run HOOKS for ACTION.
+The HOOKS argument must be alist.  The keys t and :always are
 treated specially.  The :always hooks are executed always and the
 t hooks are the default hooks, if there are no command-specific
+hooks.  The QUIT, ACTION and TARGET arguments are passed to the
 hooks."
-  (mapc (lambda (h) (apply h action args))
+  (mapc (lambda (h) (apply h :action action :quit quit target))
         (or (alist-get action hooks)
             (alist-get t hooks)))
-  (mapc (lambda (h) (apply h action args))
+  (mapc (lambda (h) (apply h :action action :quit quit target))
         (alist-get :always hooks)))
 
-(defun embark--act (action target bounds &optional quit)
+(defun embark--act (action target &optional quit)
   "Perform ACTION injecting the TARGET.
 If called from a minibuffer with non-nil QUIT, quit the
-minibuffer before executing the action.  BOUNDS are the bounds of
-the target at point."
+minibuffer before executing the action."
   (if (memq action '(embark-become        ; these actions should not
                      embark-collect-live  ; run in the target window
                      embark-collect-snapshot
@@ -1471,7 +1468,7 @@ the target at point."
            (inject
             (lambda ()
               (delete-minibuffer-contents)
-              (insert (substring-no-properties target))
+              (insert (substring-no-properties (plist-get target :target)))
               (embark--run-action-hooks embark-setup-action-hooks
                                         action target quit)
               (unless (memq action embark-allow-edit-actions)
@@ -1501,20 +1498,21 @@ the target at point."
                                   (last-nonmenu-event 13))
                               (setq prefix-arg prefix)
                               (embark--run-action-hooks embark-pre-action-hooks
-                                                        action target bounds)
+                                                        action target quit)
                               (command-execute action))
                             (setq final-window (selected-window)))
                         (embark--run-action-hooks embark-post-action-hooks
-                                                  action target bounds)
+                                                  action target quit)
                         (when dedicate (set-window-dedicated-p dedicate nil)))
                       (unless (eq final-window action-window)
                         (select-window final-window)))))
               (lambda ()
                 (with-selected-window action-window
-                  (embark--run-action-hooks embark-pre-action-hooks action target bounds)
-                  (unwind-protect (funcall action target)
+                  (embark--run-action-hooks embark-pre-action-hooks
+                                            action target quit)
+                  (unwind-protect (funcall action (plist-get target :target))
                     (embark--run-action-hooks embark-post-action-hooks
-                                              action target bounds)))))))
+                                              action target quit)))))))
       (if (not (and quit (minibufferp)))
           (funcall run-action)
         (embark--quit-and-run run-action)))))
@@ -1699,12 +1697,14 @@ target."
                 (unless (memq action embark-repeat-actions)
                   (mapc #'funcall indicators))
                 (embark--act action
-                             (plist-get target
-                                        (if (and (eq action default-action)
-                                                 (eq action embark--command))
-                                            :orig-target
-                                          :target))
-                             (plist-get target :bounds)
+                             (if (and (eq action default-action)
+                                      (eq action embark--command))
+                                 (plist-put
+                                  (plist-put
+                                   (copy-sequence target)
+                                   :target (plist-get target :orig-target))
+                                  :type (plist-get target :orig-type))
+                               target)
                              (if embark-quit-after-action (not arg) arg))
                 (when-let (new-targets (and (memq action embark-repeat-actions)
                                             (embark--targets)))
@@ -1793,11 +1793,13 @@ See `embark-act' for the meaning of the prefix ARG."
              (default-action (embark--default-action
                               (plist-get target :type))))
         (embark--act default-action
-                     (plist-get target
-                                (if (eq default-action embark--command)
-                                    :orig-target
-                                  :target))
-                     (plist-get target :bound)
+                     (if (eq default-action embark--command)
+                         (plist-put
+                          (plist-put
+                           (copy-sequence target)
+                           :target (plist-get target :orig-target))
+                          :type (plist-get target :orig-type))
+                       target)
                      (if embark-quit-after-action (not arg) arg)))
     (user-error "No target found")))
 
@@ -2077,9 +2079,7 @@ Returns the name of the command."
     (fset name (lambda ()
                  (interactive)
                  (when-let (target (car (embark--targets)))
-                   (embark--act action
-                                (plist-get target :target)
-                                (plist-get target :bounds)))))
+                   (embark--act action target))))
     (put name 'function-documentation (documentation action))
     name))
 
@@ -2144,8 +2144,7 @@ exit the minibuffer.
 For other Embark Collect buffers, run the default action on ENTRY."
   (let* ((start (button-start entry))
          (end (button-end entry))
-         (text (buffer-substring start end)) ; keep properties
-         (bounds (cons start end)))
+         (text (buffer-substring start end))) ; keep properties
     (when (eq embark--type 'file)
       (setq text (abbreviate-file-name (expand-file-name text))))
     (if (and (eq embark-collect--kind :completions))
@@ -2163,7 +2162,10 @@ For other Embark Collect buffers, run the default action on ENTRY."
                       (= (car (embark--boundaries))
                          (embark--minibuffer-point)))
             (exit-minibuffer)))
-      (embark--act (embark--default-action embark--type) text bounds))))
+      (embark--act (embark--default-action embark--type)
+                   (list :target text
+                         :type embark--type
+                         :bounds (cons start end))))))
 
 (embark-define-keymap embark-collect-mode-map
   "Keymap for Embark collect mode."
@@ -2997,7 +2999,7 @@ and leaves the point to the left of it."
     (insert ")")
     (backward-char)))
 
-(defun embark--beginning-of-target (_action _target bounds)
+(cl-defun embark--beginning-of-target (&key bounds &allow-other-keys)
   "Go to beginning of the target BOUNDS."
   (when bounds
     (goto-char (car bounds))))
