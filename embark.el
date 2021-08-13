@@ -2991,7 +2991,7 @@ and leaves the point to the left of it."
 
 (defun embark--eval-prep (&rest _)
   "If target is: a variable, skip edit; a function, wrap in parens."
-  (if (not (fboundp (intern (minibuffer-contents))))
+  (if (not (fboundp (intern-soft (minibuffer-contents))))
       (add-hook 'post-command-hook #'exit-minibuffer nil t)
     (goto-char (minibuffer-prompt-end))
     (insert "(")
