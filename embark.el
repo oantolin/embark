@@ -1473,7 +1473,7 @@ the target at point."
               (delete-minibuffer-contents)
               (insert (substring-no-properties target))
               (embark--run-action-hooks embark-setup-action-hooks
-                                        action target bounds)
+                                        action target quit)
               (unless (memq action embark-allow-edit-actions)
                 (if (memq 'ivy--queue-exhibit post-command-hook)
                     ;; Ivy has special needs: (1) for file names
