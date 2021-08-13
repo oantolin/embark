@@ -1508,7 +1508,7 @@ minibuffer before executing the action."
                 (with-selected-window action-window
                   (embark--run-action-hooks embark-pre-action-hooks
                                             action target quit)
-                  (unwind-protect (funcall action target)
+                  (unwind-protect (funcall action (plist-get target :target))
                     (embark--run-action-hooks embark-post-action-hooks
                                               action target quit)))))))
       (if (not (and quit (minibufferp)))
