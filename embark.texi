@@ -422,14 +422,9 @@ For some commands this might be undesirable, either for safety
 @samp{kill-buffer}), or because further input is required next to the target
 (like when using @samp{shell-command}: the target is the file and you still
 need to enter a shell command to run on it, at the same prompt). You
-can add such commands to the @samp{embark-allow-edit-commands} variable
+can add such commands to the @samp{embark-allow-edit-actions} variable
 (which by default already contains the examples mentioned, and a few
 others as well).
-
-Now, automatically pressing @samp{RET} for most commands is only the default.
-If you set the variable @samp{embark-allow-edit-default} to @samp{t}, then @samp{embark}
-will instead give you a chance to edit the target before acting upon
-it, for all commands except those listed in @samp{embark-skip-edit-commands}.
 
 @node Running some setup after injecting the target
 @section Running some setup after injecting the target
@@ -587,7 +582,7 @@ without confirmation is dangerous? You have a couple of options:
 You can keep using the @samp{tab-bar-close-tab-by-name} command, but no
 longer let Embark press @samp{RET} for you:
 @lisp
-(add-to-list 'embark-allow-edit-commands 'tab-bar-close-tab-by-name)
+(add-to-list 'embark-allow-edit-actions 'tab-bar-close-tab-by-name)
 @end lisp
 
 @item
@@ -644,26 +639,25 @@ actual-url-of-the-page)}.
 
 Embark actions are normal Emacs commands, that is, functions with an
 interactive specification. In order to execute an action, Embark
-calls the command with @samp{call-interactively}, so the command reads user
-input exactly as if run directly by the user. For example the
+calls the command with @samp{call-interactively}, so the command reads
+user input exactly as if run directly by the user. For example the
 command may open a minibuffer and read a string
 (@samp{read-from-minibuffer}) or open a completion interface
 (@samp{completing-read}). If this happens, Embark takes the target string
 and inserts it automatically into the minibuffer, simulating user
 input this way. After inserting the string, Embark exits the
 minibuffer, submitting the input. (The immediate minibuffer exit can
-be disabled in order to allow editing the input: see the
-@samp{embark-allow-edit-commands} and @samp{embark-allow-edit-default}
-configuration variables). Embark inserts the target string at the
-first minibuffer opened by the action command, and if the command
-happens to prompt the user for input more than once, the user still
-interacts with the second and further prompts in the normal fashion.
-Note that if a command does not prompt the user for input in the
-minibuffer, Embark still allows you to use it as an action, but of
-course, never inserts the target anywhere. (There are plenty of
-examples in the default configuration of commands that do not prompt
-the user bound to keys in the action maps, most of the region
-actions, for instance.)
+be disabled for specific actions in order to allow editing the
+input: see the @samp{embark-allow-edit-actions} configuration variable).
+Embark inserts the target string at the first minibuffer opened by
+the action command, and if the command happens to prompt the user
+for input more than once, the user still interacts with the second
+and further prompts in the normal fashion. Note that if a command
+does not prompt the user for input in the minibuffer, Embark still
+allows you to use it as an action, but of course, never inserts the
+target anywhere. (There are plenty of examples in the default
+configuration of commands that do not prompt the user bound to keys
+in the action maps, most of the region actions, for instance.)
 
 This is how Embark manages to reuse normal commands as actions. The
 mechanism allows you to use as Embark actions commands that were not

@@ -339,15 +339,11 @@ configure that by adding an entry to this variable pairing `file'
 with `find-file'."
   :type '(alist :key-type symbol :value-type command))
 
-(defcustom embark-allow-edit-default nil
-  "Is the user allowed to edit the target before acting on it?
-This variable sets the default policy, and can be overidden.
-When this variable is nil, it is overridden by
-`embark-allow-edit-commands'; when it is t, it is overidden by
-`embark-skip-edit-commands'."
-  :type 'boolean)
-
-(defcustom embark-allow-edit-commands
+(define-obsolete-variable-alias
+  'embark-allow-edit-commands
+  'embark-allow-edit-actions
+  "0.12")
+(defcustom embark-allow-edit-actions
   '(delete-file
     delete-directory
     kill-buffer
@@ -355,14 +351,19 @@ When this variable is nil, it is overridden by
     async-shell-command
     embark-kill-buffer-and-window
     pp-eval-expression)
-  "Allowing editing of target prior to acting for these commands.
-This list is used only when `embark-allow-edit-default' is nil."
+  "Enable editing of target prior to acting for these commands.
+Editing the target is useful as a confirmation feature for
+destructive commands like `delete-file'."
   :type '(repeat symbol))
 
-(defcustom embark-skip-edit-commands nil
-  "Skip editing of target prior to acting for these commands.
-This list is used only when `embark-allow-edit-default' is t."
-  :type '(repeat symbol))
+(defvar embark-skip-edit-commands nil)
+(defvar embark-allow-edit-default t)
+(dolist (var '(embark-skip-edit-commands embark-allow-edit-default))
+  (make-obsolete-variable
+   var
+   "The action editing configuration has been simplified and
+replaced by the single `embark-allow-edit-actions' variable."
+   "0.12"))
 
 (defcustom embark-setup-action-hooks
   '((async-shell-command embark--shell-prep)
@@ -437,7 +438,7 @@ arguments and more details."
                "see the new `embark-post-action-hooks' variable."
                "0.12")
 
-(defcustom embark-repeat-commands
+(defcustom embark-repeat-actions
   '(embark-next-symbol embark-previous-symbol backward-up-list)
   "List of repeatable actions."
   :type '(repeat function))
@@ -988,7 +989,7 @@ If NESTED is non-nil subkeymaps are not flattened."
                    for desc-rep =
                    (concat
                     (propertize desc 'face 'embark-keybinding)
-                    (and (memq cmd embark-repeat-commands)
+                    (and (memq cmd embark-repeat-actions)
                          embark-keybinding-repeat))
                    for formatted =
                    (propertize
@@ -1105,7 +1106,11 @@ display actions and parameters are available."
                  (display-buffer-in-side-window (side . left)))
           (sexp :tag "Other")))
 
-(defcustom embark-verbose-indicator-excluded-commands nil
+(define-obsolete-variable-alias
+  'embark-verbose-indicator-excluded-commands
+  'embark-verbose-indicator-excluded-actions
+  "0.12")
+(defcustom embark-verbose-indicator-excluded-actions nil
   "Commands not displayed by `embark-verbose-indicator'.
 This variable should be set to a list of symbols and regexps.
 The verbose indicator will exclude from its listing any commands
@@ -1153,7 +1158,7 @@ of all full key sequences bound in the keymap."
               (if (symbolp x)
                   (eq cmd x)
                 (string-match-p x (symbol-name cmd))))
-            embark-verbose-indicator-excluded-commands))
+            embark-verbose-indicator-excluded-actions))
 
 (cl-defun embark--verbose-indicator-section-target
     (&key target bindings &allow-other-keys)
@@ -1263,7 +1268,7 @@ sequences bound in the keymap.  This is controlled by the
 variable `embark-verbose-indicator-nested'.
 
 To reduce clutter in the key binding table, one can set the
-variable `embark-verbose-indicator-excluded-commands' to a list
+variable `embark-verbose-indicator-excluded-actions' to a list
 of symbols and regexps matching commands to exclude from the
 table.
 
@@ -1460,16 +1465,13 @@ minibuffer before executing the action."
     (let* ((command embark--command)
            (prefix prefix-arg)
            (action-window (embark--target-window t))
-           (allow-edit (if embark-allow-edit-default
-                           (not (memq action embark-skip-edit-commands))
-                         (memq action embark-allow-edit-commands)))
            (inject
             (lambda ()
               (delete-minibuffer-contents)
               (insert (substring-no-properties (plist-get target :target)))
               (embark--run-action-hooks embark-setup-action-hooks
                                         action target quit)
-              (unless allow-edit
+              (unless (memq action embark-allow-edit-actions)
                 (if (memq 'ivy--queue-exhibit post-command-hook)
                     ;; Ivy has special needs: (1) for file names
                     ;; ivy-immediate-done is not equivalent to
@@ -1692,7 +1694,7 @@ target."
                                targets (prefix-numeric-value prefix-arg))))
                (t
                 ;; if the action is non-repeatable, cleanup indicator now
-                (unless (memq action embark-repeat-commands)
+                (unless (memq action embark-repeat-actions)
                   (mapc #'funcall indicators))
                 (embark--act action
                              (if (and (eq action default-action)
@@ -1704,7 +1706,7 @@ target."
                                   :type (plist-get target :orig-type))
                                target)
                              (if embark-quit-after-action (not arg) arg))
-                (when-let (new-targets (and (memq action embark-repeat-commands)
+                (when-let (new-targets (and (memq action embark-repeat-actions)
                                             (embark--targets)))
                   ;; Terminate repeated prompter on default action, when
                   ;; repeating. Jump to the same target type.
