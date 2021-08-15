@@ -133,6 +133,8 @@
     (package . embark-package-map)
     (bookmark . embark-bookmark-map)
     (region . embark-region-map)
+    (sentence . embark-sentence-map)
+    (paragraph . embark-paragraph-map)
     (t . embark-general-map))
   "Alist of action types and corresponding keymaps.
 For any type not listed here, `embark-act' will use
@@ -151,6 +153,8 @@ For any type not listed here, `embark-act' will use
     embark-target-identifier-at-point
     embark-target-library-at-point
     embark-target-expression-at-point
+    embark-target-sentence-at-point
+    embark-target-paragraph-at-point
     embark-target-defun-at-point)
   "List of functions to determine the target in current context.
 Each function should take no arguments and return either nil to
@@ -392,8 +396,10 @@ the key :always are executed always."
                  "0.12"))
 
 (defcustom embark-pre-action-hooks
-  '((write-region embark--ignore-target embark--mark-target)
+  '(;; region commands which prompt for a filename
+    (write-region embark--ignore-target embark--mark-target)
     (append-to-file embark--ignore-target embark--mark-target)
+    ;; motion commands that need to position point to skip current match
     (indent-pp-sexp embark--beginning-of-target)
     (backward-up-list embark--beginning-of-target)
     (backward-list embark--beginning-of-target)
@@ -404,10 +410,22 @@ the key :always are executed always."
     (kill-sexp embark--beginning-of-target)
     (mark-sexp embark--beginning-of-target)
     (transpose-sexp embark--end-of-target)
+    (forward-sentence embark--end-of-target)
+    (backward-sentence embark--beginning-of-target)
+    (forward-paragraph embark--end-of-target)
+    (backward-paragraph embark--beginning-of-target)
+    ;; region commands
     (mark embark--mark-target)
     (kill-region embark--mark-target)
     (kill-ring-save embark--mark-target)
-    (indent-region embark--mark-target))
+    (indent-region embark--mark-target)
+    (ispell-region embark--mark-target)
+    (fill-region embark--mark-target)
+    (upcase-region embark--mark-target)
+    (downcase-region embark--mark-target)
+    (capitalize-region embark--mark-target)
+    (count-words-region embark--mark-target)
+    (shell-command-on-region embark--mark-target))
   "Alist associating commands with pre-action hooks.
 The hooks are run right before an action is embarked upon.  See
 `embark-setup-action-hooks' for information about the hook
@@ -450,7 +468,9 @@ arguments and more details."
 (defcustom embark-repeat-actions
   '(embark-next-symbol embark-previous-symbol backward-up-list
     backward-list forward-list forward-sexp backward-sexp mark
-    transpose-sexps)
+    transpose-sexps tranpose-sentences transpose-paragraphs
+    forward-sentence backward-sentence forward-paragraph
+    backward-paragraph)
   "List of repeatable actions."
   :type '(repeat function))
 
@@ -699,10 +719,19 @@ In `dired-mode', it uses `dired-get-filename' instead."
         ,(buffer-substring (car bounds) (cdr bounds))
         . ,bounds))))
 
-(defun embark-target-defun-at-point ()
-  "Target defun at point."
-  (when-let (bounds (bounds-of-thing-at-point 'defun))
-    `(defun ,(buffer-substring (car bounds) (cdr bounds)) . ,bounds)))
+(defmacro embark-define-thingatpt-target (thing &rest modes)
+  "Define a target finder for THING using the thingatpt library."
+  `(defun ,(intern (format "embark-target-%s-at-point" thing)) ()
+     ,(format "Target %s at point." thing)
+     (when ,(if modes `(derived-mode-p ,@(mapcar (lambda (m) `',m) modes)) t)
+       (when-let (bounds (bounds-of-thing-at-point ',thing))
+         (cons ',thing (cons
+                        (buffer-substring (car bounds) (cdr bounds))
+                        bounds))))))
+
+(embark-define-thingatpt-target defun)
+(embark-define-thingatpt-target sentence text-mode help-mode)
+(embark-define-thingatpt-target paragraph text-mode help-mode)
 
 (defun embark-target-identifier-at-point ()
   "Target identifier at point.
@@ -3243,6 +3272,30 @@ and leaves the point to the left of it."
   ("RET" insert-char)
   ("I" insert-char)
   ("W" embark-save-unicode-character))
+
+(embark-define-keymap embark-prose-map
+  "Keymap for Embark actions for dealing with prose."
+  ("$" ispell-region)
+  ("f" fill-region)
+  ("u" upcase-region)
+  ("d" downcase-region)
+  ("c" capitalize-region)
+  ("s" whitespace-cleanup-region)
+  ("=" count-words-region))
+
+(embark-define-keymap embark-sentence-map
+  "Keymap for Embark actions for dealing with sentences."
+  :parent embark-prose-map
+  ("t" transpose-sentences)
+  ("n" forward-sentence)
+  ("p" backward-sentence))
+
+(embark-define-keymap embark-paragraph-map
+  "Keymap for Embark actions for dealing with paragraphs."
+  :parent embark-prose-map
+  ("t" transpose-paragraphs)
+  ("n" forward-paragraph)
+  ("p" backward-paragraph))
 
 (embark-define-keymap embark-become-help-map
   "Keymap for Embark help actions."
