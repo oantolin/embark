@@ -403,13 +403,10 @@ the key :always are executed always."
     (raise-sexp embark--beginning-of-target)
     (kill-sexp embark--beginning-of-target)
     (mark-sexp embark--beginning-of-target)
+    (mark embark--mark-target)
     (kill-region embark--mark-target)
     (kill-ring-save embark--mark-target)
-    (indent-region embark--mark-target)
-    (indent-rigidly embark--mark-target)
-    (whitespace-cleanup-region embark--mark-target)
-    (apply-macro-to-region-lines embark--mark-target)
-    (indent-rigidly embark--mark-target))
+    (indent-region embark--mark-target))
   "Alist associating commands with pre-action hooks.
 The hooks are run right before an action is embarked upon.  See
 `embark-setup-action-hooks' for information about the hook
@@ -451,7 +448,7 @@ arguments and more details."
 
 (defcustom embark-repeat-actions
   '(embark-next-symbol embark-previous-symbol backward-up-list
-    backward-list forward-list forward-sexp backward-sexp)
+    backward-list forward-list forward-sexp backward-sexp mark)
   "List of repeatable actions."
   :type '(repeat function))
 
@@ -1720,16 +1717,23 @@ target."
                              (if embark-quit-after-action (not arg) arg))
                 (when-let (new-targets (and (memq action embark-repeat-actions)
                                             (embark--targets)))
-                  ;; Terminate repeated prompter on default action, when
-                  ;; repeating. Jump to the same target type.
+                  ;; Terminate repeated prompter on default action,
+                  ;; when repeating. Jump to the region type if the
+                  ;; region is active after the action, or else to the
+                  ;; current type again.
                   (setq default-done #'embark-done
-                        targets (embark--rotate
-                                 new-targets
-                                 (or (cl-position-if
-                                      (lambda (x) (eq (plist-get x :type)
-                                                      (plist-get (car targets) :type)))
-                                      new-targets)
-                                     0))))))))
+                        targets
+                        (embark--rotate
+                         new-targets
+                         (or (cl-position-if
+                              (let ((desired-type
+                                     (if (use-region-p)
+                                          'region
+                                          (plist-get (car targets) :type))))
+                                (lambda (x)
+                                  (eq (plist-get x :type) desired-type)))
+                              new-targets)
+                             0))))))))
       (mapc #'funcall indicators))))
 
 (defun embark-highlight-indicator ()
@@ -3047,7 +3051,8 @@ and leaves the point to the left of it."
   ("S" embark-collect-snapshot)
   ("L" embark-collect-live)
   ("B" embark-become)
-  ("C-s" embark-isearch))
+  ("C-s" embark-isearch)
+  ("SPC" mark))
 
 (autoload 'org-table-convert-region "org-table")
 
@@ -3132,13 +3137,12 @@ and leaves the point to the left of it."
   ("RET" pp-eval-expression)
   ("e" pp-eval-expression)
   ("m" pp-macroexpand-expression)
-  ("TAB" indent-pp-sexp)
+  ("TAB" indent-region)
   ("r" raise-sexp)
-  ("k" kill-sexp)
+  ("k" kill-region)
   ("u" backward-up-list)
   ("n" forward-list)
-  ("p" backward-list)
-  ("SPC" mark-sexp))
+  ("p" backward-list))
 
 (embark-define-keymap embark-defun-map
   "Keymap for Embark defun actions."
@@ -3149,8 +3153,7 @@ and leaves the point to the left of it."
   ("l" elint-defun)
   ("D" edebug-defun)
   ("o" checkdoc-defun)
-  ("n" narrow-to-defun)
-  ("SPC" mark-defun))
+  ("n" narrow-to-defun))
 
 (embark-define-keymap embark-symbol-map
   "Keymap for Embark symbol actions."
