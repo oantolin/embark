@@ -403,6 +403,7 @@ the key :always are executed always."
     (raise-sexp embark--beginning-of-target)
     (kill-sexp embark--beginning-of-target)
     (mark-sexp embark--beginning-of-target)
+    (transpose-sexp embark--end-of-target)
     (mark embark--mark-target)
     (kill-region embark--mark-target)
     (kill-ring-save embark--mark-target)
@@ -448,7 +449,8 @@ arguments and more details."
 
 (defcustom embark-repeat-actions
   '(embark-next-symbol embark-previous-symbol backward-up-list
-    backward-list forward-list forward-sexp backward-sexp mark)
+    backward-list forward-list forward-sexp backward-sexp mark
+    transpose-sexps)
   "List of repeatable actions."
   :type '(repeat function))
 
@@ -3145,6 +3147,7 @@ and leaves the point to the left of it."
   ("m" pp-macroexpand-expression)
   ("TAB" indent-region)
   ("r" raise-sexp)
+  ("t" transpose-sexps)
   ("k" kill-region)
   ("u" backward-up-list)
   ("n" forward-list)
