@@ -732,7 +732,13 @@ As a convenience, in Org Mode an initial ' or surrounding == or
 
 (defun embark-target-top-minibuffer-completion ()
   "Target the top completion candidate in the minibuffer.
-Return the category metadatum as the type of the target."
+Return the category metadatum as the type of the target.
+
+This target finder is meant for the default completion UI and
+completion UI highly compatible with it, like `icomplete-mode'.
+Many completion UIs can still work with Embark but will need
+their own target finder.  See for example
+`embark--vertico-selected' or `embark--selectrum-selected'."
   (when (minibufferp)
     (pcase-let* ((`(,category . ,candidates) (embark-minibuffer-candidates))
                  (contents (minibuffer-contents))
