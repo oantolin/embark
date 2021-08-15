@@ -392,13 +392,20 @@ the key :always are executed always."
                  "0.12"))
 
 (defcustom embark-pre-action-hooks
-  '((write-region embark--ignore-target)
-    (append-to-file embark--ignore-target)
+  '((write-region embark--ignore-target embark--mark-target)
+    (append-to-file embark--ignore-target embark--mark-target)
     (indent-pp-sexp embark--beginning-of-target)
     (backward-up-list embark--beginning-of-target)
     (raise-sexp embark--beginning-of-target)
     (kill-sexp embark--beginning-of-target)
-    (mark-sexp embark--beginning-of-target))
+    (mark-sexp embark--beginning-of-target)
+    (kill-region embark--mark-target)
+    (kill-ring-save embark--mark-target)
+    (indent-region embark--mark-target)
+    (indent-rigidly embark--mark-target)
+    (whitespace-cleanup-region embark--mark-target)
+    (apply-macro-to-region-lines embark--mark-target)
+    (indent-rigidly embark--mark-target))
   "Alist associating commands with pre-action hooks.
 The hooks are run right before an action is embarked upon.  See
 `embark-setup-action-hooks' for information about the hook
@@ -3002,6 +3009,12 @@ and leaves the point to the left of it."
 (cl-defun embark--beginning-of-target (&key bounds &allow-other-keys)
   "Go to beginning of the target BOUNDS."
   (when bounds
+    (goto-char (car bounds))))
+
+(cl-defun embark--mark-target (&key bounds &allow-other-keys)
+  "Mark the target if its BOUNDS are known."
+  (when bounds
+    (set-mark (cdr bounds))
     (goto-char (car bounds))))
 
 (defun embark--ignore-target (&rest _)
