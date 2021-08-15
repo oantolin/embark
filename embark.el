@@ -396,6 +396,10 @@ the key :always are executed always."
     (append-to-file embark--ignore-target embark--mark-target)
     (indent-pp-sexp embark--beginning-of-target)
     (backward-up-list embark--beginning-of-target)
+    (backward-list embark--beginning-of-target)
+    (forward-list embark--end-of-target)
+    (forward-sexp embark--end-of-target)
+    (backward-sexp embark--beginning-of-target)
     (raise-sexp embark--beginning-of-target)
     (kill-sexp embark--beginning-of-target)
     (mark-sexp embark--beginning-of-target)
@@ -446,7 +450,8 @@ arguments and more details."
                "0.12")
 
 (defcustom embark-repeat-actions
-  '(embark-next-symbol embark-previous-symbol backward-up-list)
+  '(embark-next-symbol embark-previous-symbol backward-up-list
+    backward-list forward-list forward-sexp backward-sexp)
   "List of repeatable actions."
   :type '(repeat function))
 
@@ -3011,6 +3016,11 @@ and leaves the point to the left of it."
   (when bounds
     (goto-char (car bounds))))
 
+(cl-defun embark--end-of-target (&key bounds &allow-other-keys)
+  "Go to end of the target BOUNDS."
+  (when bounds
+    (goto-char (cdr bounds))))
+
 (cl-defun embark--mark-target (&key bounds &allow-other-keys)
   "Mark the target if its BOUNDS are known."
   (when bounds
@@ -3126,6 +3136,8 @@ and leaves the point to the left of it."
   ("r" raise-sexp)
   ("k" kill-sexp)
   ("u" backward-up-list)
+  ("n" forward-list)
+  ("p" backward-list)
   ("SPC" mark-sexp))
 
 (embark-define-keymap embark-defun-map
