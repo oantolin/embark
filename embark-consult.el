@@ -113,7 +113,8 @@
 
 (defun embark-consult-goto-location (target)
   "Jump to consult location TARGET."
-  (consult--jump (car (get-text-property 0 'consult-location target))))
+  (consult--jump (car (get-text-property 0 'consult-location target)))
+  (pulse-momentary-highlight-one-line (point)))
 
 (setf (alist-get 'consult-location embark-default-action-overrides)
       #'embark-consult-goto-location)
@@ -189,7 +190,8 @@ The elements of LINES are assumed to be values of category `consult-line'."
   ;; location is given relative to that directory.
   (let ((default-directory (with-selected-window (previous-window)
                              default-directory)))
-    (consult--jump (consult--grep-position location))))
+    (consult--jump (consult--grep-position location))
+    (pulse-momentary-highlight-one-line (point))))
 
 (setf (alist-get 'consult-grep embark-default-action-overrides)
       #'embark-consult-goto-grep)
