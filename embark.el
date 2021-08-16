@@ -3168,6 +3168,7 @@ and leaves the point to the left of it."
   ("d" xref-find-definitions)
   ("r" xref-find-references)
   ("a" xref-find-apropos)
+  ("s" info-lookup-symbol)
   ("n" embark-next-symbol)
   ("p" embark-previous-symbol))
 
