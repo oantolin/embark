@@ -412,7 +412,6 @@ the key :always are executed always."
     (transpose-sexp embark--end-of-target)
     (forward-sentence embark--end-of-target)
     (backward-sentence embark--beginning-of-target)
-    (forward-paragraph embark--end-of-target)
     (backward-paragraph embark--beginning-of-target)
     ;; region commands
     (mark embark--mark-target)
