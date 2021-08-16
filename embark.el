@@ -793,8 +793,11 @@ their own target finder.  See for example
 (defun embark-target-collect-candidate ()
   "Target the collect candidate at point."
   (when (derived-mode-p 'embark-collect-mode)
-    ;; do not use button-label since it strips text properties
-    (when-let (button (button-at (point)))
+    (when-let (button
+               (pcase (get-text-property (point) 'tabulated-list-column-name)
+                 ("Candidate" (button-at (point)))
+                 ("Annotation" (previous-button (point)))))
+      ;; do not use button-label since it strips text properties
       (let* ((beg (button-start button))
              (end (button-end button))
              (label (buffer-substring beg end)))
