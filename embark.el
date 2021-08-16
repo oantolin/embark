@@ -424,7 +424,9 @@ the key :always are executed always."
     (downcase-region embark--mark-target)
     (capitalize-region embark--mark-target)
     (count-words-region embark--mark-target)
-    (shell-command-on-region embark--mark-target))
+    (shell-command-on-region embark--mark-target)
+    (backward-delete-char embark--mark-target)
+    (backward-delete-char-untabify embark--mark-target))
   "Alist associating commands with pre-action hooks.
 The hooks are run right before an action is embarked upon.  See
 `embark-setup-action-hooks' for information about the hook
