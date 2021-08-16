@@ -721,6 +721,7 @@ In `dired-mode', it uses `dired-get-filename' instead."
 
 (defmacro embark-define-thingatpt-target (thing &rest modes)
   "Define a target finder for THING using the thingatpt library."
+  (declare (indent 1))
   `(defun ,(intern (format "embark-target-%s-at-point" thing)) ()
      ,(format "Target %s at point." thing)
      (when ,(if modes `(derived-mode-p ,@(mapcar (lambda (m) `',m) modes)) t)
@@ -730,8 +731,10 @@ In `dired-mode', it uses `dired-get-filename' instead."
                         bounds))))))
 
 (embark-define-thingatpt-target defun)
-(embark-define-thingatpt-target sentence text-mode help-mode)
-(embark-define-thingatpt-target paragraph text-mode help-mode)
+(embark-define-thingatpt-target sentence
+  text-mode help-mode Info-mode man-common)
+(embark-define-thingatpt-target paragraph
+  text-mode help-mode Info-mode man-common)
 
 (defun embark-target-identifier-at-point ()
   "Target identifier at point.
