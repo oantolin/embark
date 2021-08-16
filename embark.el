@@ -3117,7 +3117,8 @@ and leaves the point to the left of it."
   ("W" write-region)
   ("+" append-to-file)
   ("m" apply-macro-to-region-lines)
-  ("n" narrow-to-region))
+  ("n" narrow-to-region)
+  ("*" calc-grab-region))
 
 (embark-define-keymap embark-file-map
   "Keymap for Embark file actions."
