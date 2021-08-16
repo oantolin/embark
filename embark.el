@@ -3193,7 +3193,7 @@ and leaves the point to the left of it."
   ("l" elint-defun)
   ("D" edebug-defun)
   ("o" checkdoc-defun)
-  ("n" narrow-to-defun))
+  ("N" narrow-to-defun))
 
 (embark-define-keymap embark-symbol-map
   "Keymap for Embark symbol actions."
