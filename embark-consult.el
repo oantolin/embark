@@ -269,13 +269,13 @@ actual type."
 (define-key embark-general-map "C" 'embark-consult-search-map)
 
 (map-keymap
- (lambda (_key cmd) (cl-pushnew cmd embark-allow-edit-commands))
+ (lambda (_key cmd) (cl-pushnew cmd embark-allow-edit-actions))
  embark-consult-search-map)
 
 (defun embark-consult--unique-match (&rest _)
   "If there is a unique matching candidate, accept it.
 This is intended to be used in `embark-setup-action-hooks' for some
-actions that are on `embark-allow-edit-commands'."
+actions that are on `embark-allow-edit-actions'."
   (let ((candidates (cdr (embark-minibuffer-candidates))))
     (unless (or (null candidates) (cdr candidates))
       (delete-minibuffer-contents)
