@@ -2903,15 +2903,13 @@ When called with a prefix argument OTHER-WINDOW, open dired in other window."
   (interactive "fJump to Dired file: \nP")
   (dired-jump other-window file))
 
-(autoload 'xref-push-marker-stack "xref")
+(defvar xref-backend-functions)
 
 (defun embark-find-definition (symbol)
-  "Find definition of SYMBOL."
+  "Find definition of Emacs Lisp SYMBOL."
   (interactive "SSymbol: ")
-  (xref-push-marker-stack)
-  (cond
-   ((fboundp symbol) (find-function symbol))
-   ((boundp symbol) (find-variable symbol))))
+  (let ((xref-backend-functions (lambda () 'elisp)))
+    (xref-find-definitions symbol)))
 
 (defun embark-info-lookup-symbol (symbol)
   "Display the definition of SYMBOL, from the Elisp manual."
