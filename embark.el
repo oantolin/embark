@@ -605,8 +605,8 @@ There are three kinds:
 (defvar-local embark-collect-linked-buffer nil
   "Buffer local variable indicating which Embark Buffer to update.")
 
-(defvar-local embark-collect-annotator nil
-  "Annotation function of minibuffer session for this collect.")
+(defvar-local embark-collect-affixator nil
+  "Affixation function of minibuffer session for this collect.")
 
 (defvar-local embark--collect-live--timer nil
   "Timer scheduled to update Embark Collect Live buffer.")
@@ -2281,46 +2281,53 @@ key binding for it.  Or alternatively you might want to enable
               (setq pos inv))))))
     width))
 
-(defun embark-collect--max-width ()
-  "Maximum width of any Embark Collect candidate."
-  (or (cl-loop for cand in embark-collect-candidates
-               maximize (embark--display-width cand))
+(defun embark-collect--max-width (items)
+  "Maximum width of any of the ITEMS.
+Each item can be a string or a list of three strings.  In the
+latter case, the lengths of the first two elements are added to
+determine the width."
+  (or (if (stringp (car items))
+          (cl-loop for str in items maximize (embark--display-width str))
+        (cl-loop for (pre str _) in items
+                 maximize (+ (embark--display-width pre)
+                             (embark--display-width str))))
       0))
 
 (defun embark-collect--list-view ()
   "List view of candidates and annotations for Embark Collect buffer."
-  (setq tabulated-list-format
-        (if embark-collect-annotator
-            (let ((width (embark-collect--max-width)))
-              `[("Candidate" ,width t) ("Annotation" 0 t)])
-          [("Candidate" 0 t)]))
-  (if tabulated-list-use-header-line
-      (tabulated-list-init-header)
-    (setq header-line-format nil tabulated-list--header-string nil))
-  (setq tabulated-list-entries
-        (if embark-collect-annotator
-            (let ((dir default-directory) ; smuggle to the target window
-                  (annotator embark-collect-annotator)
-                  (candidates embark-collect-candidates))
-              (with-current-buffer (embark--target-buffer)
-                (let ((default-directory dir)) ; for marginalia's file annotator
-                  (mapcar
-                   (lambda (cand)
-                     (let* ((annotation (or (funcall annotator cand) ""))
-                            (length (length annotation))
-                            (facesp (text-property-not-all
-                                     0 length 'face nil annotation)))
-                       (when facesp (add-face-text-property
-                                     0 length 'default t annotation))
-                       `(,cand [(,cand type embark-collect-entry)
-                                (,annotation
-                                 ,@(unless facesp
-                                     '(face embark-collect-annotation)))])))
-                   candidates))))
+  (let ((candidates (if embark-collect-affixator
+                        (funcall embark-collect-affixator
+                                 embark-collect-candidates)
+                      embark-collect-candidates)))
+    (setq tabulated-list-format
+          (if embark-collect-affixator
+              `[("Candidate" ,(embark-collect--max-width candidates) t)
+                ("Annotation" 0 t)]
+            [("Candidate" 0 t)]))
+    (if tabulated-list-use-header-line
+        (tabulated-list-init-header)
+      (setq header-line-format nil tabulated-list--header-string nil))
+    (setq tabulated-list-entries
           (mapcar
-           (lambda (cand)
-             `(,cand [(,cand type embark-collect-entry)]))
-           embark-collect-candidates))))
+           (if embark-collect-affixator
+               (let ((dir default-directory)) ; smuggle to the target window
+                 (with-current-buffer (embark--target-buffer)
+                   (let ((default-directory dir)) ; for file annotator
+                     (pcase-lambda (`(,cand ,prefix ,annotation))
+                       (let* ((length (length annotation))
+                              (faces (text-property-not-all
+                                      0 length 'face nil annotation)))
+                         (when faces (add-face-text-property
+                                      0 length 'default t annotation))
+                         `(,cand
+                           [(,(propertize cand 'line-prefix prefix)
+                             type embark-collect-entry)
+                            (,annotation
+                             ,@(unless faces
+                                 '(face embark-collect-annotation)))]))))))
+             (lambda (cand)
+               `(,cand [(,cand type embark-collect-entry)])))
+           candidates))))
 
 (defun embark-collect--remove-zebra-stripes ()
   "Remove highlighting of alternate rows."
@@ -2361,7 +2368,7 @@ This is specially useful to tell where multi-line entries begin and end."
 
 (defun embark-collect--grid-view ()
   "Grid view of candidates for Embark Collect buffer."
-  (let* ((width (min (1+ (embark-collect--max-width))
+  (let* ((width (min (1+ (embark-collect--max-width embark-collect-candidates))
                      (1- (floor (window-width) 2))))
          (columns (/ (window-width) (1+ width))))
     (setq tabulated-list-format
@@ -2380,15 +2387,26 @@ This is specially useful to tell where multi-line entries begin and end."
                                          `(,(or (pop cands) "")
                                            type embark-collect-entry))))))))
 
-(defun embark-collect--annotator (type)
-  "Get annotator for current buffer's candidates.
+(defun embark-collect--metadatum (type metadatum)
+  "Get METADATUM for current buffer's candidates.
 For non-minibuffers, assume candidates are of given TYPE."
   (if (minibufferp)
-      (or
-       (completion-metadata-get (embark--metadata) 'annotation-function)
-       (plist-get completion-extra-properties :annotation-function))
+      (or (completion-metadata-get (embark--metadata) metadatum)
+          (plist-get completion-extra-properties
+                     (intern (format ":%s" metadatum))))
     ;; otherwise fake some metadata for Marginalia users's benefit
-    (completion-metadata-get `((category . ,type)) 'annotation-function)))
+    (completion-metadata-get `((category . ,type)) metadatum)))
+
+(defun embark-collect--affixator (type)
+  "Get affixation function for current buffer's candidates.
+For non-minibuffers, assume candidates are of given TYPE."
+  (or (embark-collect--metadatum type 'affixation-function)
+      (when-let ((annotator
+                  (embark-collect--metadatum type 'annotation-function)))
+        (lambda (candidates)
+          (mapcar (lambda (c)
+                    (if-let (a (funcall annotator c)) (list c "" a) c))
+                  candidates)))))
 
 (defun embark-collect--revert ()
   "Recalculate Embark Collect candidates if possible."
@@ -2401,11 +2419,10 @@ For non-minibuffers, assume candidates are of given TYPE."
             embark-collect-candidates candidates
             default-directory (with-current-buffer embark-collect-from
                                 (embark--default-directory))
-            embark-collect-annotator (or
-                                      ;; new annotator? (marginalia-cycle)
+            embark-collect-affixator (or ; new annotator? (marginalia-cycle)
                                       (with-current-buffer embark-collect-from
-                                        (embark-collect--annotator type))
-                                      embark-collect-annotator))))
+                                        (embark-collect--affixator type))
+                                      embark-collect-affixator))))
   (if (eq embark-collect-view 'list)
       (embark-collect--list-view)
     (embark-collect--grid-view)))
@@ -2484,7 +2501,7 @@ the minibuffer is exited."
        (buffer (generate-new-buffer name))
        (`(,type . ,candidates)
         (run-hook-with-args-until-success 'embark-candidate-collectors))
-       (annotator (embark-collect--annotator type)))
+       (affixator (embark-collect--affixator type)))
     (if (and (null candidates) (eq kind :snapshot))
         (user-error "No candidates to collect")
       (setq embark-collect-linked-buffer buffer)
@@ -2510,7 +2527,7 @@ the minibuffer is exited."
 
         (setq embark--type type
               embark-collect-candidates candidates
-              embark-collect-annotator annotator)
+              embark-collect-affixator affixator)
 
         (add-hook 'tabulated-list-revert-hook #'embark-collect--revert nil t)
 
