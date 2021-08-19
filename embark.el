@@ -1771,7 +1771,7 @@ target."
                          new-targets
                          (or (cl-position-if
                               (let ((desired-type
-                                     (if (use-region-p)
+                                     (if (eq action 'mark)
                                           'region
                                           (plist-get (car targets) :type))))
                                 (lambda (x)
