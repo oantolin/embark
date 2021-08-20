@@ -3140,7 +3140,22 @@ and leaves the point to the left of it."
   ("+" append-to-file)
   ("m" apply-macro-to-region-lines)
   ("n" narrow-to-region)
-  ("*" calc-grab-region))
+  ("*" calc-grab-region)
+  ("R" reverse-region)
+  ("S" embark-sort-map))
+
+(embark-define-keymap embark-sort-map
+  "Keymap for Embark actions that sort the region"
+  :parent nil
+  ("l" sort-lines)
+  ("P" sort-pages)
+  ("f" sort-fields)
+  ("c" sort-columns)
+  ("p" sort-paragraphs)
+  ("r" sort-regexp-fields)
+  ("n" sort-numeric-fields))
+
+(fset 'embark-sort-map embark-sort-map)
 
 (embark-define-keymap embark-file-map
   "Keymap for Embark file actions."
