@@ -409,7 +409,7 @@ the key :always are executed always."
     (raise-sexp embark--beginning-of-target)
     (kill-sexp embark--beginning-of-target)
     (mark-sexp embark--beginning-of-target)
-    (transpose-sexp embark--end-of-target)
+    (transpose-sexps embark--end-of-target)
     (forward-sentence embark--end-of-target)
     (backward-sentence embark--beginning-of-target)
     (backward-paragraph embark--beginning-of-target)
@@ -469,7 +469,7 @@ arguments and more details."
 (defcustom embark-repeat-actions
   '(embark-next-symbol embark-previous-symbol backward-up-list
     backward-list forward-list forward-sexp backward-sexp mark
-    transpose-sexps tranpose-sentences transpose-paragraphs
+    transpose-sexps transpose-sentences transpose-paragraphs
     forward-sentence backward-sentence forward-paragraph
     backward-paragraph)
   "List of repeatable actions."
