@@ -878,30 +878,31 @@ the minibuffer is open, the message is added to the prompt."
                      (eq (lookup-key keymap [13]) #'embark-done)))
                (target (car targets))
                (shadowed-targets (cdr targets))
-               (indicator (cond
-                           ((eq (car target) 'embark-become)
-                            (propertize "Become" 'face 'highlight))
-                           ((and (minibufferp)
-                                 (not (eq 'embark-keybinding
-                                          (completion-metadata-get
-                                           (embark--metadata)
-                                           'category))))
-                            ;; we are in a minibuffer but not from the
-                            ;; completing-read prompter, use just "Act"
-                            act)
-                           (t (format
-                               "%s on %s%s '%s'"
-                               act
-                               (plist-get target :type)
-                               (if shadowed-targets
-                                   (format (propertize "(%s)" 'face 'shadow)
-                                           (string-join
-                                            (mapcar (lambda (x)
-                                                      (symbol-name (plist-get x :type)))
-                                                    shadowed-targets)
-                                            ", "))
-                                 "")
-                               (embark--truncate-target (plist-get target :target)))))))
+               (indicator
+                (cond
+                 ((eq (car target) 'embark-become)
+                  (propertize "Become" 'face 'highlight))
+                 ((and (minibufferp)
+                       (not (eq 'embark-keybinding
+                                (completion-metadata-get
+                                 (embark--metadata)
+                                 'category))))
+                  ;; we are in a minibuffer but not from the
+                  ;; completing-read prompter, use just "Act"
+                  act)
+                 (t (format
+                     "%s on %s%s '%s'"
+                     act
+                     (plist-get target :type)
+                     (if shadowed-targets
+                         (format (propertize "(%s)" 'face 'shadow)
+                                 (string-join
+                                  (mapcar (lambda (x)
+                                            (symbol-name (plist-get x :type)))
+                                          shadowed-targets)
+                                  ", "))
+                       "")
+                     (embark--truncate-target (plist-get target :target)))))))
           (if (not (minibufferp))
               (message "%s" indicator)
             (unless indicator-overlay
@@ -1280,8 +1281,9 @@ The arguments are the new KEYMAP and TARGETS."
            (bindings (car bindings))
            (target (cons (plist-get (car targets) :type)
                          (plist-get (car targets) :target)))
-           (shadowed-targets
-            (mapcar (lambda (x) (symbol-name (plist-get x :type))) (cdr targets)))
+           (shadowed-targets (mapcar
+                              (lambda (x) (symbol-name (plist-get x :type)))
+                              (cdr targets)))
            (cycle (let ((ck (where-is-internal #'embark-cycle keymap)))
                     (and ck (key-description (car ck))))))
       (setq-local cursor-type nil)
@@ -1740,8 +1742,9 @@ target."
                                        (embark--default-action
                                         (plist-get target :type)))))
               (cond
-               ;; When acting twice in the minibuffer, do not restart `embark-act'.
-               ;; Otherwise the next `embark-act' will find a target in the original buffer.
+               ;; When acting twice in the minibuffer, do not restart
+               ;; `embark-act'.  Otherwise the next `embark-act' will
+               ;; find a target in the original buffer.
                ((eq action #'embark-act)
                 (message "Press an action key"))
                ((eq action #'embark-cycle)
