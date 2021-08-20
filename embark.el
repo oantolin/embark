@@ -410,6 +410,8 @@ the key :always are executed always."
     (kill-sexp embark--beginning-of-target)
     (mark-sexp embark--beginning-of-target)
     (transpose-sexps embark--end-of-target)
+    (transpose-sentences embark--end-of-target)
+    (transpose-paragraphs embark--end-of-target)
     (forward-sentence embark--end-of-target)
     (backward-sentence embark--beginning-of-target)
     (backward-paragraph embark--beginning-of-target)
