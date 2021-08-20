@@ -3130,6 +3130,7 @@ and leaves the point to the left of it."
   ("TAB" indent-region)
   ("f" fill-region)
   ("p" fill-region-as-paragraph)
+  ("$" ispell-region)
   ("r" rot13-region)
   ("=" count-words-region)
   ("s" whitespace-cleanup-region)
