@@ -427,8 +427,7 @@ the key :always are executed always."
     (capitalize-region embark--mark-target)
     (count-words-region embark--mark-target)
     (shell-command-on-region embark--mark-target)
-    (backward-delete-char embark--mark-target)
-    (backward-delete-char-untabify embark--mark-target))
+    (delete-region embark--mark-target))
   "Alist associating commands with pre-action hooks.
 The hooks are run right before an action is embarked upon.  See
 `embark-setup-action-hooks' for information about the hook
@@ -723,7 +722,9 @@ In `dired-mode', it uses `dired-get-filename' instead."
         . ,bounds))))
 
 (defmacro embark-define-thingatpt-target (thing &rest modes)
-  "Define a target finder for THING using the thingatpt library."
+  "Define a target finder for THING using the thingatpt library.
+If any MODES are given, the target finder only applies to buffers
+in one of those major modes."
   (declare (indent 1))
   `(defun ,(intern (format "embark-target-%s-at-point" thing)) ()
      ,(format "Target %s at point." thing)
@@ -772,7 +773,7 @@ As a convenience, in Org Mode an initial ' or surrounding == or
 Return the category metadatum as the type of the target.
 
 This target finder is meant for the default completion UI and
-completion UI highly compatible with it, like `icomplete-mode'.
+completion UI highly compatible with it, like Icomplete.
 Many completion UIs can still work with Embark but will need
 their own target finder.  See for example
 `embark--vertico-selected' or `embark--selectrum-selected'."
@@ -3116,7 +3117,8 @@ and leaves the point to the left of it."
   ("L" embark-collect-live)
   ("B" embark-become)
   ("C-s" embark-isearch)
-  ("SPC" mark))
+  ("SPC" mark)
+  ("DEL" delete-region))
 
 (autoload 'org-table-convert-region "org-table")
 
