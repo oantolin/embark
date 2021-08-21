@@ -678,6 +678,7 @@ In `dired-mode', it uses `dired-get-filename' instead."
           . ,(bounds-of-thing-at-point 'url))))
 
 (declare-function widget-at "wid-edit")
+
 (defun embark-target-custom-variable-at-point ()
   "Target the variable corresponding to the customize widget at point."
   (when (derived-mode-p 'Custom-mode)
@@ -700,26 +701,28 @@ In `dired-mode', it uses `dired-get-filename' instead."
 ;; parentheses. This version here is slightly more general.
 (defun embark-target-expression-at-point ()
   "Target expression at point."
-  (when-let*
-      ((pt (point))
-       (bounds
-        (save-excursion
-          (catch 'found
-            (while
-                ;; Looking at opening parenthesis or find last one
-                (or (memq (syntax-class (syntax-after pt)) '(4 6 7))
-                    (re-search-backward "\\(\\s(\\|\\s/\\|\\s\"\\)"
-                                        nil 'noerror))
-              (when-let (bounds (bounds-of-thing-at-point 'sexp))
-                ;; Point must be located within the sexp at point.
-                ;; Otherwise continue the search for the next larger
-                ;; outer sexp.
-                (when (<= (car bounds) pt (cdr bounds))
-                  (throw 'found bounds))))))))
-    (unless (eq (car bounds) (car (bounds-of-thing-at-point 'defun)))
-      `(expression
-        ,(buffer-substring (car bounds) (cdr bounds))
-        . ,bounds))))
+  (cl-flet ((syntax-p (class &optional (delta 0))
+              (and (<= (point-min) (+ (point) delta) (point-max))
+                   (eq (pcase class
+                         ('open 4) ('close 5) ('prefix 6) ('string 7))
+                       (syntax-class (syntax-after (+ (point) delta)))))))
+    (when-let
+        ((start
+          (pcase-let ((`(_ ,open _ ,string _ _ _ _ ,start _ _) (syntax-ppss)))
+            (ignore-errors ; set start=nil if delimiters are unbalanced
+              (cond
+                (string start)
+                ((syntax-p 'open)
+                 (save-excursion (backward-prefix-chars) (point)))
+                ((syntax-p 'close -1)
+                 (save-excursion
+                   (backward-sexp) (backward-prefix-chars) (point)))
+                ((syntax-p 'string) (point))
+                ((syntax-p 'string -1) (scan-sexps (point) -1))
+                (t open)))))
+         (end (ignore-errors (scan-sexps start 1))))
+      (unless (eq start (car (bounds-of-thing-at-point 'defun)))
+      `(expression ,(buffer-substring start end) ,start . ,end)))))
 
 (defmacro embark-define-thingatpt-target (thing &rest modes)
   "Define a target finder for THING using the thingatpt library.
