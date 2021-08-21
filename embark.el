@@ -168,7 +168,8 @@ bounds pair of the target at point for highlighting."
   '((minor-mode . embark--lookup-lighter-minor-mode)
     (symbol . embark--refine-symbol-type)
     (embark-keybinding . embark--keybinding-command)
-    (project-file . embark--project-file-full-path))
+    (project-file . embark--project-file-full-path)
+    (versioned-package . embark--remove-package-version))
   "Alist associating type to functions for transforming targets.
 Each function should take a type and a target string and return a
 pair of the form a `cons' of the new type and the new target."
@@ -1628,6 +1629,10 @@ work on them."
                            (car (project-roots project))))))
             (expand-file-name target root)
           target)))
+
+(defun embark--remove-package-version (_type target)
+  "Remove version number from a versioned package."
+  (cons 'package (replace-regexp-in-string "-[0-9.]+$" "" target)))
 
 (defun embark--targets ()
   "Retrieve current targets.
