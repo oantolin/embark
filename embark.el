@@ -712,7 +712,7 @@ In `dired-mode', it uses `dired-get-filename' instead."
             (ignore-errors ; set start=nil if delimiters are unbalanced
               (cond
                 (string start)
-                ((syntax-p 'open)
+                ((or (syntax-p 'open) (syntax-p 'prefix))
                  (save-excursion (backward-prefix-chars) (point)))
                 ((syntax-p 'close -1)
                  (save-excursion
