@@ -169,7 +169,7 @@ bounds pair of the target at point for highlighting."
     (symbol . embark--refine-symbol-type)
     (embark-keybinding . embark--keybinding-command)
     (project-file . embark--project-file-full-path)
-    (versioned-package . embark--remove-package-version))
+    (package . embark--remove-package-version))
   "Alist associating type to functions for transforming targets.
 Each function should take a type and a target string and return a
 pair of the form a `cons' of the new type and the new target."
