@@ -1977,7 +1977,8 @@ the defined keymap.  If the `:parent' keymap is absent,
     embark-completions-buffer-candidates
     embark-dired-candidates
     embark-ibuffer-candidates
-    embark-embark-collect-candidates)
+    embark-embark-collect-candidates
+    embark-custom-candidates)
   "List of functions that collect all candidates in a given context.
 These are used to fill an Embark Collect buffer.  Each function
 should return either nil (to indicate it found no candidates) or
@@ -2159,6 +2160,23 @@ This makes `embark-export' work in Embark Collect buffers."
            (push (cdr (embark-target-completion-at-point 'relative-path)) all)
            (next-completion 1))
          (nreverse all))))))
+
+(defun embark-custom-candidates ()
+  "Return all variables and faces listed in this `Custom-mode' buffer."
+  (when (derived-mode-p 'Custom-mode)
+    (cons 'symbol ; gets refined to variable or face when acted upon
+          (save-excursion
+            (goto-char (point-min))
+            (let (symbols)
+              (while (not (eobp))
+                (when-let (widget (widget-at (point)))
+                  (when (eq (car widget) 'custom-visibility)
+                    (push
+                     (symbol-name
+                      (plist-get (cdr (plist-get (cdr widget) :parent)) :value))
+                     symbols)))
+                (forward-line))
+              (nreverse symbols))))))
 
 (defun embark--action-command (action)
   "Turn an ACTION into a command to perform the action.
