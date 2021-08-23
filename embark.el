@@ -2102,27 +2102,43 @@ list `embark-candidate-collectors'."
      (nconc (cl-copy-list (completion-all-sorted-completions)) nil))))
 
 (defun embark-dired-candidates ()
-  "Return all files shown in dired buffer."
+  "Return marked or all files shown in dired buffer.
+If any buffer is marked, return marked buffers; otherwise, return
+all buffers."
   (when (derived-mode-p 'dired-mode)
-    (save-excursion
-      (goto-char (point-min))
-      (let (files)
-        (while (not (eobp))
-          (when-let ((file (dired-get-filename t 'no-error-if-not-filep)))
-            (push file files))
-          (forward-line))
-        (cons 'file (nreverse files))))))
+    (cons 'file
+          (or
+           ;; dired-get-marked-files returns the file on the current
+           ;; line if no marked files are found; and when the fourth
+           ;; argument is non-nil, the "no marked files" case is
+           ;; distinguished from the "single marked file" case by
+           ;; returning (list t marked-file) in the latter
+           (let ((marked (dired-get-marked-files t nil nil t)))
+             (and (not (null (cdr marked)))
+                  (if (eq (car marked) t) (cdr marked) marked)))
+           (save-excursion
+             (goto-char (point-min))
+             (let (files)
+               (while (not (eobp))
+                 (when-let (file (dired-get-filename t t))
+                   (push file files))
+                 (forward-line))
+               (nreverse files)))))))
 
-(autoload 'ibuffer-map-lines-nomodify "ibuffer")
+(autoload 'ibuffer-marked-buffer-names "ibuffer")
 
 (defun embark-ibuffer-candidates ()
-  "Return names of buffers listed in ibuffer buffer."
+  "Return marked or all buffers listed in ibuffer buffer.
+If any buffer is marked, return marked buffers; otherwise, return
+all buffers."
   (when (derived-mode-p 'ibuffer-mode)
-    (let (buffers)
-      (ibuffer-map-lines-nomodify
-       (lambda (buffer _mark)
-         (push (buffer-name buffer) buffers)))
-      (cons 'buffer (nreverse buffers)))))
+    (cons 'buffer
+          (or (ibuffer-marked-buffer-names)
+              (let (buffers)
+                (ibuffer-map-lines-nomodify
+                 (lambda (buffer _mark)
+                   (push (buffer-name buffer) buffers)))
+                (nreverse buffers))))))
 
 (defun embark-embark-collect-candidates ()
   "Return candidates in Embark Collect buffer.
