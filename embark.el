@@ -1665,17 +1665,16 @@ plist concerns one target, and has keys `:type', `:target',
                 (target (if (consp target+bounds)
                             (car target+bounds)
                           target+bounds))
-                (bounds (and (consp target+bounds) (cdr target+bounds))))
-           (push
-            (append
-             (list :orig-type type
-                   :orig-target target
-                   :bounds bounds)
-             (if-let (transformer (alist-get type embark-transformer-alist))
-                 (let ((trans (funcall transformer type target)))
-                   (list :type (car trans) :target (cdr trans)))
-               (list :type type :target target)))
-            targets)
+                (bounds (and (consp target+bounds) (cdr target+bounds)))
+                (full-target
+                 (append
+                  (list :orig-type type :orig-target target :bounds bounds)
+                  (if-let (transform (alist-get type embark-transformer-alist))
+                      (let ((trans (funcall transform type target)))
+                        (list :type (car trans) :target (cdr trans)))
+                    (list :type type :target target)))))
+           (unless (equal full-target (car targets)) ; no consecutive repetition
+             (push full-target targets))
            (minibufferp)))))
     (nreverse targets)))
 
