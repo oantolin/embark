@@ -1575,9 +1575,9 @@ minibuffer before executing the action."
                   (unwind-protect (funcall action (plist-get target :target))
                     (embark--run-action-hooks embark-post-action-hooks
                                               action target quit)))))))
-      (if (not (and quit (minibufferp)))
-          (funcall run-action)
-        (embark--quit-and-run run-action)))))
+      (if (and quit (minibufferp))
+          (embark--quit-and-run run-action)
+        (funcall run-action)))))
 
 (defun embark--refine-symbol-type (_type target)
   "Refine symbol TARGET to command or variable if possible."
