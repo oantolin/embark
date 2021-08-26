@@ -1493,14 +1493,16 @@ queued most recently to the one queued least recently."
         embark--run-after-command-functions))
 
 (defun embark--quit-and-run (fn &rest args)
-  "Quit the minibuffer and then call FN with ARGS."
-  (apply #'embark--run-after-command fn args)
-  (embark--run-after-command #'set 'ring-bell-function ring-bell-function)
-
-  (setq ring-bell-function #'ignore)
-  (if (fboundp 'minibuffer-quit-recursive-edit)
-      (minibuffer-quit-recursive-edit)
-    (abort-recursive-edit)))
+  "Quit the minibuffer and then call FN with ARGS.
+If called outside the minibuffer, simply apply FN to ARGS."
+  (if (not (minibufferp))
+      (apply fn args)
+    (apply #'embark--run-after-command fn args)
+    (embark--run-after-command #'set 'ring-bell-function ring-bell-function)
+    (setq ring-bell-function #'ignore)
+    (if (fboundp 'minibuffer-quit-recursive-edit)
+        (minibuffer-quit-recursive-edit)
+      (abort-recursive-edit))))
 
 (defun embark--run-action-hooks (hooks action target quit)
   "Run HOOKS for ACTION.
@@ -1575,9 +1577,7 @@ minibuffer before executing the action."
                   (unwind-protect (funcall action (plist-get target :target))
                     (embark--run-action-hooks embark-post-action-hooks
                                               action target quit)))))))
-      (if (and quit (minibufferp))
-          (embark--quit-and-run run-action)
-        (funcall run-action)))))
+      (if quit (embark--quit-and-run run-action) (funcall run-action)))))
 
 (defun embark--refine-symbol-type (_type target)
   "Refine symbol TARGET to command or variable if possible."
@@ -1909,7 +1909,8 @@ these notions differ is file completion, in which case the
 completion boundaries single out the path component containing
 point."
   (interactive "P")
-  (when (minibufferp)
+  (if (not (minibufferp))
+      (user-error "Not in a minibuffer")
     (let* ((target (if full
                        (minibuffer-contents)
                      (pcase-let ((`(,beg . ,end) (embark--boundaries)))
@@ -2126,6 +2127,7 @@ all buffers."
                (nreverse files)))))))
 
 (autoload 'ibuffer-marked-buffer-names "ibuffer")
+(declare-function ibuffer-map-lines-nomodify "ibuffer")
 
 (defun embark-ibuffer-candidates ()
   "Return marked or all buffers listed in ibuffer buffer.
@@ -2659,7 +2661,7 @@ To control the display, add an entry to `display-buffer-alist'
 with key \"Embark Collect\"."
   (interactive (embark-collect--initial-view-arg))
   (embark--collect "*Embark Collect*" initial-view :snapshot)
-  (when (minibufferp) (embark--quit-and-run #'message nil)))
+  (embark--quit-and-run #'message nil))
 
 ;;;###autoload
 (defun embark-collect-completions ()
