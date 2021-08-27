@@ -3165,6 +3165,19 @@ and leaves the point to the left of it."
 
 (autoload 'org-table-convert-region "org-table")
 
+(embark-define-keymap embark-sort-map
+  "Keymap for Embark actions that sort the region"
+  :parent nil
+  ("l" sort-lines)
+  ("P" sort-pages)
+  ("f" sort-fields)
+  ("c" sort-columns)
+  ("p" sort-paragraphs)
+  ("r" sort-regexp-fields)
+  ("n" sort-numeric-fields))
+
+(fset 'embark-sort-map embark-sort-map)
+
 (embark-define-keymap embark-region-map
   "Keymap for Embark actions on the active region."
   ("u" upcase-region)
@@ -3192,19 +3205,6 @@ and leaves the point to the left of it."
   ("*" calc-grab-region)
   ("R" reverse-region)
   ("S" embark-sort-map))
-
-(embark-define-keymap embark-sort-map
-  "Keymap for Embark actions that sort the region"
-  :parent nil
-  ("l" sort-lines)
-  ("P" sort-pages)
-  ("f" sort-fields)
-  ("c" sort-columns)
-  ("p" sort-paragraphs)
-  ("r" sort-regexp-fields)
-  ("n" sort-numeric-fields))
-
-(fset 'embark-sort-map embark-sort-map)
 
 (embark-define-keymap embark-file-map
   "Keymap for Embark file actions."
