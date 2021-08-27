@@ -2102,6 +2102,8 @@ list `embark-candidate-collectors'."
      (completion-metadata-get (embark--metadata) 'category)
      (nconc (cl-copy-list (completion-all-sorted-completions)) nil))))
 
+(declare-function dired-get-marked-files "dired")
+
 (defun embark-dired-candidates ()
   "Return marked or all files shown in dired buffer.
 If any buffer is marked, return marked buffers; otherwise, return
