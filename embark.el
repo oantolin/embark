@@ -2063,11 +2063,12 @@ This function is used as :after advice for `tabulated-list-revert'."
 (advice-add 'tabulated-list-revert :after #'embark-collect--post-revert)
 
 (autoload 'package-delete "package")
-(autoload 'package--from-builtin "package")
-(autoload 'package-desc-extras "package")
+(declare-function package--from-builtin "package")
+(declare-function package-desc-extras "package")
 (defvar package--builtins)
 (defvar package-alist)
 (defvar package-archive-contents)
+(defvar package--initialized)
 
 (defun embark--package-desc (pkg)
   "Return the description structure for package PKG."
@@ -2998,12 +2999,34 @@ Returns the new name actually used."
     (with-current-buffer buf
       (rename-buffer newname unique))))
 
+(defun embark--package-url (pkg)
+  "Return homepage for package PKG."
+  (when-let (desc (embark--package-desc pkg))
+    (alist-get :url (package-desc-extras desc))))
+
+(defun embark--prompt-for-package ()
+  "Prompt user for a package name."
+  ;; this code is taken from the interactive spec of describe-package
+  (unless package--initialized
+    (package-initialize t))
+  (intern
+   (completing-read "Package: "
+                    (append (mapcar #'car package-alist)
+                            (mapcar #'car package-archive-contents)
+                            (mapcar #'car package--builtins)))))
+                                                     
 (defun embark-browse-package-url (pkg)
   "Open homepage for package PKG with `browse-url'."
-  (interactive "SPackage: ")
-  (if-let ((desc (embark--package-desc pkg))
-           (url (alist-get :url (package-desc-extras desc))))
+  (interactive (list (embark--prompt-for-package))) 
+  (if-let ((url (embark--package-url pkg)))
       (browse-url url)
+    (user-error "No homepage found for `%s'" pkg)))
+
+(defun embark-save-package-url (pkg)
+  "Save URL of homepage for package PKG on the kill-ring."
+  (interactive (list (embark--prompt-for-package)))
+  (if-let ((url (embark--package-url pkg)))
+      (kill-new url)
     (user-error "No homepage found for `%s'" pkg)))
 
 (defun embark-insert-relative-path (file)
@@ -3342,6 +3365,7 @@ and leaves the point to the left of it."
   ("d" package-delete)
   ("r" package-reinstall)
   ("u" embark-browse-package-url)
+  ("W" embark-save-package-url)
   ("a" package-autoremove)
   ("g" package-refresh-contents))
 
