@@ -950,6 +950,10 @@ UPDATE is the indicator update function."
     (pcase cmd
       ('embark-keymap-help
        (embark-completing-read-prompter keymap nil))
+      ((or 'universal-argument 'negative-argument 'digit-argument)
+       (let ((last-command-event (aref key 0)))
+         (command-execute cmd))
+       (embark-keymap-prompter keymap update))
       ((guard (lookup-key keymap key))  ; if directly bound, then obey
        cmd)
       ((or 'minibuffer-keyboard-quit 'abort-recursive-edit)
@@ -957,10 +961,8 @@ UPDATE is the indicator update function."
       ('self-insert-command
        (minibuffer-message "Not an action")
        (embark-keymap-prompter keymap update))
-      ((or 'universal-argument 'negative-argument 'digit-argument
-           'scroll-other-window 'scroll-other-window-down)
-       (let ((last-command-event (aref key 0))
-             (minibuffer-scroll-window
+      ((or  'scroll-other-window 'scroll-other-window-down)
+       (let ((minibuffer-scroll-window
               ;; NOTE: Here we special case the verbose indicator!
               (or (get-buffer-window embark--verbose-indicator-buffer 'visible)
                   minibuffer-scroll-window)))
@@ -1031,7 +1033,8 @@ If NESTED is non-nil subkeymaps are not flattened."
                            (and (not (keymapp cmd))
                                 (consp cmd)
                                 (not (stringp (car cmd))))
-                           (eq cmd #'embark-keymap-help))
+                           (memq cmd '(embark-keymap-help
+                                       negative-argument digit-argument)))
                    collect (list name
                                  (cond
                                   ((and (not (symbolp cmd)) (keymapp cmd))
@@ -3178,7 +3181,18 @@ and leaves the point to the left of it."
 (embark-define-keymap embark-meta-map
   "Keymap for non-action Embark functions."
   :parent nil
-  ("C-h" embark-keymap-help))
+  ("C-h" embark-keymap-help)
+  ("-" negative-argument)
+  ("0" digit-argument)
+  ("1" digit-argument)
+  ("2" digit-argument)
+  ("3" digit-argument)
+  ("4" digit-argument)
+  ("5" digit-argument)
+  ("6" digit-argument)
+  ("7" digit-argument)
+  ("8" digit-argument)
+  ("9" digit-argument))
 
 (embark-define-keymap embark-general-map
   "Keymap for Embark general actions."
