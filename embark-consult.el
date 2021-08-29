@@ -154,7 +154,8 @@ The elements of LINES are assumed to be values of category `consult-line'."
             (setq last-buf this-buf))
           (insert (concat lineno contents nl))))
       (goto-char (point-min))
-      (occur-mode))
+      (occur-mode)
+      (setq-local occur-highlight-regexp "^.*$"))
     (pop-to-buffer buf)))
 
 (setf (alist-get 'consult-location embark-collect-initial-view-alist)
