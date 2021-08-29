@@ -1673,7 +1673,10 @@ plist concerns one target, and has keys `:type', `:target',
                       (let ((trans (funcall transform type target)))
                         (list :type (car trans) :target (cdr trans)))
                     (list :type type :target target)))))
-           (unless (equal full-target (car targets)) ; no consecutive repetition
+           (unless (and (equal (plist-get full-target :target)
+                               (plist-get (car targets) :target))
+                        (eq (plist-get full-target :type)
+                            (plist-get (car targets) :type)))
              (push full-target targets))
            (minibufferp)))))
     (nreverse targets)))
