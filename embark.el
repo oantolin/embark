@@ -1763,37 +1763,41 @@ target."
                                targets (prefix-numeric-value prefix-arg))))
                (t
                 ;; if the action is non-repeatable, cleanup indicator now
-                (unless (memq action embark-repeat-actions)
-                  (mapc #'funcall indicators))
-                (embark--act action
-                             (if (and (eq action default-action)
-                                      (eq action embark--command))
-                                 (plist-put
-                                  (plist-put
-                                   (copy-sequence target)
-                                   :target (plist-get target :orig-target))
-                                  :type (plist-get target :orig-type))
-                               target)
-                             (if embark-quit-after-action (not arg) arg))
-                (when-let (new-targets (and (memq action embark-repeat-actions)
-                                            (embark--targets)))
-                  ;; Terminate repeated prompter on default action,
-                  ;; when repeating. Jump to the region type if the
-                  ;; region is active after the action, or else to the
-                  ;; current type again.
-                  (setq default-done #'embark-done
-                        targets
-                        (embark--rotate
-                         new-targets
-                         (or (cl-position-if
-                              (let ((desired-type
-                                     (if (eq action 'mark)
-                                          'region
-                                          (plist-get (car targets) :type))))
-                                (lambda (x)
-                                  (eq (plist-get x :type) desired-type)))
-                              new-targets)
-                             0))))))))
+                (let ((repeat (memq action embark-repeat-actions)))
+                  (unless repeat (mapc #'funcall indicators))
+                  (condition-case err
+                      (embark--act
+                       action
+                       (if (and (eq action default-action)
+                                (eq action embark--command))
+                           (plist-put
+                            (plist-put
+                             (copy-sequence target)
+                             :target (plist-get target :orig-target))
+                            :type (plist-get target :orig-type))
+                         target)
+                       (if embark-quit-after-action (not arg) arg))
+                    (user-error
+                     (funcall (if repeat #'message #'user-error)
+                              "%s" (cadr err))))
+                  (when-let (new-targets (and repeat (embark--targets)))
+                    ;; Terminate repeated prompter on default action,
+                    ;; when repeating. Jump to the region type if the
+                    ;; region is active after the action, or else to the
+                    ;; current type again.
+                    (setq default-done #'embark-done
+                          targets
+                          (embark--rotate
+                           new-targets
+                           (or (cl-position-if
+                                (let ((desired-type
+                                       (if (eq action 'mark)
+                                           'region
+                                         (plist-get (car targets) :type))))
+                                  (lambda (x)
+                                    (eq (plist-get x :type) desired-type)))
+                                new-targets)
+                               0)))))))))
       (mapc #'funcall indicators))))
 
 (defun embark-highlight-indicator ()
@@ -3103,25 +3107,23 @@ minibuffer, which means it can be used as an Embark action."
 
 (defun embark-next-symbol (symbol)
   "Jump to next occurrence of SYMBOL.
-Prints a message when the symbol is not found.  The search
-respects symbol boundaries."
+The search respects symbol boundaries."
   (interactive "sSymbol: ")
   (let ((regexp (format "\\_<%s\\_>" (regexp-quote symbol))))
     (when (looking-at regexp)
       (forward-symbol 1))
     (unless (re-search-forward regexp nil t)
-      (message "Symbol `%s' not found" symbol))))
+      (user-error "Symbol `%s' not found" symbol))))
 
 (defun embark-previous-symbol (symbol)
   "Jump to previous occurrence SYMBOL.
-Prints a message when the symbol is not found.  The search
-respects symbol boundaries."
+The search respects symbol boundaries."
   (interactive "sSymbol: ")
   (let ((regexp (format "\\_<%s\\_>" (regexp-quote symbol))))
     (when (looking-back regexp (- (point) (length symbol)))
       (forward-symbol -1))
     (unless (re-search-backward regexp nil t)
-      (message "Symbol `%s' not found" symbol))))
+      (user-error "Symbol `%s' not found" symbol))))
 
 ;;; Setup and pre-action hooks
 
