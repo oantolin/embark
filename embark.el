@@ -2979,7 +2979,7 @@ Return the category metadatum as the type of the target."
 ;; For Emacs 28 dired-jump will be moved to dired.el, but it seems
 ;; that since it already has an autoload in Emacs 28, this next
 ;; autoload is ignored.
-(autoload 'dired-jump "dired-x")
+(autoload 'dired-jump "dired-x" nil t)
 
 (defun embark-dired-jump (file &optional other-window)
   "Open dired buffer in directory containg FILE and move to its line.
@@ -3207,8 +3207,6 @@ and leaves the point to the left of it."
   ("SPC" mark)
   ("DEL" delete-region))
 
-(autoload 'org-table-convert-region "org-table")
-
 (embark-define-keymap embark-sort-map
   "Keymap for Embark actions that sort the region"
   :parent nil
@@ -3226,6 +3224,10 @@ and leaves the point to the left of it."
 ;; these will have autoloads in Emacs 28
 (autoload 'calc-grab-sum-down "calc" nil t)
 (autoload 'calc-grab-sum-across "calc" nil t)
+
+;; this has had an autoload cookie since at least Emacs 26
+;; but that autoload doesn't seem to work for me
+(autoload 'org-table-convert-region "org-table" nil t)
 
 (embark-define-keymap embark-region-map
   "Keymap for Embark actions on the active region."
@@ -3452,7 +3454,7 @@ and leaves the point to the left of it."
   ("p" describe-package)
   ("i" describe-input-method))
 
-(autoload 'recentf-open-files "recentf")
+(autoload 'recentf-open-files "recentf" nil t)
 
 (embark-define-keymap embark-become-file+buffer-map
   "Embark become keymap for files and buffers."
