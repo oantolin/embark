@@ -3222,6 +3222,11 @@ and leaves the point to the left of it."
 
 (fset 'embark-sort-map embark-sort-map)
 
+
+;; these will have autoloads in Emacs 28
+(autoload 'calc-grab-sum-down "calc" nil t)
+(autoload 'calc-grab-sum-across "calc" nil t)
+
 (embark-define-keymap embark-region-map
   "Keymap for Embark actions on the active region."
   ("u" upcase-region)
@@ -3247,6 +3252,8 @@ and leaves the point to the left of it."
   ("m" apply-macro-to-region-lines)
   ("n" narrow-to-region)
   ("*" calc-grab-region)
+  (":" calc-grab-sum-down)
+  ("_" calc-grab-sum-across)
   ("R" reverse-region)
   ("S" embark-sort-map))
 
