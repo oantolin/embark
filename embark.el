@@ -117,6 +117,7 @@
 
 (defcustom embark-keymap-alist
   '((file . embark-file-map)
+    (library . embark-library-map)
     (environment-variables . embark-file-map) ; they come up in file completion
     (url . embark-url-map)
     (buffer . embark-buffer-map)
@@ -149,9 +150,8 @@ For any type not listed here, `embark-act' will use
     embark-target-bug-reference-at-point
     embark-target-url-at-point
     embark-target-file-at-point
-    embark-target-custom-variable-at-point
     embark-target-identifier-at-point
-    embark-target-library-at-point
+    embark-target-custom-variable-at-point
     embark-target-expression-at-point
     embark-target-sentence-at-point
     embark-target-paragraph-at-point
@@ -656,12 +656,6 @@ In `dired-mode', it uses `dired-get-filename' instead."
                ;; TODO the boundaries may be wrong, this should be generalized.
                ;; Unfortunately ffap does not make the bounds available.
                . ,(bounds-of-thing-at-point 'filename))))))
-
-(defun embark-target-library-at-point ()
-  "Target the Emacs Lisp library name at point."
-  (when-let ((filename (thing-at-point 'filename))
-             (library (ffap-el-mode filename)))
-    `(file ,library . ,(bounds-of-thing-at-point 'filename))))
 
 (defun embark-target-bug-reference-at-point ()
   "Target a bug reference at point."
@@ -1593,7 +1587,8 @@ minibuffer before executing the action."
                ;; Command > variable > function > symbol seems like a
                ;; reasonable order with decreasing usefulness of the actions.
                ((fboundp symbol) 'function)
-               ((facep symbol) 'face)))
+               ((facep symbol) 'face)
+               ((ffap-el-mode target) 'library)))
             'symbol)
         target))
 
@@ -3286,6 +3281,15 @@ and leaves the point to the left of it."
   ("RET" browse-url)
   ("b" browse-url)
   ("e" eww))
+
+(embark-define-keymap embark-library-map
+  "Keymap for operations on Emacs Lisp libraries."
+  ("RET" find-library)
+  ("l" load-library)
+  ("f" find-library)
+  ("h" finder-commentary)
+  ("a" apropos-library)
+  ("w" locate-library))
 
 (embark-define-keymap embark-buffer-map
   "Keymap for Embark buffer actions."
