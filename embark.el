@@ -1578,18 +1578,23 @@ minibuffer before executing the action."
 
 (defun embark--refine-symbol-type (_type target)
   "Refine symbol TARGET to command or variable if possible."
-  (cons (or (when-let ((symbol (intern-soft target)))
-              (cond
-               ((keywordp symbol) 'symbol) ; keywords are bound to themselves!
-               ((commandp symbol) 'command)
-               ((boundp symbol) 'variable)
-               ;; Prefer variables over functions for backward compatibility.
-               ;; Command > variable > function > symbol seems like a
-               ;; reasonable order with decreasing usefulness of the actions.
-               ((fboundp symbol) 'function)
-               ((facep symbol) 'face)
-               ((ffap-el-mode target) 'library)))
-            'symbol)
+  (cons (let ((symbol (intern-soft target))
+              (library (ffap-el-mode target)))
+          (cond
+           ((and library
+                 (looking-back "\\(?:require\\|use-package\\).*"
+                               (line-beginning-position)))
+            'library)
+           ((keywordp symbol) 'symbol) ; keywords are bound to themselves!
+           ((commandp symbol) 'command)
+           ((and symbol (boundp symbol)) 'variable)
+           ;; Prefer variables over functions for backward compatibility.
+           ;; Command > variable > function > symbol seems like a
+           ;; reasonable order with decreasing usefulness of the actions.
+           ((fboundp symbol) 'function)
+           ((facep symbol) 'face)
+           (library 'library)
+           (t symbol)))
         target))
 
 (defun embark--keybinding-command (_type target)
