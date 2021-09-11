@@ -3359,14 +3359,6 @@ and leaves the point to the left of it."
   ("n" embark-next-symbol)
   ("p" embark-previous-symbol))
 
-(embark-define-keymap embark-command-map
-  "Keymap for Embark command actions."
-  :parent embark-symbol-map
-  ("x" execute-extended-command)
-  ("I" Info-goto-emacs-command-node)
-  ("g" global-set-key)
-  ("l" local-set-key))
-
 (embark-define-keymap embark-face-map
   "Keymap for Embark face actions."
   :parent embark-symbol-map
@@ -3393,6 +3385,14 @@ and leaves the point to the left of it."
   :parent embark-symbol-map
   ("t" trace-function)
   ("T" untrace-function))
+
+(embark-define-keymap embark-command-map
+  "Keymap for Embark command actions."
+  :parent embark-function-map
+  ("x" execute-extended-command)
+  ("I" Info-goto-emacs-command-node)
+  ("g" global-set-key)
+  ("l" local-set-key))
 
 (embark-define-keymap embark-package-map
   "Keymap for Embark package actions."
