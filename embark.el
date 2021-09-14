@@ -1594,7 +1594,7 @@ minibuffer before executing the action."
            ((fboundp symbol) 'function)
            ((facep symbol) 'face)
            (library 'library)
-           (t symbol)))
+           (t 'symbol)))
         target))
 
 (defun embark--keybinding-command (_type target)
