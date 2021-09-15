@@ -2991,7 +2991,7 @@ When called with a prefix argument OTHER-WINDOW, open dired in other window."
 
 (defun embark-find-definition (symbol)
   "Find definition of Emacs Lisp SYMBOL."
-  (interactive "SSymbol: ")
+  (interactive "sSymbol: ")
   (let ((xref-backend-functions (lambda () 'elisp)))
     (xref-find-definitions symbol)))
 
