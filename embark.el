@@ -950,7 +950,7 @@ UPDATE is the indicator update function."
        (embark-keymap-prompter keymap update))
       ((guard (lookup-key keymap key))  ; if directly bound, then obey
        cmd)
-      ((or 'minibuffer-keyboard-quit 'abort-recursive-edit)
+      ((or 'minibuffer-keyboard-quit 'abort-recursive-edit 'abort-minibuffers)
        nil)
       ('self-insert-command
        (minibuffer-message "Not an action")
