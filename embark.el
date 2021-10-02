@@ -3337,8 +3337,7 @@ and leaves the point to the left of it."
 (embark-define-keymap embark-defun-map
   "Keymap for Embark defun actions."
   :parent embark-expression-map
-  ("RET" eval-defun)
-  ("e" eval-defun)
+  ("d" eval-defun)
   ("c" compile-defun)
   ("l" elint-defun)
   ("D" edebug-defun)
