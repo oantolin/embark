@@ -1634,7 +1634,7 @@ work on them."
           target)))
 
 (defun embark--remove-package-version (_type target)
-  "Remove version number from a versioned package."
+  "Remove version number from a versioned package TARGET."
   (cons 'package (replace-regexp-in-string "-[0-9.]+$" "" target)))
 
 (defun embark--targets ()
@@ -3024,16 +3024,16 @@ Returns the new name actually used."
                     (append (mapcar #'car package-alist)
                             (mapcar #'car package-archive-contents)
                             (mapcar #'car package--builtins)))))
-                                                     
+
 (defun embark-browse-package-url (pkg)
   "Open homepage for package PKG with `browse-url'."
-  (interactive (list (embark--prompt-for-package))) 
+  (interactive (list (embark--prompt-for-package)))
   (if-let ((url (embark--package-url pkg)))
       (browse-url url)
     (user-error "No homepage found for `%s'" pkg)))
 
 (defun embark-save-package-url (pkg)
-  "Save URL of homepage for package PKG on the kill-ring."
+  "Save URL of homepage for package PKG on the `kill-ring'."
   (interactive (list (embark--prompt-for-package)))
   (if-let ((url (embark--package-url pkg)))
       (kill-new url)
@@ -3175,6 +3175,16 @@ and leaves the point to the left of it."
 (defun embark--ignore-target (&rest _)
   "Ignore the target."
   (ignore (read-from-minibuffer "")))
+
+(autoload 'pp-display-expression "pp")
+(defun embark-pp-eval-defun (edebug)
+  "Run `eval-defun' and pretty print the result.
+With a prefix argument EDEBUG, instrument the code for debugging."
+  (interactive "P")
+  (cl-letf (((symbol-function #'eval-expression-print-format)
+             (lambda (result)
+               (pp-display-expression result "*Pp Eval Output*"))))
+    (eval-defun edebug)))
 
 ;;; keymaps
 
@@ -3337,7 +3347,8 @@ and leaves the point to the left of it."
 (embark-define-keymap embark-defun-map
   "Keymap for Embark defun actions."
   :parent embark-expression-map
-  ("d" eval-defun)
+  ("RET" embark-pp-eval-defun)
+  ("e" embark-pp-eval-defun)
   ("c" compile-defun)
   ("l" elint-defun)
   ("D" edebug-defun)
