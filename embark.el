@@ -1340,7 +1340,10 @@ the variable `embark-verbose-indicator-display-action'."
           (quit-window 'kill-buffer win))
       (embark--verbose-indicator-update
        (if (and prefix embark-verbose-indicator-nested)
-           (lookup-key keymap prefix)
+           ;; Lookup prefix keymap globally if not found in action keymap
+           (pcase (lookup-key keymap prefix)
+             ((and (pred keymapp) km) km)
+             (_ (key-binding prefix)))
          keymap)
        targets)
       (let ((display-buffer-alist
