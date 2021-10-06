@@ -366,17 +366,10 @@ If you find you prefer entering actions that way, you can configure
 embark to always prompt you for actions by setting the variable
 @samp{embark-prompter} to @samp{embark-completing-read-prompter}.
 
-If you want to see the actions and their key bindings, but want to
-use the key bindings rather than completing the command name, you can
-install @uref{https://github.com/justbur/emacs-which-key, which-key} and configure Embark as follows:
-
-@lisp
-(setq embark-action-indicator
-      (lambda (map _target)
-        (which-key--show-keymap "Embark" map nil nil 'no-paging)
-        #'which-key--hide-popup-ignore-command)
-      embark-become-indicator embark-action-indicator)
-@end lisp
+If you want to see the actions and their key bindings, but want to use
+the key bindings rather than completing the command name, you can
+install @uref{https://github.com/justbur/emacs-which-key, which-key} and add the @samp{embark-which-key-indicator} from @uref{https://github.com/oantolin/embark/wiki/Additional-Configuration#use-which-key-like-a-key-menu-prompt, Embark
+wiki} to your configuration.
 
 @node Quitting the minibuffer after an action
 @section Quitting the minibuffer after an action
