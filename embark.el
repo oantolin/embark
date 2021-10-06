@@ -940,7 +940,7 @@ UPDATE is the indicator update function."
   (let* ((key (let ((overriding-terminal-local-map keymap))
                 (embark--read-key-sequence update)))
          (cmd (let ((overriding-terminal-local-map keymap))
-                (key-binding key))))
+                (key-binding key 'accept-default))))
     (pcase cmd
       ('embark-keymap-help
        (embark-completing-read-prompter keymap nil))
@@ -1341,9 +1341,9 @@ the variable `embark-verbose-indicator-display-action'."
       (embark--verbose-indicator-update
        (if (and prefix embark-verbose-indicator-nested)
            ;; Lookup prefix keymap globally if not found in action keymap
-           (pcase (lookup-key keymap prefix)
+           (pcase (lookup-key keymap prefix 'accept-default)
              ((and (pred keymapp) km) km)
-             (_ (key-binding prefix)))
+             (_ (key-binding prefix 'accept-default)))
          keymap)
        targets)
       (let ((display-buffer-alist
@@ -1422,7 +1422,7 @@ The selected command will be executed.  The set of key bindings can
 be restricted by passing a PREFIX key."
   (interactive)
   (let ((keymap (if prefix
-                    (key-binding prefix)
+                    (key-binding prefix 'accept-default)
                   (make-composed-keymap (current-active-maps t)))))
     (unless (keymapp keymap)
       (user-error "No key bindings found"))
