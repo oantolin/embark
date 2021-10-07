@@ -1486,8 +1486,16 @@ queued most recently to the one queued least recently."
       ;; exiting a recursive edit, so set up the following timer as a backup.
       (setq timer (run-at-time 0 nil pch))))
 
-  (push (lambda () (apply fn args))
-        embark--run-after-command-functions))
+  ;; Keep the default-directory alive, since this is often overwritten,
+  ;; for example by Consult commands.
+  ;; TODO it might be necessary to add more dynamically bound variables
+  ;; here. What we actually want are functions `capture-dynamic-scope'
+  ;; and `eval-in-dynamic-scope', but this does not exist?
+  (let ((dir default-directory))
+    (push (lambda ()
+            (let ((default-directory dir))
+              (apply fn args)))
+          embark--run-after-command-functions)))
 
 (defun embark--quit-and-run (fn &rest args)
   "Quit the minibuffer and then call FN with ARGS.
@@ -2766,7 +2774,10 @@ buffer for each type of completion."
                 (after embark-after-export-hook))
             (embark--quit-and-run
              (lambda ()
-               (let ((default-directory dir) ; dired needs this info
+               ;; TODO see embark--quit-and-run and embark--run-after-command,
+               ;; there the default-directory is also smuggled to the lambda.
+               ;; This should be fixed properly.
+               (let ((default-directory dir) ;; dired needs this info
                      (embark-after-export-hook after))
                  (funcall exporter candidates)
                  (run-hooks 'embark-after-export-hook))))))))))
