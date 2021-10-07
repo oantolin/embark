@@ -940,7 +940,7 @@ UPDATE is the indicator update function."
   (let* ((key (let ((overriding-terminal-local-map keymap))
                 (embark--read-key-sequence update)))
          (cmd (let ((overriding-terminal-local-map keymap))
-                (key-binding key))))
+                (key-binding key 'accept-default))))
     (pcase cmd
       ('embark-keymap-help
        (embark-completing-read-prompter keymap nil))
@@ -1070,48 +1070,45 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
           (catch 'choice
             (minibuffer-with-setup-hook
                 (lambda ()
-                  (when embark-keymap-prompter-key
-                    (use-local-map
-                     (make-composed-keymap
-                      (let ((map (make-sparse-keymap))
-                            (cycle (embark--cycle-key)))
-                        ;; Rebind `embark-cycle' in order allow cycling
-                        ;; from the `completing-read' prompter. Additionally
-                        ;; `embark-cycle' can be selected via
-                        ;; `completing-read'. The downside is that this breaks
-                        ;; recursively acting on the candidates of type
-                        ;; embark-keybinding in the `completing-read' prompter.
-                        (define-key map cycle
-                          (cond
-                           ((lookup-key keymap cycle)
-                              (lambda ()
-                                (interactive)
-                                (throw 'choice 'embark-cycle)))
-                           ((null embark-cycle-key)
-                            (lambda ()
-                              (interactive)
-                              (minibuffer-message
-                               (concat "Single target; can't cycle. "
-                                       "Press `%s' again to act.")
-                               (key-description cycle))
-                              (define-key map cycle #'embark-act)))))
-                        (define-key map embark-keymap-prompter-key
+                  (let ((map (make-sparse-keymap)))
+                    (when-let (cycle (embark--cycle-key))
+                      ;; Rebind `embark-cycle' in order allow cycling
+                      ;; from the `completing-read' prompter. Additionally
+                      ;; `embark-cycle' can be selected via
+                      ;; `completing-read'. The downside is that this breaks
+                      ;; recursively acting on the candidates of type
+                      ;; embark-keybinding in the `completing-read' prompter.
+                      (define-key map cycle
+                        (cond
+                         ((lookup-key keymap cycle)
                           (lambda ()
                             (interactive)
-                            (let*
-                                ((desc
-                                  (let ((overriding-terminal-local-map keymap))
-                                    (key-description
-                                     (read-key-sequence "Key:"))))
-                                 (cmd
-                                  (cl-loop
-                                   for (_s _n cmd _k desc1) in candidates
-                                   when (equal desc desc1) return cmd)))
-                              (if (null cmd)
-                                  (user-error "Unknown key")
-                                (throw 'choice cmd)))))
-                        map)
-                      (current-local-map)))))
+                            (throw 'choice 'embark-cycle)))
+                         ((null embark-cycle-key)
+                          (lambda ()
+                            (interactive)
+                            (minibuffer-message
+                             (concat "Single target; can't cycle. "
+                                     "Press `%s' again to act.")
+                             (key-description cycle))
+                            (define-key map cycle #'embark-act))))))
+                    (when embark-keymap-prompter-key
+                      (define-key map embark-keymap-prompter-key
+                        (lambda ()
+                          (interactive)
+                          (let*
+                              ((desc
+                                (let ((overriding-terminal-local-map keymap))
+                                  (key-description
+                                   (read-key-sequence "Key:"))))
+                               (cmd
+                                (cl-loop
+                                 for (_s _n cmd _k desc1) in candidates
+                                 when (equal desc desc1) return cmd)))
+                            (if (null cmd)
+                                (user-error "Unknown key")
+                              (throw 'choice cmd))))))
+                    (use-local-map (make-composed-keymap map (current-local-map)))))
               (completing-read
                "Command: "
                (lambda (string predicate action)
@@ -1340,7 +1337,9 @@ the variable `embark-verbose-indicator-display-action'."
           (quit-window 'kill-buffer win))
       (embark--verbose-indicator-update
        (if (and prefix embark-verbose-indicator-nested)
-           (lookup-key keymap prefix)
+           ;; Lookup prefix keymap globally if not found in action keymap
+           (let ((overriding-terminal-local-map keymap))
+             (key-binding prefix 'accept-default))
          keymap)
        targets)
       (let ((display-buffer-alist
@@ -1419,7 +1418,7 @@ The selected command will be executed.  The set of key bindings can
 be restricted by passing a PREFIX key."
   (interactive)
   (let ((keymap (if prefix
-                    (key-binding prefix)
+                    (key-binding prefix 'accept-default)
                   (make-composed-keymap (current-active-maps t)))))
     (unless (keymapp keymap)
       (user-error "No key bindings found"))
@@ -1486,8 +1485,16 @@ queued most recently to the one queued least recently."
       ;; exiting a recursive edit, so set up the following timer as a backup.
       (setq timer (run-at-time 0 nil pch))))
 
-  (push (lambda () (apply fn args))
-        embark--run-after-command-functions))
+  ;; Keep the default-directory alive, since this is often overwritten,
+  ;; for example by Consult commands.
+  ;; TODO it might be necessary to add more dynamically bound variables
+  ;; here. What we actually want are functions `capture-dynamic-scope'
+  ;; and `eval-in-dynamic-scope', but this does not exist?
+  (let ((dir default-directory))
+    (push (lambda ()
+            (let ((default-directory dir))
+              (apply fn args)))
+          embark--run-after-command-functions)))
 
 (defun embark--quit-and-run (fn &rest args)
   "Quit the minibuffer and then call FN with ARGS.
@@ -1919,22 +1926,22 @@ these notions differ is file completion, in which case the
 completion boundaries single out the path component containing
 point."
   (interactive "P")
-  (if (not (minibufferp))
-      (user-error "Not in a minibuffer")
-    (let* ((target (if full
-                       (minibuffer-contents)
-                     (pcase-let ((`(,beg . ,end) (embark--boundaries)))
-                       (substring (minibuffer-contents) beg
-                                  (+ end (embark--minibuffer-point))))))
-           (keymap (embark--become-keymap))
-           (targets `((:type embark-become :target ,target)))
-           (indicators (mapcar #'funcall embark-indicators))
-           (become (unwind-protect
-                       (embark--prompt indicators keymap targets)
-                     (mapc #'funcall indicators))))
-      (unless become
-        (user-error "Canceled"))
-      (embark--become-command become target))))
+  (unless (minibufferp)
+    (user-error "Not in a minibuffer"))
+  (let* ((target (if full
+                     (minibuffer-contents)
+                   (pcase-let ((`(,beg . ,end) (embark--boundaries)))
+                     (substring (minibuffer-contents) beg
+                                (+ end (embark--minibuffer-point))))))
+         (keymap (embark--become-keymap))
+         (targets `((:type embark-become :target ,target)))
+         (indicators (mapcar #'funcall embark-indicators))
+         (become (unwind-protect
+                     (embark--prompt indicators keymap targets)
+                   (mapc #'funcall indicators))))
+    (unless become
+      (user-error "Canceled"))
+    (embark--become-command become target)))
 
 (defun embark--become-command (command input)
   "Quit current minibuffer and start COMMAND with INPUT."
@@ -2021,6 +2028,9 @@ default initial view for types not mentioned separately."
     (bookmark . embark-export-bookmarks)
     (variable . embark-export-customize-variable)
     (face . embark-export-customize-face)
+    (symbol . embark-export-apropos)
+    (function . embark-export-apropos)
+    (command . embark-export-apropos)
     (t . embark-collect-snapshot))
   "Alist associating completion types to export functions.
 Each function should take a list of strings which are candidates
@@ -2763,10 +2773,24 @@ buffer for each type of completion."
                 (after embark-after-export-hook))
             (embark--quit-and-run
              (lambda ()
-               (let ((default-directory dir) ; dired needs this info
+               ;; TODO see embark--quit-and-run and embark--run-after-command,
+               ;; there the default-directory is also smuggled to the lambda.
+               ;; This should be fixed properly.
+               (let ((default-directory dir) ;; dired needs this info
                      (embark-after-export-hook after))
                  (funcall exporter candidates)
                  (run-hooks 'embark-after-export-hook))))))))))
+
+(defmacro embark--export-rename (buffer title &rest body)
+  "Run BODY and rename BUFFER to Embark export buffer with TITLE."
+  (declare (indent 2))
+  (let ((saved (make-symbol "saved")))
+    `(let ((,saved (embark-rename-buffer
+                    ,buffer " *Embark Saved*" t)))
+       ,@body
+       (pop-to-buffer (embark-rename-buffer
+                       ,buffer ,(format "*Embark Export %s*" title) t))
+       (when ,saved (embark-rename-buffer ,saved ,buffer)))))
 
 (defun embark--export-customize (items title type pred)
   "Create a customization buffer listing ITEMS.
@@ -2778,6 +2802,19 @@ PRED is a predicate function used to filter the items."
             for sym = (intern-soft item)
             when (and sym (funcall pred sym)) collect `(,sym ,type))
    (format "*Embark Export %s*" title)))
+
+(autoload 'apropos-parse-pattern "apropos")
+(autoload 'apropos-symbols-internal "apropos")
+(defun embark-export-apropos (symbols)
+  "Create apropos buffer listing SYMBOLS."
+  (embark--export-rename "*Apropos*" "Apropos"
+    (apropos-parse-pattern "") ;; Initialize apropos pattern
+    (apropos-symbols-internal
+     (delq nil (mapcar #'intern-soft symbols))
+     (bound-and-true-p apropos-do-all))
+    (with-current-buffer "*Apropos*"
+      ;; Reverting the apropos buffer is not possible
+      (setq-local revert-buffer-function #'revert-buffer--default))))
 
 (defun embark-export-customize-face (faces)
   "Create a customization buffer listing FACES."
@@ -2829,18 +2866,13 @@ PRED is a predicate function used to filter the items."
 
 (defun embark-export-bookmarks (bookmarks)
   "Create a `bookmark-bmenu-mode' buffer listing BOOKMARKS."
-  (let ((bookmark-alist
-         (cl-remove-if-not
-          (lambda (bmark)
-            (member (car bmark) bookmarks))
-          bookmark-alist))
-        (saved-buffer
-         (embark-rename-buffer "*Bookmark List*" "*Saved Bookmark List*" t)))
-    (bookmark-bmenu-list)
-    (pop-to-buffer
-     (embark-rename-buffer "*Bookmark List*" "*Embark Export Bookmarks*" t))
-    (when saved-buffer
-      (embark-rename-buffer saved-buffer "*Bookmark List*"))))
+  (embark--export-rename "*Bookmark List*" "Bookmarks"
+    (let ((bookmark-alist
+           (cl-remove-if-not
+            (lambda (bmark)
+              (member (car bmark) bookmarks))
+            bookmark-alist)))
+      (bookmark-bmenu-list))))
 
 ;;; Integration with external completion UIs
 
