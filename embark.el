@@ -1447,11 +1447,11 @@ The TARGETS are displayed for actions outside the minibuffer."
                            indicators)))))
     (quit nil)))
 
-(defvar embark--run-after-command-functions nil
+(defvar embark--run-after-command-list nil
   "Abnormal hook, used by `embark--run-after-command'.")
 
-(defun embark--run-after-command (fn &rest args)
-  "Call FN with ARGS after the current commands finishes.
+(defun embark--run-after-command (&rest app)
+  "Apply APP after the current commands finishes.
 If multiple functions are queued with this function during the
 same command, they will be called in the order from the one
 queued most recently to the one queued least recently."
@@ -1460,7 +1460,7 @@ queued most recently to the one queued least recently."
   ;; from within post-command-hook, which doesn't behave properly in our case.
   ;; We use our own abnormal hook and run it from PCH in a way that it is OK to
   ;; modify it from within its own functions.
-  (unless embark--run-after-command-functions
+  (unless embark--run-after-command-list
     (let (pch timer has-run)
       (setq pch
             (lambda ()
@@ -1468,17 +1468,17 @@ queued most recently to the one queued least recently."
               (cancel-timer timer)
               (unless has-run
                 (setq has-run t)
-                (while embark--run-after-command-functions
+                (while embark--run-after-command-list
                   ;; The following funcall may recursively call
                   ;; `embark--run-after-command', modifying
-                  ;; `embark--run-after-command-functions'.  This is why this
+                  ;; `embark--run-after-command-list'.  This is why this
                   ;; loop has to be implemented carefully.  We have to pop the
                   ;; function off the hook before calling it.  Using `dolist'
                   ;; on the hook would also be incorrect, because it wouldn't
                   ;; take modifications of this hook into account.
                   (with-demoted-errors "embark PCH: %S"
                     (condition-case nil
-                        (funcall (pop embark--run-after-command-functions))
+                        (apply (pop embark--run-after-command-list))
                       (quit (message "Quit"))))))))
       (add-hook 'post-command-hook pch 'append)
       ;; Generally we prefer `post-command-hook' because it plays well with
@@ -1486,28 +1486,43 @@ queued most recently to the one queued least recently."
       ;; exiting a recursive edit, so set up the following timer as a backup.
       (setq timer (run-at-time 0 nil pch))))
 
-  ;; Keep the default-directory alive, since this is often overwritten,
-  ;; for example by Consult commands.
-  ;; TODO it might be necessary to add more dynamically bound variables
-  ;; here. What we actually want are functions `capture-dynamic-scope'
-  ;; and `eval-in-dynamic-scope', but this does not exist?
-  (let ((dir default-directory))
-    (push (lambda ()
-            (let ((default-directory dir))
-              (apply fn args)))
-          embark--run-after-command-functions)))
+  (push app embark--run-after-command-list))
 
-(defun embark--quit-and-run (fn &rest args)
-  "Quit the minibuffer and then call FN with ARGS.
-If called outside the minibuffer, simply apply FN to ARGS."
+(defun embark--quit-minibuffer ()
+  "Quit the current minibuffer and preserve window configuration."
+  ;; Select the target window before saving the
+  ;; `current-window-configuration'.
+  (when (eq (active-minibuffer-window) (selected-window))
+    (when-let (win (embark--target-window))
+      (select-window win)))
+  (let ((wc (current-window-configuration))
+        (rbf ring-bell-function))
+    (embark--run-after-command
+     (lambda ()
+       ;; Restore after closing the minibuffer.
+       ;; TODO The restoration does not yet work well for recursive
+       ;; minibuffers, e.g., C-x C-f C-x C-f C-. w
+       ;; TODO I believe in Emacs 28 there is a possibility to leave the
+       ;; minibuffer without restoration of the window configuration.
+       (set-window-configuration wc)
+       (setq ring-bell-function rbf)
+       (message nil))))
+  ;; Disable the bell temporarily to avoid quit ringing.
+  (setq ring-bell-function #'ignore)
+  (if (fboundp 'minibuffer-quit-recursive-edit)
+      (minibuffer-quit-recursive-edit)
+    (abort-recursive-edit)))
+
+(defun embark--run-and-quit (&rest app)
+  "Apply APP and quit minibuffer if inside minibuffer."
   (if (not (minibufferp))
-      (apply fn args)
-    (apply #'embark--run-after-command fn args)
-    (embark--run-after-command #'set 'ring-bell-function ring-bell-function)
-    (setq ring-bell-function #'ignore)
-    (if (fboundp 'minibuffer-quit-recursive-edit)
-        (minibuffer-quit-recursive-edit)
-      (abort-recursive-edit))))
+      (apply app)
+    (apply app)
+    ;; NOTE: Here we quit only when the action succeeded successfully.
+    ;; If the action is an embark-allow-edit-actions and the user quits
+    ;; the editing, the outer minibuffer will not be quit. This is
+    ;; reasonable, the abort action takes us back to where we came from.
+    (embark--quit-minibuffer)))
 
 (defun embark--run-action-hooks (hooks action target quit)
   "Run HOOKS for ACTION.
@@ -1582,7 +1597,7 @@ minibuffer before executing the action."
                   (unwind-protect (funcall action (plist-get target :target))
                     (embark--run-action-hooks embark-post-action-hooks
                                               action target quit)))))))
-      (if quit (embark--quit-and-run run-action) (funcall run-action)))))
+      (if quit (embark--run-and-quit run-action) (funcall run-action)))))
 
 (defun embark--refine-symbol-type (_type target)
   "Refine symbol TARGET to command or variable if possible."
@@ -1946,7 +1961,7 @@ point."
 
 (defun embark--become-command (command input)
   "Quit current minibuffer and start COMMAND with INPUT."
-  (embark--quit-and-run
+  (embark--run-after-command
    (lambda ()
      (minibuffer-with-setup-hook
          (lambda ()
@@ -1956,7 +1971,8 @@ point."
              ;; the next two avoid mouse dialogs
              (use-dialog-box nil)
              (last-nonmenu-event 13))
-         (command-execute command))))))
+         (command-execute command)))))
+  (embark--quit-minibuffer))
 
 (defmacro embark-define-keymap (name doc &rest bindings)
   "Define keymap variable NAME.
@@ -2684,8 +2700,9 @@ argument of 1 means list view.
 To control the display, add an entry to `display-buffer-alist'
 with key \"Embark Collect\"."
   (interactive (embark-collect--initial-view-arg))
-  (embark--collect "*Embark Collect*" initial-view :snapshot)
-  (embark--quit-and-run #'message nil))
+  (embark--run-and-quit
+   (lambda ()
+     (select-window (embark--collect "*Embark Collect*" initial-view :snapshot)))))
 
 ;;;###autoload
 (defun embark-collect-completions ()
@@ -2770,17 +2787,12 @@ buffer for each type of completion."
 
         (if (eq exporter 'embark-collect-snapshot)
             (embark-collect-snapshot)
-          (let ((dir (embark--default-directory))
-                (after embark-after-export-hook))
-            (embark--quit-and-run
-             (lambda ()
-               ;; TODO see embark--quit-and-run and embark--run-after-command,
-               ;; there the default-directory is also smuggled to the lambda.
-               ;; This should be fixed properly.
-               (let ((default-directory dir) ;; dired needs this info
-                     (embark-after-export-hook after))
-                 (funcall exporter candidates)
-                 (run-hooks 'embark-after-export-hook))))))))))
+          (embark--run-and-quit
+           (lambda ()
+             ;; dired needs this the default-directory
+             (let ((default-directory (embark--default-directory)))
+               (funcall exporter candidates)
+               (run-hooks 'embark-after-export-hook)))))))))
 
 (defmacro embark--export-rename (buffer title &rest body)
   "Run BODY and rename BUFFER to Embark export buffer with TITLE."
