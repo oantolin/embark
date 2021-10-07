@@ -1070,48 +1070,45 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
           (catch 'choice
             (minibuffer-with-setup-hook
                 (lambda ()
-                  (when embark-keymap-prompter-key
-                    (use-local-map
-                     (make-composed-keymap
-                      (let ((map (make-sparse-keymap))
-                            (cycle (embark--cycle-key)))
-                        ;; Rebind `embark-cycle' in order allow cycling
-                        ;; from the `completing-read' prompter. Additionally
-                        ;; `embark-cycle' can be selected via
-                        ;; `completing-read'. The downside is that this breaks
-                        ;; recursively acting on the candidates of type
-                        ;; embark-keybinding in the `completing-read' prompter.
-                        (define-key map cycle
-                          (cond
-                           ((lookup-key keymap cycle)
-                              (lambda ()
-                                (interactive)
-                                (throw 'choice 'embark-cycle)))
-                           ((null embark-cycle-key)
-                            (lambda ()
-                              (interactive)
-                              (minibuffer-message
-                               (concat "Single target; can't cycle. "
-                                       "Press `%s' again to act.")
-                               (key-description cycle))
-                              (define-key map cycle #'embark-act)))))
-                        (define-key map embark-keymap-prompter-key
+                  (let ((map (make-sparse-keymap)))
+                    (when-let (cycle (embark--cycle-key))
+                      ;; Rebind `embark-cycle' in order allow cycling
+                      ;; from the `completing-read' prompter. Additionally
+                      ;; `embark-cycle' can be selected via
+                      ;; `completing-read'. The downside is that this breaks
+                      ;; recursively acting on the candidates of type
+                      ;; embark-keybinding in the `completing-read' prompter.
+                      (define-key map cycle
+                        (cond
+                         ((lookup-key keymap cycle)
                           (lambda ()
                             (interactive)
-                            (let*
-                                ((desc
-                                  (let ((overriding-terminal-local-map keymap))
-                                    (key-description
-                                     (read-key-sequence "Key:"))))
-                                 (cmd
-                                  (cl-loop
-                                   for (_s _n cmd _k desc1) in candidates
-                                   when (equal desc desc1) return cmd)))
-                              (if (null cmd)
-                                  (user-error "Unknown key")
-                                (throw 'choice cmd)))))
-                        map)
-                      (current-local-map)))))
+                            (throw 'choice 'embark-cycle)))
+                         ((null embark-cycle-key)
+                          (lambda ()
+                            (interactive)
+                            (minibuffer-message
+                             (concat "Single target; can't cycle. "
+                                     "Press `%s' again to act.")
+                             (key-description cycle))
+                            (define-key map cycle #'embark-act))))))
+                    (when embark-keymap-prompter-key
+                      (define-key map embark-keymap-prompter-key
+                        (lambda ()
+                          (interactive)
+                          (let*
+                              ((desc
+                                (let ((overriding-terminal-local-map keymap))
+                                  (key-description
+                                   (read-key-sequence "Key:"))))
+                               (cmd
+                                (cl-loop
+                                 for (_s _n cmd _k desc1) in candidates
+                                 when (equal desc desc1) return cmd)))
+                            (if (null cmd)
+                                (user-error "Unknown key")
+                              (throw 'choice cmd))))))
+                    (use-local-map (make-composed-keymap map (current-local-map)))))
               (completing-read
                "Command: "
                (lambda (string predicate action)
