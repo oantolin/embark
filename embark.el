@@ -943,7 +943,14 @@ UPDATE is the indicator update function."
                 (key-binding key 'accept-default))))
     (pcase cmd
       ('embark-keymap-help
-       (embark-completing-read-prompter keymap nil))
+       (let ((embark-indicators
+              (cl-set-difference embark-indicators
+                                 '(embark-verbose-indicator
+                                   embark-mixed-indicator))))
+         (when-let ((win (get-buffer-window embark--verbose-indicator-buffer
+                                            'visible)))
+           (quit-window 'kill-buffer win))
+         (embark-completing-read-prompter keymap nil)))
       ((or 'universal-argument 'negative-argument 'digit-argument)
        (let ((last-command-event (aref key 0)))
          (command-execute cmd))
