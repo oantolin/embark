@@ -1338,9 +1338,8 @@ the variable `embark-verbose-indicator-display-action'."
       (embark--verbose-indicator-update
        (if (and prefix embark-verbose-indicator-nested)
            ;; Lookup prefix keymap globally if not found in action keymap
-           (pcase (lookup-key keymap prefix 'accept-default)
-             ((and (pred keymapp) km) km)
-             (_ (key-binding prefix 'accept-default)))
+           (let ((overriding-terminal-local-map keymap))
+             (key-binding prefix 'accept-default))
          keymap)
        targets)
       (let ((display-buffer-alist
