@@ -1927,22 +1927,22 @@ these notions differ is file completion, in which case the
 completion boundaries single out the path component containing
 point."
   (interactive "P")
-  (if (not (minibufferp))
-      (user-error "Not in a minibuffer")
-    (let* ((target (if full
-                       (minibuffer-contents)
-                     (pcase-let ((`(,beg . ,end) (embark--boundaries)))
-                       (substring (minibuffer-contents) beg
-                                  (+ end (embark--minibuffer-point))))))
-           (keymap (embark--become-keymap))
-           (targets `((:type embark-become :target ,target)))
-           (indicators (mapcar #'funcall embark-indicators))
-           (become (unwind-protect
-                       (embark--prompt indicators keymap targets)
-                     (mapc #'funcall indicators))))
-      (unless become
-        (user-error "Canceled"))
-      (embark--become-command become target))))
+  (unless (minibufferp)
+    (user-error "Not in a minibuffer"))
+  (let* ((target (if full
+                     (minibuffer-contents)
+                   (pcase-let ((`(,beg . ,end) (embark--boundaries)))
+                     (substring (minibuffer-contents) beg
+                                (+ end (embark--minibuffer-point))))))
+         (keymap (embark--become-keymap))
+         (targets `((:type embark-become :target ,target)))
+         (indicators (mapcar #'funcall embark-indicators))
+         (become (unwind-protect
+                     (embark--prompt indicators keymap targets)
+                   (mapc #'funcall indicators))))
+    (unless become
+      (user-error "Canceled"))
+    (embark--become-command become target)))
 
 (defun embark--become-command (command input)
   "Quit current minibuffer and start COMMAND with INPUT."
