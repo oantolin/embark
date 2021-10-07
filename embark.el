@@ -2021,6 +2021,9 @@ default initial view for types not mentioned separately."
     (bookmark . embark-export-bookmarks)
     (variable . embark-export-customize-variable)
     (face . embark-export-customize-face)
+    (symbol . embark-export-apropos)
+    (function . embark-export-apropos)
+    (command . embark-export-apropos)
     (t . embark-collect-snapshot))
   "Alist associating completion types to export functions.
 Each function should take a list of strings which are candidates
@@ -2768,6 +2771,17 @@ buffer for each type of completion."
                  (funcall exporter candidates)
                  (run-hooks 'embark-after-export-hook))))))))))
 
+(defmacro embark--export-rename (buffer title &rest body)
+  "Run BODY and rename BUFFER to Embark export buffer with TITLE."
+  (declare (indent 2))
+  (let ((saved (make-symbol "saved")))
+    `(let ((,saved (embark-rename-buffer
+                    ,buffer " *Embark Saved*" t)))
+       ,@body
+       (pop-to-buffer (embark-rename-buffer
+                       ,buffer ,(format "*Embark Export %s*" title) t))
+       (when ,saved (embark-rename-buffer ,saved ,buffer)))))
+
 (defun embark--export-customize (items title type pred)
   "Create a customization buffer listing ITEMS.
 TYPE is the items type.
@@ -2778,6 +2792,19 @@ PRED is a predicate function used to filter the items."
             for sym = (intern-soft item)
             when (and sym (funcall pred sym)) collect `(,sym ,type))
    (format "*Embark Export %s*" title)))
+
+(autoload 'apropos-parse-pattern "apropos")
+(autoload 'apropos-symbols-internal "apropos")
+(defun embark-export-apropos (symbols)
+  "Create apropos buffer listing SYMBOLS."
+  (embark--export-rename "*Apropos*" "Apropos"
+    (apropos-parse-pattern "") ;; Initialize apropos pattern
+    (apropos-symbols-internal
+     (delq nil (mapcar #'intern-soft symbols))
+     (bound-and-true-p apropos-do-all))
+    (with-current-buffer "*Apropos*"
+      ;; Reverting the apropos buffer is not possible
+      (setq-local revert-buffer-function #'revert-buffer--default))))
 
 (defun embark-export-customize-face (faces)
   "Create a customization buffer listing FACES."
@@ -2829,18 +2856,13 @@ PRED is a predicate function used to filter the items."
 
 (defun embark-export-bookmarks (bookmarks)
   "Create a `bookmark-bmenu-mode' buffer listing BOOKMARKS."
-  (let ((bookmark-alist
-         (cl-remove-if-not
-          (lambda (bmark)
-            (member (car bmark) bookmarks))
-          bookmark-alist))
-        (saved-buffer
-         (embark-rename-buffer "*Bookmark List*" "*Saved Bookmark List*" t)))
-    (bookmark-bmenu-list)
-    (pop-to-buffer
-     (embark-rename-buffer "*Bookmark List*" "*Embark Export Bookmarks*" t))
-    (when saved-buffer
-      (embark-rename-buffer saved-buffer "*Bookmark List*"))))
+  (embark--export-rename "*Bookmark List*" "Bookmarks"
+    (let ((bookmark-alist
+           (cl-remove-if-not
+            (lambda (bmark)
+              (member (car bmark) bookmarks))
+            bookmark-alist)))
+      (bookmark-bmenu-list))))
 
 ;;; Integration with external completion UIs
 
