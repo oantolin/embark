@@ -672,7 +672,9 @@ In `dired-mode', it uses `dired-get-filename' instead."
     `(url ,url
           ;; TODO the boundaries may be wrong, this should be generalized.
           ;; Unfortunately ffap does not make the bounds available.
-          . ,(bounds-of-thing-at-point 'url))))
+          . ,(or (bounds-of-thing-at-point 'url)
+                 (cons (previous-single-property-change (point) 'mouse-face)
+                       (next-single-property-change (point) 'mouse-face))))))
 
 (declare-function widget-at "wid-edit")
 
