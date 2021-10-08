@@ -666,7 +666,9 @@ In `dired-mode', it uses `dired-get-filename' instead."
 
 (defun embark-target-url-at-point ()
   "Target the URL at point."
-  (when-let ((url (ffap-url-at-point)))
+  (when-let ((url (or (ffap-url-at-point)
+                      (get-text-property (point) 'shr-url)
+                      (get-text-property (point) 'image-url))))
     `(url ,url
           ;; TODO the boundaries may be wrong, this should be generalized.
           ;; Unfortunately ffap does not make the bounds available.
