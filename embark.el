@@ -666,15 +666,17 @@ In `dired-mode', it uses `dired-get-filename' instead."
 
 (defun embark-target-url-at-point ()
   "Target the URL at point."
-  (when-let ((url (or (ffap-url-at-point)
-                      (get-text-property (point) 'shr-url)
-                      (get-text-property (point) 'image-url))))
-    `(url ,url
-          ;; TODO the boundaries may be wrong, this should be generalized.
-          ;; Unfortunately ffap does not make the bounds available.
-          . ,(or (bounds-of-thing-at-point 'url)
-                 (cons (previous-single-property-change (point) 'mouse-face)
-                       (next-single-property-change (point) 'mouse-face))))))
+  (if-let ((url (ffap-url-at-point)))
+      `(url ,url
+            ;; TODO the boundaries may be wrong, this should be generalized.
+            ;; Unfortunately ffap does not make the bounds available.
+            . ,(bounds-of-thing-at-point 'url))
+    (when-let ((url (or (get-text-property (point) 'shr-url)
+                        (get-text-property (point) 'image-url))))
+      `(url ,url
+            . ,(cons (previous-single-property-change
+                      (min (1+ (point)) (point-max)) 'mouse-face)
+                     (next-single-property-change (point) 'mouse-face))))))
 
 (declare-function widget-at "wid-edit")
 
