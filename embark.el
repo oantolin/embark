@@ -579,12 +579,7 @@ Meant to be be added to `completion-setup-hook'."
     "Record command which opened the minibuffer.
 We record this because it will be the default action.
 This function is meant to be added to `minibuffer-setup-hook'."
-    ;; On Emacs 28, current-minibuffer-command is better than this-command.
-    ;; It is consistent if a command prompts multiple times.
-    (setq embark--command
-	  (if (boundp 'current-minibuffer-command)
-	      current-minibuffer-command
-	    this-command)))
+    (setq-local embark--command this-command))
   (add-hook 'minibuffer-setup-hook #'embark--record-this-command))
 
 ;;; Internal variables
