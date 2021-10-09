@@ -666,11 +666,10 @@ In `dired-mode', it uses `dired-get-filename' instead."
 
 (defun embark-target-url-at-point ()
   "Target the URL at point."
-  (if-let ((url (ffap-url-at-point)))
-      `(url ,url
-            ;; TODO the boundaries may be wrong, this should be generalized.
-            ;; Unfortunately ffap does not make the bounds available.
-            . ,(bounds-of-thing-at-point 'url))
+  (if-let ((url (or (thing-at-point 'url)
+                    (when-let (email (thing-at-point 'email))
+                      (concat "mailto:" email)))))
+      `(url ,url . ,(thing-at-point-bounds-of-url-at-point t))
     (when-let ((url (or (get-text-property (point) 'shr-url)
                         (get-text-property (point) 'image-url))))
       `(url ,url
