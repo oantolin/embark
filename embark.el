@@ -3349,7 +3349,7 @@ With a prefix argument EDEBUG, instrument the code for debugging."
   ("f" find-library)
   ("h" finder-commentary)
   ("a" apropos-library)
-  ("w" locate-library))
+  ("L" locate-library))
 
 (embark-define-keymap embark-buffer-map
   "Keymap for Embark buffer actions."
