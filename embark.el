@@ -885,7 +885,7 @@ the minibuffer is open, the message is added to the prompt."
                (shadowed-targets (cdr targets))
                (indicator
                 (cond
-                 ((eq (car target) 'embark-become)
+                 ((eq (plist-get target :type) 'embark-become)
                   (propertize "Become" 'face 'highlight))
                  ((and (minibufferp)
                        (not (eq 'embark-keybinding
