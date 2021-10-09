@@ -1707,13 +1707,13 @@ plist concerns one target, and has keys `:type', `:target',
                       (let ((trans (funcall transform type target)))
                         (list :type (car trans) :target (cdr trans)))
                     (list :type type :target target)))))
-           (unless (and (equal (plist-get full-target :target)
-                               (plist-get (car targets) :target))
-                        (eq (plist-get full-target :type)
-                            (plist-get (car targets) :type)))
-             (push full-target targets))
+           (push full-target targets)
            (minibufferp)))))
-    (nreverse targets)))
+    (cl-delete-duplicates
+     (nreverse targets)
+     :test (lambda (t1 t2)
+             (and (equal (plist-get t1 :target) (plist-get t2 :target))
+                  (eq (plist-get t1 :type) (plist-get t2 :type)))))))
 
 (defun embark--default-action (type)
   "Return default action for the given TYPE of target.
