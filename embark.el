@@ -644,7 +644,7 @@ In `dired-mode', it uses `dired-get-filename' instead."
                      (dired-get-filename t 'no-error-if-not-filep)))
       (save-excursion
         (end-of-line)
-        `(file ,(abbreviate-file-name file)
+        `(file ,(abbreviate-file-name (expand-file-name file))
                ,(save-excursion
                   (re-search-backward " " (line-beginning-position) 'noerror)
                   (1+ (point)))
@@ -653,7 +653,7 @@ In `dired-mode', it uses `dired-get-filename' instead."
       (unless (or (string-match-p "^/https?:/" file)
                   (when-let (filename (thing-at-point 'filename))
                     (ffap-el-mode filename)))
-        `(file ,(abbreviate-file-name file)
+        `(file ,(abbreviate-file-name (expand-file-name file))
                ;; TODO the boundaries may be wrong, this should be generalized.
                ;; Unfortunately ffap does not make the bounds available.
                . ,(bounds-of-thing-at-point 'filename))))))
