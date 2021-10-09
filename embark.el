@@ -674,9 +674,10 @@ In `dired-mode', it uses `dired-get-filename' instead."
     (when-let ((url (or (get-text-property (point) 'shr-url)
                         (get-text-property (point) 'image-url))))
       `(url ,url
-            . ,(cons (previous-single-property-change
-                      (min (1+ (point)) (point-max)) 'mouse-face)
-                     (next-single-property-change (point) 'mouse-face))))))
+            ,(previous-single-property-change
+              (min (1+ (point)) (point-max)) 'mouse-face nil (point-min))
+            . ,(next-single-property-change
+                (point) 'mouse-face nil (point-max))))))
 
 (declare-function widget-at "wid-edit")
 
