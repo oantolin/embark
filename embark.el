@@ -2053,6 +2053,7 @@ default initial view for types not mentioned separately."
     (variable . embark-export-customize-variable)
     (face . embark-export-customize-face)
     (symbol . embark-export-apropos)
+    (minor-mode . embark-export-apropos)
     (function . embark-export-apropos)
     (command . embark-export-apropos)
     (t . embark-collect-snapshot))
