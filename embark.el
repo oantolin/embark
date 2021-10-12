@@ -448,6 +448,7 @@ arguments and more details."
   '((bookmark-delete embark--restart)
     (bookmark-rename embark--restart)
     (delete-file embark--restart)
+    (embark-recentf-remove embark--restart)
     (rename-file embark--restart)
     (copy-file embark--restart)
     (delete-directory embark--restart)
@@ -2053,6 +2054,7 @@ default initial view for types not mentioned separately."
     (variable . embark-export-customize-variable)
     (face . embark-export-customize-face)
     (symbol . embark-export-apropos)
+    (minor-mode . embark-export-apropos)
     (function . embark-export-apropos)
     (command . embark-export-apropos)
     (t . embark-collect-snapshot))
@@ -3043,6 +3045,12 @@ When called with a prefix argument OTHER-WINDOW, open dired in other window."
   (interactive "fJump to Dired file: \nP")
   (dired-jump other-window file))
 
+(defvar recentf-list)
+(defun embark-recentf-remove (file)
+  "Remove FILE from the list of recent files."
+  (interactive (list (completing-read "Remove recent file: " recentf-list nil t)))
+  (setq recentf-list (delete file recentf-list)))
+
 (defvar xref-backend-functions)
 
 (defun embark-find-definition (symbol)
@@ -3341,6 +3349,7 @@ With a prefix argument EDEBUG, instrument the code for debugging."
   ("=" ediff-files)
   ("e" embark-eshell)
   ("+" make-directory)
+  ("-" embark-recentf-remove)
   ("I" embark-insert-relative-path)
   ("W" embark-save-relative-path)
   ("l" load-file)

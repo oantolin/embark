@@ -237,8 +237,8 @@ actual type."
 
 ;;; Support for Consult search commands
 
-(embark-define-keymap embark-consult-non-async-search-map
-  "Keymap for Consult non-async search commands"
+(embark-define-keymap embark-consult-sync-search-map
+  "Keymap for Consult sync search commands"
   :parent nil
   ("o" consult-outline)
   ("i" consult-imenu)
@@ -257,12 +257,12 @@ actual type."
 
 (defvar embark-consult-search-map
   (keymap-canonicalize
-   (make-composed-keymap embark-consult-non-async-search-map
+   (make-composed-keymap embark-consult-sync-search-map
                          embark-consult-async-search-map))
   "Keymap for all Consult search commands.")
 
-(fset 'embark-consult-non-async-search-map embark-consult-non-async-search-map)
-(define-key embark-become-match-map "C" 'embark-consult-non-async-search-map)
+(fset 'embark-consult-sync-search-map embark-consult-sync-search-map)
+(define-key embark-become-match-map "C" 'embark-consult-sync-search-map)
 
 (cl-pushnew 'embark-consult-async-search-map embark-become-keymaps)
 
