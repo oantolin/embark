@@ -3049,7 +3049,7 @@ When called with a prefix argument OTHER-WINDOW, open dired in other window."
 (defun embark-recentf-remove (file)
   "Remove FILE from the list of recent files."
   (interactive (list (completing-read "Remove recent file: " recentf-list nil t)))
-  (setq recentf-list (delete file recentf-list)))
+  (setq recentf-list (delete (expand-file-name file) recentf-list)))
 
 (defvar xref-backend-functions)
 
