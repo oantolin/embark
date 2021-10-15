@@ -946,7 +946,7 @@ the minibuffer is open, the message is added to the prompt."
                                (setq prefix new-prefix)
                                (when (/= (length prefix) 0)
                                  (funcall update prefix))))))))
-          (read-key-sequence nil nil nil t 'cmd-loop))
+          (read-key-sequence-vector nil nil nil t 'cmd-loop))
       (when timer
         (cancel-timer timer)))))
 
@@ -955,25 +955,32 @@ the minibuffer is open, the message is added to the prompt."
 Besides the bindings in KEYMAP, the user is free to use all their
 key bindings and even \\[execute-extended-command] to select a command.
 UPDATE is the indicator update function."
-  (let* ((key (let ((overriding-terminal-local-map keymap))
-                (embark--read-key-sequence update)))
+  (let* ((keys (let ((overriding-terminal-local-map keymap))
+                 (embark--read-key-sequence update)))
          (cmd (let ((overriding-terminal-local-map keymap))
-                (key-binding key 'accept-default))))
+                (key-binding keys 'accept-default))))
     (pcase cmd
-      ('embark-keymap-help
+      ((or 'embark-keymap-help
+           (and 'nil            ; cmd is nil but last key is help-char
+                (guard (eq help-char (aref keys (1- (length keys)))))))
        (let ((embark-indicators
               (cl-set-difference embark-indicators
                                  '(embark-verbose-indicator
-                                   embark-mixed-indicator))))
+                                   embark-mixed-indicator)))
+             (prefix-map
+              (if (eq cmd 'embark-keymap-help)
+                  keymap
+                (let ((overriding-terminal-local-map keymap))
+                  (key-binding (seq-take keys (1- (length keys))) 'accept-default)))))
          (when-let ((win (get-buffer-window embark--verbose-indicator-buffer
                                             'visible)))
            (quit-window 'kill-buffer win))
-         (embark-completing-read-prompter keymap nil)))
+         (embark-completing-read-prompter prefix-map update)))
       ((or 'universal-argument 'negative-argument 'digit-argument)
-       (let ((last-command-event (aref key 0)))
+       (let ((last-command-event (aref keys 0)))
          (command-execute cmd))
        (embark-keymap-prompter keymap update))
-      ((guard (lookup-key keymap key))  ; if directly bound, then obey
+      ((guard (lookup-key keymap keys))  ; if directly bound, then obey
        cmd)
       ((or 'minibuffer-keyboard-quit 'abort-recursive-edit 'abort-minibuffers)
        nil)
@@ -988,7 +995,7 @@ UPDATE is the indicator update function."
          (ignore-errors (command-execute cmd)))
        (embark-keymap-prompter keymap update))
       ((or 'scroll-bar-toolkit-scroll 'mwheel-scroll 'mac-mwheel-scroll)
-       (funcall cmd (aref key (1- (length key))))
+       (funcall cmd (aref keys (1- (length keys))))
        (embark-keymap-prompter keymap update))
       ('execute-extended-command
        (intern-soft (read-extended-command)))
