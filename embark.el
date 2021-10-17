@@ -2401,9 +2401,6 @@ determine the width."
 (defun embark-collect--list-view ()
   "List view of candidates and annotations for Embark Collect buffer."
   (let ((candidates (if embark-collect-affixator
-                        ;; TODO shouldn't this run in the minibuffer?!
-                        ;; Marginalia assumes that the annotation
-                        ;; functions run in the minibuffer.
                         (funcall embark-collect-affixator
                                  embark-collect-candidates)
                       embark-collect-candidates)))
