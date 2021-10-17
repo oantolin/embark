@@ -40,7 +40,8 @@ determined by the context:
 
 Multiple targets can be present at the same location and you can cycle
 between them by repeating the =embark-act= key binding. The type of
-actions offered depend on the type of the target:
+actions offered depend on the type of the target. Here is a sample of
+a few of the actions offered in the default configuration:
 
 - For files you get offered actions like deleting, copying,
   renaming, visiting in another window, running a shell command on the
@@ -48,6 +49,12 @@ actions offered depend on the type of the target:
 - For buffers the actions include switching to or killing the buffer.
 - For package names the actions include installing, removing or
   visiting the homepage.
+- For Emacs Lisp symbols the actions include finding the definition,
+  looking up documentation, evaluating (which for a variable
+  immediately shows the value, but for a function lets you pass it
+  some arguments first). There are some actions specific to variables,
+  such as setting the value directly or though the customize system,
+  and some actions specific to commands, such as binding it to a key.
 
 If you want a reminder of which actions are available after running
 =embark-act= type =C-h= which will prompt you for an action with
