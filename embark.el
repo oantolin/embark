@@ -2401,6 +2401,9 @@ determine the width."
 (defun embark-collect--list-view ()
   "List view of candidates and annotations for Embark Collect buffer."
   (let ((candidates (if embark-collect-affixator
+                        ;; TODO shouldn't this run in the minibuffer?!
+                        ;; Marginalia assumes that the annotation
+                        ;; functions run in the minibuffer.
                         (funcall embark-collect-affixator
                                  embark-collect-candidates)
                       embark-collect-candidates)))
@@ -2415,21 +2418,18 @@ determine the width."
     (setq tabulated-list-entries
           (mapcar
            (if embark-collect-affixator
-               (let ((dir default-directory)) ; smuggle to the target window
-                 (with-current-buffer (embark--target-buffer)
-                   (let ((default-directory dir)) ; for file annotator
-                     (pcase-lambda (`(,cand ,prefix ,annotation))
-                       (let* ((length (length annotation))
-                              (faces (text-property-not-all
-                                      0 length 'face nil annotation)))
-                         (when faces (add-face-text-property
-                                      0 length 'default t annotation))
-                         `(,cand
-                           [(,(propertize cand 'line-prefix prefix)
-                             type embark-collect-entry)
-                            (,annotation
-                             ,@(unless faces
-                                 '(face embark-collect-annotation)))]))))))
+               (pcase-lambda (`(,cand ,prefix ,annotation))
+                 (let* ((length (length annotation))
+                        (faces (text-property-not-all
+                                0 length 'face nil annotation)))
+                   (when faces (add-face-text-property
+                                0 length 'default t annotation))
+                   `(,cand
+                     [(,(propertize cand 'line-prefix prefix)
+                       type embark-collect-entry)
+                      (,annotation
+                       ,@(unless faces
+                           '(face embark-collect-annotation)))])))
              (lambda (cand)
                `(,cand [(,cand type embark-collect-entry)])))
            candidates))))
