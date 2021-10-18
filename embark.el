@@ -401,6 +401,11 @@ the key :always are executed always."
   '(;; region commands which prompt for a filename
     (write-region embark--ignore-target embark--mark-target)
     (append-to-file embark--ignore-target embark--mark-target)
+    ;; commands which evaluate code not given at a prompt
+    (embark-pp-eval-defun embark--ignore-target)
+    (eval-defun embark--ignore-target)
+    (eval-last-sexp embark--end-of-target embark--ignore-target)
+    (embark-eval-replace embark--ignore-target embark--mark-target)
     ;; motion commands that need to position point to skip current match
     (indent-pp-sexp embark--beginning-of-target)
     (backward-up-list embark--beginning-of-target)
@@ -418,7 +423,6 @@ the key :always are executed always."
     (backward-sentence embark--beginning-of-target)
     (backward-paragraph embark--beginning-of-target)
     ;; region commands
-    (embark-eval-replace embark--mark-target)
     (mark embark--mark-target)
     (kill-region embark--mark-target)
     (kill-ring-save embark--mark-target)
@@ -3338,6 +3342,7 @@ With a prefix argument EDEBUG, instrument the code for debugging."
   ("c" capitalize-region)
   ("|" shell-command-on-region)
   ("e" eval-region)
+  ("<" embark-eval-replace)
   ("a" align)
   ("A" align-regexp)
   ("i" indent-rigidly)
