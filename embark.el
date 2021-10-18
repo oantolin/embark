@@ -418,6 +418,7 @@ the key :always are executed always."
     (backward-sentence embark--beginning-of-target)
     (backward-paragraph embark--beginning-of-target)
     ;; region commands
+    (embark-eval-replace embark--mark-target)
     (mark embark--mark-target)
     (kill-region embark--mark-target)
     (kill-ring-save embark--mark-target)
@@ -3109,6 +3110,16 @@ Returns the new name actually used."
       (kill-new url)
     (user-error "No homepage found for `%s'" pkg)))
 
+(defun embark-save-variable-value (var)
+  "Save value of VAR in the `kill-ring'."
+  (interactive "SVariable: ")
+  (kill-new (string-trim (pp-to-string (symbol-value var)))))
+
+(defun embark-insert-variable-value (var)
+  "Insert value of VAR."
+  (interactive "SVariable: ")
+  (insert (string-trim (pp-to-string (symbol-value var)))))
+
 (defun embark-insert-relative-path (file)
   "Insert relative path to FILE.
 The insert path is relative to `default-directory'."
@@ -3256,6 +3267,17 @@ With a prefix argument EDEBUG, instrument the code for debugging."
                (pp-display-expression result "*Pp Eval Output*"))))
     (eval-defun edebug)))
 
+(defun embark-eval-replace ()
+  "Evaluate region and replace with evaluated result."
+  (interactive)
+  (let ((beg (region-beginning))
+        (end (region-end)))
+    (save-excursion
+      (goto-char end)
+      (insert (prin1-to-string
+               (eval (read (buffer-substring beg end)) lexical-binding)))
+      (delete-region beg end))))
+
 ;;; keymaps
 
 (embark-define-keymap embark-meta-map
@@ -3351,6 +3373,7 @@ With a prefix argument EDEBUG, instrument the code for debugging."
   ("j" embark-dired-jump)
   ("!" shell-command)
   ("&" async-shell-command)
+  ("<" insert-file)
   ("m" chmod)
   ("=" ediff-files)
   ("e" embark-eshell)
@@ -3381,14 +3404,14 @@ With a prefix argument EDEBUG, instrument the code for debugging."
   "Keymap for Embark buffer actions."
   ("RET" switch-to-buffer)
   ("k" kill-buffer)
-  ("I" insert-buffer)
   ("b" switch-to-buffer)
   ("o" switch-to-buffer-other-window)
   ("z" embark-bury-buffer)
   ("q" embark-kill-buffer-and-window)
   ("r" embark-rename-buffer)
   ("=" ediff-buffers)
-  ("|" embark-shell-command-on-buffer))
+  ("|" embark-shell-command-on-buffer)
+  ("<" insert-buffer))
 
 (embark-define-keymap embark-identifier-map
   "Keymap for Embark identifier actions."
@@ -3406,6 +3429,7 @@ With a prefix argument EDEBUG, instrument the code for debugging."
   "Keymap for Embark expression actions."
   ("RET" pp-eval-expression)
   ("e" pp-eval-expression)
+  ("<" embark-eval-replace)
   ("m" pp-macroexpand-expression)
   ("TAB" indent-region)
   ("r" raise-sexp)
@@ -3457,7 +3481,9 @@ With a prefix argument EDEBUG, instrument the code for debugging."
   :parent embark-symbol-map
   ("=" set-variable)
   ("c" customize-set-variable)
-  ("u" customize-variable))
+  ("u" customize-variable)
+  ("v" embark-save-variable-value)
+  ("<" embark-insert-variable-value))
 
 (declare-function untrace-function "trace")
 
@@ -3495,8 +3521,7 @@ With a prefix argument EDEBUG, instrument the code for debugging."
   ("r" bookmark-rename)
   ("R" bookmark-relocate)
   ("l" bookmark-locate)
-  ("i" bookmark-insert)
-  ("I" embark-insert)
+  ("<" bookmark-insert)
   ("j" bookmark-jump)
   ("o" bookmark-jump-other-window)
   ("f" bookmark-jump-other-frame))
