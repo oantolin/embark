@@ -3362,6 +3362,7 @@ With a prefix argument EDEBUG, instrument the code for debugging."
   ("j" embark-dired-jump)
   ("!" shell-command)
   ("&" async-shell-command)
+  ("<" insert-file)
   ("m" chmod)
   ("=" ediff-files)
   ("e" embark-eshell)
@@ -3392,14 +3393,14 @@ With a prefix argument EDEBUG, instrument the code for debugging."
   "Keymap for Embark buffer actions."
   ("RET" switch-to-buffer)
   ("k" kill-buffer)
-  ("I" insert-buffer)
   ("b" switch-to-buffer)
   ("o" switch-to-buffer-other-window)
   ("z" embark-bury-buffer)
   ("q" embark-kill-buffer-and-window)
   ("r" embark-rename-buffer)
   ("=" ediff-buffers)
-  ("|" embark-shell-command-on-buffer))
+  ("|" embark-shell-command-on-buffer)
+  ("<" insert-buffer))
 
 (embark-define-keymap embark-identifier-map
   "Keymap for Embark identifier actions."
@@ -3508,8 +3509,7 @@ With a prefix argument EDEBUG, instrument the code for debugging."
   ("r" bookmark-rename)
   ("R" bookmark-relocate)
   ("l" bookmark-locate)
-  ("i" bookmark-insert)
-  ("I" embark-insert)
+  ("<" bookmark-insert)
   ("j" bookmark-jump)
   ("o" bookmark-jump-other-window)
   ("f" bookmark-jump-other-frame))
