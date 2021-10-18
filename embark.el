@@ -418,6 +418,7 @@ the key :always are executed always."
     (backward-sentence embark--beginning-of-target)
     (backward-paragraph embark--beginning-of-target)
     ;; region commands
+    (embark-eval-replace embark--mark-target)
     (mark embark--mark-target)
     (kill-region embark--mark-target)
     (kill-ring-save embark--mark-target)
@@ -3267,6 +3268,17 @@ With a prefix argument EDEBUG, instrument the code for debugging."
                (pp-display-expression result "*Pp Eval Output*"))))
     (eval-defun edebug)))
 
+(defun embark-eval-replace ()
+  "Evaluate region and replace with evaluated result."
+  (interactive)
+  (let ((beg (region-beginning))
+        (end (region-end)))
+    (save-excursion
+      (goto-char end)
+      (insert (prin1-to-string
+               (eval (read (buffer-substring beg end)) lexical-binding)))
+      (delete-region beg end))))
+
 ;;; keymaps
 
 (embark-define-keymap embark-meta-map
@@ -3418,6 +3430,7 @@ With a prefix argument EDEBUG, instrument the code for debugging."
   "Keymap for Embark expression actions."
   ("RET" pp-eval-expression)
   ("e" pp-eval-expression)
+  ("<" embark-eval-replace)
   ("m" pp-macroexpand-expression)
   ("TAB" indent-region)
   ("r" raise-sexp)
