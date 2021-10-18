@@ -3110,6 +3110,16 @@ Returns the new name actually used."
       (kill-new url)
     (user-error "No homepage found for `%s'" pkg)))
 
+(defun embark-save-variable-value (var)
+  "Save value of VAR in the `kill-ring'."
+  (interactive "SVariable: ")
+  (kill-new (string-trim (pp-to-string (symbol-value var)))))
+
+(defun embark-insert-variable-value (var)
+  "Insert value of VAR."
+  (interactive "SVariable: ")
+  (insert (string-trim (pp-to-string (symbol-value var)))))
+
 (defun embark-insert-relative-path (file)
   "Insert relative path to FILE.
 The insert path is relative to `default-directory'."
@@ -3458,7 +3468,9 @@ With a prefix argument EDEBUG, instrument the code for debugging."
   :parent embark-symbol-map
   ("=" set-variable)
   ("c" customize-set-variable)
-  ("u" customize-variable))
+  ("u" customize-variable)
+  ("v" embark-save-variable-value)
+  ("<" embark-insert-variable-value))
 
 (declare-function untrace-function "trace")
 
