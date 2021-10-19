@@ -112,7 +112,8 @@ file, symbol, URL, s-expression or defun at point.
 
 Multiple targets can be present at the same location and you can cycle
 between them by repeating the @samp{embark-act} key binding. The type of
-actions offered depend on the type of the target:
+actions offered depend on the type of the target. Here is a sample of
+a few of the actions offered in the default configuration:
 
 @itemize
 @item
@@ -124,6 +125,13 @@ For buffers the actions include switching to or killing the buffer.
 @item
 For package names the actions include installing, removing or
 visiting the homepage.
+@item
+For Emacs Lisp symbols the actions include finding the definition,
+looking up documentation, evaluating (which for a variable
+immediately shows the value, but for a function lets you pass it
+some arguments first). There are some actions specific to variables,
+such as setting the value directly or though the customize system,
+and some actions specific to commands, such as binding it to a key.
 @end itemize
 
 If you want a reminder of which actions are available after running
@@ -599,18 +607,21 @@ You can fix this if you wish as described in the previous section.
 @subsection New target example in regular buffers - short Wikipedia links
 
 Say you want to teach embark to treat text of the form
-@samp{wikipedia:Gary_Kasparov} in any regular buffer as a link to Wikipedia,
+@samp{wikipedia:Garry_Kasparov} in any regular buffer as a link to Wikipedia,
 with actions to open the Wikipedia page in eww or an external browser
-or to save the URL of the page in the kill-ring. We can take
-advantage of the actions that Embark has preconfigured for URLs, so
-all we need to do is teach Embark that @samp{wikipedia:Gary_Kasparov} stands
-for the URL @samp{https://en.wikipedia.org/wiki/Garry_Kasparov}.
+or to save the URL of the page in the kill-ring. We can take advantage
+of the actions that Embark has preconfigured for URLs, so all we need
+to do is teach Embark that @samp{wikipedia:Garry_Kasparov} stands for the URL
+@samp{https://en.wikipedia.org/wiki/Garry_Kasparov}.
 
 You can be as fancy as you want with the recognized syntax. Here, to
 keep the example simple, I'll assume the link matches the regexp
 @samp{wikipedia:[[:alnum:]_]+}. We will write a function that looks for a
-match surrounding point, and returns the pair @samp{(cons 'url
-actual-url-of-the-page)}.
+match surrounding point, and returns an improper list of the form
+@samp{'(url actual-url-of-the-page beg . end)} where @samp{beg} and @samp{end} are the
+buffer positions where the target starts and ends, and are used by
+Embark to highlight the target (if you have @samp{embark-highlight-indicator}
+included in the list @samp{embark-indicators}).
 
 @lisp
 (defun my-short-wikipedia-link ()
@@ -621,8 +632,9 @@ actual-url-of-the-page)}.
            (str (buffer-substring-no-properties beg end)))
       (save-match-data
         (when (string-match "wikipedia:\\([[:alnum:]_]+\\)" str)
-          (cons 'url (format "https://en.wikipedia.org/wiki/%s"
-                             (match-string 1 str))))))))
+          `(url 
+            (format "https://en.wikipedia.org/wiki/%s" (match-string 1 str))
+            ,beg . ,end))))))
 
 (add-to-list 'embark-target-finders 'my-short-wikipedia-link)
 @end lisp

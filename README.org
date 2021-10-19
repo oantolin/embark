@@ -487,18 +487,21 @@ commands, instead of defining new ones.
 *** New target example in regular buffers - short Wikipedia links
 
 Say you want to teach embark to treat text of the form
-=wikipedia:Gary_Kasparov= in any regular buffer as a link to Wikipedia,
+=wikipedia:Garry_Kasparov= in any regular buffer as a link to Wikipedia,
 with actions to open the Wikipedia page in eww or an external browser
-or to save the URL of the page in the kill-ring. We can take
-advantage of the actions that Embark has preconfigured for URLs, so
-all we need to do is teach Embark that =wikipedia:Gary_Kasparov= stands
-for the URL =https://en.wikipedia.org/wiki/Garry_Kasparov=.
+or to save the URL of the page in the kill-ring. We can take advantage
+of the actions that Embark has preconfigured for URLs, so all we need
+to do is teach Embark that =wikipedia:Garry_Kasparov= stands for the URL
+=https://en.wikipedia.org/wiki/Garry_Kasparov=.
 
 You can be as fancy as you want with the recognized syntax. Here, to
 keep the example simple, I'll assume the link matches the regexp
 =wikipedia:[[:alnum:]_]+=. We will write a function that looks for a
-match surrounding point, and returns the pair =(cons 'url
-actual-url-of-the-page)=.
+match surrounding point, and returns an improper list of the form
+='(url actual-url-of-the-page beg . end)= where =beg= and =end= are the
+buffer positions where the target starts and ends, and are used by
+Embark to highlight the target (if you have =embark-highlight-indicator=
+included in the list =embark-indicators=).
 
 #+begin_src emacs-lisp
   (defun my-short-wikipedia-link ()
@@ -509,8 +512,9 @@ actual-url-of-the-page)=.
              (str (buffer-substring-no-properties beg end)))
         (save-match-data
           (when (string-match "wikipedia:\\([[:alnum:]_]+\\)" str)
-            (cons 'url (format "https://en.wikipedia.org/wiki/%s"
-                               (match-string 1 str))))))))
+            `(url 
+              (format "https://en.wikipedia.org/wiki/%s" (match-string 1 str))
+              ,beg . ,end))))))
 
   (add-to-list 'embark-target-finders 'my-short-wikipedia-link)
 #+end_src
