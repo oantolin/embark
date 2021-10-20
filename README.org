@@ -9,22 +9,8 @@
 [[https://melpa.org/#/embark][file:https://melpa.org/packages/embark-badge.svg]]
 :END:
 
-* Breaking News
-
-- The pre-action, post-action and setup hook system has been made more
-  uniform and convenient. If you wrote your own hooks of any of those
-  types you'll have to update your configuration. Updating is easy,
-  see the docstrings of the new =embark-pre-action-hooks=,
-  =embark-setup-action-hooks= and =embark-post-action-hooks= variables for
-  details.
-
-- Embark uses something it calls /indicators/ to notify the user of what
-  the target of actions is and which actions are available. The
-  indicator protocol is in a state of flux, so please update before
-  reporting any bugs and, if you are using the which-key indicator,
-  please check the wiki to make sure you have the latest version.
-  
 * Overview
+
 ** Acting on targets
 
 This package provides a sort of right-click contextual menu for Emacs,
@@ -56,9 +42,14 @@ a few of the actions offered in the default configuration:
   such as setting the value directly or though the customize system,
   and some actions specific to commands, such as binding it to a key.
 
-If you want a reminder of which actions are available after running
-=embark-act= type =C-h= which will prompt you for an action with
-completion, and remind you of the key bindings.
+By default when you use =embark-act= if you don't immediately select an
+action, after a short delay Embark will pop up a buffer showing a list
+of actions and their corresponding key bindings. If you are using
+=embark-act= outside the minibuffer, Embark will also highlight the
+current target. These behaviors are configurable via the variable
+=embark-indicators=. Instead of selecting an action via its key binding,
+you can select it by name with completion by typing =C-h= after
+=embark-act=.
 
 Everything is easily configurable: determining the current target,
 classifying it, and deciding which actions are offered for each type
@@ -114,26 +105,42 @@ somewhat special case, actions for when the region is active. You can
 read about the [[https://github.com/oantolin/embark/wiki/Default-Actions][default actions and their key bindings]] on the GitHub
 project wiki.
 
+** The default action on a target
+
+Embark has a notion of default action for a target:
+
+- If the target is a minibuffer completion candidate, then the default
+  action is whatever command opened the minibuffer in the first place.
+  For example if you run =kill-buffer=, then the default action will be
+  to kill buffers.
+- If the target comes from a regular buffer (i.e., not a minibuffer),
+  then the default action is whatever is bound to =RET= in the keymap of
+  actions for that type of target. For example, in Embark's default
+  configuration for a URL found at point the default action is
+  =browse-url=, because =RET= is bound to =browse-url= in the =embark-url-map=
+  keymap.
+
+To run the default action you can press =RET= after running =embark-act=.
+Note that if there are several different targets at a given location,
+each has its own default action, so first cycle to the target you want
+and then press =RET= to run the corresponding default action.
+
+There is also the =embark-dwim= which runs the default action for the
+first target found. It's pretty handy in non-minibuffer buffers: with
+Embark's default configuration it will
+
 ** Working with sets of possible targets
 
 Besides acting individually on targets, Embark lets you work
-collectively on a set of target /candidates/. For example, while you
-are in the minibuffer the candidates are simply the possible
-completions of your input. Embark provides three commands to work on
-candidate sets:
+collectively on a set of target /candidates/. For example, while you are
+in the minibuffer the candidates are simply the possible completions
+of your input. Embark provides two main commands to work on candidate
+sets:
 
 - The =embark-collect-snapshot= command produces a buffer listing all
   the current candidates, for you to peruse and run actions on at your
   leisure. The candidates can be viewed in a grid or as a list showing
   additional annotations.
-
-- The =embark-collect-live= variant of =embark-collect-snapshot= produces
-  "live" Embark Collect buffers, meaning they auto-update as the set
-  of candidates changes. Most users of visual completion UIs such as
-  Vertico, Icomplete, Selectrum or Ivy will probably either not want
-  to use this, to avoid seeing double, or to configure their
-  completion UI to hide while using =embark-collect-live=. See the
-  Embark wiki for [[https://github.com/oantolin/embark/wiki/Additional-Configuration#pause-selectrum-while-using-embark-collect-live][sample configuration for Selectrum]].
 
 - The =embark-export= command tries to open a buffer in an appropriate
   major mode for the set of candidates. If the candidates are files
@@ -147,11 +154,28 @@ candidate sets:
   adds support for exporting a list of grep results to an honest
   grep-mode buffer, on which you can even use [[https://github.com/mhayashi1120/Emacs-wgrep][wgrep]] if you wish.
 
-These are always available as "actions" (although they do not act on
-just the current target but on all candidates) for =embark-act= and are
-bound to =S=, =L= and =E=, respectively, in =embark-general-map=. This means
-that you do not have to bind your own key bindings for these
-(although you can, of course), just a key binding for =embark-act=.
+When in doubt choosing among these a good rule of thumb is to always
+prefer =embark-export= since when an exporter to a special major mode is
+available for a given type of target, it will be more featureful than
+an Embark collect buffer, and if no such exporter is configured the
+=embark-export= command falls back to the generic
+=embark-collect-snapshot=.
+
+These commands are always available as "actions" (although they do not
+act on just the current target but on all candidates) for =embark-act=
+and are bound to =S=, =E=, respectively, in =embark-general-map=. This means
+that you do not have to bind your own key bindings for these (although
+you can, of course!), just a key binding for =embark-act=.
+
+There is also the =embark-collect-live= variant of
+=embark-collect-snapshot= which produces "live" Embark Collect buffers,
+meaning they auto-update as the set of candidates changes. Most users
+of visual completion UIs such as Vertico, Icomplete, Selectrum or Ivy
+will probably either not want to use this, to avoid seeing double (the
+list of candidates is displayed both by Embark and by the completion
+UI), or to configure their completion UI to hide while using
+=embark-collect-live=. See the Embark wiki for [[https://github.com/oantolin/embark/wiki/Additional-Configuration#pause-selectrum-while-using-embark-collect-live][sample configuration for
+Selectrum]].
 
 ** Switching to a different command without losing what you've typed
 
@@ -262,35 +286,83 @@ minibuffer completion candidates. (Embark does come with Ivy
 integration despite this.)
 
 * Advanced configuration
-** Showing a reminder of available actions
+** Showing information about available targets and actions
 
-If you want a reminder of which actions are available after running
-=embark-act=, use =embark-keymap-help=, which is bound to =C-h= in all of
-Embark's action keymaps. That command will prompt you for the name of
-an action with completion (but feel free to enter a command not among
-the offered candidates!), and will also remind you of the key
-bindings. You can press =@= at the prompt and then one of the key
-bindings to enter the name of the corresponding action.
+By default, if you run =embark-act= and do not immediately select an
+action, after a short delay Embark will pop up a buffer called =*Embark
+Actions*= containing a list of available actions with their key
+bindings. You can scroll that buffer with the mouse of with the usual
+commands =scroll-other-window= and =scroll-other-window-down= (bound by
+default to =C-M-v= and =C-M-S-v=).
+
+That functionality is provided by the =embark-mixed-indicator=, but
+Embark has other indicators that can provide information about the
+target and its type, what other targets you can cycle to, and which
+actions have key bindings in the action map for the current type of
+target. Any number of indicators can be active at once and the user
+option =embark-indicators= should be set to a list of the desired
+indicators.
+
+Embark comes with the following indicators:
+
+- =embark-minimal-indicator=: shows a messages in the echo area or
+  minibuffer prompt showing the current target and the types of all
+  targets starting with the current one; this one is on by default.
+  
+- =embark-highlight-indicator=: highlights the target at point;
+  also on by default.
+  
+- =embark-verbose-indicator=: displays a table of actions and their key
+  bindings in a buffer; this is not on by default, in favor of the
+  mixed indicator described next.
+  
+- =embark-mixed-indicator=: starts out by behaving as the minimal
+  indicator but after a short delay acts as the verbose indicator;
+  this is on by default.
+  
+- =embark-isearch-highlight-indicator=: this only does something when
+  the current target is the symbol at point, in which case it
+  lazily highlights all occurrences of that symbol in the current
+  buffer, like isearch; also on by default.
+  
+Users of the popular [[https://github.com/justbur/emacs-which-key][which-key]] package may prefer to use the
+=embark-which-key-indicator= from the [[https://github.com/oantolin/embark/wiki/Additional-Configuration#use-which-key-like-a-key-menu-prompt][Embark wiki]]. Just copy its
+definition from the wiki into your configuration and customize the
+=embark-indicators= user option to exclude the mixed and verbose
+indicators and to include =embark-which-key-indicator=.
+
+** Selecting commands via completions instead of key bindings
+
+As an alternative to reading the list of actions in the verbose or
+mixed indicators (see the previous section for a description of
+these), you can use =embark-keymap-help= after running =embark-act= which
+is bound to =C-h= in all of Embark's action keymaps. That command will
+prompt you for the name of an action with completion (but feel free to
+enter a command that is not among the offered candidates!), and will
+also remind you of the key bindings. You can press =@= at the prompt and
+then one of the key bindings to enter the name of the corresponding
+action.
+
+You may think that with the =*Embark Actions*= buffer popping up to
+remind you of the key bindings you'd never want to use completion to
+select an action by name, but personally I find that typing a small
+portion of the action name to narrow down the list of candidates feels
+significantly faster than visually scanning the entire list of actions.
 
 If you find you prefer entering actions that way, you can configure
 embark to always prompt you for actions by setting the variable
 =embark-prompter= to =embark-completing-read-prompter=.
 
-If you want to see the actions and their key bindings, but want to use
-the key bindings rather than completing the command name, you can
-install [[https://github.com/justbur/emacs-which-key][which-key]] and add the =embark-which-key-indicator= from [[https://github.com/oantolin/embark/wiki/Additional-Configuration#use-which-key-like-a-key-menu-prompt][Embark
-wiki]] to your configuration.
-
 ** Quitting the minibuffer after an action
 
 By default, if you call =embark-act= from the minibuffer it quits the
 minibuffer after performing the action. You can change this by setting
-the customizable variable =embark-quit-after-action= to =nil=. That
-variable controls whether or not =embark-act= quits the minibuffer when
-you call it without a prefix argument, and you can select the opposite
-behavior to what the variable says by calling =embark-act= with =C-u=.
-Note that both the variable =embark-quit-after-action= and =C-u= have no
-effect when you call =embark-act= outside the minibuffer.
+the user option =embark-quit-after-action= to =nil=. That variable
+controls whether or not =embark-act= quits the minibuffer when you call
+it without a prefix argument, and you can select the opposite behavior
+to what the variable says by calling =embark-act= with =C-u=. Note that
+both the variable =embark-quit-after-action= and =C-u= have no effect when
+you call =embark-act= outside the minibuffer.
 
 Having =embark-act= /not/ quit the minibuffer can be useful to turn
 commands into little "thing managers". For example, you can use
@@ -673,3 +745,61 @@ the Marginalia package.
   policy of avoiding overlap with Consult. If you used that action,
   add [[https://github.com/minad/consult/blob/373498acb76b9395e5e590fb8e39f671a9363cd7/consult.el#L707][the small function]] to your configuration or install Consult and
   use =consult-file-externally=.
+
+* Resources
+
+If you want to learn more about how others have used Embark here are
+some links to read:
+
+- [[https://karthinks.com/software/fifteen-ways-to-use-embark/][Fifteen ways to use Embark]], a blog post by Karthik Chikmagalur.
+- [[https://protesilaos.com/dotemacs/][Protesilaos Stavrou's dotemacs]], look for the section called
+  "Extended minibuffer actions and more (embark.el and
+  prot-embark.el)"
+
+And some videos to watch:
+
+- [[https://protesilaos.com/codelog/2021-01-09-emacs-embark-extras/][Embark and my extras]] by Protesilaos Stavrou.
+- [[https://youtu.be/qpoQiiinCtY][Embark -- Key features and tweaks]] by Raoul Comninos on the
+  Emacs-Elements YouTube channel.
+- [[https://youtu.be/WsxXr1ncukY][Livestreamed: Adding an Embark context action to send a stream
+  message]] by Sacha Chua.
+- [[https://youtu.be/qk2Is_sC8Lk][System Crafters Live! - The Many Uses of Embark]] by David Wilson.
+
+* Acknowledgements
+
+While I, Omar Antolín Camarena, have written most of the Embark code
+and remain very stubborn about some of the design decisions, Embark
+has recieved substantial help from a number of other people which this
+document has neglected to mention for far too long. In particular,
+Daniel Mendler has been absolutely invaluable, implementing several
+important features, and providing a lot of useful advice.
+
+Code contributions:
+
+- [[https://github.com/minad][Daniel Mendler]]
+- [[https://github.com/clemera/][Clemens Radermacher]]
+- [[https://codeberg.org/jao/][José Antonio Ortega Ruiz]]
+- [[https://github.com/iyefrat][Itai Y. Efrat]]
+- [[https://github.com/a13][a13]]
+- [[https://github.com/jakanakaevangeli][jakanakaevangeli]]
+- [[https://github.com/mihakam][mihakam]]
+- [[https://github.com/leungbk][Brian Leung]]
+- [[https://github.com/karthink][Karthik Chikmagalur]]
+- [[https://github.com/roshanshariff][Roshan Shariff]]
+- [[https://github.com/condy0919][condy0919]]
+- [[https://github.com/DamienCassou][Damien Cassou]]
+- [[https://github.com/JimDBh][JimDBh]]
+
+Advice and useful discussions:
+
+- [[https://github.com/minad][Daniel Mendler]]
+- [[https://gitlab.com/protesilaos/][Protesilaos Stavrou]]
+- [[https://github.com/clemera/][Clemens Radermacher]]
+- [[https://github.com/hmelman/][Howard Melman]]
+- [[https://github.com/astoff][Augusto Stoffel]]
+- [[https://github.com/bdarcus][Bruce d'Arcus]]
+- [[https://github.com/jdtsmith][JD Smith]]
+- [[https://github.com/karthink][Karthik Chikmagalur]]
+- [[https://github.com/jakanakaevangeli][jakanakaevangeli]]
+- [[https://github.com/iyefrat][Itai Y. Efrat]]
+- [[https://github.com/mohkale][Mohsin Kaleem]]
