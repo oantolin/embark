@@ -683,13 +683,17 @@ different priorities in `embark-target-finders'."
     `(url ,(overlay-get ov 'bug-reference-url)
           ,(overlay-start ov) . ,(overlay-end ov))))
 
+(defun embark-target-email-at-point ()
+  "Target the email address at point."
+  (when-let ((email (thing-at-point 'email)))
+    (when (string-prefix-p "mailto:" email)
+      (setq email (string-remove-prefix "mailto:" email)))
+    `(email ,email . ,(bounds-of-thing-at-point 'email))))
+
 (defun embark-target-url-at-point ()
   "Target the URL at point."
   (if-let ((url (thing-at-point 'url)))
-      (if (string-prefix-p "mailto:" url)
-          `(email ,(string-remove-prefix "mailto:" url)
-                  . ,(thing-at-point-bounds-of-url-at-point t))
-        `(url ,url . ,(thing-at-point-bounds-of-url-at-point t)))
+      `(url ,url . ,(thing-at-point-bounds-of-url-at-point t))
     (when-let ((url (or (get-text-property (point) 'shr-url)
                         (get-text-property (point) 'image-url))))
       `(url ,url
@@ -763,7 +767,6 @@ in one of those major modes."
   text-mode help-mode Info-mode man-common)
 (embark-define-thingatpt-target paragraph
   text-mode help-mode Info-mode man-common)
-(embark-define-thingatpt-target email)
 
 (defun embark-target-identifier-at-point ()
   "Target identifier at point.
