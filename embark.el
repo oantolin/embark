@@ -120,6 +120,7 @@
     (library . embark-library-map)
     (environment-variables . embark-file-map) ; they come up in file completion
     (url . embark-url-map)
+    (email . embark-email-map)
     (buffer . embark-buffer-map)
     (expression . embark-expression-map)
     (identifier . embark-identifier-map)
@@ -148,6 +149,7 @@ For any type not listed here, `embark-act' will use
     embark-target-collect-candidate
     embark-target-completion-at-point
     embark-target-bug-reference-at-point
+    embark-target-email-at-point
     embark-target-url-at-point
     embark-target-file-at-point
     embark-target-identifier-at-point
@@ -683,10 +685,11 @@ different priorities in `embark-target-finders'."
 
 (defun embark-target-url-at-point ()
   "Target the URL at point."
-  (if-let ((url (or (thing-at-point 'url)
-                    (when-let (email (thing-at-point 'email))
-                      (concat "mailto:" email)))))
-      `(url ,url . ,(thing-at-point-bounds-of-url-at-point t))
+  (if-let ((url (thing-at-point 'url)))
+      (if (string-prefix-p "mailto:" url)
+          `(email ,(string-remove-prefix "mailto:" url)
+                  . ,(thing-at-point-bounds-of-url-at-point t))
+        `(url ,url . ,(thing-at-point-bounds-of-url-at-point t)))
     (when-let ((url (or (get-text-property (point) 'shr-url)
                         (get-text-property (point) 'image-url))))
       `(url ,url
@@ -760,6 +763,7 @@ in one of those major modes."
   text-mode help-mode Info-mode man-common)
 (embark-define-thingatpt-target paragraph
   text-mode help-mode Info-mode man-common)
+(embark-define-thingatpt-target email)
 
 (defun embark-target-identifier-at-point ()
   "Target identifier at point.
@@ -3213,6 +3217,14 @@ The search respects symbol boundaries."
     (unless (re-search-backward regexp nil t)
       (user-error "Symbol `%s' not found" symbol))))
 
+(defun embark-compose-mail (address)
+  "Compose email to ADDRESS."
+  ;; The only reason we cannot use compose-mail directly is its
+  ;; interactive specification, which just supllies nil for the
+  ;; address (and several other arguments).
+  (interactive "sTo: ")
+  (compose-mail address))
+
 ;;; Setup and pre-action hooks
 
 (defun embark--restart (&rest _)
@@ -3395,6 +3407,11 @@ With a prefix argument EDEBUG, instrument the code for debugging."
   ("RET" browse-url)
   ("b" browse-url)
   ("e" eww))
+
+(embark-define-keymap embark-email-map
+  "Keymap for Embark email actions."
+  ("RET" embark-compose-mail)
+  ("c" embark-compose-mail))
 
 (embark-define-keymap embark-library-map
   "Keymap for operations on Emacs Lisp libraries."
