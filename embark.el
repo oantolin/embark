@@ -149,12 +149,13 @@ For any type not listed here, `embark-act' will use
     embark-target-collect-candidate
     embark-target-completion-at-point
     embark-target-bug-reference-at-point
+    embark-target-package-at-point
     embark-target-email-at-point
     embark-target-url-at-point
     embark-target-file-at-point
+    embark-target-custom-variable-at-point
     embark-target-identifier-at-point
     embark-target-library-file-at-point
-    embark-target-custom-variable-at-point
     embark-target-expression-at-point
     embark-target-sentence-at-point
     embark-target-paragraph-at-point
@@ -682,6 +683,13 @@ different priorities in `embark-target-finders'."
                            (overlays-at (point)))))
     `(url ,(overlay-get ov 'bug-reference-url)
           ,(overlay-start ov) . ,(overlay-end ov))))
+
+(defun embark-target-package-at-point ()
+  "Target the package on the current line in a `package-menu-mode-menu' buffer."
+  (when (derived-mode-p 'package-menu-mode)
+    (when-let ((pkg (get-text-property (point) 'tabulated-list-id)))
+      `(package ,(symbol-name (package-desc-name pkg))
+                ,(line-beginning-position) . ,(line-end-position)))))
 
 (defun embark-target-email-at-point ()
   "Target the email address at point."
