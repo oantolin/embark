@@ -3236,6 +3236,27 @@ The search respects symbol boundaries."
   (interactive "sTo: ")
   (compose-mail address))
 
+(autoload 'pp-display-expression "pp")
+(defun embark-pp-eval-defun (edebug)
+  "Run `eval-defun' and pretty print the result.
+With a prefix argument EDEBUG, instrument the code for debugging."
+  (interactive "P")
+  (cl-letf (((symbol-function #'eval-expression-print-format)
+             (lambda (result)
+               (pp-display-expression result "*Pp Eval Output*"))))
+    (eval-defun edebug)))
+
+(defun embark-eval-replace ()
+  "Evaluate region and replace with evaluated result."
+  (interactive)
+  (let ((beg (region-beginning))
+        (end (region-end)))
+    (save-excursion
+      (goto-char end)
+      (insert (prin1-to-string
+               (eval (read (buffer-substring beg end)) lexical-binding)))
+      (delete-region beg end))))
+
 ;;; Setup and pre-action hooks
 
 (defun embark--restart (&rest _)
@@ -3283,27 +3304,6 @@ and leaves the point to the left of it."
 (defun embark--ignore-target (&rest _)
   "Ignore the target."
   (ignore (read-from-minibuffer "")))
-
-(autoload 'pp-display-expression "pp")
-(defun embark-pp-eval-defun (edebug)
-  "Run `eval-defun' and pretty print the result.
-With a prefix argument EDEBUG, instrument the code for debugging."
-  (interactive "P")
-  (cl-letf (((symbol-function #'eval-expression-print-format)
-             (lambda (result)
-               (pp-display-expression result "*Pp Eval Output*"))))
-    (eval-defun edebug)))
-
-(defun embark-eval-replace ()
-  "Evaluate region and replace with evaluated result."
-  (interactive)
-  (let ((beg (region-beginning))
-        (end (region-end)))
-    (save-excursion
-      (goto-char end)
-      (insert (prin1-to-string
-               (eval (read (buffer-substring beg end)) lexical-binding)))
-      (delete-region beg end))))
 
 ;;; keymaps
 
