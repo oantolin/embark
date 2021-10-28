@@ -437,7 +437,11 @@ the key :always are executed always."
     (capitalize-region embark--mark-target)
     (count-words-region embark--mark-target)
     (shell-command-on-region embark--mark-target)
-    (delete-region embark--mark-target))
+    (delete-region embark--mark-target)
+    ;; commands we want to be able to jump back from
+    ;; (embark-find-definition achieves this by calling
+    ;; xref-find-definitions which pushes the markers itself)
+    (find-library embark--xref-push-markers))
   "Alist associating commands with pre-action hooks.
 The hooks are run right before an action is embarked upon.  See
 `embark-setup-action-hooks' for information about the hook
@@ -3304,6 +3308,11 @@ and leaves the point to the left of it."
 (defun embark--ignore-target (&rest _)
   "Ignore the target."
   (ignore (read-from-minibuffer "")))
+
+(autoload 'xref--push-markers "xref")
+(defun embark--xref-push-markers (&rest _)
+  "Push the xref markers to leave a location trail."
+  (xref--push-markers))
 
 ;;; keymaps
 
