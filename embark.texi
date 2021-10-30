@@ -139,7 +139,7 @@ keymaps containing bindings for the actions. (To examine the
 available categories and their associated keymaps, you can use @samp{C-h v
 embark-keymap-alist} or customize that variable.) For example, in the
 default configuration the type @samp{file} is associated with the symbol
-@samp{embark-file-keymap}. That symbol names a keymap with single-letter
+@samp{embark-file-map}. That symbol names a keymap with single-letter
 key bindings for common Emacs file commands, for instance @samp{c} is bound
 to @samp{copy-file}. This means that if you are in the minibuffer after
 running a command that prompts for a file, such as @samp{find-file} or
