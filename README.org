@@ -5,9 +5,10 @@
 #+TEXINFO_DIR_TITLE: Embark: (embark).
 #+TEXINFO_DIR_DESC: Emacs Mini-Buffer Actions Rooted in Keymaps
 
-:BADGE:
-[[https://melpa.org/#/embark][file:https://melpa.org/packages/embark-badge.svg]]
-:END:
+#+html: <a href="http://elpa.gnu.org/packages/embark.html"><img alt="GNU ELPA" src="https://elpa.gnu.org/packages/embark.svg"/></a>
+#+html: <a href="http://elpa.gnu.org/devel/embark.html"><img alt="GNU-devel ELPA" src="https://elpa.gnu.org/devel/embark.svg"/></a>
+#+html: <a href="https://melpa.org/#/embark"><img alt="MELPA" src="https://melpa.org/packages/embark-badge.svg"/></a>
+#+html: <a href="https://stable.melpa.org/#/embark"><img alt="MELPA Stable" src="https://stable.melpa.org/packages/embark-badge.svg"/></a>
 
 * Overview
 
