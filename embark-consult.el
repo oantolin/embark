@@ -1,12 +1,13 @@
 ;;; embark-consult.el --- Consult integration for Embark -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2021  Omar Antolín Camarena
+;; Copyright (C) 2021  Free Software Foundation, Inc.
 
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>
+;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Keywords: convenience
-;; Version: 0.1
+;; Version: 0.2
 ;; Homepage: https://github.com/oantolin/embark
-;; Package-Requires: ((emacs "25.1") (embark "0.9") (consult "0.1"))
+;; Package-Requires: ((emacs "26.1") (embark "0.12") (consult "0.10"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
