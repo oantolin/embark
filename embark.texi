@@ -135,16 +135,15 @@ the default configuration.
 Configuring which actions are offered for a type is particularly easy
 and requires no programming: the variable @samp{embark-keymap-alist}
 associates target types with variables containing keymaps, and those
-keymaps containing bindings for the actions. (To examine the
-available categories and their associated keymaps, you can use @samp{C-h v
+keymaps containing bindings for the actions. (To examine the available
+categories and their associated keymaps, you can use @samp{C-h v
 embark-keymap-alist} or customize that variable.) For example, in the
 default configuration the type @samp{file} is associated with the symbol
-@samp{embark-file-keymap}. That symbol names a keymap with single-letter
-key bindings for common Emacs file commands, for instance @samp{c} is bound
-to @samp{copy-file}. This means that if you are in the minibuffer after
-running a command that prompts for a file, such as @samp{find-file} or
-@samp{rename-file}, you can copy a file by running @samp{embark-act} and then
-pressing @samp{c}.
+@samp{embark-file-map}. That symbol names a keymap with single-letter key
+bindings for common Emacs file commands, for instance @samp{c} is bound to
+@samp{copy-file}. This means that if you are in the minibuffer after running
+a command that prompts for a file, such as @samp{find-file} or @samp{rename-file},
+you can copy a file by running @samp{embark-act} and then pressing @samp{c}.
 
 These action keymaps are very convenient but not strictly necessary
 when using @samp{embark-act}: you can use any command that reads from the
@@ -922,6 +921,9 @@ Emacs-Elements YouTube channel.
 message} by Sacha Chua.
 @item
 @uref{https://youtu.be/qk2Is_sC8Lk, System Crafters Live! - The Many Uses of Embark} by David Wilson.
+@item
+@uref{https://youtu.be/5ffb2at2d7w, Using Emacs Episode 80 - Vertico, Marginalia, Consult and Embark} by
+Mike Zamansky.
 @end itemize
 
 @node Acknowledgements

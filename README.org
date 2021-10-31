@@ -59,16 +59,15 @@ the default configuration.
 Configuring which actions are offered for a type is particularly easy
 and requires no programming: the variable =embark-keymap-alist=
 associates target types with variables containing keymaps, and those
-keymaps containing bindings for the actions. (To examine the
-available categories and their associated keymaps, you can use =C-h v
+keymaps containing bindings for the actions. (To examine the available
+categories and their associated keymaps, you can use =C-h v
 embark-keymap-alist= or customize that variable.) For example, in the
 default configuration the type =file= is associated with the symbol
-=embark-file-keymap=. That symbol names a keymap with single-letter
-key bindings for common Emacs file commands, for instance =c= is bound
-to =copy-file=. This means that if you are in the minibuffer after
-running a command that prompts for a file, such as =find-file= or
-=rename-file=, you can copy a file by running =embark-act= and then
-pressing =c=.
+=embark-file-map=. That symbol names a keymap with single-letter key
+bindings for common Emacs file commands, for instance =c= is bound to
+=copy-file=. This means that if you are in the minibuffer after running
+a command that prompts for a file, such as =find-file= or =rename-file=,
+you can copy a file by running =embark-act= and then pressing =c=.
 
 These action keymaps are very convenient but not strictly necessary
 when using =embark-act=: you can use any command that reads from the
