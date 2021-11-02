@@ -216,11 +216,12 @@ switch to =find-file=.
 
 * Quick start
 
-The easiest way to install Embark is from Melpa. It is highly
-recommended to also install [[https://github.com/minad/marginalia][Marginalia]], so that Embark can offer you
-preconfigured actions in more contexts. For =use-package= users that
-add Melpa to their =package-archives=, the following is a very
-reasonable starting configuration:
+The easiest way to install Embark is from GNU ELPA, just run =M-x
+package-install RET embark RET=. (It is also available on MELPA.) It is
+highly recommended to also install [[https://github.com/minad/marginalia][Marginalia]] (also available on GNU
+ELPA), so that Embark can offer you preconfigured actions in more
+contexts. For =use-package= users, the following is a very reasonable
+starting configuration:
 
 #+begin_src emacs-lisp
   (use-package marginalia
@@ -766,6 +767,18 @@ And some videos to watch:
 - [[https://youtu.be/qk2Is_sC8Lk][System Crafters Live! - The Many Uses of Embark]] by David Wilson.
 - [[https://youtu.be/5ffb2at2d7w][Using Emacs Episode 80 - Vertico, Marginalia, Consult and Embark]] by
   Mike Zamansky.
+
+* Contributions
+
+Contributions to Embark are very welcome. There is a [[https://github.com/oantolin/embark/issues/95][wish list]] for
+actions, target finders, candidate collectors and exporters. For other
+ideas you have for Embark, feel free to open an issue on the [[https://github.com/oantolin/embark/issues][issue
+tracker]]. Any neat configuration tricks you find might be a good fit
+for the [[https://github.com/oantolin/embark/wiki][wiki]].
+
+Code contributions are very welcome too, but since Embark is now on
+GNU ELPA, copyright assignment to the FSF is required before you can
+contribute code.
 
 * Acknowledgements
 
