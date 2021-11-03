@@ -1007,10 +1007,10 @@ UPDATE is the indicator update function."
          (let ((overriding-terminal-local-map overriding-terminal-local-map))
            (command-execute cmd)))
        (embark-keymap-prompter keymap update))
-      ((guard (lookup-key keymap keys))  ; if directly bound, then obey
-       cmd)
       ((or 'minibuffer-keyboard-quit 'abort-recursive-edit 'abort-minibuffers)
        nil)
+      ((guard (lookup-key keymap keys))  ; if directly bound, then obey
+       cmd)
       ('self-insert-command
        (minibuffer-message "Not an action")
        (embark-keymap-prompter keymap update))
