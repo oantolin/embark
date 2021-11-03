@@ -208,7 +208,26 @@ and then press @samp{RET} to run the corresponding default action.
 
 There is also the @samp{embark-dwim} which runs the default action for the
 first target found. It's pretty handy in non-minibuffer buffers: with
-Embark's default configuration it will
+Embark's default configuration it will:
+
+@itemize
+@item
+Open the file at point.
+@item
+Open the URL at point in a web browser (using the @samp{browse-url}
+command).
+@item
+Compose a new email to the email address at point.
+@item
+In an Emacs Lisp buffer, if point is on an opening parenthesis or
+right after a closing one, it will evaluate the corresponding
+expression.
+@item
+Go to the definition of an Emacs Lisp function, variable or macro at
+point.
+@item
+Find the file corresponding to an Emacs Lisp library at point.
+@end itemize
 
 @node Working with sets of possible targets
 @section Working with sets of possible targets
@@ -514,11 +533,12 @@ others as well).
 @node Running some setup after injecting the target
 @section Running some setup after injecting the target
 
-You can customize what happens after the target is inserted at the minibuffer
-prompt of an action. There are @samp{embark-setup-action-hooks}, that are run by default
-after injecting the target into the minibuffer. The hook can be specified for
-specific action commands by associating the command to the desired hook. By
-default the hooks with the key t are executed.
+You can customize what happens after the target is inserted at the
+minibuffer prompt of an action. There are @samp{embark-setup-action-hooks},
+that are run by default after injecting the target into the
+minibuffer. The hook can be specified for specific action commands by
+associating the command to the desired hook. By default the hooks with
+the key t are executed.
 
 For example, consider using @samp{shell-command} as an action during file
 completion. It would be useful to insert a space before the target
@@ -690,7 +710,7 @@ You can fix this if you wish as described in the previous section.
 @node New target example in regular buffers - short Wikipedia links
 @subsection New target example in regular buffers - short Wikipedia links
 
-Say you want to teach embark to treat text of the form
+Say you want to teach Embark to treat text of the form
 @samp{wikipedia:Garry_Kasparov} in any regular buffer as a link to Wikipedia,
 with actions to open the Wikipedia page in eww or an external browser
 or to save the URL of the page in the kill-ring. We can take advantage
@@ -846,9 +866,9 @@ non-string target.
 @node Embark Marginalia and Consult
 @chapter Embark, Marginalia and Consult
 
-Embark cooperates well with the @uref{https://github.com/minad/marginalia, Marginalia} and @uref{https://github.com/minad/consult, Consult} packages. Neither of
-those packages is a dependency of Embark, but Marginalia is highly recommended,
-for reasons explained in the rest of this section.
+Embark cooperates well with the @uref{https://github.com/minad/marginalia, Marginalia} and @uref{https://github.com/minad/consult, Consult} packages.
+Neither of those packages is a dependency of Embark, but Marginalia is
+highly recommended, for reasons explained in the rest of this section.
 
 Embark comes with actions for symbols (commands, functions, variables
 with actions such as finding the definition, looking up the
@@ -860,14 +880,15 @@ Unfortunately Embark does not automatically offers you these keymaps
 when relevant, because many built-in Emacs commands don't report
 accurate category metadata. For example, a command like
 @samp{describe-package}, which reads a package name from the minibuffer,
-does not have metadata indicating so.
+does not have metadata indicating this fact.
 
-In an earlier Embark version, there were functions to supply this missing
-metadata, but they have been moved to Marginalia, which augments many Emacs
-command to report accurate category metadata. Simply activating @samp{marginalia-mode}
-allows Embark to offer you the package and symbol actions when appropriate
-again. Candidate annotations in the Embark collect buffer are also provided by
-the Marginalia package.
+In an earlier Embark version, there were functions to supply this
+missing metadata, but they have been moved to Marginalia, which
+augments many Emacs command to report accurate category metadata.
+Simply activating @samp{marginalia-mode} allows Embark to offer you the
+package and symbol actions when appropriate again. Candidate
+annotations in the Embark collect buffer are also provided by the
+Marginalia package.
 
 @itemize
 @item
