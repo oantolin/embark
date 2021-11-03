@@ -1003,7 +1003,9 @@ UPDATE is the indicator update function."
          (embark-completing-read-prompter prefix-map update)))
       ((or 'universal-argument 'negative-argument 'digit-argument)
        (let ((last-command-event (aref keys 0)))
-         (command-execute cmd))
+         ;; Prevent `digit-argument' from modifying the overriding map
+         (let ((overriding-terminal-local-map overriding-terminal-local-map))
+           (command-execute cmd)))
        (embark-keymap-prompter keymap update))
       ((guard (lookup-key keymap keys))  ; if directly bound, then obey
        cmd)
