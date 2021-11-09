@@ -1132,9 +1132,13 @@ If NESTED is non-nil subkeymaps are not flattened."
                    collect (cons formatted item))))
     (cons candidates def)))
 
-(defun embark-completing-read-prompter (keymap _update &optional no-default)
+(defun embark-completing-read-prompter (keymap update &optional no-default)
   "Prompt via completion for a command bound in KEYMAP.
-If NO-DEFAULT is t, no default value is passed to `completing-read'."
+If NO-DEFAULT is t, no default value is passed to`completing-read'. 
+
+UPDATE is the indicator update function.  It is not used directly
+here, but if the user switches to `embark-keymap-prompter', the
+UPDATE function is passed to it."
   (let* ((candidates+def (embark--formatted-bindings keymap))
          (candidates (car candidates+def))
          (def (and (not no-default) (cdr candidates+def)))
@@ -1169,7 +1173,7 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
                         (lambda ()
                           (interactive)
                           (message "Press key binding")
-                          (let ((cmd (embark-keymap-prompter keymap _update)))
+                          (let ((cmd (embark-keymap-prompter keymap update)))
                             (if (null cmd)
                                 (user-error "Unknown key")
                               (throw 'choice cmd))))))
