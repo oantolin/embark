@@ -216,6 +216,13 @@ This is the key representation accepted by `define-key'."
 If the key is set to nil it defaults to the global binding of
 `embark-act'.  The key must be either a string or a vector.  This
 is the key representation accepted by `define-key'."
+  :type '(choice key-sequence (const :tag "Use embark-act key" nil)))
+
+(defcustom embark-help-key "\C-h"
+  "Key used for help.
+
+The key must be either nil, a string or a vector.  This
+is the key representation accepted by `define-key'."
   :type '(choice key-sequence (const :tag "None" nil)))
 
 (defcustom embark-keybinding-repeat
@@ -889,6 +896,8 @@ If CYCLE is non-nil bind `embark-cycle'."
      (define-key map [13] (embark--default-action type))
      (when-let ((cycle-key (and cycle (embark--cycle-key))))
        (define-key map cycle-key #'embark-cycle))
+     (when embark-help-key
+       (define-key map embark-help-key #'embark-keymap-help))
      map)
    (symbol-value (or (alist-get type embark-keymap-alist)
                      (alist-get t embark-keymap-alist)))))
@@ -1960,11 +1969,14 @@ See `embark-act' for the meaning of the prefix ARG."
 
 (defun embark--become-keymap ()
   "Return keymap of commands to become for current command."
-  (make-composed-keymap
-   (cl-loop for keymap-name in embark-become-keymaps
-            for keymap = (symbol-value keymap-name)
-            when (where-is-internal embark--command (list keymap))
-            collect keymap)))
+  (let ((map (make-composed-keymap
+              (cl-loop for keymap-name in embark-become-keymaps
+                       for keymap = (symbol-value keymap-name)
+                       when (where-is-internal embark--command (list keymap))
+                       collect keymap))))
+    (when embark-help-key
+      (define-key map embark-help-key #'embark-keymap-help))
+    map))
 
 ;;;###autoload
 (defun embark-become (&optional full)
@@ -3323,7 +3335,6 @@ and leaves the point to the left of it."
 (embark-define-keymap embark-meta-map
   "Keymap for non-action Embark functions."
   :parent nil
-  ("C-h" embark-keymap-help)
   ("-" negative-argument)
   ("0" digit-argument)
   ("1" digit-argument)
