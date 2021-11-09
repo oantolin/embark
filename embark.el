@@ -996,6 +996,14 @@ UPDATE is the indicator update function."
                  (embark--read-key-sequence update)))
          (cmd (let ((overriding-terminal-local-map keymap))
                 (key-binding keys 'accept-default))))
+    ;; Set last-command-event as it would be from the command loop.
+    ;; Previously we only set it locally for digit-argument and for
+    ;; the mouse scroll commands handled in this function. But other
+    ;; commands can need it too! For example, electric-pair-mode users
+    ;; may wish to bind ( to self-insert-command in embark-region-map.
+    ;; Also, as described in issue #402, there are circumstances where
+    ;; you might run consult-narrow through the embark-keymap-prompter.
+    (setq last-command-event (aref keys (1- (length keys))))
     (pcase cmd
       ((or 'embark-keymap-help
            (and 'nil            ; cmd is nil but last key is help-char
@@ -1015,9 +1023,8 @@ UPDATE is the indicator update function."
            (quit-window 'kill-buffer win))
          (embark-completing-read-prompter prefix-map update)))
       ((or 'universal-argument 'negative-argument 'digit-argument)
-       (let ((last-command-event (aref keys 0))
-             ;; prevent `digit-argument' from modifying the overriding map
-             (overriding-terminal-local-map overriding-terminal-local-map))
+       ;; prevent `digit-argument' from modifying the overriding map
+       (let ((overriding-terminal-local-map overriding-terminal-local-map))
          (command-execute cmd))
        (embark-keymap-prompter keymap update))
       ((or 'minibuffer-keyboard-quit 'abort-recursive-edit 'abort-minibuffers)
@@ -1027,7 +1034,7 @@ UPDATE is the indicator update function."
       ('self-insert-command
        (minibuffer-message "Not an action")
        (embark-keymap-prompter keymap update))
-      ((or  'scroll-other-window 'scroll-other-window-down)
+      ((or 'scroll-other-window 'scroll-other-window-down)
        (let ((minibuffer-scroll-window
               ;; NOTE: Here we special case the verbose indicator!
               (or (get-buffer-window embark--verbose-indicator-buffer 'visible)
@@ -1035,7 +1042,7 @@ UPDATE is the indicator update function."
          (ignore-errors (command-execute cmd)))
        (embark-keymap-prompter keymap update))
       ((or 'scroll-bar-toolkit-scroll 'mwheel-scroll 'mac-mwheel-scroll)
-       (funcall cmd (aref keys (1- (length keys))))
+       (funcall cmd last-command-event)
        (embark-keymap-prompter keymap update))
       ('execute-extended-command
        (intern-soft (read-extended-command)))
@@ -1190,7 +1197,8 @@ UPDATE function is passed to it."
                nil nil nil 'embark--prompter-history def)))))
     (pcase (assoc choice candidates)
       (`(,_formatted ,_name ,cmd ,key ,_desc)
-       (setq last-command-event (seq-elt key (1- (length key))))
+       ;; Set last-command-event as it would be from the command loop.
+       (setq last-command-event (aref key (1- (length key))))
        cmd)
       ('nil (intern-soft choice)))))
 
