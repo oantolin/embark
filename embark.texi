@@ -464,13 +464,14 @@ indicators and to include @samp{embark-which-key-indicator}.
 
 As an alternative to reading the list of actions in the verbose or
 mixed indicators (see the previous section for a description of
-these), you can use @samp{embark-keymap-help} after running @samp{embark-act} which
-is bound to @samp{C-h} in all of Embark's action keymaps. That command will
-prompt you for the name of an action with completion (but feel free to
-enter a command that is not among the offered candidates!), and will
-also remind you of the key bindings. You can press @samp{@@} at the prompt and
-then one of the key bindings to enter the name of the corresponding
-action.
+these), you can press the @samp{embark-help-key}, which is @samp{C-h} by default
+(but you may prefer @samp{?} to free up @samp{C-h} for use as a prefix) after
+running @samp{embark-act}. Pressing the help key will prompt you for the name
+of an action with completion (but feel free to enter a command that is
+not among the offered candidates!), and will also remind you of the
+key bindings. You can press @samp{embark-keymap-prompter-key}, which is @samp{@@} by
+default, at the prompt and then one of the key bindings to enter the
+name of the corresponding action.
 
 You may think that with the @samp{*Embark Actions*} buffer popping up to
 remind you of the key bindings you'd never want to use completion to
