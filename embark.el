@@ -1168,19 +1168,13 @@ If NO-DEFAULT is t, no default value is passed to `completing-read'."
                       (define-key map embark-keymap-prompter-key
                         (lambda ()
                           (interactive)
-                          (let*
-                              ((desc
-                                (let ((overriding-terminal-local-map keymap))
-                                  (key-description
-                                   (read-key-sequence "Key:"))))
-                               (cmd
-                                (cl-loop
-                                 for (_s _n cmd _k desc1) in candidates
-                                 when (equal desc desc1) return cmd)))
+                          (message "Press key binding")
+                          (let ((cmd (embark-keymap-prompter keymap _update)))
                             (if (null cmd)
                                 (user-error "Unknown key")
                               (throw 'choice cmd))))))
-                    (use-local-map (make-composed-keymap map (current-local-map)))))
+                    (use-local-map
+                     (make-composed-keymap map (current-local-map)))))
               (completing-read
                "Command: "
                (lambda (string predicate action)
