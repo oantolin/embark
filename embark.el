@@ -223,7 +223,10 @@ is the key representation accepted by `define-key'."
 
 The key must be either nil, a string or a vector.  This
 is the key representation accepted by `define-key'."
-  :type '(choice key-sequence (const :tag "None" nil)))
+  :type '(choice (const :tag "Use 'C-h'" "\C-h")
+                 (const :tag "Use '?'" "?")
+                 (const :tag "None" nil)
+                 key-sequence))
 
 (defcustom embark-keybinding-repeat
   (propertize "*" 'face 'embark-keybinding-repeat)
