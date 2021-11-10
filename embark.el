@@ -389,7 +389,7 @@ replaced by the single `embark-allow-edit-actions' variable."
   '((async-shell-command embark--shell-prep)
     (shell-command embark--shell-prep)
     (pp-eval-expression embark--eval-prep)
-    (package-delete (lambda (&rest _) (minibuffer-force-complete))))
+    (package-delete embark--force-complete))
   "Alist associating commands with post-injection setup hooks.
 For commands appearing as keys in this alist, run the
 corresponding value as a setup hook after injecting the target
@@ -3303,6 +3303,10 @@ and leaves the point to the left of it."
     (delete-minibuffer-contents)
     (insert " " (shell-quote-wildcard-pattern contents))
     (goto-char (minibuffer-prompt-end))))
+
+(defun embark--force-complete (&rest _)
+  "Select first minibuffer completion candidate matching target."
+  (minibuffer-force-complete))
 
 (defun embark--eval-prep (&rest _)
   "If target is: a variable, skip edit; a function, wrap in parens."
