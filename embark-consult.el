@@ -311,5 +311,24 @@ that is a Consult async command."
                (alist-get cmd embark-setup-action-hooks)))
  embark-consult-async-search-map)
 
+;;; Tables of contents for buffers: imenu and outline candidate collectors
+
+
+(defun embark-consult-toc-outline ()
+  "Collect all outline headings in the current buffer." 
+  (cons 'consult-location (consult--outline-candidates)))
+
+(defun embark-consult-toc-imenu ()
+  "Collect all imenu items in the current buffer." 
+  (cons 'consult-location
+        (mapcar (pcase-lambda (`(,item . ,pos))
+                  (propertize item 'consult-location
+                              (cons pos (line-number-at-pos pos))))
+                (consult-imenu--items))))
+
+(unless (memq 'embark-consult-toc-outline embark-candidate-collectors)
+  (setq embark-candidate-collectors
+        (append embark-candidate-collectors '(embark-consult-toc-outline))))
+
 (provide 'embark-consult)
 ;;; embark-consult.el ends here
