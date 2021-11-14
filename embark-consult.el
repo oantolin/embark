@@ -317,13 +317,10 @@ that is a Consult async command."
   "Collect all outline headings in the current buffer."
   (cons 'consult-location (consult--outline-candidates)))
 
+(autoload 'consult-imenu--items "consult-imenu")
 (defun embark-consult-toc-imenu ()
   "Collect all imenu items in the current buffer."
-  (cons 'consult-location
-        (mapcar (pcase-lambda (`(,item . ,pos))
-                  (propertize item 'consult-location
-                              (cons pos (line-number-at-pos pos))))
-                (consult-imenu--items))))
+  (cons 'imenu (mapcar #'car (consult-imenu--items))))
 
 (add-to-list 'embark-candidate-collectors #'embark-consult-toc-outline 'append)
 
