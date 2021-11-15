@@ -313,16 +313,16 @@ that is a Consult async command."
 
 ;;; Tables of contents for buffers: imenu and outline candidate collectors
 
-(defun embark-consult-toc-outline ()
+(defun embark-consult-outline-candidates ()
   "Collect all outline headings in the current buffer."
   (cons 'consult-location (consult--outline-candidates)))
 
 (autoload 'consult-imenu--items "consult-imenu")
-(defun embark-consult-toc-imenu ()
+(defun embark-consult-imenu-candidates ()
   "Collect all imenu items in the current buffer."
   (cons 'imenu (mapcar #'car (consult-imenu--items))))
 
-(add-to-list 'embark-candidate-collectors #'embark-consult-toc-outline 'append)
+(add-to-list 'embark-candidate-collectors #'embark-consult-outline-candidates 'append)
 
 (provide 'embark-consult)
 ;;; embark-consult.el ends here
