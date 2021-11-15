@@ -322,6 +322,7 @@ that is a Consult async command."
   "Collect all imenu items in the current buffer."
   (cons 'imenu (mapcar #'car (consult-imenu--items))))
 
+(setf (alist-get 'imenu embark-default-action-overrides) #'consult-imenu)
 (add-to-list 'embark-candidate-collectors #'embark-consult-outline-candidates 'append)
 
 (provide 'embark-consult)
