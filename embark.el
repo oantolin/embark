@@ -472,6 +472,7 @@ arguments and more details."
     (bookmark-rename embark--restart)
     (delete-file embark--restart)
     (embark-recentf-remove embark--restart)
+    (embark-history-remove embark--restart)
     (rename-file embark--restart)
     (copy-file embark--restart)
     (delete-directory embark--restart)
@@ -1141,7 +1142,7 @@ If NESTED is non-nil subkeymaps are not flattened."
 
 (defun embark-completing-read-prompter (keymap update &optional no-default)
   "Prompt via completion for a command bound in KEYMAP.
-If NO-DEFAULT is t, no default value is passed to`completing-read'. 
+If NO-DEFAULT is t, no default value is passed to`completing-read'.
 
 UPDATE is the indicator update function.  It is not used directly
 here, but if the user switches to `embark-keymap-prompter', the
@@ -3104,7 +3105,24 @@ When called with a prefix argument OTHER-WINDOW, open dired in other window."
 (defun embark-recentf-remove (file)
   "Remove FILE from the list of recent files."
   (interactive (list (completing-read "Remove recent file: " recentf-list nil t)))
+  (embark-history-remove file)
   (setq recentf-list (delete (expand-file-name file) recentf-list)))
+
+(defun embark-history-remove (str)
+  "Remove STR from `minibuffer-history-variable'.
+Many completion UIs sort by history position.  This command can be used
+to remove entries from the history, such that they are not sorted closer
+to the top."
+  (interactive
+   (list
+    (completing-read "Remove history item: "
+                     (if (eq minibuffer-history-variable t)
+                         (user-error "No minibuffer history")
+                       (symbol-value minibuffer-history-variable))
+                     nil t)))
+  (unless (eq minibuffer-history-variable t)
+    (set minibuffer-history-variable
+         (delete str (symbol-value minibuffer-history-variable)))))
 
 (defvar xref-backend-functions)
 
@@ -3443,7 +3461,7 @@ and leaves the point to the left of it."
   ("=" ediff-files)
   ("e" embark-eshell)
   ("+" make-directory)
-  ("-" embark-recentf-remove)
+  ("\\" embark-recentf-remove)
   ("I" embark-insert-relative-path)
   ("W" embark-save-relative-path)
   ("l" load-file)
@@ -3532,7 +3550,8 @@ and leaves the point to the left of it."
   ("e" pp-eval-expression)
   ("a" apropos)
   ("n" embark-next-symbol)
-  ("p" embark-previous-symbol))
+  ("p" embark-previous-symbol)
+  ("\\" embark-history-remove))
 
 (embark-define-keymap embark-face-map
   "Keymap for Embark face actions."
