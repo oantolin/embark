@@ -2904,7 +2904,16 @@ PRED is a predicate function used to filter the items."
 
 (defun embark-export-customize-variable (variables)
   "Create a customization buffer listing VARIABLES."
-  (embark--export-customize variables "Variables" 'custom-variable #'boundp))
+  (embark--export-customize
+   variables "Variables" 'custom-variable
+   (lambda (sym)
+     (and (boundp sym)
+          (condition-case nil
+              ;; Check if variable can be properly deserialized.
+              ;; The customization widget relies on this.
+              (let ((val (symbol-value sym)))
+                (or (read (format "%S" val)) t))
+            (t nil))))))
 
 (defun embark-export-ibuffer (buffers)
   "Create an ibuffer buffer listing BUFFERS."
