@@ -2171,6 +2171,7 @@ This function is used as :after advice for `tabulated-list-revert'."
 (autoload 'package-delete "package")
 (declare-function package--from-builtin "package")
 (declare-function package-desc-extras "package")
+(declare-function package-desc-name "package")
 (defvar package--builtins)
 (defvar package-alist)
 (defvar package-archive-contents)
@@ -2911,13 +2912,13 @@ PRED is a predicate function used to filter the items."
   ;; We advise the serialization in order to avoid errors for nonserializable variables.
   (cl-letf* ((ht (make-hash-table :test #'equal))
              (orig-read (symbol-function #'read))
-             (orig-write (symbol-function #'widget-sexp-value-to-internal))
+             (orig-write (symbol-function 'widget-sexp-value-to-internal))
              ((symbol-function #'read)
               (lambda (&optional str)
                 (condition-case nil
                     (funcall orig-read str)
                   (error (gethash str ht)))))
-             ((symbol-function #'widget-sexp-value-to-internal)
+             ((symbol-function 'widget-sexp-value-to-internal)
               (lambda (widget val)
                 (let ((str (funcall orig-write widget val)))
                   (puthash str val ht)
