@@ -138,6 +138,7 @@
     (region . embark-region-map)
     (sentence . embark-sentence-map)
     (paragraph . embark-paragraph-map)
+    (kill-ring . embark-kill-ring-map)
     (t . embark-general-map))
   "Alist of action types and corresponding keymaps.
 For any type not listed here, `embark-act' will use
@@ -471,6 +472,7 @@ arguments and more details."
   '((bookmark-delete embark--restart)
     (bookmark-rename embark--restart)
     (delete-file embark--restart)
+    (embark-kill-ring-remove embark--restart)
     (embark-recentf-remove embark--restart)
     (embark-history-remove embark--restart)
     (rename-file embark--restart)
@@ -2091,6 +2093,7 @@ which should be a string."
   '((file . grid)
     (buffer . grid)
     (symbol . list)
+    (kill-ring . zebra)
     (t . list))
   "Initial views for Embark Collect buffers by type.
 This is an alist associating completion types to either `list',
@@ -2168,6 +2171,7 @@ This function is used as :after advice for `tabulated-list-revert'."
 (autoload 'package-delete "package")
 (declare-function package--from-builtin "package")
 (declare-function package-desc-extras "package")
+(declare-function package-desc-name "package")
 (defvar package--builtins)
 (defvar package-alist)
 (defvar package-archive-contents)
@@ -2908,13 +2912,13 @@ PRED is a predicate function used to filter the items."
   ;; We advise the serialization in order to avoid errors for nonserializable variables.
   (cl-letf* ((ht (make-hash-table :test #'equal))
              (orig-read (symbol-function #'read))
-             (orig-write (symbol-function #'widget-sexp-value-to-internal))
+             (orig-write (symbol-function 'widget-sexp-value-to-internal))
              ((symbol-function #'read)
               (lambda (&optional str)
                 (condition-case nil
                     (funcall orig-read str)
                   (error (gethash str ht)))))
-             ((symbol-function #'widget-sexp-value-to-internal)
+             ((symbol-function 'widget-sexp-value-to-internal)
               (lambda (widget val)
                 (let ((str (funcall orig-write widget val)))
                   (puthash str val ht)
@@ -3116,10 +3120,30 @@ When called with a prefix argument OTHER-WINDOW, open dired in other window."
   (interactive "fJump to Dired file: \nP")
   (dired-jump other-window file))
 
+(defun embark--read-from-history (prompt candidates &optional category)
+  "Read with completion from list of history CANDIDATES of CATEGORY.
+Sorting and history are disabled. PROMPT is the prompt message."
+  (completing-read prompt
+                   (lambda (string predicate action)
+                     (if (eq action 'metadata)
+                         `(metadata (display-sort-function . identity)
+                                    (cycle-sort-function . identity)
+                                    (category . ,category))
+                       (complete-with-action action candidates string predicate)))
+                   nil t nil t))
+
+(defun embark-kill-ring-remove (text)
+  "Remove TEXT from `kill-ring'."
+  (interactive (list (embark--read-from-history
+                      "Remove from kill-ring: " kill-ring 'kill-ring)))
+  (embark-history-remove text)
+  (setq kill-ring (delete text kill-ring)))
+
 (defvar recentf-list)
 (defun embark-recentf-remove (file)
   "Remove FILE from the list of recent files."
-  (interactive (list (completing-read "Remove recent file: " recentf-list nil t)))
+  (interactive (list (embark--read-from-history
+                      "Remove recent file: " recentf-list 'file)))
   (embark-history-remove file)
   (setq recentf-list (delete (expand-file-name file) recentf-list)))
 
@@ -3128,13 +3152,11 @@ When called with a prefix argument OTHER-WINDOW, open dired in other window."
 Many completion UIs sort by history position.  This command can be used
 to remove entries from the history, such that they are not sorted closer
 to the top."
-  (interactive
-   (list
-    (completing-read "Remove history item: "
-                     (if (eq minibuffer-history-variable t)
-                         (user-error "No minibuffer history")
-                       (symbol-value minibuffer-history-variable))
-                     nil t)))
+  (interactive (list (embark--read-from-history
+                      "Remove history item: "
+                      (if (eq minibuffer-history-variable t)
+                          (user-error "No minibuffer history")
+                        (symbol-value minibuffer-history-variable)))))
   (unless (eq minibuffer-history-variable t)
     (set minibuffer-history-variable
          (delete str (symbol-value minibuffer-history-variable)))))
@@ -3482,6 +3504,10 @@ and leaves the point to the left of it."
   ("l" load-file)
   ("b" byte-compile-file)
   ("R" byte-recompile-directory))
+
+(embark-define-keymap embark-kill-ring-map
+  "Keymap for `kill-ring' commands."
+  ("\\" embark-kill-ring-remove))
 
 (embark-define-keymap embark-url-map
   "Keymap for Embark url actions."
