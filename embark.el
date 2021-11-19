@@ -138,6 +138,7 @@
     (region . embark-region-map)
     (sentence . embark-sentence-map)
     (paragraph . embark-paragraph-map)
+    (kill-ring . embark-kill-ring-map)
     (t . embark-general-map))
   "Alist of action types and corresponding keymaps.
 For any type not listed here, `embark-act' will use
@@ -471,6 +472,7 @@ arguments and more details."
   '((bookmark-delete embark--restart)
     (bookmark-rename embark--restart)
     (delete-file embark--restart)
+    (embark-kill-ring-remove embark--restart)
     (embark-recentf-remove embark--restart)
     (embark-history-remove embark--restart)
     (rename-file embark--restart)
@@ -2091,6 +2093,7 @@ which should be a string."
   '((file . grid)
     (buffer . grid)
     (symbol . list)
+    (kill-ring . zebra)
     (t . list))
   "Initial views for Embark Collect buffers by type.
 This is an alist associating completion types to either `list',
@@ -3116,6 +3119,12 @@ When called with a prefix argument OTHER-WINDOW, open dired in other window."
   (interactive "fJump to Dired file: \nP")
   (dired-jump other-window file))
 
+(defun embark-kill-ring-remove (text)
+  "Remove TEXT from `kill-ring'."
+  (interactive (list (completing-read "Remove from kill-ring: " kill-ring nil t)))
+  (embark-history-remove text)
+  (setq kill-ring (delete text kill-ring)))
+
 (defvar recentf-list)
 (defun embark-recentf-remove (file)
   "Remove FILE from the list of recent files."
@@ -3482,6 +3491,10 @@ and leaves the point to the left of it."
   ("l" load-file)
   ("b" byte-compile-file)
   ("R" byte-recompile-directory))
+
+(embark-define-keymap embark-kill-ring-map
+  "Keymap for `kill-ring' commands."
+  ("\\" embark-kill-ring-remove))
 
 (embark-define-keymap embark-url-map
   "Keymap for Embark url actions."
