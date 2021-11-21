@@ -3479,6 +3479,7 @@ and leaves the point to the left of it."
   (":" calc-grab-sum-down)
   ("_" calc-grab-sum-across)
   ("R" reverse-region)
+  ("D" delete-duplicate-lines)
   ("S" embark-sort-map))
 
 (embark-define-keymap embark-file-map
