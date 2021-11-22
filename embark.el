@@ -1025,11 +1025,14 @@ UPDATE is the indicator update function."
                                             'visible)))
            (quit-window 'kill-buffer win))
          (embark-completing-read-prompter prefix-map update)))
-      ((or 'universal-argument 'negative-argument 'digit-argument)
+      ((or 'universal-argument 'universal-argument-more
+           'negative-argument 'digit-argument)
        ;; prevent `digit-argument' from modifying the overriding map
        (let ((overriding-terminal-local-map overriding-terminal-local-map))
          (command-execute cmd))
-       (embark-keymap-prompter keymap update))
+       (embark-keymap-prompter
+        (make-composed-keymap universal-argument-map keymap)
+        update))
       ((or 'minibuffer-keyboard-quit 'abort-recursive-edit 'abort-minibuffers)
        nil)
       ((guard (lookup-key keymap keys))  ; if directly bound, then obey
