@@ -2510,8 +2510,9 @@ determine the width."
             (condition-case nil
                 (forward-button columns)
               (user-error (goto-char (point-max))))
-            (overlay-put (make-overlay pt (point))
-                         'face 'embark-collect-zebra-highlight)))))))
+            (let ((stripe (make-overlay pt (point))))
+              (overlay-put stripe 'priority -100) ; below hl-line-mode's -50
+              (overlay-put stripe 'face 'embark-collect-zebra-highlight))))))))
 
 (define-minor-mode embark-collect-zebra-minor-mode
   "Minor mode to highlight alternate rows in an Embark Collect buffer.
