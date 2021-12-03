@@ -3586,17 +3586,14 @@ and leaves the point to the left of it."
 
 (embark-define-keymap embark-symbol-map
   "Keymap for Embark symbol actions."
+  :parent embark-identifier-map
   ("RET" embark-find-definition)
   ("h" describe-symbol)
-  ("H" embark-toggle-highlight)
   ("s" embark-info-lookup-symbol)
   ("d" embark-find-definition)
-  ("r" xref-find-references)
   ("b" where-is)
   ("e" pp-eval-expression)
   ("a" apropos)
-  ("n" embark-next-symbol)
-  ("p" embark-previous-symbol)
   ("\\" embark-history-remove))
 
 (embark-define-keymap embark-face-map
