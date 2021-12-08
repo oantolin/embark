@@ -229,6 +229,7 @@ actual type."
 (define-key embark-file-map "x" #'consult-file-externally)
 
 (define-key embark-become-file+buffer-map "Cb" #'consult-buffer)
+(define-key embark-become-file+buffer-map "C4b" #'consult-buffer-other-window)
 
 ;;; Support for Consult search commands
 

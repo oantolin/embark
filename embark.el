@@ -3707,10 +3707,12 @@ and leaves the point to the left of it."
   "Embark become keymap for files and buffers."
   :parent embark-meta-map
   ("f" find-file)
+  ("4f" find-file-other-window)
   ("." find-file-at-point)
   ("p" project-find-file)
   ("r" recentf-open-files)
   ("b" switch-to-buffer)
+  ("4b" switch-to-buffer-other-window)  
   ("l" locate)
   ("L" find-library))
 
