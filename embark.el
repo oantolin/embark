@@ -3484,7 +3484,7 @@ and leaves the point to the left of it."
   ("_" calc-grab-sum-across)
   ("R" reverse-region)
   ("D" delete-duplicate-lines)
-  ("S" embark-sort-map))
+  ("S" 'embark-sort-map))
 
 (embark-define-keymap embark-file-map
   "Keymap for Embark file actions."
@@ -3617,13 +3617,11 @@ and leaves the point to the left of it."
   ("v" embark-save-variable-value)
   ("<" embark-insert-variable-value))
 
-(declare-function untrace-function "trace")
-
 (embark-define-keymap embark-function-map
   "Keymap for Embark function actions."
   :parent embark-symbol-map
   ("t" trace-function)
-  ("T" untrace-function))
+  ("T" 'untrace-function)) ;; quoted, not autoloaded
 
 (embark-define-keymap embark-command-map
   "Keymap for Embark command actions."
@@ -3712,7 +3710,7 @@ and leaves the point to the left of it."
   ("p" project-find-file)
   ("r" recentf-open-files)
   ("b" switch-to-buffer)
-  ("4b" switch-to-buffer-other-window)  
+  ("4b" switch-to-buffer-other-window)
   ("l" locate)
   ("L" find-library))
 
