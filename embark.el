@@ -500,7 +500,8 @@ arguments and more details."
 
 (defcustom embark-repeat-actions
   '(embark-next-symbol embark-previous-symbol backward-up-list
-    backward-list forward-list forward-sexp backward-sexp mark
+    backward-list forward-list forward-sexp backward-sexp
+    mark outline-mark-subtree
     outline-next-visible-heading outline-previous-visible-heading
     outline-up-heading outline-forward-same-level outline-backward-same-level
     outline-show-subtree outline-hide-subtree outline-cycle
