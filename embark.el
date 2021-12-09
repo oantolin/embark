@@ -499,16 +499,25 @@ arguments and more details."
                "0.12")
 
 (defcustom embark-repeat-actions
-  '(embark-next-symbol embark-previous-symbol backward-up-list
-    backward-list forward-list forward-sexp backward-sexp
-    mark outline-mark-subtree
+  '(mark
+    ;; outline commands
     outline-next-visible-heading outline-previous-visible-heading
-    outline-up-heading outline-forward-same-level outline-backward-same-level
-    outline-show-subtree outline-hide-subtree outline-cycle
-    outline-move-subtree-up outline-move-subtree-down
+    outline-forward-same-level outline-backward-same-level
+    outline-demote outline-promote outline-mark-subtree
+    outline-show-subtree outline-move-subtree-up outline-move-subtree-down
+    outline-up-heading outline-hide-subtree outline-cycle
+    ;; org commands (remapped outline commands)
+    org-forward-heading-same-level org-backward-heading-same-level
+    org-next-visible-heading org-previous-visible-heading
+    org-demote-subtree org-promote-subtree org-mark-subtree
+    org-show-subtree org-move-subtree-up org-move-subtree-down
+    ;; transpose commands
     transpose-sexps transpose-sentences transpose-paragraphs
-    forward-sentence backward-sentence forward-paragraph
-    backward-paragraph)
+    ;; movement
+    embark-next-symbol embark-previous-symbol
+    backward-up-list backward-list forward-list forward-sexp
+    backward-sexp forward-sentence backward-sentence
+    forward-paragraph backward-paragraph)
   "List of repeatable actions."
   :type '(repeat function))
 
@@ -1907,7 +1916,9 @@ target."
                                 (let ((desired-type
                                        ;; TODO Introduce customizable variable,
                                        ;; instead of hard-coding the mark commands.
-                                       (if (memq action '(mark outline-mark-subtree))
+                                       (if (memq action '(mark
+                                                          outline-mark-subtree
+                                                          org-mark-subtree))
                                            'region
                                          (plist-get (car targets) :type))))
                                   (lambda (x)
