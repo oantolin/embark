@@ -139,6 +139,7 @@
     (sentence . embark-sentence-map)
     (paragraph . embark-paragraph-map)
     (kill-ring . embark-kill-ring-map)
+    (heading . embark-heading-map)
     (t . embark-general-map))
   "Alist of action types and corresponding keymaps.
 For any type not listed here, `embark-act' will use
@@ -161,7 +162,8 @@ For any type not listed here, `embark-act' will use
     embark-target-expression-at-point
     embark-target-sentence-at-point
     embark-target-paragraph-at-point
-    embark-target-defun-at-point)
+    embark-target-defun-at-point
+    embark-target-heading-at-point)
   "List of functions to determine the target in current context.
 Each function should take no arguments and return either nil to
 indicate that no target has been found, a cons (type . target)
@@ -497,11 +499,25 @@ arguments and more details."
                "0.12")
 
 (defcustom embark-repeat-actions
-  '(embark-next-symbol embark-previous-symbol backward-up-list
-    backward-list forward-list forward-sexp backward-sexp mark
+  '(mark
+    ;; outline commands
+    outline-next-visible-heading outline-previous-visible-heading
+    outline-forward-same-level outline-backward-same-level
+    outline-demote outline-promote outline-mark-subtree
+    outline-show-subtree outline-move-subtree-up outline-move-subtree-down
+    outline-up-heading outline-hide-subtree outline-cycle
+    ;; org commands (remapped outline commands)
+    org-forward-heading-same-level org-backward-heading-same-level
+    org-next-visible-heading org-previous-visible-heading
+    org-demote-subtree org-promote-subtree org-mark-subtree
+    org-show-subtree org-move-subtree-up org-move-subtree-down
+    ;; transpose commands
     transpose-sexps transpose-sentences transpose-paragraphs
-    forward-sentence backward-sentence forward-paragraph
-    backward-paragraph)
+    ;; movement
+    embark-next-symbol embark-previous-symbol
+    backward-up-list backward-list forward-list forward-sexp
+    backward-sexp forward-sentence backward-sentence
+    forward-paragraph backward-paragraph)
   "List of repeatable actions."
   :type '(repeat function))
 
@@ -821,6 +837,19 @@ As a convenience, in Org Mode an initial ' or surrounding == or
            'identifier)
         ,name
         . ,bounds))))
+
+(defun embark-target-heading-at-point ()
+  "Target the outline heading at point."
+  (let ((beg (line-beginning-position))
+        (end (line-end-position)))
+    (when (save-excursion
+            (goto-char beg)
+            (and (bolp)
+                 (looking-at
+                  ;; default definition from outline.el
+                  (or (bound-and-true-p outline-regexp) "[*\^L]+"))))
+      (require 'outline) ;; Ensure that outline commands are available
+      `(heading ,(buffer-substring-no-properties beg end) ,beg . ,end))))
 
 (defun embark-target-top-minibuffer-completion ()
   "Target the top completion candidate in the minibuffer.
@@ -1885,7 +1914,11 @@ target."
                            new-targets
                            (or (cl-position-if
                                 (let ((desired-type
-                                       (if (eq action 'mark)
+                                       ;; TODO Introduce customizable variable,
+                                       ;; instead of hard-coding the mark commands.
+                                       (if (memq action '(mark
+                                                          outline-mark-subtree
+                                                          org-mark-subtree))
                                            'region
                                          (plist-get (car targets) :type))))
                                   (lambda (x)
@@ -3584,6 +3617,24 @@ and leaves the point to the left of it."
   ("o" checkdoc-defun)
   ("N" narrow-to-defun))
 
+;; Use quoted symbols to avoid bytecompiler warnings.
+(embark-define-keymap embark-heading-map
+  "Keymap for Embark heading actions."
+  ("RET" 'outline-show-subtree)
+  ("TAB" 'outline-cycle) ;; New in Emacs 28!
+  ("SPC" 'outline-mark-subtree)
+  ("n" 'outline-next-visible-heading)
+  ("p" 'outline-previous-visible-heading)
+  ("f" 'outline-forward-same-level)
+  ("b" 'outline-backward-same-level)
+  ("^" 'outline-move-subtree-up)
+  ("v" 'outline-move-subtree-down)
+  ("u" 'outline-up-heading)
+  ("s" 'outline-show-subtree)
+  ("d" 'outline-hide-subtree)
+  (">" 'outline-demote)
+  ("<" 'outline-promote))
+
 (embark-define-keymap embark-symbol-map
   "Keymap for Embark symbol actions."
   :parent embark-identifier-map
@@ -3712,7 +3763,7 @@ and leaves the point to the left of it."
   ("p" project-find-file)
   ("r" recentf-open-files)
   ("b" switch-to-buffer)
-  ("4b" switch-to-buffer-other-window)  
+  ("4b" switch-to-buffer-other-window)
   ("l" locate)
   ("L" find-library))
 
