@@ -3378,6 +3378,16 @@ With a prefix argument EDEBUG, instrument the code for debugging."
                (eval (read (buffer-substring beg end)) lexical-binding)))
       (delete-region beg end))))
 
+;; TODO Report Emacs bug, this function should be provided by Emacs itself.
+(defun embark-elp-restore-package (prefix)
+  "Remove instrumentation from functions with names starting with PREFIX."
+  (interactive "SPrefix: ")
+  (when (fboundp 'elp-restore-list)
+    (elp-restore-list
+     (mapcar #'intern
+             (all-completions (symbol-name prefix)
+                              obarray 'elp-profilable-p)))))
+
 ;;; Setup and pre-action hooks
 
 (defun embark--restart (&rest _)
@@ -3517,7 +3527,7 @@ and leaves the point to the left of it."
   ("_" calc-grab-sum-across)
   ("R" reverse-region)
   ("D" delete-duplicate-lines)
-  ("S" embark-sort-map))
+  ("S" 'embark-sort-map))
 
 (embark-define-keymap embark-file-map
   "Keymap for Embark file actions."
@@ -3668,13 +3678,13 @@ and leaves the point to the left of it."
   ("v" embark-save-variable-value)
   ("<" embark-insert-variable-value))
 
-(declare-function untrace-function "trace")
-
 (embark-define-keymap embark-function-map
   "Keymap for Embark function actions."
   :parent embark-symbol-map
+  ("s" elp-instrument-function) ;; s like statistics
+  ("S" 'elp-restore-function) ;; quoted, not autoloaded
   ("t" trace-function)
-  ("T" untrace-function))
+  ("T" 'untrace-function)) ;; quoted, not autoloaded
 
 (embark-define-keymap embark-command-map
   "Keymap for Embark command actions."
@@ -3694,7 +3704,9 @@ and leaves the point to the left of it."
   ("u" embark-browse-package-url)
   ("W" embark-save-package-url)
   ("a" package-autoremove)
-  ("g" package-refresh-contents))
+  ("g" package-refresh-contents)
+  ("s" elp-instrument-package)
+  ("S" embark-elp-restore-package))
 
 (embark-define-keymap embark-bookmark-map
   "Keymap for Embark bookmark actions."
