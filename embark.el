@@ -833,7 +833,10 @@ As a convenience, in Org Mode an initial ' or surrounding == or
         (end (line-end-position)))
     (when (save-excursion
             (goto-char beg)
-            (and (bolp) (looking-at outline-regexp)))
+            (and (bolp)
+                 (looking-at
+                  ;; default definition from outline.el
+                  (or (bound-and-true-p outline-regexp) "[*\^L]+"))))
       (require 'outline) ;; Ensure that outline commands are available
       `(heading ,(buffer-substring-no-properties beg end) ,beg . ,end))))
 
