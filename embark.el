@@ -1905,7 +1905,9 @@ target."
                            new-targets
                            (or (cl-position-if
                                 (let ((desired-type
-                                       (if (eq action 'mark)
+                                       ;; TODO Introduce customizable variable,
+                                       ;; instead of hard-coding the mark commands.
+                                       (if (memq action '(mark outline-mark-subtree))
                                            'region
                                          (plist-get (car targets) :type))))
                                   (lambda (x)
