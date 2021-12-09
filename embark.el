@@ -504,6 +504,7 @@ arguments and more details."
     outline-next-visible-heading outline-previous-visible-heading
     outline-up-heading outline-forward-same-level outline-backward-same-level
     outline-show-subtree outline-hide-subtree outline-cycle
+    outline-move-subtree-up outline-move-subtree-down
     transpose-sexps transpose-sentences transpose-paragraphs
     forward-sentence backward-sentence forward-paragraph
     backward-paragraph)
