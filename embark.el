@@ -3345,6 +3345,16 @@ With a prefix argument EDEBUG, instrument the code for debugging."
                (eval (read (buffer-substring beg end)) lexical-binding)))
       (delete-region beg end))))
 
+;; TODO Report Emacs bug, this function should be provided by Emacs itself.
+(defun embark-elp-restore-package (prefix)
+  "Remove instrumentation from functions with names starting with PREFIX."
+  (interactive "SPrefix: ")
+  (when (fboundp 'elp-restore-list)
+    (elp-restore-list
+     (mapcar #'intern
+             (all-completions (symbol-name prefix)
+                              obarray 'elp-profilable-p)))))
+
 ;;; Setup and pre-action hooks
 
 (defun embark--restart (&rest _)
@@ -3620,8 +3630,8 @@ and leaves the point to the left of it."
 (embark-define-keymap embark-function-map
   "Keymap for Embark function actions."
   :parent embark-symbol-map
-  ("%" elp-instrument-function)
-  ("0" 'elp-restore-function) ;; quoted, not autoloaded
+  ("s" elp-instrument-function) ;; s like statistics
+  ("S" 'elp-restore-function) ;; quoted, not autoloaded
   ("t" trace-function)
   ("T" 'untrace-function)) ;; quoted, not autoloaded
 
@@ -3644,7 +3654,8 @@ and leaves the point to the left of it."
   ("W" embark-save-package-url)
   ("a" package-autoremove)
   ("g" package-refresh-contents)
-  ("%" elp-instrument-package))
+  ("s" elp-instrument-package)
+  ("S" embark-elp-restore-package))
 
 (embark-define-keymap embark-bookmark-map
   "Keymap for Embark bookmark actions."
