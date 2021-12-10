@@ -2004,6 +2004,8 @@ ARG is the prefix argument."
           (or (cl-mapcar
                (lambda (cand orig-cand)
                  (list :type type :orig-type orig-type
+                       ;; TODO The file special casing here seems odd.
+                       ;; Why do we need this?
                        :target (if (eq type 'file) (expand-file-name cand dir) cand)
                        :orig-target orig-cand))
                (plist-get transformed :candidates)
@@ -2016,11 +2018,12 @@ ARG is the prefix argument."
                      indicators (embark--action-keymap type nil)
                      (list (list :type type :multi (length candidates))))
                     (user-error "Canceled")))
+               (post-action-wo-restart
+                (mapcar (lambda (x) (remq 'embark--restart x))
+                        embark-post-action-hooks))
                (act (lambda (candidate)
                       (let ((embark-allow-edit-actions nil)
-                            (embark-post-action-hooks
-                             (mapcar (lambda (x) (remq 'embark--restart x))
-                                     embark-post-action-hooks)))
+                            (embark-post-action-hooks post-action-wo-restart))
                         (embark--act action candidate)))))
           (when (and (eq action (embark--default-action type))
                      (eq action embark--command))
