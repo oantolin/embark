@@ -1851,6 +1851,14 @@ keymap for the given type."
   (setq k (mod k (length list)))
   (append (seq-drop list k) (seq-take list k)))
 
+(defun embark--orig-target (target)
+  "Convert TARGET to original target."
+  (plist-put
+   (plist-put
+    (copy-sequence target)
+    :target (plist-get target :orig-target))
+   :type (plist-get target :orig-type)))
+
 ;;;###autoload
 (defun embark-act (&optional arg)
   "Prompt the user for an action and perform it.
@@ -1916,11 +1924,7 @@ target."
                        action
                        (if (and (eq action default-action)
                                 (eq action embark--command))
-                           (plist-put
-                            (plist-put
-                             (copy-sequence target)
-                             :target (plist-get target :orig-target))
-                            :type (plist-get target :orig-type))
+                           (embark--orig-target target)
                          target)
                        (if embark-quit-after-action (not arg) arg))
                     (user-error
@@ -2020,9 +2024,7 @@ ARG is the prefix argument."
                         (embark--act action candidate)))))
           (when (and (eq action (embark--default-action type))
                      (eq action embark--command))
-            (dolist (cand candidates)
-              (plist-put cand :target (plist-get cand :orig-target))
-              (plist-put cand :type   (plist-get cand :orig-type))))
+            (setq candidates (mapcar #'embark--orig-target candidates)))
           (when (y-or-n-p (format "Run %s on %d %ss? "
                                   action (length candidates) type))
             (if (if embark-quit-after-action (not arg) arg)
@@ -2107,11 +2109,7 @@ See `embark-act' for the meaning of the prefix ARG."
                               (plist-get target :type))))
         (embark--act default-action
                      (if (eq default-action embark--command)
-                         (plist-put
-                          (plist-put
-                           (copy-sequence target)
-                           :target (plist-get target :orig-target))
-                          :type (plist-get target :orig-type))
+                         (embark--orig-target target)
                        target)
                      (if embark-quit-after-action (not arg) arg)))
     (user-error "No target found")))
