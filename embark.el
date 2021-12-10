@@ -3747,8 +3747,8 @@ and leaves the point to the left of it."
 (embark-define-keymap embark-function-map
   "Keymap for Embark function actions."
   :parent embark-symbol-map
-  ("s" elp-instrument-function) ;; s like statistics
-  ("S" 'elp-restore-function) ;; quoted, not autoloaded
+  ("m" elp-instrument-function) ;; m=measure
+  ("M" 'elp-restore-function) ;; quoted, not autoloaded
   ("t" trace-function)
   ("T" 'untrace-function)) ;; quoted, not autoloaded
 
@@ -3771,8 +3771,8 @@ and leaves the point to the left of it."
   ("W" embark-save-package-url)
   ("a" package-autoremove)
   ("g" package-refresh-contents)
-  ("s" elp-instrument-package)
-  ("S" embark-elp-restore-package))
+  ("m" elp-instrument-package) ;; m=measure
+  ("M" embark-elp-restore-package))
 
 (embark-define-keymap embark-bookmark-map
   "Keymap for Embark bookmark actions."
