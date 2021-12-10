@@ -949,7 +949,7 @@ If CYCLE is non-nil bind `embark-cycle'."
   "Return highlighted Act/Rep indicator label given REP and MULTI."
   (propertize
    (cond
-    (multi "Act*")
+    (multi "∀ct")
     (rep "Rep")
     (t "Act"))
    'face 'highlight))
