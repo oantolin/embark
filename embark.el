@@ -1975,42 +1975,41 @@ ARG is the prefix argument."
          (orig-type (plist-get transformed :orig-type))
          (dir (embark--default-directory))
          (candidates
-          (cl-mapcar
-           (lambda (cand orig-cand)
-             (list :type type :orig-type orig-type
-                   :target (if (eq type 'file) (expand-file-name cand dir) cand)
-                   :orig-target orig-cand))
-           (plist-get transformed :candidates)
-           (plist-get transformed :orig-candidates)))     
+          (or (cl-mapcar
+               (lambda (cand orig-cand)
+                 (list :type type :orig-type orig-type
+                       :target (if (eq type 'file) (expand-file-name cand dir) cand)
+                       :orig-target orig-cand))
+               (plist-get transformed :candidates)
+               (plist-get transformed :orig-candidates))
+              (user-error "No candidates for export")))
          (indicators (mapcar #'funcall embark-indicators)))
-    (if (null candidates)
-        (user-error "No candidates for export")
-      (unwind-protect
-          (let* ((summary (format "%d %ss" (length candidates) type))
-                 (action
-                  (or (embark--prompt
-                       indicators (embark--action-keymap type nil)
-                       (list (list :type type :target summary)))
-                      (user-error "Canceled")))
-                 (act (lambda (candidate)
-                        (let ((embark-allow-edit-actions nil)
-                              (embark-post-action-hooks
-                               (mapcar (lambda (x) (remq 'embark--restart x))
-                                       embark-post-action-hooks)))
-                          (embark--act action candidate)))))
-            (when (and (eq action (embark--default-action type))
-                       (eq action embark--command))
-              (dolist (cand candidates)
-                (plist-put cand :target (plist-get cand :orig-target))
-                (plist-put cand :type   (plist-get cand :orig-type))))
-            (when (y-or-n-p (format "Run %s on %s? " action summary))
-              (if (if embark-quit-after-action (not arg) arg)
-                  (embark--quit-and-run #'mapc act candidates)
-                (mapc act candidates)
-                (when (memq 'embark--restart
-                            (alist-get action embark-post-action-hooks))
-                  (embark--restart)))))
-        (mapc #'funcall indicators)))))
+    (unwind-protect
+        (let* ((summary (format "%d %ss" (length candidates) type))
+               (action
+                (or (embark--prompt
+                     indicators (embark--action-keymap type nil)
+                     (list (list :type type :target summary)))
+                    (user-error "Canceled")))
+               (act (lambda (candidate)
+                      (let ((embark-allow-edit-actions nil)
+                            (embark-post-action-hooks
+                             (mapcar (lambda (x) (remq 'embark--restart x))
+                                     embark-post-action-hooks)))
+                        (embark--act action candidate)))))
+          (when (and (eq action (embark--default-action type))
+                     (eq action embark--command))
+            (dolist (cand candidates)
+              (plist-put cand :target (plist-get cand :orig-target))
+              (plist-put cand :type   (plist-get cand :orig-type))))
+          (when (y-or-n-p (format "Run %s on %s? " action summary))
+            (if (if embark-quit-after-action (not arg) arg)
+                (embark--quit-and-run #'mapc act candidates)
+              (mapc act candidates)
+              (when (memq 'embark--restart
+                          (alist-get action embark-post-action-hooks))
+                (embark--restart)))))
+      (mapc #'funcall indicators))))
 
 (defun embark-highlight-indicator ()
   "Action indicator highlighting the target at point."
@@ -2782,90 +2781,90 @@ the minibuffer is exited."
        (`(,type . ,candidates)
         (run-hook-with-args-until-success 'embark-candidate-collectors))
        (affixator (embark-collect--affixator type)))
-    (if (and (null candidates) (eq kind :snapshot))
-        (user-error "No candidates to collect")
-      (setq embark-collect-linked-buffer buffer)
-      (with-current-buffer buffer
-        ;; we'll run the mode hooks once the buffer is displayed, so
-        ;; the hooks can make use of the window
-        (delay-mode-hooks (embark-collect-mode))
+    (when (and (null candidates) (eq kind :snapshot))
+      (user-error "No candidates to collect"))
+    (setq embark-collect-linked-buffer buffer)
+    (with-current-buffer buffer
+      ;; we'll run the mode hooks once the buffer is displayed, so
+      ;; the hooks can make use of the window
+      (delay-mode-hooks (embark-collect-mode))
 
-        (setq embark-collect--kind kind)
+      (setq embark-collect--kind kind)
 
-        (setq tabulated-list-use-header-line nil) ; default to no header
+      (setq tabulated-list-use-header-line nil) ; default to no header
 
-        (unless (eq kind :snapshot)
-          ;; setup live updating
-          (with-current-buffer from
-            (add-hook 'after-change-functions
-                      #'embark-collect--update-linked nil t)))
+      (unless (eq kind :snapshot)
+        ;; setup live updating
+        (with-current-buffer from
+          (add-hook 'after-change-functions
+                    #'embark-collect--update-linked nil t)))
 
-        (unless (and (minibufferp from) (eq kind :snapshot))
-          ;; for a snapshot of a minibuffer, don't link back to minibuffer:
-          ;; they can get recycled and if so revert would do the wrong thing
-          (setq embark-collect-from from))
+      (unless (and (minibufferp from) (eq kind :snapshot))
+        ;; for a snapshot of a minibuffer, don't link back to minibuffer:
+        ;; they can get recycled and if so revert would do the wrong thing
+        (setq embark-collect-from from))
 
-        (setq embark--type type
-              embark-collect-candidates candidates
-              embark-collect-affixator affixator)
+      (setq embark--type type
+            embark-collect-candidates candidates
+            embark-collect-affixator affixator)
 
-        (add-hook 'tabulated-list-revert-hook #'embark-collect--revert nil t)
+      (add-hook 'tabulated-list-revert-hook #'embark-collect--revert nil t)
 
-        (setq embark-collect-view
-              (or initial-view
-                  (alist-get type embark-collect-initial-view-alist)
-                  (alist-get t embark-collect-initial-view-alist)
-                  'list))
-        (when (eq embark-collect-view 'zebra)
-          (setq embark-collect-view 'list)
-          (embark-collect-zebra-minor-mode))
+      (setq embark-collect-view
+            (or initial-view
+                (alist-get type embark-collect-initial-view-alist)
+                (alist-get t embark-collect-initial-view-alist)
+                'list))
+      (when (eq embark-collect-view 'zebra)
+        (setq embark-collect-view 'list)
+        (embark-collect-zebra-minor-mode))
 
-        (with-current-buffer from (embark--cache-info buffer)))
+      (with-current-buffer from (embark--cache-info buffer)))
 
-      (let ((window (display-buffer
-                     buffer
-                     (when (eq kind :completions)
-                       '((embark--reuse-collect-completions-window
-                          display-buffer-at-bottom))))))
+    (let ((window (display-buffer
+                   buffer
+                   (when (eq kind :completions)
+                     '((embark--reuse-collect-completions-window
+                        display-buffer-at-bottom))))))
 
-        (with-selected-window window
-          (run-mode-hooks)
-          (revert-buffer))
+      (with-selected-window window
+        (run-mode-hooks)
+        (revert-buffer))
 
-        (set-window-dedicated-p window t)
+      (set-window-dedicated-p window t)
 
-        (when (minibufferp from)
-          ;; A function added to `minibuffer-exit-hook' locally isn't called if
-          ;; we `abort-recursive-edit' from outside the minibuffer, that is why
-          ;; we use `change-major-mode-hook', which is also run on minibuffer
-          ;; exit.
-          (add-hook
-           'change-major-mode-hook
-           (pcase kind
-             (:completions
-              (lambda ()
-                ;; Killing a buffer shown in a selected dedicated window will
-                ;; set-buffer to a random buffer for some reason, so preserve it
-                (save-current-buffer
-                  (kill-buffer buffer))))
-             (:live
-              (lambda ()
-                (when (buffer-live-p buffer)
-                  (setf (buffer-local-value 'embark-collect-from buffer) nil)
-                  (with-current-buffer buffer
-                    (save-match-data
-                      (rename-buffer
-                       (replace-regexp-in-string " Live" "" (buffer-name))
-                       t)))
-                  (embark--run-after-command #'pop-to-buffer buffer))))
-             (:snapshot
-              (lambda ()
-                (when (buffer-live-p buffer)
-                  (embark--run-after-command #'pop-to-buffer buffer)))))
-           nil t)
-          (setq minibuffer-scroll-window window))
+      (when (minibufferp from)
+        ;; A function added to `minibuffer-exit-hook' locally isn't called if
+        ;; we `abort-recursive-edit' from outside the minibuffer, that is why
+        ;; we use `change-major-mode-hook', which is also run on minibuffer
+        ;; exit.
+        (add-hook
+         'change-major-mode-hook
+         (pcase kind
+           (:completions
+            (lambda ()
+              ;; Killing a buffer shown in a selected dedicated window will
+              ;; set-buffer to a random buffer for some reason, so preserve it
+              (save-current-buffer
+                (kill-buffer buffer))))
+           (:live
+            (lambda ()
+              (when (buffer-live-p buffer)
+                (setf (buffer-local-value 'embark-collect-from buffer) nil)
+                (with-current-buffer buffer
+                  (save-match-data
+                    (rename-buffer
+                     (replace-regexp-in-string " Live" "" (buffer-name))
+                     t)))
+                (embark--run-after-command #'pop-to-buffer buffer))))
+           (:snapshot
+            (lambda ()
+              (when (buffer-live-p buffer)
+                (embark--run-after-command #'pop-to-buffer buffer)))))
+         nil t)
+        (setq minibuffer-scroll-window window))
 
-        window))))
+      window)))
 
 ;;;###autoload
 (defun embark-collect-live (&optional initial-view)
@@ -2949,25 +2948,24 @@ The variable `embark-exporters-alist' controls how to make the
 buffer for each type of completion."
   (interactive)
   (let* ((transformed (embark--maybe-transform-candidates))
-         (candidates (plist-get transformed :candidates))
+         (candidates (or (plist-get transformed :candidates)
+                         (user-error "No candidates for export")))
          (type (plist-get transformed :type)))
-    (if (null candidates)
-        (user-error "No candidates for export")
-      (let ((exporter (or (alist-get type embark-exporters-alist)
-                          (alist-get t embark-exporters-alist))))
-        (if (eq exporter 'embark-collect-snapshot)
-            (embark-collect-snapshot)
-          (let ((dir (embark--default-directory))
-                (after embark-after-export-hook))
-            (embark--quit-and-run
-             (lambda ()
-               ;; TODO see embark--quit-and-run and embark--run-after-command,
-               ;; there the default-directory is also smuggled to the lambda.
-               ;; This should be fixed properly.
-               (let ((default-directory dir) ;; dired needs this info
-                     (embark-after-export-hook after))
-                 (funcall exporter candidates)
-                 (run-hooks 'embark-after-export-hook))))))))))
+    (let ((exporter (or (alist-get type embark-exporters-alist)
+                        (alist-get t embark-exporters-alist))))
+      (if (eq exporter 'embark-collect-snapshot)
+          (embark-collect-snapshot)
+        (let ((dir (embark--default-directory))
+              (after embark-after-export-hook))
+          (embark--quit-and-run
+           (lambda ()
+             ;; TODO see embark--quit-and-run and embark--run-after-command,
+             ;; there the default-directory is also smuggled to the lambda.
+             ;; This should be fixed properly.
+             (let ((default-directory dir) ;; dired needs this info
+                   (embark-after-export-hook after))
+               (funcall exporter candidates)
+               (run-hooks 'embark-after-export-hook)))))))))
 
 (defmacro embark--export-rename (buffer title &rest body)
   "Run BODY and rename BUFFER to Embark export buffer with TITLE."
