@@ -1093,6 +1093,8 @@ UPDATE is the indicator update function."
        (embark-keymap-prompter keymap update))
       ('execute-extended-command
        (intern-soft (read-extended-command)))
+      ((or 'keyboard-quit 'keyboard-escape-quit)
+       nil)
       (_ cmd))))
 
 (defun embark--command-name (cmd)
