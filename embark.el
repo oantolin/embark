@@ -945,9 +945,14 @@ If CYCLE is non-nil bind `embark-cycle'."
       (concat (substring target 0 pos) "…")
     target))
 
-(defun embark--act-label (rep)
-  "Return highlighted Act/Rep string depending on REP."
-  (propertize (if rep "Rep" "Act") 'face 'highlight))
+(defun embark--act-label (rep multi)
+  "Return highlighted Act/Rep indicator label given REP and MULTI."
+  (propertize
+   (cond
+    (multi "Act*")
+    (rep "Rep")
+    (t "Act"))
+   'face 'highlight))
 
 (defun embark-minimal-indicator ()
   "Minimal indicator, appearing in the minibuffer prompt or echo area.
@@ -960,12 +965,14 @@ the minibuffer is open, the message is added to the prompt."
       (if (null keymap)
           (when indicator-overlay
             (delete-overlay indicator-overlay))
-        (let* ((act (embark--act-label
-                     (eq (lookup-key keymap [13]) #'embark-done)))
-               (target (car targets))
+        (let* ((target (car targets))
+               (act (embark--act-label
+                     (eq (lookup-key keymap [13]) #'embark-done)
+                     (plist-get target :multi)))
                (shadowed-targets (cdr targets))
                (indicator
                 (cond
+                 ;; TODO code duplication with embark--verbose-indicator-section-target
                  ((eq (plist-get target :type) 'embark-become)
                   (propertize "Become" 'face 'highlight))
                  ((and (minibufferp)
@@ -976,6 +983,11 @@ the minibuffer is open, the message is added to the prompt."
                   ;; we are in a minibuffer but not from the
                   ;; completing-read prompter, use just "Act"
                   act)
+                 ((plist-get target :multi)
+                  (format "%s on %s %ss"
+                          act
+                          (plist-get target :multi)
+                          (plist-get target :type)))
                  (t (format
                      "%s on %s%s '%s'"
                      act
@@ -1329,18 +1341,28 @@ of all full key sequences bound in the keymap."
             embark-verbose-indicator-excluded-actions))
 
 (cl-defun embark--verbose-indicator-section-target
-    (&key target bindings &allow-other-keys)
-  "Format the TARGET section for the indicator buffer.
-BINDINGS is the formatted list of keybinding.s"
-  (let* ((kind (car target))
-         (result (if (eq kind 'embark-become)
-                     (concat (propertize "Become" 'face 'highlight))
-                   (format "%s on%s '%s'"
+    (&key targets bindings &allow-other-keys)
+  "Format the TARGETS section for the indicator buffer.
+BINDINGS is the formatted list of keybindings."
+  (let* ((target (plist-get (car targets) :target))
+         (kind (plist-get (car targets) :type))
+         (result (cond
+                  ;; TODO code duplication with embark-minimal-indicator
+                  ((eq kind 'embark-become)
+                   (concat (propertize "Become" 'face 'highlight)))
+                  ((plist-get (car targets) :multi)
+                   (format "%s on %s %ss"
+                           (embark--act-label nil t)
+                           (plist-get (car targets) :multi)
+                           kind))
+                  (t
+                   (format "%s on %s '%s'"
                            (embark--act-label
                             (seq-find (lambda (b) (eq (caddr b) #'embark-done))
-                                      bindings))
-                           (if kind (format " %s" kind) "")
-                           (embark--truncate-target (cdr target))))))
+                                      bindings)
+                            nil)
+                           kind
+                           (embark--truncate-target target))))))
     (add-face-text-property 0 (length result)
                             'embark-verbose-indicator-title
                             'append
@@ -1391,8 +1413,6 @@ The arguments are the new KEYMAP and TARGETS."
            (bindings
             (embark--formatted-bindings keymap embark-verbose-indicator-nested))
            (bindings (car bindings))
-           (target (cons (plist-get (car targets) :type)
-                         (plist-get (car targets) :target)))
            (shadowed-targets (mapcar
                               (lambda (x) (symbol-name (plist-get x :type)))
                               (cdr targets)))
@@ -1415,7 +1435,7 @@ The arguments are the new KEYMAP and TARGETS."
                    ((fboundp section) section)
                    (t (error "Undefined verbose indicator section `%s'"
                              section))))
-                :target target :shadowed-targets shadowed-targets
+                :targets targets :shadowed-targets shadowed-targets
                 :bindings bindings :cycle cycle)
                ""))))
       (goto-char (point-min)))))
@@ -1985,11 +2005,10 @@ ARG is the prefix argument."
               (user-error "No candidates for export")))
          (indicators (mapcar #'funcall embark-indicators)))
     (unwind-protect
-        (let* ((summary (format "%d %ss" (length candidates) type))
-               (action
+        (let* ((action
                 (or (embark--prompt
                      indicators (embark--action-keymap type nil)
-                     (list (list :type type :target summary)))
+                     (list (list :type type :multi (length candidates))))
                     (user-error "Canceled")))
                (act (lambda (candidate)
                       (let ((embark-allow-edit-actions nil)
@@ -2002,7 +2021,8 @@ ARG is the prefix argument."
             (dolist (cand candidates)
               (plist-put cand :target (plist-get cand :orig-target))
               (plist-put cand :type   (plist-get cand :orig-type))))
-          (when (y-or-n-p (format "Run %s on %s? " action summary))
+          (when (y-or-n-p (format "Run %s on %d %ss? "
+                                  action (length candidates) type))
             (if (if embark-quit-after-action (not arg) arg)
                 (embark--quit-and-run #'mapc act candidates)
               (mapc act candidates)
