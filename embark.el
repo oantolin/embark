@@ -1641,7 +1641,8 @@ minibuffer before executing the action."
   (if (memq action '(embark-become        ; these actions should not
                      embark-collect-live  ; run in the target window
                      embark-collect-snapshot
-                     embark-export))
+                     embark-export
+                     embark-act-all))
       (command-execute action)
     (let* ((command embark--command)
            (prefix prefix-arg)
@@ -1926,6 +1927,90 @@ target."
                                 new-targets)
                                0)))))))))
       (mapc #'funcall indicators))))
+
+(defun embark--maybe-transform-candidates ()
+  "Collect candidates and see if they all transform to the same type.
+Return a plist with keys `:type', `:orig-type', `:candidates', and
+`:orig-candidates'."
+ (pcase-let ((`(,type . ,candidates)
+              (run-hook-with-args-until-success 'embark-candidate-collectors)))
+   (append
+    (list :orig-type type :orig-candidates candidates)
+    (or (unless (null candidates)
+          (when-let ((transformer (alist-get type embark-transformer-alist)))
+            (pcase-let* ((`(,new-type . ,first-cand)
+                          (funcall transformer type (car candidates))))
+              (let ((new-candidates (list first-cand)))
+                (when (cl-every
+                       (lambda (cand)
+                         (pcase-let ((`(,t-type . ,t-cand)
+                                      (funcall transformer type cand)))
+                           (when (eq t-type new-type)
+                             (push t-cand new-candidates)
+                             t)))
+                       (cdr candidates))
+                  (list :type new-type
+                        :candidates (nreverse new-candidates)))))))
+        (list :type type :candidates candidates)))))
+
+;;;###autoload
+(defun embark-act-all (&optional arg)
+  "Prompt the user for an action and perform it on each candidate.
+The candidates are chosen by `embark-candidate-collectors'.
+By default, if called from a minibuffer the candidates are the
+completion candidates.
+
+This command uses `embark-prompter' to ask the user to specify an
+action, and calls it injecting the target at the first minibuffer
+prompt.
+
+If you call this from the minibuffer, it can optionally quit the
+minibuffer.  The variable `embark-quit-after-action' controls
+whether calling `embark-act' with nil ARG quits the minibuffer,
+and if ARG is non-nil it will do the opposite.  Interactively,
+ARG is the prefix argument."
+  (interactive "P")
+  (let* ((transformed (embark--maybe-transform-candidates))
+         (type (plist-get transformed :type))
+         (orig-type (plist-get transformed :orig-type))
+         (dir (embark--default-directory))
+         (candidates
+          (cl-mapcar
+           (lambda (cand orig-cand)
+             (list :type type :orig-type orig-type
+                   :target (if (eq type 'file) (expand-file-name cand dir) cand)
+                   :orig-target orig-cand))
+           (plist-get transformed :candidates)
+           (plist-get transformed :orig-candidates)))     
+         (indicators (mapcar #'funcall embark-indicators)))
+    (if (null candidates)
+        (user-error "No candidates for export")
+      (unwind-protect
+          (let* ((summary (format "%d %ss" (length candidates) type))
+                 (action
+                  (or (embark--prompt
+                       indicators (embark--action-keymap type nil)
+                       (list (list :type type :target summary)))
+                      (user-error "Canceled")))
+                 (act (lambda (candidate)
+                        (let ((embark-allow-edit-actions nil)
+                              (embark-post-action-hooks
+                               (mapcar (lambda (x) (remq 'embark--restart x))
+                                       embark-post-action-hooks)))
+                          (embark--act action candidate)))))
+            (when (and (eq action (embark--default-action type))
+                       (eq action embark--command))
+              (dolist (cand candidates)
+                (plist-put cand :target (plist-get cand :orig-target))
+                (plist-put cand :type   (plist-get cand :orig-type))))
+            (when (y-or-n-p (format "Run %s on %s? " action summary))
+              (if (if embark-quit-after-action (not arg) arg)
+                  (embark--quit-and-run #'mapc act candidates)
+                (mapc act candidates)
+                (when (memq 'embark--restart
+                            (alist-get action embark-post-action-hooks))
+                  (embark--restart)))))
+        (mapc #'funcall indicators)))))
 
 (defun embark-highlight-indicator ()
   "Action indicator highlighting the target at point."
@@ -2856,40 +2941,20 @@ minibuffer; the length of the delay after typing is given by
      (or (get-buffer "*Embark Collect Completions*")
          (progn (embark-collect-completions) embark-collect-linked-buffer)))))
 
+
 ;;;###autoload
 (defun embark-export ()
   "Create a type-specific buffer to manage current candidates.
 The variable `embark-exporters-alist' controls how to make the
 buffer for each type of completion."
   (interactive)
-  (pcase-let ((`(,type . ,candidates)
-               (run-hook-with-args-until-success 'embark-candidate-collectors)))
+  (let* ((transformed (embark--maybe-transform-candidates))
+         (candidates (plist-get transformed :candidates))
+         (type (plist-get transformed :type)))
     (if (null candidates)
         (user-error "No candidates for export")
       (let ((exporter (or (alist-get type embark-exporters-alist)
-                          (alist-get t embark-exporters-alist)))
-            (transformer (alist-get type embark-transformer-alist)))
-
-        ;; check to see if all candidates transform to same type
-        (when transformer
-          (pcase-let* ((`(,new-type . ,first-cand)
-                        (funcall transformer type (car candidates))))
-            (unless (eq type new-type)
-              (when-let ((new-exporter
-                          (alist-get new-type embark-exporters-alist))
-                         (new-candidates (list first-cand)))
-                (when (cl-every
-                       (lambda (cand)
-                         (pcase-let ((`(,t-type . ,t-cand)
-                                      (funcall transformer type cand)))
-                           (when (eq t-type new-type)
-                             (push t-cand new-candidates)
-                             t)))
-                       (cdr candidates))
-                  (setq type new-type
-                        exporter new-exporter
-                        candidates (nreverse new-candidates)))))))
-
+                          (alist-get t embark-exporters-alist))))
         (if (eq exporter 'embark-collect-snapshot)
             (embark-collect-snapshot)
           (let ((dir (embark--default-directory))
@@ -3471,6 +3536,7 @@ and leaves the point to the left of it."
   ("S" embark-collect-snapshot)
   ("L" embark-collect-live)
   ("B" embark-become)
+  ("A" embark-act-all)
   ("C-s" embark-isearch)
   ("SPC" mark)
   ("DEL" delete-region))
