@@ -3600,6 +3600,8 @@ and leaves the point to the left of it."
   ("p" fill-region-as-paragraph)
   ("$" ispell-region)
   ("r" rot13-region)
+  (".." morse-region)
+  (".-" unmorse-region)
   ("=" count-words-region)
   ("s" whitespace-cleanup-region)
   ("t" transpose-regions)
@@ -3687,7 +3689,8 @@ and leaves the point to the left of it."
   ("a" xref-find-apropos)
   ("s" info-lookup-symbol)
   ("n" embark-next-symbol)
-  ("p" embark-previous-symbol))
+  ("p" embark-previous-symbol)
+  ("$" ispell-word))
 
 (embark-define-keymap embark-expression-map
   "Keymap for Embark expression actions."
