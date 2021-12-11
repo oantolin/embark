@@ -855,7 +855,7 @@ As a convenience, in Org Mode an initial ' or surrounding == or
                   ;; default definition from outline.el
                   (or (bound-and-true-p outline-regexp) "[*\^L]+"))))
       (require 'outline) ;; Ensure that outline commands are available
-      `(heading ,(buffer-substring-no-properties beg end) ,beg . ,end))))
+      `(heading ,(buffer-substring beg end) ,beg . ,end))))
 
 (defun embark-target-top-minibuffer-completion ()
   "Target the top completion candidate in the minibuffer.
@@ -950,7 +950,7 @@ If CYCLE is non-nil bind `embark-cycle'."
   (unless (stringp target)
     (setq target (format "%s" target)))
   (if-let (pos (string-match-p "\n" target))
-      (concat (substring target 0 pos) "…")
+      (concat (car (split-string target "\n" 'omit-nulls "\\s-*")) "…")
     target))
 
 (defun embark--act-label (rep multi)
