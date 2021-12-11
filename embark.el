@@ -3474,6 +3474,23 @@ With a prefix argument EDEBUG, instrument the code for debugging."
              (all-completions (symbol-name prefix)
                               obarray 'elp-profilable-p)))))
 
+(defmacro embark--define-hash (algorithm)
+  "Define command which computes hash from a string.
+ALGORITHM is the hash algorithm symbol understood by `secure-hash'."
+  `(defun ,(intern (format "embark-hash-%s" algorithm)) (str)
+     ,(format "Compute %s hash of STR and store it in the kill ring." algorithm)
+     (interactive "sString: ")
+     (let ((hash (secure-hash ',algorithm str)))
+       (kill-new hash)
+       (message "%s: %s" ',algorithm hash))))
+
+(embark--define-hash md5)
+(embark--define-hash sha1)
+(embark--define-hash sha224)
+(embark--define-hash sha256)
+(embark--define-hash sha384)
+(embark--define-hash sha512)
+
 ;;; Setup and pre-action hooks
 
 (defun embark--restart (&rest _)
@@ -3568,7 +3585,13 @@ and leaves the point to the left of it."
   :parent nil
   ("r" rot13-region)
   ("." morse-region)
-  ("-" unmorse-region))
+  ("-" unmorse-region)
+  ("m" embark-hash-md5)
+  ("1" embark-hash-sha1)
+  ("2" embark-hash-sha256)
+  ("3" embark-hash-sha356)
+  ("4" embark-hash-sha224)
+  ("5" embark-hash-sha512))
 
 (fset 'embark-encode-map embark-encode-map)
 
