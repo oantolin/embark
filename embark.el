@@ -2108,9 +2108,8 @@ See `embark-act' for the meaning of the prefix ARG."
                        0
                      (mod (prefix-numeric-value arg) (length targets)))
                    targets)))
-             (default-action (embark--default-action
-                              (plist-get target :type))))
-        (embark--act default-action
+             (default-action (embark--default-action (plist-get target :type))))
+        (embark--act (or (command-remapping default-action) default-action)
                      (if (eq default-action embark--command)
                          (embark--orig-target target)
                        target)
