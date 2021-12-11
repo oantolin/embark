@@ -927,8 +927,10 @@ relative path."
   "Return action keymap for targets of given TYPE.
 If CYCLE is non-nil bind `embark-cycle'."
   (make-composed-keymap
-   (let ((map (make-sparse-keymap)))
-     (define-key map [13] (embark--default-action type))
+   (let ((map (make-sparse-keymap))
+         (default-action (embark--default-action type)))
+     (define-key map [13] default-action)
+     (define-key map [return] default-action)
      (when-let ((cycle-key (and cycle (embark--cycle-key))))
        (define-key map cycle-key #'embark-cycle))
      (when embark-help-key
