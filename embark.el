@@ -813,10 +813,12 @@ in one of those major modes."
 (defun embark-target-identifier-at-point ()
   "Target identifier at point.
 
-In Emacs Lisp buffers the identifier is promoted to a symbol, for
-which more actions are available.  Identifiers are also promoted
-to symbols if they are interned Emacs Lisp symbols and found in a
-buffer whose major mode does not inherit from `prog-mode'.
+In Emacs Lisp and IELM buffers the identifier is promoted to a
+symbol, for which more actions are available.  Identifiers are
+also promoted to symbols if they are interned Emacs Lisp symbols
+and found in a buffer in a major mode derived from
+`special-mode', `Info-mode' or `text-mode' (these are intended to
+cover cases where you might be reading or writing about Emacs).
 
 As a convenience, in Org Mode an initial ' or surrounding == or
 ~~ are removed."
@@ -831,8 +833,9 @@ As a convenience, in Org Mode an initial ' or surrounding == or
                (cl-incf (car bounds))
                (cl-decf (cdr bounds)))))
       `(,(if (or (derived-mode-p 'emacs-lisp-mode)
+                 (derived-mode-p 'inferior-emacs-lisp-mode)
                  (and (intern-soft name)
-                      (not (derived-mode-p 'prog-mode))))
+                      (derived-mode-p 'special-mode 'Info-mode 'text-mode)))
              'symbol
            'identifier)
         ,name
