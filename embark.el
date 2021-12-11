@@ -3562,6 +3562,16 @@ and leaves the point to the left of it."
   ("SPC" mark)
   ("DEL" delete-region))
 
+;; TODO add more encode actions, see M-x or C-h f encode region
+(embark-define-keymap embark-encode-map
+  "Keymap for Embark region encoding actions."
+  :parent nil
+  ("r" rot13-region)
+  ("." morse-region)
+  ("-" unmorse-region))
+
+(fset 'embark-encode-map embark-encode-map)
+
 (embark-define-keymap embark-sort-map
   "Keymap for Embark actions that sort the region"
   :parent nil
@@ -3574,7 +3584,6 @@ and leaves the point to the left of it."
   ("n" sort-numeric-fields))
 
 (fset 'embark-sort-map embark-sort-map)
-
 
 ;; these will have autoloads in Emacs 28
 (autoload 'calc-grab-sum-down "calc" nil t)
@@ -3599,9 +3608,6 @@ and leaves the point to the left of it."
   ("f" fill-region)
   ("p" fill-region-as-paragraph)
   ("$" ispell-region)
-  ("r" rot13-region)
-  (".." morse-region)
-  (".-" unmorse-region)
   ("=" count-words-region)
   ("s" whitespace-cleanup-region)
   ("t" transpose-regions)
@@ -3616,7 +3622,8 @@ and leaves the point to the left of it."
   ("_" calc-grab-sum-across)
   ("R" reverse-region)
   ("D" delete-duplicate-lines)
-  ("S" 'embark-sort-map))
+  ("S" 'embark-sort-map)
+  ("E" 'embark-encode-map))
 
 (embark-define-keymap embark-file-map
   "Keymap for Embark file actions."
