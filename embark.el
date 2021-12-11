@@ -692,14 +692,17 @@ In `dired-mode', it uses `dired-get-filename' instead."
                   (re-search-backward " " (line-beginning-position) 'noerror)
                   (1+ (point)))
                . ,(point)))
-    (when-let (file (ffap-file-at-point))
-      (unless (or (string-match-p "^/https?:/" file)
-                  (when-let (filename (thing-at-point 'filename))
-                    (ffap-el-mode filename)))
-        `(file ,(abbreviate-file-name (expand-file-name file))
-               ;; TODO the boundaries may be wrong, this should be generalized.
-               ;; Unfortunately ffap does not make the bounds available.
-               . ,(bounds-of-thing-at-point 'filename))))))
+    (when-let* ((ffap-file (ffap-file-at-point))
+                (tap-file (thing-at-point 'filename))
+                ;; check the thingatpt candidate is a substring of the
+                ;; ffap candidate, this avoids URLs and keyword
+                ;; symbols when point is on the colon (see bug#52441)
+                ((string-match-p (regexp-quote tap-file) ffap-file))
+                ((not (ffap-el-mode tap-file))))
+      `(file ,(abbreviate-file-name (expand-file-name file))
+             ;; TODO the boundaries may be wrong, this should be generalized.
+             ;; Unfortunately ffap does not make the bounds available.
+             . ,(bounds-of-thing-at-point 'filename)))))
 
 (defun embark-target-library-file-at-point ()
   "Target the file of the Emacs Lisp library at point.
