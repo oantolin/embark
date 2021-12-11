@@ -942,7 +942,7 @@ If CYCLE is non-nil bind `embark-cycle'."
   (unless (stringp target)
     (setq target (format "%s" target)))
   (if-let (pos (string-match-p "\n" target))
-      (concat (substring target 0 pos) "…")
+      (concat (car (split-string target "\n" 'omit-nulls "\\s-*")) "…")
     target))
 
 (defun embark--act-label (rep multi)
