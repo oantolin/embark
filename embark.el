@@ -849,7 +849,7 @@ As a convenience, in Org Mode an initial ' or surrounding == or
                   ;; default definition from outline.el
                   (or (bound-and-true-p outline-regexp) "[*\^L]+"))))
       (require 'outline) ;; Ensure that outline commands are available
-      `(heading ,(buffer-substring-no-properties beg end) ,beg . ,end))))
+      `(heading ,(buffer-substring beg end) ,beg . ,end))))
 
 (defun embark-target-top-minibuffer-completion ()
   "Target the top completion candidate in the minibuffer.
