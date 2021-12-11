@@ -3632,7 +3632,7 @@ and leaves the point to the left of it."
   ("p" fill-region-as-paragraph)
   ("$" ispell-region)
   ("=" count-words-region)
-  ("s" whitespace-cleanup-region)
+  ("SPC" whitespace-cleanup-region)
   ("t" transpose-regions)
   ("o" org-table-convert-region)
   (";" comment-or-uncomment-region)
@@ -3645,8 +3645,8 @@ and leaves the point to the left of it."
   ("_" calc-grab-sum-across)
   ("R" reverse-region)
   ("D" delete-duplicate-lines)
-  ("S" 'embark-sort-map)
-  ("E" 'embark-encode-map))
+  ("s" 'embark-sort-map)
+  (">" 'embark-encode-map))
 
 (embark-define-keymap embark-file-map
   "Keymap for Embark file actions."
