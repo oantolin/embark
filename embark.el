@@ -3500,12 +3500,19 @@ ALGORITHM is the hash algorithm symbol understood by `secure-hash'."
 (embark--define-hash sha384)
 (embark--define-hash sha512)
 
-(defun embark-encode-url (start end)    ;w
+(defun embark-encode-url (start end)
   "Properly URI-encode the region between START and END in current buffer."
   (interactive "r")
   (let ((encoded (url-encode-url (buffer-substring-no-properties start end))))
     (delete-region start end)
     (insert encoded)))
+
+(defun embark-decode-url (start end)
+  "Decode the URI-encoded region between START and END in current buffer."
+  (interactive "r")
+  (let ((decoded (url-unhex-string (buffer-substring-no-properties start end))))
+    (delete-region start end)
+    (insert decoded)))
 
 ;;; Setup and pre-action hooks
 
@@ -3610,7 +3617,8 @@ and leaves the point to the left of it."
   ("5" embark-hash-sha512)
   ("f" format-encode-region)
   ("F" format-decode-region)
-  ("u" embark-encode-url))
+  ("u" embark-encode-url)
+  ("U" embark-decode-url))
 
 (fset 'embark-encode-map embark-encode-map)
 
