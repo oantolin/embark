@@ -3630,11 +3630,10 @@ and leaves the point to the left of it."
   ("SPC" mark)
   ("DEL" delete-region))
 
-(autoload 'message-caesar-region "message" nil t)
 (embark-define-keymap embark-encode-map
   "Keymap for Embark region encoding actions."
   :parent nil
-  ("r" message-caesar-region) ;; default rot13-region
+  ("r" rot13-region)
   ("." morse-region)
   ("-" unmorse-region)
   ("s" studlify-region)
