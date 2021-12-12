@@ -3598,7 +3598,7 @@ and leaves the point to the left of it."
   ("m" embark-hash-md5)
   ("1" embark-hash-sha1)
   ("2" embark-hash-sha256)
-  ("3" embark-hash-sha356)
+  ("3" embark-hash-sha384)
   ("4" embark-hash-sha224)
   ("5" embark-hash-sha512)
   ("f" format-encode-region)
