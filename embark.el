@@ -701,7 +701,7 @@ In `dired-mode', it uses `dired-get-filename' instead."
                 ;; symbols when point is on the colon (see bug#52441)
                 ((string-match-p (regexp-quote tap-file) ffap-file))
                 ((not (ffap-el-mode tap-file))))
-      `(file ,(abbreviate-file-name (expand-file-name file))
+      `(file ,(abbreviate-file-name (expand-file-name ffap-file))
              ;; TODO the boundaries may be wrong, this should be generalized.
              ;; Unfortunately ffap does not make the bounds available.
              . ,(bounds-of-thing-at-point 'filename)))))
