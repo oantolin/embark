@@ -3535,6 +3535,13 @@ ALGORITHM is the hash algorithm symbol understood by `secure-hash'."
     (delete-region start end)
     (insert decoded)))
 
+(defvar epa-replace-original-text)
+(defun embark-epa-decrypt-region (start end)
+  "Decrypt region between START and END."
+  (interactive "r")
+  (let ((epa-replace-original-text t))
+    (epa-decrypt-region start end)))
+
 ;;; Setup and pre-action hooks
 
 (defun embark--restart (&rest _)
@@ -3623,13 +3630,13 @@ and leaves the point to the left of it."
   ("SPC" mark)
   ("DEL" delete-region))
 
-;; TODO add more encode actions, see M-x or C-h f encode region
 (embark-define-keymap embark-encode-map
   "Keymap for Embark region encoding actions."
   :parent nil
   ("r" rot13-region)
   ("." morse-region)
   ("-" unmorse-region)
+  ("s" studlify-region)
   ("m" embark-hash-md5)
   ("1" embark-hash-sha1)
   ("2" embark-hash-sha256)
@@ -3638,8 +3645,12 @@ and leaves the point to the left of it."
   ("5" embark-hash-sha512)
   ("f" format-encode-region)
   ("F" format-decode-region)
+  ("b" base64-encode-region)
+  ("B" base64-decode-region)
   ("u" embark-encode-url)
-  ("U" embark-decode-url))
+  ("U" embark-decode-url)
+  ("c" epa-encrypt-region)
+  ("C" embark-epa-decrypt-region))
 
 (fset 'embark-encode-map embark-encode-map)
 
@@ -3692,7 +3703,11 @@ and leaves the point to the left of it."
   (":" calc-grab-sum-down)
   ("_" calc-grab-sum-across)
   ("r" reverse-region)
-  ("D" delete-duplicate-lines)
+  ("d" delete-duplicate-lines)
+  ("b" browse-url-of-region)
+  ("h" shr-render-region)
+  ("'" expand-region-abbrevs)
+  ("v" vc-region-history)
   ("s" 'embark-sort-map)
   (">" 'embark-encode-map))
 
@@ -3768,6 +3783,7 @@ and leaves the point to the left of it."
   ("s" info-lookup-symbol)
   ("n" embark-next-symbol)
   ("p" embark-previous-symbol)
+  ("'" expand-abbrev)
   ("$" ispell-word))
 
 (embark-define-keymap embark-expression-map
@@ -3887,7 +3903,9 @@ and leaves the point to the left of it."
   ("<" bookmark-insert)
   ("j" bookmark-jump)
   ("o" bookmark-jump-other-window)
-  ("f" bookmark-jump-other-frame))
+  ("f" bookmark-jump-other-frame)
+  ("a" 'bookmark-show-annotation)
+  ("e" 'bookmark-edit-annotation))
 
 (embark-define-keymap embark-unicode-name-map
   "Keymap for Embark unicode name actions."
@@ -3900,7 +3918,7 @@ and leaves the point to the left of it."
   ("$" ispell-region)
   ("f" fill-region)
   ("u" upcase-region)
-  ("d" downcase-region)
+  ("l" downcase-region)
   ("c" capitalize-region)
   ("s" whitespace-cleanup-region)
   ("=" count-words-region))
