@@ -3136,7 +3136,18 @@ Return the category metadatum as the type of the candidates."
     (cons (completion-metadata-get (embark--metadata) 'category)
           vertico--candidates)))
 
+(defun embark--vertico-indicator ()
+  "Embark indicator highlighting the current Vertico candidate."
+  (let ((fr face-remapping-alist))
+    (lambda (&optional keymap _targets _prefix)
+      (when vertico--input
+        (setq-local face-remapping-alist
+                    (if keymap
+                        (cons '(vertico-current . embark-target) fr)
+                      fr))))))
+
 (with-eval-after-load 'vertico
+  (add-hook 'embark-indicators #'embark--vertico-indicator)
   (add-hook 'embark-target-finders #'embark--vertico-selected)
   (add-hook 'embark-candidate-collectors #'embark--vertico-candidates))
 
@@ -3171,7 +3182,18 @@ Return the category metadatum as the type of the candidates."
 	   ;; Pass relative file names for dired.
 	   minibuffer-completing-file-name))))
 
+(defun embark--selectrum-indicator ()
+  "Embark indicator highlighting the current Selectrum candidate."
+  (let ((fr face-remapping-alist))
+    (lambda (&optional keymap _targets _prefix)
+      (when selectrum-is-active
+        (setq-local face-remapping-alist
+                    (if keymap
+                        (cons '(selectrum-current-candidate . embark-target) fr)
+                      fr))))))
+
 (with-eval-after-load 'selectrum
+  (add-hook 'embark-indicators #'embark--selectrum-indicator)
   (add-hook 'embark-target-finders #'embark--selectrum-selected)
   (add-hook 'embark-candidate-collectors #'embark--selectrum-candidates))
 
