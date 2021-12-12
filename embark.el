@@ -452,6 +452,8 @@ the key :always are executed always."
     (count-words-region embark--mark-target)
     (shell-command-on-region embark--mark-target)
     (delete-region embark--mark-target)
+    (format-encode-region embark--mark-target embark--ignore-target)
+    (format-decode-region embark--mark-target embark--ignore-target)
     ;; commands we want to be able to jump back from
     ;; (embark-find-definition achieves this by calling
     ;; xref-find-definitions which pushes the markers itself)
@@ -3491,6 +3493,13 @@ ALGORITHM is the hash algorithm symbol understood by `secure-hash'."
 (embark--define-hash sha384)
 (embark--define-hash sha512)
 
+(defun embark-encode-url (start end)    ;w
+  "Properly URI-encode the region between START and END in current buffer."
+  (interactive "r")
+  (let ((encoded (url-encode-url (buffer-substring-no-properties start end))))
+    (delete-region start end)
+    (insert encoded)))
+
 ;;; Setup and pre-action hooks
 
 (defun embark--restart (&rest _)
@@ -3591,7 +3600,10 @@ and leaves the point to the left of it."
   ("2" embark-hash-sha256)
   ("3" embark-hash-sha356)
   ("4" embark-hash-sha224)
-  ("5" embark-hash-sha512))
+  ("5" embark-hash-sha512)
+  ("f" format-encode-region)
+  ("F" format-decode-region)
+  ("u" embark-encode-url))
 
 (fset 'embark-encode-map embark-encode-map)
 
@@ -3643,7 +3655,7 @@ and leaves the point to the left of it."
   ("*" calc-grab-region)
   (":" calc-grab-sum-down)
   ("_" calc-grab-sum-across)
-  ("R" reverse-region)
+  ("r" reverse-region)
   ("D" delete-duplicate-lines)
   ("s" 'embark-sort-map)
   (">" 'embark-encode-map))
