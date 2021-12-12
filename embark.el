@@ -3904,7 +3904,9 @@ and leaves the point to the left of it."
   ("<" bookmark-insert)
   ("j" bookmark-jump)
   ("o" bookmark-jump-other-window)
-  ("f" bookmark-jump-other-frame))
+  ("f" bookmark-jump-other-frame)
+  ("a" 'bookmark-show-annotation)
+  ("e" 'bookmark-edit-annotation))
 
 (embark-define-keymap embark-unicode-name-map
   "Keymap for Embark unicode name actions."
