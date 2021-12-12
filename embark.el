@@ -452,6 +452,8 @@ the key :always are executed always."
     (count-words-region embark--mark-target)
     (shell-command-on-region embark--mark-target)
     (delete-region embark--mark-target)
+    (format-encode-region embark--mark-target embark--ignore-target)
+    (format-decode-region embark--mark-target embark--ignore-target)
     ;; commands we want to be able to jump back from
     ;; (embark-find-definition achieves this by calling
     ;; xref-find-definitions which pushes the markers itself)
@@ -3481,6 +3483,30 @@ With a prefix argument EDEBUG, instrument the code for debugging."
              (all-completions (symbol-name prefix)
                               obarray 'elp-profilable-p)))))
 
+(defmacro embark--define-hash (algorithm)
+  "Define command which computes hash from a string.
+ALGORITHM is the hash algorithm symbol understood by `secure-hash'."
+  `(defun ,(intern (format "embark-hash-%s" algorithm)) (str)
+     ,(format "Compute %s hash of STR and store it in the kill ring." algorithm)
+     (interactive "sString: ")
+     (let ((hash (secure-hash ',algorithm str)))
+       (kill-new hash)
+       (message "%s: %s" ',algorithm hash))))
+
+(embark--define-hash md5)
+(embark--define-hash sha1)
+(embark--define-hash sha224)
+(embark--define-hash sha256)
+(embark--define-hash sha384)
+(embark--define-hash sha512)
+
+(defun embark-encode-url (start end)    ;w
+  "Properly URI-encode the region between START and END in current buffer."
+  (interactive "r")
+  (let ((encoded (url-encode-url (buffer-substring-no-properties start end))))
+    (delete-region start end)
+    (insert encoded)))
+
 ;;; Setup and pre-action hooks
 
 (defun embark--restart (&rest _)
@@ -3569,6 +3595,25 @@ and leaves the point to the left of it."
   ("SPC" mark)
   ("DEL" delete-region))
 
+;; TODO add more encode actions, see M-x or C-h f encode region
+(embark-define-keymap embark-encode-map
+  "Keymap for Embark region encoding actions."
+  :parent nil
+  ("r" rot13-region)
+  ("." morse-region)
+  ("-" unmorse-region)
+  ("m" embark-hash-md5)
+  ("1" embark-hash-sha1)
+  ("2" embark-hash-sha256)
+  ("3" embark-hash-sha384)
+  ("4" embark-hash-sha224)
+  ("5" embark-hash-sha512)
+  ("f" format-encode-region)
+  ("F" format-decode-region)
+  ("u" embark-encode-url))
+
+(fset 'embark-encode-map embark-encode-map)
+
 (embark-define-keymap embark-sort-map
   "Keymap for Embark actions that sort the region"
   :parent nil
@@ -3581,7 +3626,6 @@ and leaves the point to the left of it."
   ("n" sort-numeric-fields))
 
 (fset 'embark-sort-map embark-sort-map)
-
 
 ;; these will have autoloads in Emacs 28
 (autoload 'calc-grab-sum-down "calc" nil t)
@@ -3606,9 +3650,8 @@ and leaves the point to the left of it."
   ("f" fill-region)
   ("p" fill-region-as-paragraph)
   ("$" ispell-region)
-  ("r" rot13-region)
   ("=" count-words-region)
-  ("s" whitespace-cleanup-region)
+  ("SPC" whitespace-cleanup-region)
   ("t" transpose-regions)
   ("o" org-table-convert-region)
   (";" comment-or-uncomment-region)
@@ -3619,9 +3662,10 @@ and leaves the point to the left of it."
   ("*" calc-grab-region)
   (":" calc-grab-sum-down)
   ("_" calc-grab-sum-across)
-  ("R" reverse-region)
+  ("r" reverse-region)
   ("D" delete-duplicate-lines)
-  ("S" 'embark-sort-map))
+  ("s" 'embark-sort-map)
+  (">" 'embark-encode-map))
 
 (embark-define-keymap embark-file-map
   "Keymap for Embark file actions."
@@ -3694,7 +3738,8 @@ and leaves the point to the left of it."
   ("a" xref-find-apropos)
   ("s" info-lookup-symbol)
   ("n" embark-next-symbol)
-  ("p" embark-previous-symbol))
+  ("p" embark-previous-symbol)
+  ("$" ispell-word))
 
 (embark-define-keymap embark-expression-map
   "Keymap for Embark expression actions."
