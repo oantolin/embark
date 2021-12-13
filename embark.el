@@ -149,6 +149,7 @@ For any type not listed here, `embark-act' will use
 (defcustom embark-target-finders
   '(embark-target-top-minibuffer-completion
     embark-target-active-region
+    embark-target-text-heading-at-point
     embark-target-collect-candidate
     embark-target-completion-at-point
     embark-target-bug-reference-at-point
@@ -163,7 +164,7 @@ For any type not listed here, `embark-act' will use
     embark-target-sentence-at-point
     embark-target-paragraph-at-point
     embark-target-defun-at-point
-    embark-target-heading-at-point)
+    embark-target-prog-heading-at-point)
   "List of functions to determine the target in current context.
 Each function should take no arguments and return either nil to
 indicate that no target has been found, a cons (type . target)
@@ -858,6 +859,16 @@ As a convenience, in Org Mode an initial ' or surrounding == or
                   (or (bound-and-true-p outline-regexp) "[*\^L]+"))))
       (require 'outline) ;; Ensure that outline commands are available
       `(heading ,(buffer-substring beg end) ,beg . ,end))))
+
+(defun embark-target-text-heading-at-point ()
+  "Target the outline heading at point in text modes."
+  (when (derived-mode-p 'text-mode)
+    (embark-target-heading-at-point)))
+
+(defun embark-target-prog-heading-at-point ()
+  "Target the outline heading at point in programming modes."
+  (when (derived-mode-p 'prog-mode)
+    (embark-target-heading-at-point)))
 
 (defun embark-target-top-minibuffer-completion ()
   "Target the top completion candidate in the minibuffer.
