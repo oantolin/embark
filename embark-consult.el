@@ -320,5 +320,14 @@ that is a Consult async command."
 (setf (alist-get 'imenu embark-default-action-overrides) #'consult-imenu)
 (add-to-list 'embark-candidate-collectors #'embark-consult-outline-candidates 'append)
 
+;; consult-completing-read-multiple
+
+(defun embark-consult--crm-selected ()
+  "Return selected candidates from `consult-completing-read-multiple'."
+  (when-let (cands (consult--crm-selected))
+    (cons (completion-metadata-get (embark--metadata) 'category) cands)))
+
+(add-hook 'embark-candidate-collectors #'embark-consult--crm-selected)
+
 (provide 'embark-consult)
 ;;; embark-consult.el ends here
