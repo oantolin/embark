@@ -3870,6 +3870,7 @@ and leaves the point to the left of it."
 (embark-define-keymap embark-face-map
   "Keymap for Embark face actions."
   :parent embark-symbol-map
+  ("h" describe-face)
   ("c" customize-face)
   ("+" make-face-bold)
   ("-" make-face-unbold)
