@@ -378,7 +378,7 @@ with `find-file'."
   "Enable editing of target prior to acting for these commands.
 Editing the target is useful as a confirmation feature for
 destructive commands like `delete-file'."
-  :type '(repeat symbol))
+  :type '(repeat function))
 
 (defvar embark-skip-edit-commands nil)
 (defvar embark-allow-edit-default t)
@@ -500,6 +500,17 @@ arguments and more details."
 (make-obsolete 'embark-post-action-hook
                "see the new `embark-post-action-hooks' variable."
                "0.12")
+
+(defcustom embark-multitarget-actions nil
+  "Commands for which `embark-act-all' should pass a list of targets.
+Normally `embark-act-all' runs the same action on each candiate
+separately, but when a command included in this variable's value
+is used as an action, `embark-act-all' will instead call it
+non-interactively with a single argument: the list of all
+candidates.  For commands on this list `embark-act' behaves
+similarly: it calls them non-interactively with a single
+argument: a one element list containing the target."
+  :type '(repeat function))
 
 (defcustom embark-repeat-actions
   '(mark
@@ -1680,8 +1691,8 @@ hooks."
   "Perform ACTION injecting the TARGET.
 If called from a minibuffer with non-nil QUIT, quit the
 minibuffer before executing the action."
-  (if (memq action '(embark-become        ; these actions should not
-                     embark-collect-live  ; run in the target window
+  (if (memq action '(embark-become       ; these actions should not
+                     embark-collect-live ; run in the target window
                      embark-collect-snapshot
                      embark-export
                      embark-act-all))
@@ -1706,8 +1717,9 @@ minibuffer before executing the action."
            (dedicate (and (derived-mode-p 'embark-collect-mode)
                           (not (window-dedicated-p))
                           (selected-window)))
+           (multi (memq action embark-multitarget-actions))
            (run-action
-            (if (commandp action)
+            (if (and (commandp action) (not multi))
                 (lambda ()
                   (minibuffer-with-setup-hook inject
                     (let (final-window)
@@ -1730,13 +1742,18 @@ minibuffer before executing the action."
                         (when dedicate (set-window-dedicated-p dedicate nil)))
                       (unless (eq final-window action-window)
                         (select-window final-window)))))
-              (lambda ()
-                (with-selected-window action-window
-                  (embark--run-action-hooks embark-pre-action-hooks
-                                            action target quit)
-                  (unwind-protect (funcall action (plist-get target :target))
-                    (embark--run-action-hooks embark-post-action-hooks
-                                              action target quit)))))))
+              (let ((argument
+                     (if multi
+                         (or (plist-get target :candidates) ; embark-act-all
+                             (list (plist-get target :target)))
+                       (plist-get target :target))))
+                (lambda ()
+                  (with-selected-window action-window
+                    (embark--run-action-hooks embark-pre-action-hooks
+                                              action target quit)
+                    (unwind-protect (funcall action argument)
+                      (embark--run-action-hooks embark-post-action-hooks
+                                                action target quit))))))))
       (if quit (embark--quit-and-run run-action) (funcall run-action)))))
 
 (defun embark--refine-symbol-type (_type target)
@@ -2044,18 +2061,21 @@ ARG is the prefix argument."
                (act (lambda (candidate)
                       (let ((embark-allow-edit-actions nil)
                             (embark-post-action-hooks post-action-wo-restart))
-                        (embark--act action candidate)))))
+                        (embark--act action candidate))))
+               (quit (if embark-quit-after-action (not arg) arg)))
           (when (and (eq action (embark--default-action type))
                      (eq action embark--command))
             (setq candidates (mapcar #'embark--orig-target candidates)))
           (when (y-or-n-p (format "Run %s on %d %ss? "
                                   action (length candidates) type))
-            (if (if embark-quit-after-action (not arg) arg)
-                (embark--quit-and-run #'mapc act candidates)
-              (mapc act candidates)
-              (when (memq 'embark--restart
-                          (alist-get action embark-post-action-hooks))
-                (embark--restart)))))
+            (if (memq action embark-multitarget-actions)
+                (embark--act action transformed quit)
+              (if quit
+                  (embark--quit-and-run #'mapc act candidates)
+                (mapc act candidates)
+                (when (memq 'embark--restart
+                            (alist-get action embark-post-action-hooks))
+                  (embark--restart))))))
       (mapc #'funcall indicators))))
 
 (defun embark-highlight-indicator ()
