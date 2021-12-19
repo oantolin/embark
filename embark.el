@@ -1572,8 +1572,49 @@ further user intervention."
                    (funcall vindicator keymap targets prefix)))))))))
 
 ;;;###autoload
+(defun embark-bindings-in-keymap (keymap)
+  "Explore command key bindings in KEYMAP with `completing-read'.
+The selected command will be executed.  Interactively, prompt the
+user for a KEYMAP variable."
+  (interactive
+   (list
+    (symbol-value
+     (intern-soft
+      (completing-read
+       "Keymap: "
+       (embark--with-category
+        'variable
+        (cl-loop for x being the symbols
+                 if (and (boundp x) (keymapp (symbol-value x)))
+                 collect (symbol-name x)))
+       nil t nil 'variable-name-history
+       (let ((major-mode-map
+              (concat (symbol-name major-mode) "-map")))
+         (when (intern-soft major-mode-map) major-mode-map)))))))
+  (when-let (command (embark-completing-read-prompter keymap nil 'no-default))
+    (call-interactively command)))
+
+;;;###autoload
+(defun embark-bindings ()
+  "Explore all current command key bindings with `completing-read'.
+The selected command will be executed."
+  (interactive)
+  (embark-bindings-in-keymap (make-composed-keymap (current-active-maps t))))
+
+;;;###autoload
+(defun embark-bindings-at-point ()
+  "Explore all current command key bindings with `completing-read'.
+The selected command will be executed."
+  (interactive)
+  (let ((keymaps (delq nil (list (get-text-property (point) 'keymap)
+                                 (get-text-property (point) 'local-keymap)))))
+    (unless keymaps
+      (user-error "No key bindings found at point"))
+    (embark-bindings-in-keymap (make-composed-keymap keymaps))))
+
+;;;###autoload
 (defun embark-prefix-help-command ()
-  "Prompt for and run a command bound in the prefix used to reach this command.
+  "Prompt for and run a command bound in the prefix used for this command.
 The prefix described consists of all but the last event of the
 key sequence that ran this command.  This function is intended to
 be used as a value for `prefix-help-command'.
@@ -1581,22 +1622,10 @@ be used as a value for `prefix-help-command'.
 In addition to using completion to select a command, you can also
 type @ and the key binding (without the prefix)."
   (interactive)
-  (let ((keys (this-command-keys-vector)))
-    (embark-bindings (seq-take keys (1- (length keys))))))
-
-;;;###autoload
-(defun embark-bindings (&optional prefix)
-  "Explore all current command key bindings with `completing-read'.
-The selected command will be executed.  The set of key bindings can
-be restricted by passing a PREFIX key."
-  (interactive)
-  (let ((keymap (if prefix
-                    (key-binding prefix 'accept-default)
-                  (make-composed-keymap (current-active-maps t)))))
-    (unless (keymapp keymap)
-      (user-error "No key bindings found"))
-    (when-let (command (embark-completing-read-prompter keymap nil 'no-default))
-      (call-interactively command))))
+  (when-let ((keys (this-command-keys-vector))
+             (prefix (seq-take keys (1- (length keys))))
+             (keymap (key-binding prefix 'accept-default)))
+    (embark-bindings-in-keymap keymap)))
 
 (defun embark--prompt (indicators keymap targets)
   "Call the prompter with KEYMAP and INDICATORS.
