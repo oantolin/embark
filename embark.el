@@ -372,6 +372,7 @@ with `find-file'."
     delete-directory
     kill-buffer
     shell-command
+    shell-command-on-region
     async-shell-command
     embark-kill-buffer-and-window
     pp-eval-expression)
@@ -416,9 +417,10 @@ the key :always are executed always."
                  "0.12"))
 
 (defcustom embark-pre-action-hooks
-  '(;; region commands which prompt for a filename
+  '(;; region commands which prompt for a filename or command
     (write-region embark--ignore-target embark--mark-target)
     (append-to-file embark--ignore-target embark--mark-target)
+    (shell-command-on-region embark--ignore-target embark--mark-target)
     ;; commands which evaluate code not given at a prompt
     (embark-pp-eval-defun embark--ignore-target)
     (eval-defun embark--ignore-target)
