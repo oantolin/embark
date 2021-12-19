@@ -1221,6 +1221,16 @@ If NESTED is non-nil subkeymaps are not flattened."
                    collect (cons formatted item))))
     (cons candidates def)))
 
+(defun embark--with-category (category candidates)
+  "Return completion table for CANDIDATES of CATEGORY with sorting disabled."
+  (lambda (string predicate action)
+    (if (eq action 'metadata)
+        `(metadata (display-sort-function . identity)
+                   (cycle-sort-function . identity)
+                   (category . ,category))
+      (complete-with-action
+       action candidates string predicate))))
+
 (defun embark-completing-read-prompter (keymap update &optional no-default)
   "Prompt via completion for a command bound in KEYMAP.
 If NO-DEFAULT is t, no default value is passed to`completing-read'.
@@ -1270,12 +1280,7 @@ UPDATE function is passed to it."
                      (make-composed-keymap map (current-local-map)))))
               (completing-read
                "Command: "
-               (lambda (string predicate action)
-                 (if (eq action 'metadata)
-                     `(metadata (category . embark-keybinding)
-                                (display-sort-function . identity)
-                                (cycle-sort-function . identity))
-                   (complete-with-action action candidates string predicate)))
+               (embark--with-category 'embark-keybinding candidates)
                nil nil nil 'embark--prompter-history def)))))
     (pcase (assoc choice candidates)
       (`(,_formatted ,_name ,cmd ,key ,_desc)
@@ -3336,12 +3341,7 @@ When called with a prefix argument OTHER-WINDOW, open dired in other window."
   "Read with completion from list of history CANDIDATES of CATEGORY.
 Sorting and history are disabled. PROMPT is the prompt message."
   (completing-read prompt
-                   (lambda (string predicate action)
-                     (if (eq action 'metadata)
-                         `(metadata (display-sort-function . identity)
-                                    (cycle-sort-function . identity)
-                                    (category . ,category))
-                       (complete-with-action action candidates string predicate)))
+                   (embark--with-category category candidates)
                    nil t nil t))
 
 (defun embark-kill-ring-remove (text)
