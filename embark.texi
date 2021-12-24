@@ -718,8 +718,7 @@ metadata looks:
 (defun my-select-tab-by-name (tab)
   (interactive
    (list
-    (let ((tab-list (or (mapcar #'(lambda (tab)
-                                    (cdr (assq 'name tab)))
+    (let ((tab-list (or (mapcar (lambda (tab) (cdr (assq 'name tab)))
                                 (tab-bar-tabs))
                         (user-error "No tabs found"))))
       (completing-read
@@ -742,8 +741,7 @@ follows:
 (defun my-select-tab-by-name (tab)
   (interactive
    (list
-    (let ((tab-list (or (mapcar #'(lambda (tab)
-                                    (cdr (assq 'name tab)))
+    (let ((tab-list (or (mapcar (lambda (tab) (cdr (assq 'name tab)))
                                 (tab-bar-tabs))
                         (user-error "No tabs found"))))
       (consult--read tab-list
