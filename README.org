@@ -125,8 +125,8 @@ Note that if there are several different targets at a given location,
 each has its own default action, so first cycle to the target you want
 and then press =RET= to run the corresponding default action.
 
-There is also the =embark-dwim= which runs the default action for the
-first target found. It's pretty handy in non-minibuffer buffers: with
+There is also =embark-dwim= which runs the default action for the first
+target found. It's pretty handy in non-minibuffer buffers: with
 Embark's default configuration it will:
 
 - Open the file at point.
@@ -169,11 +169,11 @@ sets:
   adds support for exporting a list of grep results to an honest
   grep-mode buffer, on which you can even use [[https://github.com/mhayashi1120/Emacs-wgrep][wgrep]] if you wish.
 
-When in doubt choosing among these a good rule of thumb is to always
-prefer =embark-export= since when an exporter to a special major mode is
-available for a given type of target, it will be more featureful than
-an Embark collect buffer, and if no such exporter is configured the
-=embark-export= command falls back to the generic
+When in doubt choosing between exporting and collecting, a good rule
+of thumb is to always prefer =embark-export= since when an exporter to a
+special major mode is available for a given type of target, it will be
+more featureful than an Embark collect buffer, and if no such exporter
+is configured the =embark-export= command falls back to the generic
 =embark-collect-snapshot=.
 
 These commands are always available as "actions" (although they do not
@@ -282,13 +282,14 @@ starting configuration:
     (embark-collect-mode . consult-preview-at-point-mode))
 #+end_src
 
-Other Embark commands such as =embark-become=, =embark-collect-snapshot=,
-=embark-collect-live=, =embark-export= can be run through =embark-act= as
-actions bound to =B=, =S=, =L=, =E= respectively, and thus don't really need
-a dedicated key binding, but feel free to bind them directly if you
-so wish. If you do choose to bind them directly, you'll probably want
-to bind them in =minibuffer-local-map=, since they are most useful in
-the minibuffer (in fact, =embark-become= only works in the minibuffer).
+Other Embark commands such as =mbark-act-all=, =embark-become=,
+=embark-collect-snapshot=, =embark-collect-live=, =embark-export= can be run
+through =embark-act= as actions bound to =A=, =B=, =S=, =L=, =E= respectively, and
+thus don't really need a dedicated key binding, but feel free to bind
+them directly if you so wish. If you do choose to bind them directly,
+you'll probably want to bind them in =minibuffer-local-map=, since they
+are most useful in the minibuffer (in fact, =embark-become= only works
+in the minibuffer).
 
 The command =embark-dwim= executes the default action at point. Another good
 keybinding for =embark-dwim= is =M-.= since =embark-dwim= acts like
@@ -297,9 +298,9 @@ right-click context menu at point and =M-.= acts like left-click. The
 keybindings are mnemonic, both act at the point (=.=).
 
 Embark needs to know what your minibuffer completion system considers
-to be the list of candidates and which one is the current one. Embark
-works out of the box if you use Emacs's default tab completion, the
-built-in =icomplete-mode= or =fido-mode=, or the third-party packages
+to be the list of candidates and which one is the current candidate.
+Embark works out of the box if you use Emacs's default tab completion,
+the built-in =icomplete-mode= or =fido-mode=, or the third-party packages
 [[https://github.com/minad/vertico][Vertico]], [[https://github.com/raxod502/selectrum/][Selectrum]] or [[https://github.com/abo-abo/swiper][Ivy]].
 
 If you are a [[https://emacs-helm.github.io/helm/][Helm]] or [[https://github.com/abo-abo/swiper][Ivy]] user you are unlikely to want Embark since
@@ -433,9 +434,9 @@ minibuffer prompt of an action. There are =embark-setup-action-hooks=,
 that are run by default after injecting the target into the
 minibuffer. The variable =embark-setup-action-hooks= is an alist
 associating commands to their setup hooks. There are two special keys:
-if no setup hooks are specified for a given action, the hooks
-associated to =t= are run; and the hooks associated to =:always= are run
-regardless of the action.
+if no setup hook is specified for a given action, the hook associated
+to =t= is run; and the hook associated to =:always= is run regardless of
+the action.
 
 For example, consider using =shell-command= as an action during file
 completion. It would be useful to insert a space before the target
@@ -451,10 +452,10 @@ beginning of the line and leaves point to the left of it.
 Embark has two variables, =embark-pre-action-hooks= and
 =embark-post-action-hooks=, which are alists associating commands to
 hooks that should run before or after the command is used as an
-action.  As with, =embark-setup-action-hooks=, there are two special
-keys for the alists: =t= designates the default hooks to run when no
-specific hooks are specified for a command; and hooks associated to
-=:always= run regardless.
+action. As with, =embark-setup-action-hooks=, there are two special keys
+for the alists: =t= designates the default hook to run when no specific
+hook is specified for a command; and the hook associated to =:always=
+runs regardless.
 
 The default values of those variables are fairly extensive, adding
 creature comforts to make running actions a smooth experience. Embark
@@ -573,7 +574,8 @@ metadata looks:
   (defun my-select-tab-by-name (tab)
     (interactive
      (list
-      (let ((tab-list (or (mapcar #'(lambda (tab) (cdr (assq 'name tab)))
+      (let ((tab-list (or (mapcar #'(lambda (tab)
+                                      (cdr (assq 'name tab)))
                                   (tab-bar-tabs))
                           (user-error "No tabs found"))))
         (completing-read
@@ -581,7 +583,8 @@ metadata looks:
          (lambda (string predicate action)
            (if (eq action 'metadata)
                '(metadata (category . tab))
-             (complete-with-action action tab-list string predicate)))))))
+             (complete-with-action
+              action tab-list string predicate)))))))
     (tab-bar-select-tab-by-name tab))
 #+end_src
 
@@ -595,7 +598,8 @@ follows:
   (defun my-select-tab-by-name (tab)
     (interactive
      (list
-      (let ((tab-list (or (mapcar #'(lambda (tab) (cdr (assq 'name tab)))
+      (let ((tab-list (or (mapcar #'(lambda (tab)
+                                      (cdr (assq 'name tab)))
                                   (tab-bar-tabs))
                           (user-error "No tabs found"))))
         (consult--read tab-list
@@ -629,10 +633,12 @@ commands, instead of defining new ones.
  What if after using this for a while you feel closing the tab
  without confirmation is dangerous? You have a couple of options:
 
- 1. You can keep using the =tab-bar-close-tab-by-name= command, but no
-    longer let Embark press =RET= for you:
+ 1. You can keep using the =tab-bar-close-tab-by-name= command, but have
+    Embark ask you for confirmation:
     #+begin_src emacs-lisp
-      (add-to-list 'embark-allow-edit-actions 'tab-bar-close-tab-by-name)
+      (push #'embark--confirm
+            (alist-get 'tab-bar-close-tab-by-name
+                       embark-pre-action-hooks))
     #+end_src
 
  2. You can write your own command that prompts for confirmation and
@@ -678,7 +684,8 @@ included in the list =embark-indicators=).
         (save-match-data
           (when (string-match "wikipedia:\\([[:alnum:]_]+\\)" str)
             `(url 
-              (format "https://en.wikipedia.org/wiki/%s" (match-string 1 str))
+              (format "https://en.wikipedia.org/wiki/%s"
+                      (match-string 1 str))
               ,beg . ,end))))))
 
   (add-to-list 'embark-target-finders 'my-short-wikipedia-link)
