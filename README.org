@@ -145,8 +145,12 @@ Embark's default configuration it will:
 Besides acting individually on targets, Embark lets you work
 collectively on a set of target /candidates/. For example, while you are
 in the minibuffer the candidates are simply the possible completions
-of your input. Embark provides two main commands to work on candidate
+of your input. Embark provides three main commands to work on candidate
 sets:
+
+- The =embark-act-all= command runs the same action on each of the
+  current candidates. It is just like using =embark-act= on each
+  candidate in turn.
 
 - The =embark-collect-snapshot= command produces a buffer listing all
   the current candidates, for you to peruse and run actions on at your
@@ -174,19 +178,25 @@ an Embark collect buffer, and if no such exporter is configured the
 
 These commands are always available as "actions" (although they do not
 act on just the current target but on all candidates) for =embark-act=
-and are bound to =S=, =E=, respectively, in =embark-general-map=. This means
-that you do not have to bind your own key bindings for these (although
-you can, of course!), just a key binding for =embark-act=.
+and are bound to =A=, =S=, and =E=, respectively, in =embark-general-map=.
+This means that you do not have to bind your own key bindings for
+these (although you can, of course!), just a key binding for
+=embark-act=.
 
 There is also the =embark-collect-live= variant of
 =embark-collect-snapshot= which produces "live" Embark Collect buffers,
 meaning they auto-update as the set of candidates changes. Most users
 of visual completion UIs such as Vertico, Icomplete, Selectrum or Ivy
-will probably either not want to use this, to avoid seeing double (the
-list of candidates is displayed both by Embark and by the completion
-UI), or to configure their completion UI to hide while using
-=embark-collect-live=. See the Embark wiki for [[https://github.com/oantolin/embark/wiki/Additional-Configuration#pause-selectrum-while-using-embark-collect-live][sample configuration for
-Selectrum]].
+will probably either not want to use this from the minibuffer, to
+avoid seeing double (the list of candidates is displayed both by
+Embark and by the completion UI), or to configure their completion UI
+to hide while using =embark-collect-live=. See the Embark wiki for
+[[https://github.com/oantolin/embark/wiki/Additional-Configuration#pause-selectrum-while-using-embark-collect-live][sample configuration for Selectrum]]. This command can also be used
+outside the minibuffer if you have a relevant candidate collector
+registered in =embark-candidate-collectors=. Users of the =embark-consult=
+package, for example, get such a candidate collector registered for
+them, and can produce a live-updating table of contents for any
+buffer, whose items are the lines matching =outline-regexp=.
 
 ** Switching to a different command without losing what you've typed
 
@@ -403,23 +413,29 @@ By default, for most commands =embark= inserts the target of the action
 into the next minibuffer prompt and "presses =RET=" for you, accepting
 the target as is.
 
-For some commands this might be undesirable, either for safety
-(because a command is "hard to undo", like =delete-file= or
-=kill-buffer=), or because further input is required next to the target
-(like when using =shell-command=: the target is the file and you still
-need to enter a shell command to run on it, at the same prompt). You
-can add such commands to the =embark-allow-edit-actions= variable
-(which by default already contains the examples mentioned, and a few
-others as well).
+For some commands this might be undesirable because further input is
+required next to the target, like when using =shell-command=: the target
+is the file and you still need to enter a shell command to run on it,
+at the same prompt. You can add such commands to the
+=embark-allow-edit-actions= variable (which by default already contains
+the examples mentioned, and a few others as well).
+
+You could abuse this feature so that you have to confirm "dangerous"
+actions such as =delete-file= (and indeed, Embark used to have
+=delete-file= in the default value of =embark-allow-edit-actions=), but it
+is better to implement confirmation by adding the =embark--confirm=
+function to the appropriate entry of =embark-pre-action-hooks=.
 
 ** Running some setup after injecting the target
 
 You can customize what happens after the target is inserted at the
 minibuffer prompt of an action. There are =embark-setup-action-hooks=,
 that are run by default after injecting the target into the
-minibuffer. The hook can be specified for specific action commands by
-associating the command to the desired hook. By default the hooks with
-the key t are executed.
+minibuffer. The variable =embark-setup-action-hooks= is an alist
+associating commands to their setup hooks. There are two special keys:
+if no setup hooks are specified for a given action, the hooks
+associated to =t= are run; and the hooks associated to =:always= are run
+regardless of the action.
 
 For example, consider using =shell-command= as an action during file
 completion. It would be useful to insert a space before the target
@@ -429,6 +445,69 @@ configuration there is an entry in =embark-setup-action-hooks= associating
 =shell-command= to =embark--shell-prep=, a simple helper command that
 quotes all the spaces in the file name, inserts an extra space at the
 beginning of the line and leaves point to the left of it.
+
+** Running hooks before or after an action
+
+Embark has two variables, =embark-pre-action-hooks= and
+=embark-post-action-hooks=, which are alists associating commands to
+hooks that should run before or after the command is used as an
+action.  As with, =embark-setup-action-hooks=, there are two special
+keys for the alists: =t= designates the default hooks to run when no
+specific hooks are specified for a command; and hooks associated to
+=:always= run regardless.
+
+The default values of those variables are fairly extensive, adding
+creature comforts to make running actions a smooth experience. Embark
+comes with several functions intended to be added to these hooks, and
+used in the default values of =embark-pre-action-hooks= and
+=embark-post-action-hooks=:
+
+- =embark--ignore-target= :: Ignore the target. Use this for commands
+  that do prompt you in the minibuffer but for which inserting the
+  target would be inappropriate. This is not a common situation but
+  does occasionally arise. For example it is used by default for
+  =shell-command-on-region=: this is used as action for region targets,
+  and it prompts for a shell command, you typically do /not/ want the
+  target, that is the contents of the region, to be entered at that
+  prompt!
+
+- =embark--confirm= :: Prompt the user for confirmation before executing
+  the action. This is used be default for commands deemed "dangerous",
+  or, more accurately, hard to undo, such as =delete-file= and
+  =kill-buffer=.
+
+- =embark--mark-target= :: Mark the target as an active region. Most
+  targets at point outside the minibuffer report which region of the
+  buffer they correspond to (this is the information used by
+  =embark-highlight-indicator= to know what portion of the buffer to
+  highlight); this function marks that region. It is useful as a pre
+  action hook for commands that expect a region to be marked, for
+  example, it is used by default for =indent-region= so that it works on
+  s-expression targets, or for =fill-region= so that it works on
+  paragraph targets.
+
+- =embark--beginning-of-target= :: Move to the beginning of the target
+  (for targets that report bounds). This is used by default for
+  backward motion commands such as =backward-sexp=, so that they don't
+  accidentally leave you on the current target.
+
+- =embark--end-of-target= :: Move to the end of the target. This is used
+  similarly to the previous function, but also for commands that act
+  on the last s-expression like =eval-last-sexp=. This allow you to act
+  on an s-expression from anywhere inside it and still use
+  =eval-last-sexp= as an action.
+
+- =embark--xref-push-markers= :: Push the current location on the xref
+  marker stack. Use this for commands that take you somewhere and for
+  which you'd like to be able to come back to where you were using
+  =xref-pop-marker-stack=. This is used by default for =find-library=.
+
+- =embark--restart= :: Restart the command currently prompting in the
+  minibuffer, so that the list of completion candidates is updated.
+  This is useful as a post action hook for commands that delete or
+  rename a completion candidate; for example the default value of
+  =embark-post-action-hooks= uses it for =delete-file=, =kill-buffer=,
+  =rename-file=, =rename-buffer=, etc.
 
 ** Creating your own keymaps
 
@@ -507,7 +586,7 @@ metadata looks:
 #+end_src
 
 As you can see, the built-in support for setting the category
-metadatum is not very easy to use or pretty to look at. To help with
+meta-datum is not very easy to use or pretty to look at. To help with
 this I recommend the =consult--read= function from the excellent
 [[https://github.com/minad/consult/][Consult]] package. With that function we can rewrite the command as
 follows:
@@ -794,11 +873,11 @@ Code contributions are very welcome too, but since Embark is now on
 GNU ELPA, copyright assignment to the FSF is required before you can
 contribute code.
 
-* Acknowledgements
+* Acknowledgments
 
 While I, Omar Antolín Camarena, have written most of the Embark code
 and remain very stubborn about some of the design decisions, Embark
-has recieved substantial help from a number of other people which this
+has received substantial help from a number of other people which this
 document has neglected to mention for far too long. In particular,
 Daniel Mendler has been absolutely invaluable, implementing several
 important features, and providing a lot of useful advice.

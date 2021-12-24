@@ -368,17 +368,23 @@ with `find-file'."
   'embark-allow-edit-actions
   "0.12")
 (defcustom embark-allow-edit-actions
-  '(delete-file
-    delete-directory
-    kill-buffer
-    shell-command
+  '(shell-command
     shell-command-on-region
     async-shell-command
-    embark-kill-buffer-and-window
     pp-eval-expression)
   "Enable editing of target prior to acting for these commands.
-Editing the target is useful as a confirmation feature for
-destructive commands like `delete-file'."
+Put commands on this list for which additional information needs
+to be entered at the same minibuffer prompt where the target is
+placed.  For example, `shell-command' is on the default value of
+this list because when using `shell-command' as an action
+typically the target is a file name, and you still need to type
+the program and possibly other command line parameters, at the
+same prompt.
+
+Embark used to recommend abusing this as a means of asking the
+user for confirmation before an action, but it is preferable to
+add `embark--confirm' as a pre-action hook for the action in
+`embark-pre-action-hooks'."
   :type '(repeat function))
 
 (defvar embark-skip-edit-commands nil)
@@ -402,7 +408,7 @@ into in the minibuffer and before acting on it.  The hooks must
 accept arbitrary keyword argument. The :action symbol, the
 :target string and target :type are always present.  For actions
 at point the target bounds are passed too.  The default pre-action
-hook is specified by the entry with key t.  Furthermore hooks with
+hook is specified by the entry with key t.  Furthermore, hooks with
 the key :always are executed always."
   :type '(alist :key-type
                 (choice symbol
@@ -460,7 +466,12 @@ the key :always are executed always."
     ;; commands we want to be able to jump back from
     ;; (embark-find-definition achieves this by calling
     ;; xref-find-definitions which pushes the markers itself)
-    (find-library embark--xref-push-markers))
+    (find-library embark--xref-push-markers)
+    ;; commands which prompt the user for confirmation before running
+    (delete-file embark--confirm)
+    (delete-directory embark--confirm)
+    (kill-buffer embark--confirm)
+    (embark-kill-buffer-and-window embark--confirm))
   "Alist associating commands with pre-action hooks.
 The hooks are run right before an action is embarked upon.  See
 `embark-setup-action-hooks' for information about the hook
@@ -1714,9 +1725,9 @@ If called outside the minibuffer, simply apply FN to ARGS."
   "Run HOOKS for ACTION.
 The HOOKS argument must be alist.  The keys t and :always are
 treated specially.  The :always hooks are executed always and the
-t hooks are the default hooks, if there are no command-specific
-hooks.  The QUIT, ACTION and TARGET arguments are passed to the
-hooks."
+t hooks are the default hooks, for when there are no
+command-specific hooks for ACTION.  The QUIT, ACTION and TARGET
+arguments are passed to the hooks as keyword arguments."
   (mapc (lambda (h) (apply h :action action :quit quit target))
         (or (alist-get action hooks)
             (alist-get t hooks)))
@@ -2091,19 +2102,18 @@ ARG is the prefix argument."
                      indicators (embark--action-keymap type nil)
                      (list (list :type type :multi (length candidates))))
                     (user-error "Canceled")))
-               (post-action-wo-restart
-                (mapcar (lambda (x) (remq 'embark--restart x))
-                        embark-post-action-hooks))
                (act (lambda (candidate)
-                      (let ((embark-allow-edit-actions nil)
-                            (embark-post-action-hooks post-action-wo-restart))
+                      (cl-letf (((symbol-function 'embark--restart) #'ignore)
+                                ((symbol-function 'embark--confirm) #'ignore))
                         (embark--act action candidate))))
                (quit (if embark-quit-after-action (not arg) arg)))
           (when (and (eq action (embark--default-action type))
                      (eq action embark--command))
             (setq candidates (mapcar #'embark--orig-target candidates)))
-          (when (y-or-n-p (format "Run %s on %d %ss? "
-                                  action (length candidates) type))
+          (when (or (not (memq 'embark--confirm
+                               (alist-get action embark-pre-action-hooks)))
+                    (y-or-n-p (format "Run %s on %d %ss? "
+                                      action (length candidates) type)))
             (if (memq action embark-multitarget-actions)
                 (embark--act action transformed quit)
               (if quit
@@ -3686,6 +3696,11 @@ and leaves the point to the left of it."
 (defun embark--xref-push-markers (&rest _)
   "Push the xref markers to leave a location trail."
   (xref--push-markers))
+
+(cl-defun embark--confirm (&key action target &allow-other-keys)
+  "Ask for confirmation before running the ACTION on the TARGET."
+  (unless (y-or-n-p (format "Run %s on %s? " action target))
+    (user-error "Cancelled")))
 
 ;;; keymaps
 
