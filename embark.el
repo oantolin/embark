@@ -1617,8 +1617,8 @@ The selected command will be executed."
   "Explore all current command key bindings with `completing-read'.
 The selected command will be executed."
   (interactive)
-  (let ((keymaps (delq nil (list (get-text-property (point) 'keymap)
-                                 (get-text-property (point) 'local-keymap)))))
+  (let ((keymaps (delq nil (list (get-char-property (point) 'keymap)
+                                 (get-char-property (point) 'local-map)))))
     (unless keymaps
       (user-error "No key bindings found at point"))
     (embark-bindings-in-keymap (make-composed-keymap keymaps))))
