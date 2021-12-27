@@ -1768,27 +1768,27 @@ minibuffer before executing the action."
            (run-action
             (if (and (commandp action) (not multi))
                 (lambda ()
-                  (minibuffer-with-setup-hook inject
-                    (let (final-window)
-                      (when dedicate (set-window-dedicated-p dedicate t))
-                      (unwind-protect
-                          (with-selected-window action-window
-                            (let ((enable-recursive-minibuffers t)
-                                  (embark--command command)
-                                  (this-command action)
-                                  ;; the next two avoid mouse dialogs
-                                  (use-dialog-box nil)
-                                  (last-nonmenu-event 13))
-                              (setq prefix-arg prefix)
-                              (embark--run-action-hooks embark-pre-action-hooks
-                                                        action target quit)
-                              (command-execute action))
-                            (setq final-window (selected-window)))
-                        (embark--run-action-hooks embark-post-action-hooks
-                                                  action target quit)
-                        (when dedicate (set-window-dedicated-p dedicate nil)))
-                      (unless (eq final-window action-window)
-                        (select-window final-window)))))
+                  (let (final-window)
+                    (when dedicate (set-window-dedicated-p dedicate t))
+                    (unwind-protect
+                        (with-selected-window action-window
+                          (let ((enable-recursive-minibuffers t)
+                                (embark--command command)
+                                (this-command action)
+                                (prefix-arg prefix)
+                                ;; the next two avoid mouse dialogs
+                                (use-dialog-box nil)
+                                (last-nonmenu-event 13))
+                            (embark--run-action-hooks embark-pre-action-hooks
+                                                      action target quit)
+                            (minibuffer-with-setup-hook inject
+                              (command-execute action)))
+                          (setq final-window (selected-window)))
+                      (embark--run-action-hooks embark-post-action-hooks
+                                                action target quit)
+                      (when dedicate (set-window-dedicated-p dedicate nil)))
+                    (unless (eq final-window action-window)
+                      (select-window final-window))))
               (let ((argument
                      (if multi
                          (or (plist-get target :candidates) ; embark-act-all
