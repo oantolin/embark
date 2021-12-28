@@ -922,19 +922,18 @@ their own target finder.  See for example
 (defun embark-target-collect-candidate ()
   "Target the collect candidate at point."
   (when (derived-mode-p 'embark-collect-mode)
-    (when-let (button
-               (pcase (get-text-property (point) 'tabulated-list-column-name)
-                 ("Candidate" (button-at (point)))
-                 ("Annotation" (previous-button (point)))))
-      ;; do not use button-label since it strips text properties
-      (let* ((beg (button-start button))
-             (end (button-end button))
-             (label (buffer-substring beg end)))
-        `(,embark--type
-          ,(if (eq embark--type 'file)
-               (abbreviate-file-name (expand-file-name label))
-             label)
-          ,beg . ,end)))))
+    (when-let ((button
+                (pcase (get-text-property (point) 'tabulated-list-column-name)
+                  ("Candidate" (button-at (point)))
+                  ("Annotation" (previous-button (point)))))
+               (start (button-start button))
+               (end (button-end button))
+               (candidate (get-text-property start 'embark--candidate)))
+      `(,embark--type
+        ,(if (eq embark--type 'file)
+             (abbreviate-file-name (expand-file-name candidate))
+           candidate)
+        ,start . ,end))))
 
 (defun embark-target-completion-at-point (&optional relative)
   "Return the completion candidate at point in a completions buffer.
@@ -2655,62 +2654,31 @@ key binding for it.  Or alternatively you might want to enable
 `embark-collect-direct-action-minor-mode' in
 `embark-collect-mode-hook'.")
 
-(defmacro embark--static-if (cond then &rest else)
-  "If COND yields non-nil at compile time, do THEN, else do ELSE."
-  (declare (indent 2))
-  (if (eval cond) then (macroexp-progn else)))
-
-(defun embark--display-width (string)
-  "Return width of STRING taking display and invisible properties into account."
-  (let ((len (length string)) (pos 0) (width 0))
+(defun embark--for-display (string)
+  "Return visibly equivalent STRING without display and invisible properties."
+  (let ((len (length string)) (pos 0) chunks)
     (while (/= pos len)
       (let ((dis (next-single-property-change pos 'display string len))
             (display (get-text-property pos 'display string)))
         (if (stringp display)
-            (setq width (+ width (string-width display)) pos dis)
+            (progn (push display chunks) (setq pos dis))
           (while (/= pos dis)
             (let ((inv (next-single-property-change pos 'invisible string dis)))
               (unless (get-text-property pos 'invisible string)
-                (setq width
-                      (+ width
-                         ;; bug#47712: Emacs 28 can compute `string-width'
-                         ;; of substrings
-                         (embark--static-if (= (cdr (func-arity #'string-width))
-                                               3)
-                             (string-width string pos inv)
-                           (string-width
-                            ;; Avoid allocation for the full string.
-                            (if (and (= pos 0) (= inv len))
-                                string
-                              (substring-no-properties string pos inv)))))))
+                (unless (and (= pos 0) (= inv len))
+                  ;; avoid allocation for full string
+                  (push (substring string pos inv) chunks)))
               (setq pos inv))))))
-    width))
-
-(defun embark-collect--max-width (items)
-  "Maximum width of any of the ITEMS.
-Each item can be a string or a list of three strings.  In the
-latter case, the lengths of the first two elements are added to
-determine the width."
-  (or (if (stringp (car items))
-          (cl-loop for str in items maximize (embark--display-width str))
-        (cl-loop for (pre str _) in items
-                 maximize (+ (embark--display-width pre)
-                             (embark--display-width str))))
-      0))
+    (if chunks (apply #'concat (nreverse chunks)) string)))
 
 (defun embark-collect--list-view ()
   "List view of candidates and annotations for Embark Collect buffer."
-  (let ((candidates embark-collect-candidates))
+  (let ((candidates embark-collect-candidates) (max-width 0))
     (when-let ((affixator embark-collect-affixator)
                (dir default-directory)) ; smuggle to the target window
       (with-selected-window (or (embark--target-window) (selected-window))
           (let ((default-directory dir)) ; for file annotator
             (setq candidates (funcall affixator candidates)))))
-    (setq tabulated-list-format
-          (if embark-collect-affixator
-              `[("Candidate" ,(embark-collect--max-width candidates) t)
-                ("Annotation" 0 t)]
-            [("Candidate" 0 t)]))
     (if tabulated-list-use-header-line
         (tabulated-list-init-header)
       (setq header-line-format nil tabulated-list--header-string nil))
@@ -2718,20 +2686,32 @@ determine the width."
           (mapcar
            (if embark-collect-affixator
                (pcase-lambda (`(,cand ,prefix ,annotation))
-                 (let* ((length (length annotation))
-                        (faces (text-property-not-all
-                                0 length 'face nil annotation)))
-                   (when faces (add-face-text-property
-                                0 length 'default t annotation))
-                   `(,cand
-                     [(,(propertize cand 'line-prefix prefix)
-                       type embark-collect-entry)
-                      (,annotation
-                       ,@(unless faces
-                           '(face embark-collect-annotation)))])))
+                 (let ((display (embark--for-display cand)))
+                   (setq max-width (max max-width (+ (string-width prefix)
+                                                     (string-width display))))
+                   (let* ((length (length annotation))
+                          (faces (text-property-not-all
+                                  0 length 'face nil annotation)))
+                     (when faces
+                       (add-face-text-property 0 length 'default t annotation))
+                     `(,cand
+                       [(,(propertize display
+                                      'line-prefix prefix
+                                      'embark--candidate cand)
+                         type embark-collect-entry)
+                        (,annotation
+                         ,@(unless faces
+                             '(face embark-collect-annotation)))]))))
              (lambda (cand)
-               `(,cand [(,cand type embark-collect-entry)])))
-           candidates))))
+               (let ((display (embark--for-display cand)))
+                 (setq max-width (max max-width (string-width display)))
+                 `(,cand [(,(propertize display 'embark--candidate cand)
+                           type embark-collect-entry)]))))
+           candidates))
+    (setq tabulated-list-format
+          (if embark-collect-affixator
+              `[("Candidate" ,max-width t) ("Annotation" 0 t)]
+            [("Candidate" 0 t)]))))
 
 (defun embark-collect--remove-zebra-stripes ()
   "Remove highlighting of alternate rows."
@@ -2773,23 +2753,28 @@ This is specially useful to tell where multi-line entries begin and end."
 
 (defun embark-collect--grid-view ()
   "Grid view of candidates for Embark Collect buffer."
-  (let* ((width (min (1+ (embark-collect--max-width embark-collect-candidates))
-                     (1- (floor (window-width) 2))))
-         (columns (/ (window-width) (1+ width))))
+  (if tabulated-list-use-header-line
+      (tabulated-list-init-header)
+    (setq header-line-format nil tabulated-list--header-string nil))
+  (let* ((candidates (mapcar (lambda (cand)
+                               (propertize (embark--for-display cand)
+                                           'embark--candidate cand))
+                             embark-collect-candidates))
+         (max-width (or (cl-loop for display in candidates
+                                 maximize (string-width display))
+                        0))
+         (column-width (min (1+ max-width) (1- (floor (window-width) 2))))
+         (columns (/ (window-width) (1+ column-width))))
     (setq tabulated-list-format
-          (make-vector columns `("Candidate" ,width nil)))
-    (if tabulated-list-use-header-line
-        (tabulated-list-init-header)
-      (setq header-line-format nil tabulated-list--header-string nil))
-    (setq tabulated-list-entries
-          (cl-loop with cands = (copy-tree embark-collect-candidates)
-                   while cands
+          (make-vector columns `("Candidate" ,column-width nil))
+          tabulated-list-entries
+          (cl-loop while candidates
                    collect
                    (list nil
                          (apply #'vector
                                 (cl-loop repeat columns
                                          collect
-                                         `(,(or (pop cands) "")
+                                         `(,(or (pop candidates) "")
                                            type embark-collect-entry))))))))
 
 (defun embark-collect--metadatum (type metadatum)
