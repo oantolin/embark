@@ -1606,16 +1606,34 @@ user for a KEYMAP variable."
     (call-interactively command)))
 
 ;;;###autoload
-(defun embark-bindings ()
+(defun embark-bindings (no-global)
   "Explore all current command key bindings with `completing-read'.
-The selected command will be executed."
-  (interactive)
-  (embark-bindings-in-keymap (make-composed-keymap (current-active-maps t))))
+The selected command will be executed.
+
+If NO-GLOBAL is non-nil (interactively, if called with a prefix
+argument) omit global key bindings; this leaves key bindings from
+minor mode maps and the local map (usually set by the major
+mode), but also less common keymaps such as those from a text
+property or overlay, or the overriding maps:
+`overriding-terminal-local-map' and `overriding-local-map'."
+  (interactive "P")
+  (embark-bindings-in-keymap
+   (make-composed-keymap
+    (let ((all-maps (current-active-maps t)))
+      (if no-global (remq global-map all-maps) all-maps)))))
 
 ;;;###autoload
 (defun embark-bindings-at-point ()
-  "Explore all current command key bindings with `completing-read'.
-The selected command will be executed."
+  "Explore all key bindings at point with `completing-read'.
+The selected command will be executed.
+
+This command lists key bindings found in keymaps specified by the
+text properties `keymap' or `local-map', from either buffer text
+or an overlay.  These are not widely used in Emacs, and when they
+are used can be somewhat hard to discover.  Examples of locations
+that have such a keymap are links and images in `eww' buffers,
+attachment links in `gnus' article buffers, and the 'Stash' line
+in a `vc-dir' buffer."
   (interactive)
   (let ((keymaps (delq nil (list (get-char-property (point) 'keymap)
                                  (get-char-property (point) 'local-map)))))
