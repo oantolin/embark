@@ -531,20 +531,22 @@ behavior of @samp{embark-act} and define a non-quitting version as follows:
 @section Running some setup after injecting the target
 
 You can customize what happens after the target is inserted at the
-minibuffer prompt of an action. There are @samp{embark-setup-action-hooks},
-that are run by default after injecting the target into the
-minibuffer. The variable @samp{embark-setup-action-hooks} is an alist
-associating commands to their setup hooks. There are two special keys:
-if no setup hook is specified for a given action, the hook associated
-to @samp{t} is run; and the hook associated to @samp{:always} is run regardless of
-the action.
+minibuffer prompt of an action. There are
+@samp{embark-target-injection-hooks}, that are run by default after injecting
+the target into the minibuffer. The variable
+@samp{embark-target-injection-hooks} is an alist associating commands to
+their setup hooks. There are two special keys: if no setup hook is
+specified for a given action, the hook associated to @samp{t} is run; and the
+hook associated to @samp{:always} is run regardless of the action. (This
+variable used to have the less explicit name of
+@samp{embark-setup-action-hooks}, so please update your configuration.)
 
 For example, consider using @samp{shell-command} as an action during file
 completion. It would be useful to insert a space before the target
 file name and to leave the point at the beginning, so you can
 immediately type the shell command to run on that file. That's why in
 Embark's default configuration there is an entry in
-@samp{embark-setup-action-hooks} associating @samp{shell-command} to a hook that
+@samp{embark-target-injection-hooks} associating @samp{shell-command} to a hook that
 includes @samp{embark--shell-prep}, a simple helper function that quotes all
 the spaces in the file name, inserts an extra space at the beginning
 of the line and leaves point to the left of it.
@@ -555,13 +557,13 @@ action at the minibuffer prompt, which is to ``press @samp{RET}'' for you,
 accepting the target as is; if Embark did that for @samp{shell-command} you
 wouldn't get a chance to type in the command to execute! That is why
 in Embark's default configuration the entry for @samp{shell-command} in
-@samp{embark-setup-action-hooks} also contains the function
+@samp{embark-target-injection-hooks} also contains the function
 @samp{embark--allow-edit}.
 
 Embark used to have a dedicated variable @samp{embark-allow-edit-actions} to
 which you could add commands for which Embark should forgo pressing
 @samp{RET} for you after inserting the target. Since its effect can also be
-achieved via the general @samp{embark-setup-action-hooks} mechanism, that
+achieved via the general @samp{embark-target-injection-hooks} mechanism, that
 variable has been removed to simply Embark. Be sure to update your
 configuration; if you had something like:
 
@@ -573,7 +575,7 @@ you should replace it with:
 
 @lisp
 (push 'embark--allow-edit
-      (alist-get 'my-command embark-setup-action-hooks))
+      (alist-get 'my-command embark-target-injection-hooks))
 @end lisp
 
 
@@ -599,7 +601,7 @@ to be entered at that prompt!
 Embark has two variables, @samp{embark-pre-action-hooks} and
 @samp{embark-post-action-hooks}, which are alists associating commands to
 hooks that should run before or after the command is used as an
-action. As with, @samp{embark-setup-action-hooks}, there are two special keys
+action. As with, @samp{embark-target-injection-hooks}, there are two special keys
 for the alists: @samp{t} designates the default hook to run when no specific
 hook is specified for a command; and the hook associated to @samp{:always}
 runs regardless.
@@ -875,15 +877,15 @@ input this way. After inserting the string, Embark exits the
 minibuffer, submitting the input. (The immediate minibuffer exit can
 be disabled for specific actions in order to allow editing the
 input; this is done by adding the @samp{embark--allow-edit} function to the
-appropriate entry of @samp{embark-setup-action-hooks}). Embark inserts the
-target string at the first minibuffer opened by the action command,
-and if the command happens to prompt the user for input more than
-once, the user still interacts with the second and further prompts
-in the normal fashion. Note that if a command does not prompt the
-user for input in the minibuffer, Embark still allows you to use it
-as an action, but of course, never inserts the target anywhere.
-(There are plenty of examples in the default configuration of
-commands that do not prompt the user bound to keys in the action
+appropriate entry of @samp{embark-target-injection-hooks}). Embark inserts
+the target string at the first minibuffer opened by the action
+command, and if the command happens to prompt the user for input
+more than once, the user still interacts with the second and further
+prompts in the normal fashion. Note that if a command does not
+prompt the user for input in the minibuffer, Embark still allows you
+to use it as an action, but of course, never inserts the target
+anywhere. (There are plenty of examples in the default configuration
+of commands that do not prompt the user bound to keys in the action
 maps, most of the region actions, for instance.)
 
 This is how Embark manages to reuse normal commands as actions. The

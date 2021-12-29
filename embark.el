@@ -371,7 +371,7 @@ with `find-file'."
 (make-obsolete-variable
    'embark-allow-edit-actions
    "To allow editing for an action add `embark--allow-edit' to the
-entry of `embark-setup-action-hooks' whose key is the action."
+entry of `embark-target-injection-hooks' whose key is the action."
    "0.14")
 
 (defvar embark-skip-edit-commands nil)
@@ -383,7 +383,12 @@ entry of `embark-setup-action-hooks' whose key is the action."
 replaced by the single `embark-allow-edit-actions' variable."
    "0.12"))
 
-(defcustom embark-setup-action-hooks
+(define-obsolete-variable-alias
+  'embark-setup-action-hooks
+  'embark-target-injection-hooks
+  "0.14")
+
+(defcustom embark-target-injection-hooks
   '((async-shell-command embark--allow-edit embark--shell-prep)
     (shell-command embark--allow-edit embark--shell-prep)
     (shell-command-on-region embark--allow-edit)
@@ -418,7 +423,7 @@ the key :always are executed always."
 (dolist (obsolete
          '(embark-setup-hook embark-setup-hooks embark-setup-overrides))
   (make-obsolete obsolete
-                 "see the new `embark-setup-action-hooks' variable."
+                 "see the new `embark-target-injection-hooks' variable."
                  "0.12"))
 
 (defcustom embark-pre-action-hooks
@@ -469,7 +474,7 @@ the key :always are executed always."
     (embark-kill-buffer-and-window embark--confirm))
   "Alist associating commands with pre-action hooks.
 The hooks are run right before an action is embarked upon.  See
-`embark-setup-action-hooks' for information about the hook
+`embark-target-injection-hooks' for information about the hook
 arguments and more details."
   :type '(alist :key-type
                 (choice symbol
@@ -497,7 +502,7 @@ arguments and more details."
     (package-delete embark--restart))
   "Alist associating commands with post-action hooks.
 The hooks are run after an embarked upon action concludes.  See
-`embark-setup-action-hooks' for information about the hook
+`embark-target-injection-hooks' for information about the hook
 arguments and more details."
   :type '(alist :key-type
                 (choice symbol
@@ -1770,7 +1775,7 @@ minibuffer before executing the action."
                   ;; its post command hook first, so use depth 10
                   (add-hook 'post-command-hook 'ivy-immediate-done 10 t)
                 (add-hook 'post-command-hook #'exit-minibuffer nil t))
-              (embark--run-action-hooks embark-setup-action-hooks
+              (embark--run-action-hooks embark-target-injection-hooks
                                         action target quit)))
            (dedicate (and (derived-mode-p 'embark-collect-mode)
                           (not (window-dedicated-p))

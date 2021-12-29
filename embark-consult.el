@@ -5,7 +5,7 @@
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Keywords: convenience
-;; Version: 0.2
+;; Version: 0.3
 ;; Homepage: https://github.com/oantolin/embark
 ;; Package-Requires: ((emacs "26.1") (embark "0.12") (consult "0.10"))
 
@@ -267,12 +267,13 @@ actual type."
 
 (map-keymap
  (lambda (_key cmd)
-   (cl-pushnew 'embark--allow-edit (alist-get cmd embark-setup-action-hooks)))
+   (cl-pushnew 'embark--allow-edit
+               (alist-get cmd embark-target-injection-hooks)))
  embark-consult-search-map)
 
 (defun embark-consult--unique-match (&rest _)
   "If there is a unique matching candidate, accept it.
-This is intended to be used in `embark-setup-action-hooks'."
+This is intended to be used in `embark-target-injection-hooks'."
   (let ((candidates (cdr (embark-minibuffer-candidates))))
     (if (or (null candidates) (cdr candidates))
         (embark--allow-edit)
@@ -280,14 +281,15 @@ This is intended to be used in `embark-setup-action-hooks'."
       (insert (car candidates)))))
 
 (dolist (cmd '(consult-outline consult-imenu consult-imenu-multi))
-  (setf (alist-get cmd embark-setup-action-hooks)
-        (remq 'embark--allow-edit (alist-get cmd embark-setup-action-hooks)))
+  (setf (alist-get cmd embark-target-injection-hooks)
+        (remq 'embark--allow-edit
+              (alist-get cmd embark-target-injection-hooks)))
   (cl-pushnew #'embark-consult--unique-match
-              (alist-get cmd embark-setup-action-hooks)))
+              (alist-get cmd embark-target-injection-hooks)))
 
 (defun embark-consult--add-async-separator (&rest _)
   "Add Consult's async separator at the beginning.
-This is intended to be used in `embark-setup-action-hooks' for any action
+This is intended to be used in `embark-target-injection-hooks' for any action
 that is a Consult async command."
   (let* ((style (alist-get consult-async-split-style
                            consult-async-split-styles-alist))
@@ -305,7 +307,7 @@ that is a Consult async command."
 (map-keymap
  (lambda (_key cmd)
    (cl-pushnew #'embark-consult--add-async-separator
-               (alist-get cmd embark-setup-action-hooks)))
+               (alist-get cmd embark-target-injection-hooks)))
  embark-consult-async-search-map)
 
 ;;; Tables of contents for buffers: imenu and outline candidate collectors
