@@ -266,20 +266,22 @@ actual type."
 (define-key embark-general-map "C" 'embark-consult-search-map)
 
 (map-keymap
- (lambda (_key cmd) (cl-pushnew cmd embark-allow-edit-actions))
+ (lambda (_key cmd)
+   (cl-pushnew 'embark--allow-edit (alist-get cmd embark-setup-action-hooks)))
  embark-consult-search-map)
 
 (defun embark-consult--unique-match (&rest _)
   "If there is a unique matching candidate, accept it.
-This is intended to be used in `embark-setup-action-hooks' for some
-actions that are on `embark-allow-edit-actions'."
+This is intended to be used in `embark-setup-action-hooks'."
   (let ((candidates (cdr (embark-minibuffer-candidates))))
-    (unless (or (null candidates) (cdr candidates))
+    (if (or (null candidates) (cdr candidates))
+        (embark--allow-edit)
       (delete-minibuffer-contents)
-      (insert (car candidates))
-      (add-hook 'post-command-hook #'exit-minibuffer nil t))))
+      (insert (car candidates)))))
 
 (dolist (cmd '(consult-outline consult-imenu consult-imenu-multi))
+  (setf (alist-get cmd embark-setup-action-hooks)
+        (remq 'embark--allow-edit (alist-get cmd embark-setup-action-hooks)))
   (cl-pushnew #'embark-consult--unique-match
               (alist-get cmd embark-setup-action-hooks)))
 

@@ -5,7 +5,7 @@
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Keywords: convenience
-;; Version: 0.13
+;; Version: 0.14
 ;; Homepage: https://github.com/oantolin/embark
 ;; Package-Requires: ((emacs "26.1"))
 
@@ -367,25 +367,12 @@ with `find-file'."
   'embark-allow-edit-commands
   'embark-allow-edit-actions
   "0.12")
-(defcustom embark-allow-edit-actions
-  '(shell-command
-    shell-command-on-region
-    async-shell-command
-    pp-eval-expression)
-  "Enable editing of target prior to acting for these commands.
-Put commands on this list for which additional information needs
-to be entered at the same minibuffer prompt where the target is
-placed.  For example, `shell-command' is on the default value of
-this list because when using `shell-command' as an action
-typically the target is a file name, and you still need to type
-the program and possibly other command line parameters, at the
-same prompt.
 
-Embark used to recommend abusing this as a means of asking the
-user for confirmation before an action, but it is preferable to
-add `embark--confirm' as a pre-action hook for the action in
-`embark-pre-action-hooks'."
-  :type '(repeat function))
+(make-obsolete-variable
+   'embark-allow-edit-actions
+   "To allow editing for an action add `embark--allow-edit' to the
+entry of `embark-setup-action-hooks' whose key is the action."
+   "0.14")
 
 (defvar embark-skip-edit-commands nil)
 (defvar embark-allow-edit-default t)
@@ -397,10 +384,22 @@ replaced by the single `embark-allow-edit-actions' variable."
    "0.12"))
 
 (defcustom embark-setup-action-hooks
-  '((async-shell-command embark--shell-prep)
-    (shell-command embark--shell-prep)
+  '((async-shell-command embark--allow-edit embark--shell-prep)
+    (shell-command embark--allow-edit embark--shell-prep)
+    (shell-command-on-region embark--allow-edit)
     (pp-eval-expression embark--eval-prep)
-    (package-delete embark--force-complete))
+    (package-delete embark--force-complete)
+    ;; commands evaluating code found in the buffer, which may in turn prompt
+    (embark-pp-eval-defun embark--ignore-target)
+    (eval-defun embark--ignore-target)
+    (eval-last-sexp embark--ignore-target)
+    (embark-eval-replace embark--ignore-target)
+    ;; commands which prompt for something that is *not* the target
+    (write-region embark--ignore-target)
+    (append-to-file embark--ignore-target)
+    (shell-command-on-region embark--ignore-target)
+    (format-encode-region embark--ignore-target)
+    (format-decode-region embark--ignore-target))
   "Alist associating commands with post-injection setup hooks.
 For commands appearing as keys in this alist, run the
 corresponding value as a setup hook after injecting the target
@@ -423,16 +422,8 @@ the key :always are executed always."
                  "0.12"))
 
 (defcustom embark-pre-action-hooks
-  '(;; region commands which prompt for a filename or command
-    (write-region embark--ignore-target embark--mark-target)
-    (append-to-file embark--ignore-target embark--mark-target)
-    (shell-command-on-region embark--ignore-target embark--mark-target)
-    ;; commands which evaluate code not given at a prompt
-    (embark-pp-eval-defun embark--ignore-target)
-    (eval-defun embark--ignore-target)
-    (eval-last-sexp embark--end-of-target embark--ignore-target)
-    (embark-eval-replace embark--ignore-target embark--mark-target)
-    ;; motion commands that need to position point to skip current match
+  '(;; commands that need to position point at the beginning or end
+    (eval-last-sexp embark--end-of-target)
     (indent-pp-sexp embark--beginning-of-target)
     (backward-up-list embark--beginning-of-target)
     (backward-list embark--beginning-of-target)
@@ -461,8 +452,12 @@ the key :always are executed always."
     (count-words-region embark--mark-target)
     (shell-command-on-region embark--mark-target)
     (delete-region embark--mark-target)
-    (format-encode-region embark--mark-target embark--ignore-target)
-    (format-decode-region embark--mark-target embark--ignore-target)
+    (format-encode-region embark--mark-target)
+    (format-decode-region embark--mark-target)
+    (write-region embark--mark-target)
+    (append-to-file embark--mark-target)
+    (shell-command-on-region embark--mark-target)
+    (embark-eval-replace embark--mark-target)
     ;; commands we want to be able to jump back from
     ;; (embark-find-definition achieves this by calling
     ;; xref-find-definitions which pushes the markers itself)
@@ -1768,16 +1763,15 @@ minibuffer before executing the action."
             (lambda ()
               (delete-minibuffer-contents)
               (insert (substring-no-properties (plist-get target :target)))
+              (if (memq 'ivy--queue-exhibit post-command-hook)
+                  ;; Ivy has special needs: (1) for file names
+                  ;; ivy-immediate-done is not equivalent to
+                  ;; exit-minibuffer, (2) it needs a chance to run
+                  ;; its post command hook first, so use depth 10
+                  (add-hook 'post-command-hook 'ivy-immediate-done 10 t)
+                (add-hook 'post-command-hook #'exit-minibuffer nil t))
               (embark--run-action-hooks embark-setup-action-hooks
-                                        action target quit)
-              (unless (memq action embark-allow-edit-actions)
-                (if (memq 'ivy--queue-exhibit post-command-hook)
-                    ;; Ivy has special needs: (1) for file names
-                    ;; ivy-immediate-done is not equivalent to
-                    ;; exit-minibuffer, (2) it needs a chance to run
-                    ;; its post command hook first, so use depth 10
-                    (add-hook 'post-command-hook 'ivy-immediate-done 10 t)
-                  (add-hook 'post-command-hook #'exit-minibuffer nil t)))))
+                                        action target quit)))
            (dedicate (and (derived-mode-p 'embark-collect-mode)
                           (not (window-dedicated-p))
                           (selected-window)))
@@ -3667,8 +3661,8 @@ and leaves the point to the left of it."
 
 (defun embark--eval-prep (&rest _)
   "If target is: a variable, skip edit; a function, wrap in parens."
-  (if (not (fboundp (intern-soft (minibuffer-contents))))
-      (add-hook 'post-command-hook #'exit-minibuffer nil t)
+  (when (fboundp (intern-soft (minibuffer-contents)))
+    (embark--allow-edit)
     (goto-char (minibuffer-prompt-end))
     (insert "(")
     (goto-char (point-max))
@@ -3691,9 +3685,15 @@ and leaves the point to the left of it."
     (set-mark (cdr bounds))
     (goto-char (car bounds))))
 
+(defun embark--allow-edit (&rest _)
+  "Allow editing the target."
+  (remove-hook 'post-command-hook 'exit-minibuffer t)
+  (remove-hook 'post-command-hook 'ivy-immediate-done t))
+
 (defun embark--ignore-target (&rest _)
   "Ignore the target."
-  (ignore (read-from-minibuffer "")))
+  (delete-minibuffer-contents)
+  (embark--allow-edit))
 
 (autoload 'xref--push-markers "xref")
 (defun embark--xref-push-markers (&rest _)

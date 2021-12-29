@@ -408,25 +408,6 @@ behavior of =embark-act= and define a non-quitting version as follows:
       (embark-act)))
 #+end_src
 
-** Allowing the target to be edited before acting on it
-
-By default, for most commands =embark= inserts the target of the action
-into the next minibuffer prompt and "presses =RET=" for you, accepting
-the target as is.
-
-For some commands this might be undesirable because further input is
-required next to the target, like when using =shell-command=: the target
-is the file and you still need to enter a shell command to run on it,
-at the same prompt. You can add such commands to the
-=embark-allow-edit-actions= variable (which by default already contains
-the examples mentioned, and a few others as well).
-
-You could abuse this feature so that you have to confirm "dangerous"
-actions such as =delete-file= (and indeed, Embark used to have
-=delete-file= in the default value of =embark-allow-edit-actions=), but it
-is better to implement confirmation by adding the =embark--confirm=
-function to the appropriate entry of =embark-pre-action-hooks=.
-
 ** Running some setup after injecting the target
 
 You can customize what happens after the target is inserted at the
@@ -441,11 +422,56 @@ the action.
 For example, consider using =shell-command= as an action during file
 completion. It would be useful to insert a space before the target
 file name and to leave the point at the beginning, so you can
-immediately type the shell command. That's why in =embark='s default
-configuration there is an entry in =embark-setup-action-hooks= associating
-=shell-command= to =embark--shell-prep=, a simple helper command that
-quotes all the spaces in the file name, inserts an extra space at the
-beginning of the line and leaves point to the left of it.
+immediately type the shell command to run on that file. That's why in
+Embark's default configuration there is an entry in
+=embark-setup-action-hooks= associating =shell-command= to a hook that
+includes =embark--shell-prep=, a simple helper function that quotes all
+the spaces in the file name, inserts an extra space at the beginning
+of the line and leaves point to the left of it.
+
+Now, the preparation that =embark--shell-prep= does would be useless if
+Embark did what it normally does after it inserts the target of the
+action at the minibuffer prompt, which is to "press =RET=" for you,
+accepting the target as is; if Embark did that for =shell-command= you
+wouldn't get a chance to type in the command to execute! That is why
+in Embark's default configuration the entry for =shell-command= in
+=embark-setup-action-hooks= also contains the function
+=embark--allow-edit=.
+
+Embark used to have a dedicated variable =embark-allow-edit-actions= to
+which you could add commands for which Embark should forgo pressing
+=RET= for you after inserting the target. Since its effect can also be
+achieved via the general =embark-setup-action-hooks= mechanism, that
+variable has been removed to simply Embark. Be sure to update your
+configuration; if you had something like:
+
+#+begin_src emacs-lisp
+  (add-to-list 'embark-allow-edit-actions 'my-command)
+#+end_src
+
+you should replace it with:
+
+#+begin_src emacs-lisp
+  (push 'embark--allow-edit
+        (alist-get 'my-command embark-setup-action-hooks))
+#+end_src
+
+
+Also note that while you could abuse =embark--allow-edit= so that you
+have to confirm "dangerous" actions such as =delete-file=, it is better
+to implement confirmation by adding the =embark--confirm= function to
+the appropriate entry of a different hook alist, namely,
+=embark-pre-action-hooks=.
+
+Besides =embark--allow-edit=, Embark comes with another function that is
+of general utility in action setup hooks: =embark--ignore-target=. Use
+it for commands that do prompt you in the minibuffer but for which
+inserting the target would be inappropriate. This is not a common
+situation but does occasionally arise. For example it is used by
+default for =shell-command-on-region=: that command is used as an action
+for region targets, and it prompts you for a shell command; you
+typically do /not/ want the target, that is the contents of the region,
+to be entered at that prompt!
 
 ** Running hooks before or after an action
 
@@ -461,16 +487,9 @@ The default values of those variables are fairly extensive, adding
 creature comforts to make running actions a smooth experience. Embark
 comes with several functions intended to be added to these hooks, and
 used in the default values of =embark-pre-action-hooks= and
-=embark-post-action-hooks=:
+=embark-post-action-hooks=.
 
-- =embark--ignore-target= :: Ignore the target. Use this for commands
-  that do prompt you in the minibuffer but for which inserting the
-  target would be inappropriate. This is not a common situation but
-  does occasionally arise. For example it is used by default for
-  =shell-command-on-region=: this is used as action for region targets,
-  and it prompts for a shell command, you typically do /not/ want the
-  target, that is the contents of the region, to be entered at that
-  prompt!
+For pre-action hooks:
 
 - =embark--confirm= :: Prompt the user for confirmation before executing
   the action. This is used be default for commands deemed "dangerous",
@@ -502,6 +521,8 @@ used in the default values of =embark-pre-action-hooks= and
   marker stack. Use this for commands that take you somewhere and for
   which you'd like to be able to come back to where you were using
   =xref-pop-marker-stack=. This is used by default for =find-library=.
+
+For post-action hooks:
 
 - =embark--restart= :: Restart the command currently prompting in the
   minibuffer, so that the list of completion candidates is updated.
@@ -693,8 +714,8 @@ included in the list =embark-indicators=).
 
   Embark actions are normal Emacs commands, that is, functions with an
   interactive specification. In order to execute an action, Embark
-  calls the command with =call-interactively=, so the command reads
-  user input exactly as if run directly by the user. For example the
+  calls the command with =call-interactively=, so the command reads user
+  input exactly as if run directly by the user. For example the
   command may open a minibuffer and read a string
   (=read-from-minibuffer=) or open a completion interface
   (=completing-read=). If this happens, Embark takes the target string
@@ -702,16 +723,17 @@ included in the list =embark-indicators=).
   input this way. After inserting the string, Embark exits the
   minibuffer, submitting the input. (The immediate minibuffer exit can
   be disabled for specific actions in order to allow editing the
-  input: see the =embark-allow-edit-actions= configuration variable).
-  Embark inserts the target string at the first minibuffer opened by
-  the action command, and if the command happens to prompt the user
-  for input more than once, the user still interacts with the second
-  and further prompts in the normal fashion. Note that if a command
-  does not prompt the user for input in the minibuffer, Embark still
-  allows you to use it as an action, but of course, never inserts the
-  target anywhere. (There are plenty of examples in the default
-  configuration of commands that do not prompt the user bound to keys
-  in the action maps, most of the region actions, for instance.)
+  input; this is done by adding the =embark--allow-edit= function to the
+  appropriate entry of =embark-setup-action-hooks=). Embark inserts the
+  target string at the first minibuffer opened by the action command,
+  and if the command happens to prompt the user for input more than
+  once, the user still interacts with the second and further prompts
+  in the normal fashion. Note that if a command does not prompt the
+  user for input in the minibuffer, Embark still allows you to use it
+  as an action, but of course, never inserts the target anywhere.
+  (There are plenty of examples in the default configuration of
+  commands that do not prompt the user bound to keys in the action
+  maps, most of the region actions, for instance.)
 
   This is how Embark manages to reuse normal commands as actions. The
   mechanism allows you to use as Embark actions commands that were not
