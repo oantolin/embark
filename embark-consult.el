@@ -201,19 +201,6 @@ The elements of LINES are assumed to be values of category `consult-line'."
 (setf (alist-get 'consult-grep embark-collect-initial-view-alist)
       'list)
 
-;;; Support for consult-multi
-
-(defun embark-consult--multi-transform (_type target)
-  "Refine `consult-multi' TARGET to its real type.
-This function takes a target of type `consult-multi' (from
-Consult's `consult-multi' category) and transforms it to its
-actual type."
-  (or (get-text-property 0 'consult-multi target)
-      (cons 'general target)))
-
-(setf (alist-get 'consult-multi embark-transformer-alist)
-      #'embark-consult--multi-transform)
-
 ;;; Support for consult-isearch
 
 (setf (alist-get 'consult-isearch embark-transformer-alist)

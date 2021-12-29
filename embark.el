@@ -178,7 +178,10 @@ bounds pair of the target at point for highlighting."
     (symbol . embark--refine-symbol-type)
     (embark-keybinding . embark--keybinding-command)
     (project-file . embark--project-file-full-path)
-    (package . embark--remove-package-version))
+    (package . embark--remove-package-version)
+    (multi-category . embark--refine-multi-category)
+    ;; TODO: `consult-multi' has been obsoleted by `multi-category'. Remove!
+    (consult-multi . embark--refine-multi-category))
   "Alist associating type to functions for transforming targets.
 Each function should take a type and a target string and return a
 pair of the form a `cons' of the new type and the new target."
@@ -1818,6 +1821,13 @@ minibuffer before executing the action."
                       (embark--run-action-hooks embark-post-action-hooks
                                                 action target quit))))))))
       (if quit (embark--quit-and-run run-action) (funcall run-action)))))
+
+(defun embark--refine-multi-category (_type target)
+  "Refine `multi-category' TARGET to its actual type."
+  (or (get-text-property 0 'multi-category target)
+      ;; TODO: `consult-multi' has been obsoleted by `multi-category'. Remove!
+      (get-text-property 0 'consult-multi target)
+      (cons 'general target)))
 
 (defun embark--refine-symbol-type (_type target)
   "Refine symbol TARGET to command or variable if possible."
