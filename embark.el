@@ -394,7 +394,6 @@ replaced by the single `embark-allow-edit-actions' variable."
 (defcustom embark-target-injection-hooks
   '((async-shell-command embark--allow-edit embark--shell-prep)
     (shell-command embark--allow-edit embark--shell-prep)
-    (shell-command-on-region embark--allow-edit)
     (pp-eval-expression embark--eval-prep)
     (package-delete embark--force-complete)
     ;; commands evaluating code found in the buffer, which may in turn prompt
