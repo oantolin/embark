@@ -473,7 +473,12 @@ the key :always are executed always."
     (delete-file embark--confirm)
     (delete-directory embark--confirm)
     (kill-buffer embark--confirm)
-    (embark-kill-buffer-and-window embark--confirm))
+    (embark-kill-buffer-and-window embark--confirm)
+    ;; search for region contents outside said region
+    (embark-isearch embark--unmark-target)
+    (occur embark--unmark-target)
+    (query-replace embark--unmark-target)
+    (query-replace-regexp embark--unmark-target))
   "Alist associating commands with pre-action hooks.
 The hooks are run right before an action is embarked upon.  See
 `embark-target-injection-hooks' for information about the hook
@@ -3698,6 +3703,10 @@ and leaves the point to the left of it."
   (when bounds
     (set-mark (cdr bounds))
     (goto-char (car bounds))))
+
+(cl-defun embark--unmark-target (&key bounds &allow-other-keys)
+  "Deactivate the region target."
+  (deactivate-mark t))
 
 (defun embark--allow-edit (&rest _)
   "Allow editing the target."
