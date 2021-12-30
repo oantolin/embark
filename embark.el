@@ -477,8 +477,8 @@ the key :always are executed always."
     ;; search for region contents outside said region
     (embark-isearch embark--unmark-target)
     (occur embark--unmark-target)
-    (query-replace embark--unmark-target)
-    (query-replace-regexp embark--unmark-target))
+    (query-replace embark--beginning-of-target embark--unmark-target)
+    (query-replace-regexp embark--beginning-of-target embark--unmark-target))
   "Alist associating commands with pre-action hooks.
 The hooks are run right before an action is embarked upon.  See
 `embark-target-injection-hooks' for information about the hook
