@@ -3904,7 +3904,8 @@ and leaves the point to the left of it."
   ("n" embark-next-symbol)
   ("p" embark-previous-symbol)
   ("'" expand-abbrev)
-  ("$" ispell-word))
+  ("$" ispell-word)
+  ("o" occur))
 
 (embark-define-keymap embark-expression-map
   "Keymap for Embark expression actions."
