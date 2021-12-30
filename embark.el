@@ -3704,7 +3704,7 @@ and leaves the point to the left of it."
     (set-mark (cdr bounds))
     (goto-char (car bounds))))
 
-(cl-defun embark--unmark-target (&key bounds &allow-other-keys)
+(cl-defun embark--unmark-target (&rest _)
   "Deactivate the region target."
   (deactivate-mark t))
 
