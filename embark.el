@@ -3886,7 +3886,8 @@ and leaves the point to the left of it."
   ("f" find-library)
   ("h" finder-commentary)
   ("a" apropos-library)
-  ("L" locate-library))
+  ("L" locate-library)
+  ("m" info-display-manual))
 
 (embark-define-keymap embark-buffer-map
   "Keymap for Embark buffer actions."
