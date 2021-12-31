@@ -77,7 +77,7 @@
   (and (derived-mode-p 'embark-collect-mode)
        (active-minibuffer-window)
        (eq (window-buffer (active-minibuffer-window)) embark-collect-from)
-       (ignore-errors (button-label (point)))))
+       (get-text-property (point) 'embark--candidate)))
 
 (add-hook 'consult--completion-candidate-hook #'embark-consult--collect-candidate)
 
