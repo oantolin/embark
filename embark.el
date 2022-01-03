@@ -3999,6 +3999,8 @@ and leaves the point to the left of it."
   :parent embark-symbol-map
   ("m" elp-instrument-function) ;; m=measure
   ("M" 'elp-restore-function) ;; quoted, not autoloaded
+  ("k" debug-on-entry) ;; breaKpoint (running out of letters, really)
+  ("K" cancel-debug-on-entry)
   ("t" trace-function)
   ("T" 'untrace-function)) ;; quoted, not autoloaded
 
