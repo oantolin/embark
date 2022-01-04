@@ -657,6 +657,12 @@ on the last s-expression like @samp{eval-last-sexp}. This allow you to act
 on an s-expression from anywhere inside it and still use
 @samp{eval-last-sexp} as an action.
 
+@item @samp{embark--narrow-to-target}
+Narrow buffer to current target. Use
+this as a pre-action hook to localize the effect of actions that
+don't already work on just the region. In the default configuration
+it is used for @samp{repunctuate-sentences}.
+
 @item @samp{embark--xref-push-markers}
 Push the current location on the xref
 marker stack. Use this for commands that take you somewhere and for

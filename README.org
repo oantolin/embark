@@ -530,6 +530,11 @@ For pre-action hooks:
   on an s-expression from anywhere inside it and still use
   =eval-last-sexp= as an action.
 
+- =embark--narrow-to-target= :: Narrow buffer to current target. Use
+  this as a pre-action hook to localize the effect of actions that
+  don't already work on just the region. In the default configuration
+  it is used for =repunctuate-sentences=.
+
 - =embark--xref-push-markers= :: Push the current location on the xref
   marker stack. Use this for commands that take you somewhere and for
   which you'd like to be able to come back to where you were using
