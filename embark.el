@@ -478,7 +478,9 @@ the key :always are executed always."
     (embark-isearch embark--unmark-target)
     (occur embark--unmark-target)
     (query-replace embark--beginning-of-target embark--unmark-target)
-    (query-replace-regexp embark--beginning-of-target embark--unmark-target))
+    (query-replace-regexp embark--beginning-of-target embark--unmark-target)
+    ;; narrow to target for duration of action
+    (repunctuate-sentences embark--narrow-to-target))
   "Alist associating commands with pre-action hooks.
 The hooks are run right before an action is embarked upon.  See
 `embark-target-injection-hooks' for information about the hook
@@ -3708,6 +3710,15 @@ and leaves the point to the left of it."
   "Deactivate the region target."
   (deactivate-mark t))
 
+(cl-defun embark--narrow-to-target (&key action bounds &allow-other-keys)
+  (when (and (consp bounds) (symbolp action))
+    (cl-labels ((with-restriction (fn &rest args)
+                  (save-restriction
+                    (narrow-to-region (car bounds) (cdr bounds))
+                    (unwind-protect (apply fn args)
+                      (advice-remove action #'with-restriction)))))
+      (advice-add action :around #'with-restriction))))
+
 (defun embark--allow-edit (&rest _)
   "Allow editing the target."
   (remove-hook 'post-command-hook 'exit-minibuffer t)
@@ -3837,6 +3848,7 @@ and leaves the point to the left of it."
   ("h" shr-render-region)
   ("'" expand-region-abbrevs)
   ("v" vc-region-history)
+  ("R" repunctuate-sentences)
   ("s" 'embark-sort-map)
   (">" 'embark-encode-map))
 
@@ -3845,7 +3857,7 @@ and leaves the point to the left of it."
   :parent nil
   ("d" vc-delete-file)
   ("r" vc-rename-file)
-  ("i" vc-ignore-file))
+  ("i" vc-ignore))
 
 (fset 'embark-vc-file-map embark-vc-file-map)
 
@@ -4079,7 +4091,8 @@ and leaves the point to the left of it."
   :parent embark-prose-map
   ("t" transpose-paragraphs)
   ("n" forward-paragraph)
-  ("p" backward-paragraph))
+  ("p" backward-paragraph)
+  ("R" repunctuate-sentences))
 
 (embark-define-keymap embark-become-help-map
   "Keymap for Embark help actions."
