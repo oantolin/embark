@@ -3840,6 +3840,15 @@ and leaves the point to the left of it."
   ("s" 'embark-sort-map)
   (">" 'embark-encode-map))
 
+(embark-define-keymap embark-vc-file-map
+  "Keymap for Embark VC file actions."
+  :parent nil
+  ("d" vc-delete-file)
+  ("r" vc-rename-file)
+  ("i" vc-ignore-file))
+
+(fset 'embark-vc-file-map embark-vc-file-map)
+
 (embark-define-keymap embark-file-map
   "Keymap for Embark file actions."
   ("RET" find-file)
@@ -3862,7 +3871,8 @@ and leaves the point to the left of it."
   ("W" embark-save-relative-path)
   ("l" load-file)
   ("b" byte-compile-file)
-  ("R" byte-recompile-directory))
+  ("R" byte-recompile-directory)
+  ("v" 'embark-vc-file-map))
 
 (embark-define-keymap embark-kill-ring-map
   "Keymap for `kill-ring' commands."
@@ -4097,7 +4107,8 @@ and leaves the point to the left of it."
   ("b" switch-to-buffer)
   ("4b" switch-to-buffer-other-window)
   ("l" locate)
-  ("L" find-library))
+  ("L" find-library)
+  ("v" vc-dir))
 
 (embark-define-keymap embark-become-shell-command-map
   "Embark become keymap for shell commands."
