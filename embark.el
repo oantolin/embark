@@ -3711,12 +3711,18 @@ and leaves the point to the left of it."
   (deactivate-mark t))
 
 (cl-defun embark--narrow-to-target (&key action bounds &allow-other-keys)
+  "Narrow buffer to target if its BOUNDS are known.
+Intended for use as an Embark pre-action hook.  This function
+advises ACTION to narrow to the given BOUNDS prior to running.
+The advice is self-removing so it only affects ACTION once."
   (when (and (consp bounds) (symbolp action))
     (cl-labels ((with-restriction (fn &rest args)
-                  (save-restriction
-                    (narrow-to-region (car bounds) (cdr bounds))
-                    (unwind-protect (apply fn args)
-                      (advice-remove action #'with-restriction)))))
+                  (save-excursion
+                    (save-restriction
+                      (narrow-to-region (car bounds) (cdr bounds))
+                      (goto-char (car bounds))
+                      (unwind-protect (apply fn args)
+                        (advice-remove action #'with-restriction))))))
       (advice-add action :around #'with-restriction))))
 
 (defun embark--allow-edit (&rest _)
