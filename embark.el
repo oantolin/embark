@@ -733,7 +733,12 @@ In `dired-mode', it uses `dired-get-filename' instead."
                 ;; check the thingatpt candidate is a substring of the
                 ;; ffap candidate, this avoids URLs and keyword
                 ;; symbols when point is on the colon (see bug#52441)
-                ((string-match-p (regexp-quote tap-file) ffap-file))
+                ((string-match-p (regexp-quote
+                                  (if (derived-mode-p 'dired-mode)
+                                      ;; directory line, thingatpt includes ":"
+                                      (string-remove-suffix ":" tap-file)
+                                    tap-file))
+                                 ffap-file))
                 ((not (ffap-el-mode tap-file))))
       `(file ,(abbreviate-file-name (expand-file-name ffap-file))
              ;; TODO the boundaries may be wrong, this should be generalized.
