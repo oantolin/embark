@@ -468,7 +468,7 @@ the key :always are executed always."
     ;; commands we want to be able to jump back from
     ;; (embark-find-definition achieves this by calling
     ;; xref-find-definitions which pushes the markers itself)
-    (find-library embark--xref-push-markers)
+    (find-library embark--xref-push-marker)
     ;; commands which prompt the user for confirmation before running
     (delete-file embark--confirm)
     (delete-directory embark--confirm)
@@ -3740,10 +3740,10 @@ The advice is self-removing so it only affects ACTION once."
   (delete-minibuffer-contents)
   (embark--allow-edit))
 
-(autoload 'xref--push-markers "xref")
-(defun embark--xref-push-markers (&rest _)
-  "Push the xref markers to leave a location trail."
-  (xref--push-markers))
+(autoload 'xref-push-marker-stack "xref")
+(defun embark--xref-push-marker (&rest _)
+  "Push a marker onto the xref marker stack."
+  (xref-push-marker-stack))
 
 (cl-defun embark--confirm (&key action target &allow-other-keys)
   "Ask for confirmation before running the ACTION on the TARGET."
