@@ -125,7 +125,8 @@
     (buffer . embark-buffer-map)
     (expression . embark-expression-map)
     (identifier . embark-identifier-map)
-    (defun . embark-defun-map)
+    ;; NOTE: Weird space in front of defun to please package-lint.
+    ( defun . embark-defun-map)
     (symbol . embark-symbol-map)
     (face . embark-face-map)
     (command . embark-command-map)
@@ -3363,7 +3364,7 @@ its own."
                      (newline-and-indent)))
                (maybe-whitespace ()
                  (if multiline (maybe-newline) (maybe-space)))
-               (insert-string ()
+               (ins-string ()
                  (save-excursion
                    (insert string)
                    (maybe-whitespace)
@@ -3371,8 +3372,8 @@ its own."
                  (maybe-whitespace)))
       (if buffer-read-only
           (with-selected-window (other-window-for-scrolling)
-            (insert-string))
-        (insert-string)))))
+            (ins-string))
+        (ins-string)))))
 
 (define-obsolete-function-alias
   'embark-save
