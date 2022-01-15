@@ -3172,12 +3172,11 @@ PRED is a predicate function used to filter the items."
                    (let ((file (file-name-nondirectory path)))
                      (or (string= file ".") (string= file ".."))))
                  files)))
-  (let ((buf
-         (dired-noselect
-          (cons
-           ;; TODO: is it worth finding the deepest common containing directory?
-           (if (cl-every #'file-name-absolute-p files) "/" default-directory)
-           files))))
+  (let* ((dir (or (file-name-directory (try-completion "" files)) ""))
+         (buf (dired-noselect
+               (cons (expand-file-name dir)
+                     (mapcar (lambda (file) (string-remove-prefix dir file))
+                             files)))))
     (with-current-buffer buf
       (rename-buffer (format "*Embark Export Dired %s*" default-directory)))
     (pop-to-buffer buf)))
