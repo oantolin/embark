@@ -3984,7 +3984,6 @@ The advice is self-removing so it only affects ACTION once."
   ("h" describe-symbol)
   ("s" embark-info-lookup-symbol)
   ("d" embark-find-definition)
-  ("b" where-is)
   ("e" pp-eval-expression)
   ("a" apropos)
   ("\\" embark-history-remove))
@@ -4026,6 +4025,7 @@ The advice is self-removing so it only affects ACTION once."
   :parent embark-function-map
   ("x" execute-extended-command)
   ("I" Info-goto-emacs-command-node)
+  ("b" where-is)
   ("g" global-set-key)
   ("l" local-set-key))
 
