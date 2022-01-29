@@ -1289,8 +1289,7 @@ UPDATE function is passed to it."
                           (lambda ()
                             (interactive)
                             (minibuffer-message
-                             (concat "Single target; can't cycle. "
-                                     "Press `%s' again to act.")
+                             "No cycling possible; press `%s' again to act."
                              (key-description cycle))
                             (define-key map cycle #'embark-act))))))
                     (when embark-keymap-prompter-key
