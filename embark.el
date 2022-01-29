@@ -3319,7 +3319,7 @@ Return the category metadatum as the type of the target."
   (add-hook 'embark-target-finders #'embark--ivy-selected)
   (add-hook 'embark-candidate-collectors #'embark--ivy-candidates))
 
-;;; Custom actions open-line open-line
+;;; Custom actions 
 
 (defun embark-keymap-help ()
   "Prompt for an action to perform or command to become and run it."
@@ -3581,6 +3581,7 @@ The search respects symbol boundaries."
   (compose-mail address))
 
 (autoload 'pp-display-expression "pp")
+
 (defun embark-pp-eval-defun (edebug)
   "Run `eval-defun' and pretty print the result.
 With a prefix argument EDEBUG, instrument the code for debugging."
@@ -3648,6 +3649,17 @@ ALGORITHM is the hash algorithm symbol understood by `secure-hash'."
   (interactive "r")
   (let ((epa-replace-original-text t))
     (epa-decrypt-region start end)))
+
+(defvar eww-download-directory)
+(autoload 'eww-download-callback "eww")
+
+(defun embark-download-url (url)
+  "Download URL to `eww-download-directory'."
+  (interactive "sDownload URL: ")
+  (let ((dir eww-download-directory))
+    (when (functionp dir) (setq dir (funcall dir)))
+    (access-file dir "Download failed")
+    (url-retrieve url #'eww-download-callback (list url dir))))
 
 ;;; Setup and pre-action hooks
 
@@ -3892,6 +3904,7 @@ The advice is self-removing so it only affects ACTION once."
   "Keymap for Embark url actions."
   ("RET" browse-url)
   ("b" browse-url)
+  ("d" embark-download-url)
   ("e" eww))
 
 (embark-define-keymap embark-email-map
