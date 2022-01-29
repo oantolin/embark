@@ -1281,7 +1281,7 @@ UPDATE function is passed to it."
                       ;; embark-keybinding in the `completing-read' prompter.
                       (define-key map cycle
                         (cond
-                         ((lookup-key keymap cycle)
+                         ((eq (lookup-key keymap cycle) 'embark-cycle)
                           (lambda ()
                             (interactive)
                             (throw 'choice 'embark-cycle)))
