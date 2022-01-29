@@ -3862,6 +3862,7 @@ The advice is self-removing so it only affects ACTION once."
   "Keymap for Embark file actions."
   ("RET" find-file)
   ("f" find-file)
+  ("F" find-file-literally)
   ("o" find-file-other-window)
   ("d" delete-file)
   ("D" delete-directory)
