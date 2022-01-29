@@ -1826,10 +1826,10 @@ minibuffer before executing the action."
       (cons 'general target)))
 
 (defun embark--refine-symbol-type (_type target)
-  "Refine symbol TARGET to command or variable if possible."
+  "Refine symbol TARGET to more specific type if possible."
   (cons (let ((symbol (intern-soft target))
               (library (ffap-el-mode target)))
-          (cond
+          (cond 
            ((and library
                  (looking-back "\\(?:require\\|use-package\\).*"
                                (line-beginning-position)))
@@ -1838,11 +1838,13 @@ minibuffer before executing the action."
            ((commandp symbol) 'command)
            ((and symbol (boundp symbol)) 'variable)
            ;; Prefer variables over functions for backward compatibility.
-           ;; Command > variable > function > symbol seems like a
-           ;; reasonable order with decreasing usefulness of the actions.
+           ;; Command > variable > function > face > library > package > symbol
+           ;; seems like a reasonable order with decreasing usefulness
+           ;; of the actions.
            ((fboundp symbol) 'function)
            ((facep symbol) 'face)
            (library 'library)
+           ((and (featurep 'package) (embark--package-desc symbol)) 'package)
            (t 'symbol)))
         target))
 
