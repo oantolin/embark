@@ -779,15 +779,15 @@ different priorities in `embark-target-finders'."
 
 (defun embark-target-url-at-point ()
   "Target the URL at point."
-  (if-let ((url (thing-at-point 'url)))
-      `(url ,url . ,(thing-at-point-bounds-of-url-at-point t))
-    (when-let ((url (or (get-text-property (point) 'shr-url)
-                        (get-text-property (point) 'image-url))))
+  (if-let ((url (or (get-text-property (point) 'shr-url)
+                    (get-text-property (point) 'image-url))))
       `(url ,url
             ,(previous-single-property-change
               (min (1+ (point)) (point-max)) 'mouse-face nil (point-min))
             . ,(next-single-property-change
-                (point) 'mouse-face nil (point-max))))))
+                (point) 'mouse-face nil (point-max)))
+    (when-let ((url (thing-at-point 'url)))
+      `(url ,url . ,(thing-at-point-bounds-of-url-at-point t)))))
 
 (declare-function widget-at "wid-edit")
 
