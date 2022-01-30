@@ -3352,7 +3352,8 @@ its own."
                  (save-excursion
                    (insert string)
                    (maybe-whitespace)
-                   (delete-blank-lines))
+                   (when (looking-at "\n\n")
+                     (delete-char 1)))
                  (maybe-whitespace)))
       (if buffer-read-only
           (with-selected-window (other-window-for-scrolling)
@@ -3834,6 +3835,7 @@ The advice is self-removing so it only affects ACTION once."
   ("a" align)
   ("A" align-regexp)
   ("i" indent-rigidly)
+  ("I" embark-insert)
   ("TAB" indent-region)
   ("f" fill-region)
   ("p" fill-region-as-paragraph)
