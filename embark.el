@@ -3351,11 +3351,10 @@ its own."
                (ins-string ()
                  (save-excursion
                    (insert string)
-                   (maybe-whitespace)
-                   (when (looking-at "\n\n")
-                     (delete-char 1)))
+                   (when (looking-back "\n" 1) (delete-char -1))   
+                   (maybe-whitespace))
                  (maybe-whitespace)))
-      (if buffer-read-only
+      (if buffer-read-only 
           (with-selected-window (other-window-for-scrolling)
             (ins-string))
         (ins-string)))))
