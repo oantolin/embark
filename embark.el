@@ -349,8 +349,15 @@ opposite behavior to that indicated by this variable by calling
 `embark-act' with \\[universal-argument].
 
 Note that `embark-act' can also be called from outside the
-minibuffer and this variable is irrelevant in that case."
-  :type 'boolean)
+minibuffer and this variable is irrelevant in that case.
+
+In addition to `t' or `nil' this variable can also be set to an
+alist to specify the minibuffer quitting behavior per command.
+In the alist case one can additionally use the key `t' to
+prescribe a default for commands not used as alist keys."
+  :type '(choice boolean
+                 (alist :key-type (choice function (const t))
+                        :value-type boolean)))
 
 (defcustom embark-default-action-overrides nil
   "Alist associating target types with overriding default actions.
@@ -365,7 +372,7 @@ make `find-file' the default action for all files, even if they
 wre obtained from a `delete-file' prompt.  In that case you can
 configure that by adding an entry to this variable pairing `file'
 with `find-file'."
-  :type '(alist :key-type symbol :value-type command))
+  :type '(alist :key-type symbol :value-type function))
 
 (define-obsolete-variable-alias
   'embark-allow-edit-commands
@@ -1966,6 +1973,16 @@ keymap for the given type."
     :target (plist-get target :orig-target))
    :type (plist-get target :orig-type)))
 
+(defun embark--quit-p (action &optional negate)
+  "Determine whether to quit the minibuffer after ACTION.
+This function consults `embark-quit-after-action' to decide
+whether or not the user wishes to quit the minibuffer after
+performing the ACTION, assuming this is done from a minibuffer.
+If NEGATE is non-nil, return the opposite value."
+  (let* ((cfg embark-quit-after-action)
+         (quit (if (consp cfg) (alist-get action cfg (alist-get t cfg)) cfg)))
+    (if negate (not quit) quit)))
+
 ;;;###autoload
 (defun embark-act (&optional arg)
   "Prompt the user for an action and perform it.
@@ -2033,7 +2050,7 @@ target."
                                 (eq action embark--command))
                            (embark--orig-target target)
                          target)
-                       (if embark-quit-after-action (not arg) arg))
+                       (embark--quit-p action arg))
                     (user-error
                      (funcall (if repeat #'message #'user-error)
                               "%s" (cadr err))))
@@ -2129,7 +2146,7 @@ ARG is the prefix argument."
                       (cl-letf (((symbol-function 'embark--restart) #'ignore)
                                 ((symbol-function 'embark--confirm) #'ignore))
                         (embark--act action candidate))))
-               (quit (if embark-quit-after-action (not arg) arg)))
+               (quit (embark--quit-p action arg)))
           (when (and (eq action (embark--default-action type))
                      (eq action embark--command))
             (setq candidates (mapcar #'embark--orig-target candidates)))
@@ -2217,12 +2234,13 @@ See `embark-act' for the meaning of the prefix ARG."
                        0
                      (mod (prefix-numeric-value arg) (length targets)))
                    targets)))
-             (default-action (embark--default-action (plist-get target :type))))
-        (embark--act (or (command-remapping default-action) default-action)
+             (default-action (embark--default-action (plist-get target :type)))
+             (action (or (command-remapping default-action) default-action)))
+        (embark--act action
                      (if (eq default-action embark--command)
                          (embark--orig-target target)
                        target)
-                     (if embark-quit-after-action (not arg) arg)))
+                     (embark--quit-p action arg)))
     (user-error "No target found")))
 
 (define-obsolete-function-alias

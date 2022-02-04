@@ -500,24 +500,37 @@ embark to always prompt you for actions by setting the variable
 
 By default, if you call @samp{embark-act} from the minibuffer it quits the
 minibuffer after performing the action. You can change this by setting
-the user option @samp{embark-quit-after-action} to @samp{nil}. That variable
-controls whether or not @samp{embark-act} quits the minibuffer when you call
-it without a prefix argument, and you can select the opposite behavior
-to what the variable says by calling @samp{embark-act} with @samp{C-u}. Note that
-both the variable @samp{embark-quit-after-action} and @samp{C-u} have no effect when
-you call @samp{embark-act} outside the minibuffer.
+the user option @samp{embark-quit-after-action} to @samp{nil}. Having @samp{embark-act} @emph{not}
+quit the minibuffer can be useful to turn commands into little ``thing
+managers''. For example, you can use @samp{find-file} as a little file manager
+or @samp{describe-package} as a little package manager: you can run those
+commands, perform a series of actions, and then quit the command.
 
-Having @samp{embark-act} @emph{not} quit the minibuffer can be useful to turn
-commands into little ``thing managers''. For example, you can use
-@samp{find-file} as a little file manager or @samp{describe-package} as a little
-package manager: you can run those commands, perform a series of
-actions, and then quit the command.
+If you want to control the quitting behavior in a fine-grained manner
+depending on the action, you can set @samp{embark-quit-after-action} to an
+alist, associating commands to either @samp{t} for quitting or @samp{nil} for not
+quitting. When using an alist, you can use the special key @samp{t} to
+specify the default behavior. For example, to specify that by default
+actions should not quit the minibuffer but that using @samp{kill-buffer} as
+an action should quit, you can use the following configuration:
+
+@lisp
+(setq embark-quit-after-action '((kill-buffer . t) (t . nil)))
+@end lisp
+
+The variable @samp{embark-quit-after-action} only specifies a default, that
+is, it only controls whether or not @samp{embark-act} quits the minibuffer
+when you call it without a prefix argument, and you can select the
+opposite behavior to what the variable says by calling @samp{embark-act} with
+@samp{C-u}. Also note that both the variable @samp{embark-quit-after-action} and @samp{C-u}
+have no effect when you call @samp{embark-act} outside the minibuffer.
 
 If you find yourself using the quitting and non-quitting variants of
-@samp{embark-act} about equally often, you may prefer to have separate
-commands for them instead of a single command that you call with @samp{C-u}
-half the time. You could, for example, keep the default exiting
-behavior of @samp{embark-act} and define a non-quitting version as follows:
+@samp{embark-act} about equally often, independently of the action, you may
+prefer to simply have separate commands for them instead of a single
+command that you call with @samp{C-u} half the time. You could, for example,
+keep the default exiting behavior of @samp{embark-act} and define a
+non-quitting version as follows:
 
 @lisp
 (defun embark-act-noquit ()
