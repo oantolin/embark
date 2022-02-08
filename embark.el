@@ -482,6 +482,8 @@ the key :always are executed always."
     (delete-directory embark--confirm)
     (kill-buffer embark--confirm)
     (embark-kill-buffer-and-window embark--confirm)
+    (bookmark-delete embark--confirm)
+    (package-delete embark--confirm)
     ;; search for region contents outside said region
     (embark-isearch embark--unmark-target)
     (occur embark--unmark-target)
