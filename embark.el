@@ -359,6 +359,13 @@ prescribe a default for commands not used as alist keys."
                  (alist :key-type (choice function (const t))
                         :value-type boolean)))
 
+(defcustom embark-confirm-act-all t
+  "Should `embark-act-all' prompt the user for confirmation?
+Even if this variable is nil you may still be prompted to confirm
+some uses of `embark-act-all', namely, for those actions whose
+entry in `embark-pre-action-hooks' includes `embark--confirm'."
+  :type 'boolean)
+
 (defcustom embark-default-action-overrides nil
   "Alist associating target types with overriding default actions.
 When the source of a target is minibuffer completion, the default
@@ -2155,8 +2162,9 @@ ARG is the prefix argument."
           (when (and (eq action (embark--default-action type))
                      (eq action embark--command))
             (setq candidates (mapcar #'embark--orig-target candidates)))
-          (when (or (not (memq 'embark--confirm
-                               (alist-get action embark-pre-action-hooks)))
+          (when (or (not (or embark-confirm-act-all
+                             (memq 'embark--confirm
+                                   (alist-get action embark-pre-action-hooks))))
                     (y-or-n-p (format "Run %s on %d %ss? "
                                       action (length candidates) type)))
             (if (memq action embark-multitarget-actions)

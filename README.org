@@ -150,7 +150,10 @@ sets:
 
 - The =embark-act-all= command runs the same action on each of the
   current candidates. It is just like using =embark-act= on each
-  candidate in turn.
+  candidate in turn. (Because you can easily act on many more
+  candidates than you meant to, by default Embark asks you to confirm
+  uses of =embark-act-all=; you can turn this off by setting the user
+  option =embark-confirm-act-all= to =nil=.)
 
 - The =embark-collect-snapshot= command produces a buffer listing all
   the current candidates, for you to peruse and run actions on at your

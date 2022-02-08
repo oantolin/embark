@@ -242,7 +242,10 @@ sets:
 @item
 The @samp{embark-act-all} command runs the same action on each of the
 current candidates. It is just like using @samp{embark-act} on each
-candidate in turn.
+candidate in turn. (Because you can easily act on many more
+candidates than you meant to, by default Embark asks you to confirm
+uses of @samp{embark-act-all}; you can turn this off by setting the user
+option @samp{embark-confirm-act-all} to @samp{nil}.)
 
 @item
 The @samp{embark-collect-snapshot} command produces a buffer listing all
