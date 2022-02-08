@@ -2136,7 +2136,7 @@ ARG is the prefix argument."
                        :orig-target orig-cand))
                (plist-get transformed :candidates)
                (plist-get transformed :orig-candidates))
-              (user-error "No candidates for export")))
+              (user-error "No candidates to act on")))
          (indicators (mapcar #'funcall embark-indicators)))
     (unwind-protect
         (let* ((action
