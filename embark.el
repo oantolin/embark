@@ -707,6 +707,8 @@ There are three kinds:
 
 (defconst embark--verbose-indicator-buffer " *Embark Actions*")
 
+(defvar embark--minimal-indicator-overlay nil)
+
 (defun embark--metadata ()
   "Return current minibuffer completion metadata."
   (completion-metadata
@@ -1061,25 +1063,26 @@ This indicator displays a message showing the types of all
 targets, starting with the current target, and the value of the
 current target.  The message is displayed in the echo area, or if
 the minibuffer is open, the message is added to the prompt."
-  (let ((indicator-overlay))
-    (lambda (&optional keymap targets _prefix)
-      (if (null keymap)
-          (when indicator-overlay
-            (delete-overlay indicator-overlay))
-        (let ((indicator (embark--format-targets
-                          (car targets) (cdr targets)
-                          (eq (lookup-key keymap [13]) #'embark-done))))
-          (if (not (minibufferp))
-              (message "%s" indicator)
-            (unless indicator-overlay
-              (setq indicator-overlay (make-overlay (point-min) (point-min)
-                                                    (current-buffer) t t)))
-            (overlay-put indicator-overlay
-                         'before-string (concat indicator
-                                                (if (<= (length indicator)
-                                                        (* 0.4 (frame-width)))
-                                                    " "
-                                                  "\n")))))))))
+  (lambda (&optional keymap targets _prefix)
+    (if (null keymap)
+        (when embark--minimal-indicator-overlay
+          (delete-overlay embark--minimal-indicator-overlay)
+          (setq-local embark--minimal-indicator-overlay nil))
+      (let ((indicator (embark--format-targets
+                        (car targets) (cdr targets)
+                        (eq (lookup-key keymap [13]) #'embark-done))))
+        (if (not (minibufferp))
+            (message "%s" indicator)
+          (unless embark--minimal-indicator-overlay
+            (setq-local embark--minimal-indicator-overlay
+                        (make-overlay (point-min) (point-min)
+                                      (current-buffer) t t)))
+          (overlay-put embark--minimal-indicator-overlay
+                       'before-string (concat indicator
+                                              (if (<= (length indicator)
+                                                      (* 0.4 (frame-width)))
+                                                  " "
+                                                "\n"))))))))
 
 (defun embark--read-key-sequence (update)
   "Read key sequence, call UPDATE function with prefix keys."
