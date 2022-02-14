@@ -1817,6 +1817,12 @@ minibuffer before executing the action."
                             (embark--run-action-hooks embark-pre-action-hooks
                                                       action target quit)
                             (minibuffer-with-setup-hook inject
+                              ;; pacify commands that use (this-command-keys)
+                              (when (= (length (this-command-keys)) 0)
+                                (set--this-command-keys
+                                 (if (characterp last-command-event)
+                                     (string last-command-event)
+                                   (kbd "RET"))))
                               (command-execute action)))
                           (setq final-window (selected-window)))
                       (embark--run-action-hooks embark-post-action-hooks
