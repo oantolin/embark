@@ -125,6 +125,7 @@
     (url . embark-url-map)
     (email . embark-email-map)
     (buffer . embark-buffer-map)
+    (tab . embark-tab-map)
     (expression . embark-expression-map)
     (identifier . embark-identifier-map)
     ;; NOTE: Weird space in front of defun to please package-lint.
@@ -491,6 +492,7 @@ the key :always are executed always."
     (embark-kill-buffer-and-window embark--confirm)
     (bookmark-delete embark--confirm)
     (package-delete embark--confirm)
+    (tab-bar-close-tab-by-name embark--confirm)
     ;; search for region contents outside said region
     (embark-isearch embark--unmark-target)
     (occur embark--unmark-target)
@@ -525,6 +527,8 @@ arguments and more details."
     (make-directory embark--restart)
     (kill-buffer embark--restart)
     (embark-rename-buffer embark--restart)
+    (tab-bar-rename-tab-by-name embark--restart)
+    (tab-bar-close-tab-by-name embark--restart)
     (package-delete embark--restart))
   "Alist associating commands with post-action hooks.
 The hooks are run after an embarked upon action concludes.  See
@@ -3972,6 +3976,13 @@ The advice is self-removing so it only affects ACTION once."
   ("=" ediff-buffers)
   ("|" embark-shell-command-on-buffer)
   ("<" insert-buffer))
+
+(embark-define-keymap embark-tab-map
+  "Keymap for actions for tab-bar tabs."
+  ("RET" tab-bar-select-tab-by-name)
+  ("s" tab-bar-select-tab-by-name)
+  ("r" tab-bar-rename-tab-by-name)
+  ("k" tab-bar-close-tab-by-name))
 
 (embark-define-keymap embark-identifier-map
   "Keymap for Embark identifier actions."
