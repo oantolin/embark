@@ -125,6 +125,7 @@
     (url . embark-url-map)
     (email . embark-email-map)
     (buffer . embark-buffer-map)
+    (tab . embark-tab-map)
     (expression . embark-expression-map)
     (identifier . embark-identifier-map)
     ;; NOTE: Weird space in front of defun to please package-lint.
@@ -351,9 +352,9 @@ opposite behavior to that indicated by this variable by calling
 Note that `embark-act' can also be called from outside the
 minibuffer and this variable is irrelevant in that case.
 
-In addition to `t' or `nil' this variable can also be set to an
+In addition to t or nil this variable can also be set to an
 alist to specify the minibuffer quitting behavior per command.
-In the alist case one can additionally use the key `t' to
+In the alist case one can additionally use the key t to
 prescribe a default for commands not used as alist keys."
   :type '(choice boolean
                  (alist :key-type (choice function (const t))
@@ -491,6 +492,7 @@ the key :always are executed always."
     (embark-kill-buffer-and-window embark--confirm)
     (bookmark-delete embark--confirm)
     (package-delete embark--confirm)
+    (tab-bar-close-tab-by-name embark--confirm)
     ;; search for region contents outside said region
     (embark-isearch embark--unmark-target)
     (occur embark--unmark-target)
@@ -525,6 +527,8 @@ arguments and more details."
     (make-directory embark--restart)
     (kill-buffer embark--restart)
     (embark-rename-buffer embark--restart)
+    (tab-bar-rename-tab-by-name embark--restart)
+    (tab-bar-close-tab-by-name embark--restart)
     (package-delete embark--restart))
   "Alist associating commands with post-action hooks.
 The hooks are run after an embarked upon action concludes.  See
@@ -782,7 +786,7 @@ different priorities in `embark-target-finders'."
           ,(overlay-start ov) . ,(overlay-end ov))))
 
 (defun embark-target-package-at-point ()
-  "Target the package on the current line in a `package-menu-mode-menu' buffer."
+  "Target the package on the current line in a packages buffer."
   (when (derived-mode-p 'package-menu-mode)
     (when-let ((pkg (get-text-property (point) 'tabulated-list-id)))
       `(package ,(symbol-name (package-desc-name pkg))
@@ -1033,7 +1037,7 @@ a repeating sequence of actions."
                ((plist-get target :multi) "∀ct")
                (rep "Rep")
                (t "Act"))
-              'face 'highlight))) 
+              'face 'highlight)))
     (cond
      ((eq (plist-get target :type) 'embark-become)
       (propertize "Become" 'face 'highlight))
@@ -1853,7 +1857,7 @@ minibuffer before executing the action."
   "Refine symbol TARGET to more specific type if possible."
   (cons (let ((symbol (intern-soft target))
               (library (ffap-el-mode target)))
-          (cond 
+          (cond
            ((and library
                  (looking-back "\\(?:require\\|use-package\\).*"
                                (line-beginning-position)))
@@ -2409,7 +2413,7 @@ default initial view for types not mentioned separately."
   "Alist associating completion types to export functions.
 Each function should take a list of strings which are candidates
 for actions and make a buffer appropriate to manage them.  For
-example, the default is to make a dired buffer for files, and an
+example, the default is to make a Dired buffer for files, and an
 ibuffer for buffers.
 
 The key t is also allowed in the alist, and the corresponding
@@ -2501,7 +2505,7 @@ list `embark-candidate-collectors'."
 (declare-function dired-get-marked-files "dired")
 
 (defun embark-dired-candidates ()
-  "Return marked or all files shown in dired buffer.
+  "Return marked or all files shown in Dired buffer.
 If any buffer is marked, return marked buffers; otherwise, return
 all buffers."
   (when (derived-mode-p 'dired-mode)
@@ -3187,7 +3191,7 @@ PRED is a predicate function used to filter the items."
 (autoload 'dired-check-switches "dired")
 
 (defun embark-export-dired (files)
-  "Create a dired buffer listing FILES."
+  "Create a Dired buffer listing FILES."
   (setq files (mapcar #'directory-file-name
                       (cl-remove-if-not #'file-exists-p files)))
   (when (dired-check-switches dired-listing-switches "A" "almost-all")
@@ -3355,7 +3359,7 @@ Return the category metadatum as the type of the target."
   (add-hook 'embark-target-finders #'embark--ivy-selected)
   (add-hook 'embark-candidate-collectors #'embark--ivy-candidates))
 
-;;; Custom actions 
+;;; Custom actions
 
 (defun embark-keymap-help ()
   "Prompt for an action to perform or command to become and run it."
@@ -3388,10 +3392,10 @@ its own."
                (ins-string ()
                  (save-excursion
                    (insert string)
-                   (when (looking-back "\n" 1) (delete-char -1))   
+                   (when (looking-back "\n" 1) (delete-char -1))
                    (maybe-whitespace))
                  (maybe-whitespace)))
-      (if buffer-read-only 
+      (if buffer-read-only
           (with-selected-window (other-window-for-scrolling)
             (ins-string))
         (ins-string)))))
@@ -3416,8 +3420,8 @@ its own."
 (autoload 'dired-jump "dired-x" nil t)
 
 (defun embark-dired-jump (file &optional other-window)
-  "Open dired buffer in directory containg FILE and move to its line.
-When called with a prefix argument OTHER-WINDOW, open dired in other window."
+  "Open Dired buffer in directory containg FILE and move to its line.
+When called with a prefix argument OTHER-WINDOW, open Dired in other window."
   (interactive "fJump to Dired file: \nP")
   (dired-jump other-window file))
 
@@ -3972,6 +3976,13 @@ The advice is self-removing so it only affects ACTION once."
   ("=" ediff-buffers)
   ("|" embark-shell-command-on-buffer)
   ("<" insert-buffer))
+
+(embark-define-keymap embark-tab-map
+  "Keymap for actions for tab-bar tabs."
+  ("RET" tab-bar-select-tab-by-name)
+  ("s" tab-bar-select-tab-by-name)
+  ("r" tab-bar-rename-tab-by-name)
+  ("k" tab-bar-close-tab-by-name))
 
 (embark-define-keymap embark-identifier-map
   "Keymap for Embark identifier actions."

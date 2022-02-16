@@ -738,11 +738,14 @@ similar situations where the easiest option is not available.
 @node New minibuffer target example - tab-bar tabs
 @subsection New minibuffer target example - tab-bar tabs
 
-Say you use the new @uref{https://www.gnu.org/software/emacs/manual/html_node/emacs/Tab-Bars.html, tab bars} from Emacs 27 and you want Embark to
-offer tab-specific actions when you use the tab-bar-mode commands
-that mention tabs by name. You would need to: (1) make sure Embark
-knows those commands deal with tabs, (2) define a keymap for tab
-actions and configure Embark so it knows that's the keymap you want.
+As an example, take the new @uref{https://www.gnu.org/software/emacs/manual/html_node/emacs/Tab-Bars.html, tab bars} from Emacs 27. I'll explain how
+to configure Embark to offer tab-specific actions when you use the
+tab-bar-mode commands that mention tabs by name. The configuration
+explained here is now built-in to Embark (and Marginalia), but it's
+still a good self-contained example. In order to setup up tab actions
+you would need to: (1) make sure Embark knows those commands deal with
+tabs, (2) define a keymap for tab actions and configure Embark so it
+knows that's the keymap you want.
 
 @enumerate
 @item
