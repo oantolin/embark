@@ -206,11 +206,6 @@ The elements of LINES are assumed to be values of category `consult-line'."
 (setf (alist-get 'consult-isearch embark-transformer-alist)
       #'embark-consult--target-strip)
 
-;;; Support for consult-register
-
-(setf (alist-get 'consult-register embark-collect-initial-view-alist)
-      'zebra)
-
 ;;; Bindings for consult commands in embark keymaps
 
 (define-key embark-file-map "x" #'consult-file-externally)
