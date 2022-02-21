@@ -2750,6 +2750,7 @@ key binding for it.  Or alternatively you might want to enable
                                       'embark--candidate cand)
                          type embark-collect-entry)
                         (,annotation
+                         skip t
                          ,@(unless faces
                              '(face embark-collect-annotation)))]))))
              (lambda (cand)
