@@ -2165,10 +2165,12 @@ ARG is the prefix argument."
                      indicators (embark--action-keymap type nil)
                      (list (list :type type :multi (length candidates))))
                     (user-error "Canceled")))
+               (prefix prefix-arg)
                (act (lambda (candidate)
                       (cl-letf (((symbol-function 'embark--restart) #'ignore)
                                 ((symbol-function 'embark--confirm) #'ignore))
-                        (embark--act action candidate))))
+                        (let ((prefix-arg prefix))
+                          (embark--act action candidate)))))
                (quit (embark--quit-p action arg)))
           (when (and (eq action (embark--default-action type))
                      (eq action embark--command))
@@ -2179,7 +2181,8 @@ ARG is the prefix argument."
                     (y-or-n-p (format "Run %s on %d %ss? "
                                       action (length candidates) type)))
             (if (memq action embark-multitarget-actions)
-                (embark--act action transformed quit)
+                (let ((prefix-arg prefix))
+                  (embark--act action transformed quit))
               (if quit
                   (embark--quit-and-run #'mapc act candidates)
                 (mapc act candidates)
