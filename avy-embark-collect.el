@@ -33,9 +33,6 @@
 (require 'embark)
 (eval-when-compile (require 'subr-x))
 
-(defvar avy-embark-collect--initial-window nil
-  "Window that was selected before jumping.")
-
 (defun avy-embark-collect--candidates ()
   "Collect all visible Embark collect candidates."
   (let (candidates)
@@ -53,23 +50,25 @@
               (push (cons (point) wnd) candidates))))))
     (nreverse candidates)))
 
-(defun avy-embark-collect--window-restore ()
-  "Return to window selected before jumping."
-  (select-window avy-embark-collect--initial-window))
-
 (defun avy-embark-collect--act (pt)
   "Act on the completion at PT."
-  (goto-char pt)
-  (cl-letf (((alist-get :always embark-post-action-hooks)
-             (append (alist-get :always embark-post-action-hooks)
-                     '(avy-embark-collect--window-restore))))
-    (embark-act)))
+  (unwind-protect
+      (save-excursion
+        (goto-char pt)
+        (embark-act))
+    (select-window (cdr (ring-ref avy-ring 0)))
+    t))
+
+(defun avy-embark-collect--choose (pt)
+  "Choose on the completion at PT."
+  (unwind-protect (push-button pt)
+    (select-window (cdr (ring-ref avy-ring 0)))
+    t))
 
 (defun avy-embark-collect--jump (action dispatch-alist)
   "Jump to a visible Embark Collect candidate and perform ACTION.
 Other actions are listed in the DISPATCH-ALIST."
   (interactive)
-  (setq avy-embark-collect--initial-window (selected-window))
   (avy-with avy-embark-collect-choose
     (let ((avy-action action)
           (avy-dispatch-alist dispatch-alist))
@@ -79,7 +78,7 @@ Other actions are listed in the DISPATCH-ALIST."
 (defun avy-embark-collect-choose ()
   "Choose an Embark Collect candidate."
   (interactive)
-  (avy-embark-collect--jump #'push-button
+  (avy-embark-collect--jump #'avy-embark-collect--choose
                             '((?e . avy-embark-collect--act)
                               (?p . avy-action-goto))))
 
