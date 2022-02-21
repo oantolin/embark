@@ -3369,7 +3369,7 @@ Return the category metadatum as the type of the target."
   (interactive)
   (user-error "Not meant to be called directly"))
 
-(defun embark-insert (string)
+(defun embark-insert (string &optional multiline)
   "Insert STRING at point.
 Some whitespace is also inserted if necessary to avoid having the
 inserted string blend into the existing buffer text.  More
@@ -3381,27 +3381,31 @@ constituent character next to an existing word constituent.
 
 2. For a multiline inserted string, newlines may be added before
 or after as needed to ensure the inserted string is on lines of
-its own."
-  (interactive "sInsert: ")
-  (let ((multiline (string-match-p "\n" string)))
-    (cl-flet* ((maybe-space ()
-                 (and (looking-at "\\w") (looking-back "\\w" 1)
-                      (insert " ")))
-               (maybe-newline ()
-                 (or (looking-back "^[ \t]*" 40) (looking-at "\n\n")
-                     (newline-and-indent)))
-               (maybe-whitespace ()
-                 (if multiline (maybe-newline) (maybe-space)))
-               (ins-string ()
-                 (save-excursion
-                   (insert string)
-                   (when (looking-back "\n" 1) (delete-char -1))
-                   (maybe-whitespace))
-                 (maybe-whitespace)))
-      (if buffer-read-only
-          (with-selected-window (other-window-for-scrolling)
-            (ins-string))
-        (ins-string)))))
+its own.
+
+If MULTILINE is non-nil (interactively, if called with a prefix
+argument), force the behavior for of the multiline case even if
+STRING contains no newlines."
+  (interactive "sInsert: \nP")
+  (setq multiline (or multiline (string-match-p "\n" string)))
+  (cl-flet* ((maybe-space ()
+               (and (looking-at "\\w") (looking-back "\\w" 1)
+                    (insert " ")))
+             (maybe-newline ()
+               (or (looking-back "^[ \t]*" 40) (looking-at "\n\n")
+                   (newline-and-indent)))
+             (maybe-whitespace ()
+               (if multiline (maybe-newline) (maybe-space)))
+             (ins-string ()
+               (save-excursion
+                 (insert string)
+                 (when (looking-back "\n" 1) (delete-char -1))
+                 (maybe-whitespace))
+               (maybe-whitespace)))
+    (if buffer-read-only
+        (with-selected-window (other-window-for-scrolling)
+          (ins-string))
+      (ins-string))))
 
 (define-obsolete-function-alias
   'embark-save
