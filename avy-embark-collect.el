@@ -27,9 +27,6 @@
 ;; `avy-embark-collect-act', that use avy to jump to an Embark Collect
 ;; entry and choose it or act on it, respectively.
 
-;; I no longer recommend using this package, and suggest users migrate
-;; to the excellent link-hint package by Fox Kiester.
-
 ;;; Code:
 
 (require 'avy)
@@ -39,76 +36,60 @@
 (defvar avy-embark-collect--initial-window nil
   "Window that was selected before jumping.")
 
-(defun avy-embark-collect--choose (pt)
-  "Choose completion at PT."
-  (goto-char pt)
-  (embark-collect-choose (button-at pt)))
+(defun avy-embark-collect--candidates ()
+  "Collect all visible Embark collect candidates."
+  (let (candidates)
+    (avy-dowindows current-prefix-arg   ; avy-dowindows binds wnd! 🤯
+      (when (derived-mode-p 'embark-collect-mode)
+        (dolist (pair (avy--find-visible-regions
+                       (window-start) (window-end wnd t)))
+          (save-excursion
+            (goto-char (car pair))
+            (when (button-at (point))
+              (push (cons (point) wnd) candidates))
+            (while (and (condition-case nil (forward-button 1)
+                          (error nil))
+                        (< (point) (cdr pair)))
+              (push (cons (point) wnd) candidates))))))
+    (nreverse candidates)))
+
+(defun avy-embark-collect--window-restore ()
+  "Return to window selected before jumping."
+  (select-window avy-embark-collect--initial-window))
 
 (defun avy-embark-collect--act (pt)
   "Act on the completion at PT."
   (goto-char pt)
-  (add-hook 'embark-post-action-hook
-            (lambda () (select-window avy-embark-collect--initial-window))
-            nil t)
-  (embark-act))
-
-(defun avy-embark-collect--choose-window ()
-  "Choose a window displaying an Embark Collect buffer to jump to.
-The Embark Collect buffer to use is chosen in order of priority as:
-- the current buffer,
-- a linked Embark Collect buffer,
-- some visible Embark Collect buffer."
-  (cond
-   ((derived-mode-p 'embark-collect-mode) (selected-window))
-   (embark-collect-linked-buffer
-    (get-buffer-window embark-collect-linked-buffer))
-   (t (catch 'return
-        (dolist (window (window-list-1))
-          (with-selected-window window
-            (when (derived-mode-p 'embark-collect-mode)
-              (throw 'return window))))))))
+  (cl-letf (((alist-get :always embark-post-action-hooks)
+             (append (alist-get :always embark-post-action-hooks)
+                     '(avy-embark-collect--window-restore))))
+    (embark-act)))
 
 (defun avy-embark-collect--jump (action dispatch-alist)
-  "Jump to an Embark Collect candidate and perform ACTION.
-Other actions are listed in the DISPATCH-ALIST.
-The Embark Collect buffer to use is chosen in order of priority as:
-- the current buffer,
-- a linked Embark Collect buffer,
-- some visible Embark Collect buffer."
+  "Jump to a visible Embark Collect candidate and perform ACTION.
+Other actions are listed in the DISPATCH-ALIST."
+  (interactive)
   (setq avy-embark-collect--initial-window (selected-window))
-  (if-let ((wnd (avy-embark-collect--choose-window)))
-      (with-current-buffer (window-buffer wnd)
-        (avy-with avy-completion
-          (let ((avy-action action)
-                (avy-dispatch-alist dispatch-alist))
-            (avy-process
-             (save-excursion
-               (goto-char (point-min))
-               (let ((btns `((,(point) . ,wnd))))
-                 (forward-button 1 t)
-                 (while (not (bobp))
-                   (when (eq (button-type (button-at (point)))
-                             'embark-collect-entry) ; skip annotations
-                     (push (cons (point) wnd) btns))
-                   (forward-button 1 t))
-                 (nreverse btns)))))))
-    (user-error "No *Embark Collect* found")))
+  (avy-with avy-embark-collect-choose
+    (let ((avy-action action)
+          (avy-dispatch-alist dispatch-alist))
+      (avy-process (avy-embark-collect--candidates)))))
 
 ;;;###autoload
 (defun avy-embark-collect-choose ()
   "Choose an Embark Collect candidate."
   (interactive)
-  (avy-embark-collect--jump #'avy-embark-collect--choose
-                            '((?x . avy-embark-collect--act)
-                              (?m . avy-action-goto))))
+  (avy-embark-collect--jump #'push-button
+                            '((?e . avy-embark-collect--act)
+                              (?p . avy-action-goto))))
 
 ;;;###autoload
 (defun avy-embark-collect-act ()
   "Act on an Embark Collect candidate."
   (interactive)
   (avy-embark-collect--jump #'avy-embark-collect--act
-                            '((?x . avy-embark-collect--choose)
-                              (?m . avy-action-goto))))
+                            '((?e . avy-embark-collect--choose)
+                              (?p . avy-action-goto))))
 
 (provide 'avy-embark-collect)
 ;;; avy-embark-collect.el ends here
