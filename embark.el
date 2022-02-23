@@ -558,18 +558,20 @@ argument: a one element list containing the target."
   :type '(repeat function))
 
 (defcustom embark-repeat-actions
-  '(mark
+  '((mark . region)
     ;; outline commands
     outline-next-visible-heading outline-previous-visible-heading
     outline-forward-same-level outline-backward-same-level
-    outline-demote outline-promote outline-mark-subtree
-    outline-show-subtree outline-move-subtree-up outline-move-subtree-down
+    outline-demote outline-promote
+    outline-show-subtree (outline-mark-subtree . region)
+    outline-move-subtree-up outline-move-subtree-down
     outline-up-heading outline-hide-subtree outline-cycle
     ;; org commands (remapped outline commands)
     org-forward-heading-same-level org-backward-heading-same-level
     org-next-visible-heading org-previous-visible-heading
-    org-demote-subtree org-promote-subtree org-mark-subtree
-    org-show-subtree org-move-subtree-up org-move-subtree-down
+    org-demote-subtree org-promote-subtree
+    org-show-subtree (org-mark-subtree . region)
+    org-move-subtree-up org-move-subtree-down
     ;; transpose commands
     transpose-sexps transpose-sentences transpose-paragraphs
     ;; movement
@@ -577,8 +579,26 @@ argument: a one element list containing the target."
     backward-up-list backward-list forward-list forward-sexp
     backward-sexp forward-sentence backward-sentence
     forward-paragraph backward-paragraph)
-  "List of repeatable actions."
-  :type '(repeat function))
+  "List of repeatable actions.
+When you use a command on this list as an Embark action from
+outside the minibuffer, `embark-act' does not exit but instead
+lets you act again on the possibly new target you reach.
+
+By default, after using one of these actions, when `embark-act'
+looks for targets again, it will start the target cycle at the
+same type as the previously acted upon target; that is, you
+\"don't loose your place in the target cycle\".
+
+Sometimes, however, you'll want to prioritze a different type of
+target to continue acting on.  The main example of this that if
+you use a marking command as an action, you almost always want to
+act on the region next.  For those cases, in addition to
+commands, you can also place on this list a pair of a command and
+the desired starting type for the target cycle for the next
+action."
+  :type '(repeat (choice function
+                         (cons function
+                               (symbol :tag "Next target type")))))
 
 ;;; Stashing information for actions in buffer local variables
 
@@ -1228,6 +1248,15 @@ first line of the documentation string; otherwise use the word
             (substring str (match-end 0))
           str)))))
 
+(defun embark--action-repeatable-p (action)
+  "Is ACTION repeatable?
+When the return value is non-nil it will be the desired starting
+point of the next target cycle or t to indicate the default,
+namely that the target cycle for the next action should begin at
+the tye of the current target."
+  (or (cdr (assq action embark-repeat-actions))
+      (and (memq action embark-repeat-actions) t)))
+
 (defun embark--formatted-bindings (keymap &optional nested)
   "Return the formatted keybinding of KEYMAP.
 The keybindings are returned in their order of appearance.
@@ -1260,7 +1289,7 @@ If NESTED is non-nil subkeymaps are not flattened."
                    for desc-rep =
                    (concat
                     (propertize desc 'face 'embark-keybinding)
-                    (and (memq cmd embark-repeat-actions)
+                    (and (embark--action-repeatable-p cmd)
                          embark-keybinding-repeat))
                    for formatted =
                    (propertize
@@ -2066,7 +2095,7 @@ target."
                                targets (prefix-numeric-value prefix-arg))))
                (t
                 ;; if the action is non-repeatable, cleanup indicator now
-                (let ((repeat (memq action embark-repeat-actions)))
+                (let ((repeat (embark--action-repeatable-p action)))
                   (unless repeat (mapc #'funcall indicators))
                   (condition-case err
                       (embark--act
@@ -2090,13 +2119,9 @@ target."
                            new-targets
                            (or (cl-position-if
                                 (let ((desired-type
-                                       ;; TODO Introduce customizable variable,
-                                       ;; instead of hard-coding the mark commands.
-                                       (if (memq action '(mark
-                                                          outline-mark-subtree
-                                                          org-mark-subtree))
-                                           'region
-                                         (plist-get (car targets) :type))))
+                                       (if (eq repeat t)
+                                           (plist-get (car targets) :type)
+                                         repeat)))
                                   (lambda (x)
                                     (eq (plist-get x :type) desired-type)))
                                 new-targets)
