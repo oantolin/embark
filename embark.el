@@ -886,8 +886,9 @@ In Emacs Lisp and IELM buffers the identifier is promoted to a
 symbol, for which more actions are available.  Identifiers are
 also promoted to symbols if they are interned Emacs Lisp symbols
 and found in a buffer in a major mode derived from
-`special-mode', `Info-mode' or `text-mode' (these are intended to
-cover cases where you might be reading or writing about Emacs).
+`special-mode', `Info-mode', `Custom-mode' or `text-mode' (these
+are intended to cover cases where you might be reading or writing
+about Emacs).
 
 As a convenience, in Org Mode an initial ' or surrounding == or
 ~~ are removed."
@@ -901,10 +902,10 @@ As a convenience, in Org Mode an initial ' or surrounding == or
                (setq name (substring name 1 -1))
                (cl-incf (car bounds))
                (cl-decf (cdr bounds)))))
-      `(,(if (or (derived-mode-p 'emacs-lisp-mode)
-                 (derived-mode-p 'inferior-emacs-lisp-mode)
+      `(,(if (or (derived-mode-p 'emacs-lisp-mode 'inferior-emacs-lisp-mode)
                  (and (intern-soft name)
-                      (derived-mode-p 'special-mode 'Info-mode 'text-mode)))
+                      (derived-mode-p
+                       'special-mode 'Info-mode 'Custom-mode 'text-mode)))
              'symbol
            'identifier)
         ,name
