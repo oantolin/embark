@@ -161,8 +161,7 @@ The elements of LINES are assumed to be values of category `consult-line'."
 (defun embark-consult--upgrade-markers ()
   "Upgrade consult-location cheap markers to real markers.
 This function is meant to be added to `embark-collect-mode-hook'."
-  (when (and (eq embark--type 'consult-location)
-             (not (eq embark-collect--kind :completions)))
+  (when (eq embark--type 'consult-location)
     (mapc #'consult--get-location embark-collect-candidates)))
 
 (setf (alist-get 'consult-location embark-collect-initial-view-alist)

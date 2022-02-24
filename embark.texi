@@ -248,9 +248,9 @@ uses of @samp{embark-act-all}; you can turn this off by setting the user
 option @samp{embark-confirm-act-all} to @samp{nil}.)
 
 @item
-The @samp{embark-collect-snapshot} command produces a buffer listing all
-the current candidates, for you to peruse and run actions on at your
-leisure. The candidates can be viewed in a grid or as a list showing
+The @samp{embark-collect} command produces a buffer listing all the current
+candidates, for you to peruse and run actions on at your leisure.
+The candidates can be viewed in a grid or as a list showing
 additional annotations.
 
 @item
@@ -272,29 +272,14 @@ of thumb is to always prefer @samp{embark-export} since when an exporter to a
 special major mode is available for a given type of target, it will be
 more featureful than an Embark collect buffer, and if no such exporter
 is configured the @samp{embark-export} command falls back to the generic
-@samp{embark-collect-snapshot}.
+@samp{embark-collect}.
 
 These commands are always available as ``actions'' (although they do not
 act on just the current target but on all candidates) for @samp{embark-act}
-and are bound to @samp{A}, @samp{S}, and @samp{E}, respectively, in @samp{embark-general-map}.
-This means that you do not have to bind your own key bindings for
-these (although you can, of course!), just a key binding for
-@samp{embark-act}.
-
-There is also the @samp{embark-collect-live} variant of
-@samp{embark-collect-snapshot} which produces ``live'' Embark Collect buffers,
-meaning they auto-update as the set of candidates changes. Most users
-of visual completion UIs such as Vertico, Icomplete, Selectrum or Ivy
-will probably either not want to use this from the minibuffer, to
-avoid seeing double (the list of candidates is displayed both by
-Embark and by the completion UI), or to configure their completion UI
-to hide while using @samp{embark-collect-live}. See the Embark wiki for
-@uref{https://github.com/oantolin/embark/wiki/Additional-Configuration#pause-selectrum-while-using-embark-collect-live, sample configuration for Selectrum}. This command can also be used
-outside the minibuffer if you have a relevant candidate collector
-registered in @samp{embark-candidate-collectors}. Users of the @samp{embark-consult}
-package, for example, get such a candidate collector registered for
-them, and can produce a live-updating table of contents for any
-buffer, whose items are the lines matching @samp{outline-regexp}.
+and are bound to @samp{A}, @samp{S} (for ``snapshot''), and @samp{E}, respectively, in
+@samp{embark-general-map}. This means that you do not have to bind your own
+key bindings for these (although you can, of course!), just a key
+binding for @samp{embark-act}.
 
 @node Switching to a different command without losing what you've typed
 @section Switching to a different command without losing what you've typed
@@ -382,9 +367,9 @@ starting configuration:
   (embark-collect-mode . consult-preview-at-point-mode))
 @end lisp
 
-Other Embark commands such as @samp{mbark-act-all}, @samp{embark-become},
-@samp{embark-collect-snapshot}, @samp{embark-collect-live}, @samp{embark-export} can be run
-through @samp{embark-act} as actions bound to @samp{A}, @samp{B}, @samp{S}, @samp{L}, @samp{E} respectively, and
+Other Embark commands such as @samp{embark-act-all}, @samp{embark-become},
+@samp{embark-collect}, and @samp{embark-export} can be run through @samp{embark-act} as
+actions bound to @samp{A}, @samp{B}, @samp{S} (for ``snapshot''), and @samp{E} respectively, and
 thus don't really need a dedicated key binding, but feel free to bind
 them directly if you so wish. If you do choose to bind them directly,
 you'll probably want to bind them in @samp{minibuffer-local-map}, since they
@@ -1059,7 +1044,7 @@ that come with Emacs (such as key bindings in @samp{M-x}, or the unicode
 characters in @samp{C-x 8 RET}).
 
 @item
-If you have Consult installed and call @samp{embark-collect-snapshot} from
+If you have Consult installed and call @samp{embark-collect} from
 @samp{consult-line}, @samp{consult-mark} or @samp{consult-outline}, you will notice the
 Embark Collect buffer starts in list view by default. Similarly,
 you'll notice that the @samp{consult-yank} family of commands start out in

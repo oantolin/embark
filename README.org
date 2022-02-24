@@ -155,9 +155,9 @@ sets:
   uses of =embark-act-all=; you can turn this off by setting the user
   option =embark-confirm-act-all= to =nil=.)
 
-- The =embark-collect-snapshot= command produces a buffer listing all
-  the current candidates, for you to peruse and run actions on at your
-  leisure. The candidates can be viewed in a grid or as a list showing
+- The =embark-collect= command produces a buffer listing all the current
+  candidates, for you to peruse and run actions on at your leisure.
+  The candidates can be viewed in a grid or as a list showing
   additional annotations.
 
 - The =embark-export= command tries to open a buffer in an appropriate
@@ -177,29 +177,14 @@ of thumb is to always prefer =embark-export= since when an exporter to a
 special major mode is available for a given type of target, it will be
 more featureful than an Embark collect buffer, and if no such exporter
 is configured the =embark-export= command falls back to the generic
-=embark-collect-snapshot=.
+=embark-collect=.
 
 These commands are always available as "actions" (although they do not
 act on just the current target but on all candidates) for =embark-act=
-and are bound to =A=, =S=, and =E=, respectively, in =embark-general-map=.
-This means that you do not have to bind your own key bindings for
-these (although you can, of course!), just a key binding for
-=embark-act=.
-
-There is also the =embark-collect-live= variant of
-=embark-collect-snapshot= which produces "live" Embark Collect buffers,
-meaning they auto-update as the set of candidates changes. Most users
-of visual completion UIs such as Vertico, Icomplete, Selectrum or Ivy
-will probably either not want to use this from the minibuffer, to
-avoid seeing double (the list of candidates is displayed both by
-Embark and by the completion UI), or to configure their completion UI
-to hide while using =embark-collect-live=. See the Embark wiki for
-[[https://github.com/oantolin/embark/wiki/Additional-Configuration#pause-selectrum-while-using-embark-collect-live][sample configuration for Selectrum]]. This command can also be used
-outside the minibuffer if you have a relevant candidate collector
-registered in =embark-candidate-collectors=. Users of the =embark-consult=
-package, for example, get such a candidate collector registered for
-them, and can produce a live-updating table of contents for any
-buffer, whose items are the lines matching =outline-regexp=.
+and are bound to =A=, =S= (for "snapshot"), and =E=, respectively, in
+=embark-general-map=. This means that you do not have to bind your own
+key bindings for these (although you can, of course!), just a key
+binding for =embark-act=.
 
 ** Switching to a different command without losing what you've typed
 
@@ -285,9 +270,9 @@ starting configuration:
     (embark-collect-mode . consult-preview-at-point-mode))
 #+end_src
 
-Other Embark commands such as =mbark-act-all=, =embark-become=,
-=embark-collect-snapshot=, =embark-collect-live=, =embark-export= can be run
-through =embark-act= as actions bound to =A=, =B=, =S=, =L=, =E= respectively, and
+Other Embark commands such as =embark-act-all=, =embark-become=,
+=embark-collect=, and =embark-export= can be run through =embark-act= as
+actions bound to =A=, =B=, =S= (for "snapshot"), and =E= respectively, and
 thus don't really need a dedicated key binding, but feel free to bind
 them directly if you so wish. If you do choose to bind them directly,
 you'll probably want to bind them in =minibuffer-local-map=, since they
@@ -892,7 +877,7 @@ Marginalia package.
   that come with Emacs (such as key bindings in =M-x=, or the unicode
   characters in =C-x 8 RET=).
 
-- If you have Consult installed and call =embark-collect-snapshot= from
+- If you have Consult installed and call =embark-collect= from
   =consult-line=, =consult-mark= or =consult-outline=, you will notice the
   Embark Collect buffer starts in list view by default. Similarly,
   you'll notice that the =consult-yank= family of commands start out in
