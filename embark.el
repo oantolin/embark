@@ -2576,7 +2576,17 @@ all buffers."
   "Return candidates in Embark Collect buffer.
 This makes `embark-export' work in Embark Collect buffers."
   (when (derived-mode-p 'embark-collect-mode)
-    (cons embark--type embark-collect-candidates)))
+    (cons embark--type
+          (or (save-excursion
+                (mapcar
+                 (lambda (ov)
+                   (goto-char (overlay-start ov))
+                   (cadr (embark-target-collect-candidate)))
+                 (nreverse
+                  (seq-filter
+                   (lambda (ov) (overlay-get ov 'embark--collect-mark))
+                   (overlays-in (point-min) (point-max))))))
+           embark-collect-candidates))))
 
 (defun embark-completions-buffer-candidates ()
   "Return all candidates in a completions buffer."
@@ -2714,6 +2724,8 @@ For other Embark Collect buffers, run the default action on ENTRY."
   ("M-q" embark-collect-toggle-view)
   ("v" embark-collect-toggle-view)
   ("e" embark-export)
+  ("m" embark-collect-mark)
+  ("u" embark-collect-unmark)
   ("s" isearch-forward)
   ("f" forward-button)
   ("b" backward-button)
@@ -3052,6 +3064,30 @@ the minibuffer is exited."
 
       window)))
 
+(defun embark-collect-mark (&optional unmark)
+  "Mark the candidate at point in a collect buffer.
+If UNMARK is non-nil, unmark the candidate instead."
+  (interactive)
+  (unless (derived-mode-p #'embark-collect-mode)
+    (error "Not in an Embark collect buffer"))
+  (when-let (target (embark-target-collect-candidate))
+    (pcase-let* ((`(,_type ,_cand ,beg . ,end) target)
+                 (ov (seq-find (lambda (ov) (overlay-get ov 'embark--collect-mark)) (overlays-at beg))))
+      (unless (eq (not ov) unmark)
+        (if ov
+            (delete-overlay ov)
+          ;; TODO: Define our own face here?
+          (unless (facep 'dired-marked) (require 'dired))
+          (setq ov (make-overlay beg end))
+          (overlay-put ov 'embark--collect-mark t)
+          (overlay-put ov 'face 'dired-marked)))))
+  (forward-button 1))
+
+(defun embark-collect-unmark ()
+  "Unmark the candidate at point in a collect buffer."
+  (interactive)
+  (embark-collect-mark t))
+
 ;;;###autoload
 (defun embark-collect-live (&optional initial-view)
   "Create a live-updating Embark Collect buffer.
@@ -3321,7 +3357,7 @@ Return the category metadatum as the type of the target."
     (unless selectrum--previous-input-string
       (selectrum-exhibit))
     (cons (selectrum--get-meta 'category)
-	  (selectrum-get-current-candidate))))
+          (selectrum-get-current-candidate))))
 
 (defun embark--selectrum-candidates ()
   "Collect the current Selectrum candidates.
@@ -3331,9 +3367,9 @@ Return the category metadatum as the type of the candidates."
     (unless selectrum--previous-input-string
       (selectrum-exhibit))
     (cons (selectrum--get-meta 'category)
-	  (selectrum-get-current-candidates
-	   ;; Pass relative file names for dired.
-	   minibuffer-completing-file-name))))
+          (selectrum-get-current-candidates
+           ;; Pass relative file names for dired.
+           minibuffer-completing-file-name))))
 
 (defun embark--selectrum-indicator ()
   "Embark indicator highlighting the current Selectrum candidate."
