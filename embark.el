@@ -259,10 +259,6 @@ Used by `embark-completing-read-prompter' and `embark-keymap-help'.")
 (defface embark-target '((t :inherit highlight))
   "Face used to highlight the target at point during `embark-act'.")
 
-(make-obsolete 'embark-indicator
-               "see the new `embark-indicators' variable."
-               "0.12")
-
 (defcustom embark-indicators
   '(embark-mixed-indicator
     embark-highlight-indicator
@@ -382,25 +378,11 @@ configure that by adding an entry to this variable pairing `file'
 with `find-file'."
   :type '(alist :key-type symbol :value-type function))
 
-(define-obsolete-variable-alias
-  'embark-allow-edit-commands
-  'embark-allow-edit-actions
-  "0.12")
-
 (make-obsolete-variable
    'embark-allow-edit-actions
    "To allow editing for an action add `embark--allow-edit' to the
 entry of `embark-target-injection-hooks' whose key is the action."
    "0.14")
-
-(defvar embark-skip-edit-commands nil)
-(defvar embark-allow-edit-default t)
-(dolist (var '(embark-skip-edit-commands embark-allow-edit-default))
-  (make-obsolete-variable
-   var
-   "The action editing configuration has been simplified and
-replaced by the single `embark-allow-edit-actions' variable."
-   "0.12"))
 
 (define-obsolete-variable-alias
   'embark-setup-action-hooks
@@ -439,12 +421,6 @@ the key :always are executed always."
                         (const :tag "Default" t)
                         (const :tag "Always" :always))
                 :value-type hook))
-
-(dolist (obsolete
-         '(embark-setup-hook embark-setup-hooks embark-setup-overrides))
-  (make-obsolete obsolete
-                 "see the new `embark-target-injection-hooks' variable."
-                 "0.12"))
 
 (defcustom embark-pre-action-hooks
   '(;; commands that need to position point at the beginning or end
@@ -512,10 +488,6 @@ arguments and more details."
                         (const :tag "Always" :always))
                 :value-type hook))
 
-(make-obsolete 'embark-pre-action-hook
-               "see the new `embark-pre-action-hooks' variable."
-               "0.12")
-
 (defcustom embark-post-action-hooks
   '((bookmark-delete embark--restart)
     (bookmark-rename embark--restart)
@@ -541,10 +513,6 @@ arguments and more details."
                         (const :tag "Default" t)
                         (const :tag "Always" :always))
                 :value-type hook))
-
-(make-obsolete 'embark-post-action-hook
-               "see the new `embark-post-action-hooks' variable."
-               "0.12")
 
 (defcustom embark-multitarget-actions nil
   "Commands for which `embark-act-all' should pass a list of targets.
@@ -1403,10 +1371,6 @@ display actions and parameters are available."
                  (display-buffer-in-side-window (side . left)))
           (sexp :tag "Other")))
 
-(define-obsolete-variable-alias
-  'embark-verbose-indicator-excluded-commands
-  'embark-verbose-indicator-excluded-actions
-  "0.12")
 (defcustom embark-verbose-indicator-excluded-actions nil
   "Commands not displayed by `embark-verbose-indicator'.
 This variable should be set to a list of symbols and regexps.
@@ -2293,11 +2257,6 @@ See `embark-act' for the meaning of the prefix ARG."
                        target)
                      (embark--quit-p action arg)))
     (user-error "No target found")))
-
-(define-obsolete-function-alias
-  'embark-default-action
-  'embark-dwim
-  "0.11")
 
 (defun embark--become-keymap ()
   "Return keymap of commands to become for current command."
@@ -3321,7 +3280,7 @@ Return the category metadatum as the type of the target."
     (unless selectrum--previous-input-string
       (selectrum-exhibit))
     (cons (selectrum--get-meta 'category)
-	  (selectrum-get-current-candidate))))
+          (selectrum-get-current-candidate))))
 
 (defun embark--selectrum-candidates ()
   "Collect the current Selectrum candidates.
@@ -3331,9 +3290,9 @@ Return the category metadatum as the type of the candidates."
     (unless selectrum--previous-input-string
       (selectrum-exhibit))
     (cons (selectrum--get-meta 'category)
-	  (selectrum-get-current-candidates
-	   ;; Pass relative file names for dired.
-	   minibuffer-completing-file-name))))
+          (selectrum-get-current-candidates
+           ;; Pass relative file names for dired.
+           minibuffer-completing-file-name))))
 
 (defun embark--selectrum-indicator ()
   "Embark indicator highlighting the current Selectrum candidate."
@@ -3431,11 +3390,6 @@ STRING contains no newlines."
         (with-selected-window (other-window-for-scrolling)
           (ins-string))
       (ins-string))))
-
-(define-obsolete-function-alias
-  'embark-save
-  'kill-new
-  "0.11")
 
 (defun embark-eshell (file)
   "Run eshell in directory of FILE."
