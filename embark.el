@@ -686,19 +686,19 @@ There are three kinds:
 - :live, which does
 - :completions, which also auto-updates, but is ephemeral.")
 
-(defvar-local embark-collect-candidates nil
+(defvar-local embark--collect-candidates nil
   "List of candidates in current collect buffer.")
 
-(defvar-local embark-collect-view 'list
+(defvar-local embark--collect-view 'list
   "Type of view in collect buffer: `list' or `grid'.")
 
-(defvar-local embark-collect-from nil
+(defvar-local embark--collect-from nil
   "The buffer `embark-collect' was called from.")
 
-(defvar-local embark-collect-linked-buffer nil
+(defvar-local embark--collect-linked-buffer nil
   "Buffer local variable indicating which Embark Buffer to update.")
 
-(defvar-local embark-collect-affixator nil
+(defvar-local embark--collect-affixator nil
   "Affixation function of minibuffer session for this collect.")
 
 (defvar-local embark--collect-live--timer nil
@@ -2535,7 +2535,7 @@ all buffers."
   "Return candidates in Embark Collect buffer.
 This makes `embark-export' work in Embark Collect buffers."
   (when (derived-mode-p 'embark-collect-mode)
-    (cons embark--type embark-collect-candidates)))
+    (cons embark--type embark--collect-candidates)))
 
 (defun embark-completions-buffer-candidates ()
   "Return all candidates in a completions buffer."
@@ -2706,8 +2706,8 @@ key binding for it.  Or alternatively you might want to enable
 
 (defun embark-collect--list-view ()
   "List view of candidates and annotations for Embark Collect buffer."
-  (let ((candidates embark-collect-candidates) (max-width 0))
-    (when-let ((affixator embark-collect-affixator)
+  (let ((candidates embark--collect-candidates) (max-width 0))
+    (when-let ((affixator embark--collect-affixator)
                (dir default-directory)) ; smuggle to the target window
       (with-selected-window (or (embark--target-window) (selected-window))
           (let ((default-directory dir)) ; for file annotator
@@ -2717,7 +2717,7 @@ key binding for it.  Or alternatively you might want to enable
       (setq header-line-format nil tabulated-list--header-string nil))
     (setq tabulated-list-entries
           (mapcar
-           (if embark-collect-affixator
+           (if embark--collect-affixator
                (pcase-lambda (`(,cand ,prefix ,annotation))
                  (let ((display (embark--for-display cand)))
                    (setq max-width (max max-width (+ (string-width prefix)
@@ -2743,7 +2743,7 @@ key binding for it.  Or alternatively you might want to enable
                            type embark-collect-entry)]))))
            candidates))
     (setq tabulated-list-format
-          (if embark-collect-affixator
+          (if embark--collect-affixator
               `[("Candidate" ,max-width t) ("Annotation" 0 t)]
             [("Candidate" 0 t)]))))
 
@@ -2793,7 +2793,7 @@ This is specially useful to tell where multi-line entries begin and end."
   (let* ((candidates (mapcar (lambda (cand)
                                (propertize (embark--for-display cand)
                                            'embark--candidate cand))
-                             embark-collect-candidates))
+                             embark--collect-candidates))
          (max-width (or (cl-loop for display in candidates
                                  maximize (string-width display))
                         0))
@@ -2834,26 +2834,26 @@ For non-minibuffers, assume candidates are of given TYPE."
 
 (defun embark-collect--revert ()
   "Recalculate Embark Collect candidates if possible."
-  (when (buffer-live-p embark-collect-from)
+  (when (buffer-live-p embark--collect-from)
     (pcase-let ((`(,type . ,candidates)
-                 (with-current-buffer embark-collect-from
+                 (with-current-buffer embark--collect-from
                    (run-hook-with-args-until-success
                     'embark-candidate-collectors))))
       (setq embark--type type
-            embark-collect-candidates candidates
-            default-directory (with-current-buffer embark-collect-from
+            embark--collect-candidates candidates
+            default-directory (with-current-buffer embark--collect-from
                                 (embark--default-directory))
-            embark-collect-affixator (or ; new annotator? (marginalia-cycle)
-                                      (with-current-buffer embark-collect-from
+            embark--collect-affixator (or ; new annotator? (marginalia-cycle)
+                                      (with-current-buffer embark--collect-from
                                         (embark-collect--affixator type))
-                                      embark-collect-affixator))))
-  (if (eq embark-collect-view 'list)
+                                      embark--collect-affixator))))
+  (if (eq embark--collect-view 'list)
       (embark-collect--list-view)
     (embark-collect--grid-view)))
 
 (defun embark-collect--update-linked (&rest _)
   "Update linked Embark Collect buffer."
-  (when-let ((collect-buffer embark-collect-linked-buffer))
+  (when-let ((collect-buffer embark--collect-linked-buffer))
     (when embark--collect-live--timer
       (cancel-timer embark--collect-live--timer))
     (setq embark--collect-live--timer
@@ -2871,7 +2871,7 @@ For non-minibuffers, assume candidates are of given TYPE."
 Refresh the buffer afterwards."
   (when-let ((buffer (if (derived-mode-p 'embark-collect-mode)
                          (current-buffer)
-                       embark-collect-linked-buffer)))
+                       embark--collect-linked-buffer)))
     (with-current-buffer buffer
       (set variable
            (if (eq (buffer-local-value variable buffer) this) that this))
@@ -2883,7 +2883,7 @@ This command can be called either from the Embark Collect buffer
 itself, or, from any buffer (particularly a minibuffer) that has
 a linked Embark Collect Live buffer."
   (interactive)
-  (embark-collect--toggle 'embark-collect-view 'list 'grid))
+  (embark-collect--toggle 'embark--collect-view 'list 'grid))
 
 (defun embark-collect-toggle-header ()
   "Toggle the visibility of the header line of Embark Collect buffer.
@@ -2928,7 +2928,7 @@ the minibuffer is exited."
        (affixator (embark-collect--affixator type)))
     (when (and (null candidates) (eq kind :snapshot))
       (user-error "No candidates to collect"))
-    (setq embark-collect-linked-buffer buffer)
+    (setq embark--collect-linked-buffer buffer)
     (with-current-buffer buffer
       ;; we'll run the mode hooks once the buffer is displayed, so
       ;; the hooks can make use of the window
@@ -2947,21 +2947,21 @@ the minibuffer is exited."
       (unless (and (minibufferp from) (eq kind :snapshot))
         ;; for a snapshot of a minibuffer, don't link back to minibuffer:
         ;; they can get recycled and if so revert would do the wrong thing
-        (setq embark-collect-from from))
+        (setq embark--collect-from from))
 
       (setq embark--type type
-            embark-collect-candidates candidates
-            embark-collect-affixator affixator)
+            embark--collect-candidates candidates
+            embark--collect-affixator affixator)
 
       (add-hook 'tabulated-list-revert-hook #'embark-collect--revert nil t)
 
-      (setq embark-collect-view
+      (setq embark--collect-view
             (or initial-view
                 (alist-get type embark-collect-initial-view-alist)
                 (alist-get t embark-collect-initial-view-alist)
                 'list))
-      (when (eq embark-collect-view 'zebra)
-        (setq embark-collect-view 'list)
+      (when (eq embark--collect-view 'zebra)
+        (setq embark--collect-view 'list)
         (embark-collect-zebra-minor-mode))
 
       (with-current-buffer from (embark--cache-info buffer)))
@@ -2995,7 +2995,7 @@ the minibuffer is exited."
            (:live
             (lambda ()
               (when (buffer-live-p buffer)
-                (setf (buffer-local-value 'embark-collect-from buffer) nil)
+                (setf (buffer-local-value 'embark--collect-from buffer) nil)
                 (with-current-buffer buffer
                   (save-match-data
                     (rename-buffer
@@ -3077,13 +3077,13 @@ minibuffer; the length of the delay after typing is given by
   "Switch to the Embark Collect Completions buffer, creating it if necessary."
   (interactive)
   (switch-to-buffer
-   (if (and embark-collect-linked-buffer
+   (if (and embark--collect-linked-buffer
             (eq (buffer-local-value 'embark-collect--kind
-                                    embark-collect-linked-buffer)
+                                    embark--collect-linked-buffer)
                 :completions))
-       embark-collect-linked-buffer
+       embark--collect-linked-buffer
      (or (get-buffer "*Embark Collect Completions*")
-         (progn (embark-collect-completions) embark-collect-linked-buffer)))))
+         (progn (embark-collect-completions) embark--collect-linked-buffer)))))
 
 
 ;;;###autoload
