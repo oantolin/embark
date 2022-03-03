@@ -718,6 +718,10 @@ There are three kinds:
 - :live, which does
 - :completions, which also auto-updates, but is ephemeral.")
 
+;; TODO Do we need this variable?
+;; Also add a list of marked candidates, or a list of overlays?
+;; When switching the display modes we have to move the overlays too.
+;; We could also turn this variable into an alist, with value=marked.
 (defvar-local embark-collect-candidates nil
   "List of candidates in current collect buffer.")
 
