@@ -3624,25 +3624,29 @@ minibuffer, which means it can be used as an Embark action."
         (unhighlight-regexp regexp)
       (highlight-symbol-at-point))))
 
-(defun embark-next-symbol (symbol)
-  "Jump to next occurrence of SYMBOL.
+(defun embark-next-symbol ()
+  "Jump to next occurrence of symbol at point.
 The search respects symbol boundaries."
-  (interactive "sSymbol: ")
-  (let ((regexp (format "\\_<%s\\_>" (regexp-quote symbol))))
-    (when (looking-at regexp)
-      (forward-symbol 1))
-    (unless (re-search-forward regexp nil t)
-      (user-error "Symbol `%s' not found" symbol))))
+  (interactive)
+  (if-let ((symbol (thing-at-point 'symbol)))
+      (let ((regexp (format "\\_<%s\\_>" (regexp-quote symbol))))
+        (when (looking-at regexp)
+          (forward-symbol 1))
+        (unless (re-search-forward regexp nil t)
+          (user-error "Symbol `%s' not found" symbol)))
+    (user-error "No symbol at point")))
 
-(defun embark-previous-symbol (symbol)
-  "Jump to previous occurrence SYMBOL.
+(defun embark-previous-symbol ()
+  "Jump to previous occurrence of symbol at point.
 The search respects symbol boundaries."
-  (interactive "sSymbol: ")
-  (let ((regexp (format "\\_<%s\\_>" (regexp-quote symbol))))
-    (when (looking-back regexp (- (point) (length symbol)))
-      (forward-symbol -1))
-    (unless (re-search-backward regexp nil t)
-      (user-error "Symbol `%s' not found" symbol))))
+  (interactive)
+  (if-let ((symbol (thing-at-point 'symbol)))
+      (let ((regexp (format "\\_<%s\\_>" (regexp-quote symbol))))
+        (when (looking-back regexp (- (point) (length symbol)))
+          (forward-symbol -1))
+        (unless (re-search-backward regexp nil t)
+          (user-error "Symbol `%s' not found" symbol)))
+    (user-error "No symbol at point")))
 
 (defun embark-compose-mail (address)
   "Compose email to ADDRESS."
