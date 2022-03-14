@@ -1842,7 +1842,6 @@ minibuffer before executing the action."
                         (with-selected-window action-window
                           (let ((enable-recursive-minibuffers t)
                                 (embark--command command)
-                                (this-command action)
                                 (prefix-arg prefix)
                                 ;; the next two avoid mouse dialogs
                                 (use-dialog-box nil)
@@ -1856,6 +1855,7 @@ minibuffer before executing the action."
                                  (if (characterp last-command-event)
                                      (string last-command-event)
                                    (kbd "RET"))))
+                              (setq this-command action)
                               (command-execute action)))
                           (setq final-window (selected-window)))
                       (embark--run-action-hooks embark-post-action-hooks
@@ -2355,10 +2355,9 @@ point."
          (lambda ()
            (delete-minibuffer-contents)
            (insert input))
-       (let ((this-command command)
-             ;; the next two avoid mouse dialogs
-             (use-dialog-box nil)
+       (let ((use-dialog-box nil) ;; avoid mouse dialogs
              (last-nonmenu-event 13))
+         (setq this-command command)
          (command-execute command))))))
 
 (defmacro embark-define-keymap (name doc &rest bindings)
