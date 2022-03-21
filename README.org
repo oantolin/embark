@@ -160,6 +160,13 @@ sets:
   The candidates can be viewed in a grid or as a list showing
   additional annotations.
 
+  The Embark Collect buffer is "dired-like": you can mark and unmark
+  candidates with =m= and =u=, you can unmark all marked candidates with =U=
+  or toggle the marks with =t=. In an Embark Collect buffer
+  =embark-act-all= is bound to =A= and will act on all currently marked
+  candidates if there any, and will act on all candidates if none are
+  marked.
+
 - The =embark-export= command tries to open a buffer in an appropriate
   major mode for the set of candidates. If the candidates are files
   export produces a Dired buffer; if they are buffers, you get an

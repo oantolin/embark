@@ -253,6 +253,13 @@ candidates, for you to peruse and run actions on at your leisure.
 The candidates can be viewed in a grid or as a list showing
 additional annotations.
 
+The Embark Collect buffer is ``dired-like'': you can mark and unmark
+candidates with @samp{m} and @samp{u}, you can unmark all marked candidates with @samp{U}
+or toggle the marks with @samp{t}. In an Embark Collect buffer
+@samp{embark-act-all} is bound to @samp{A} and will act on all currently marked
+candidates if there any, and will act on all candidates if none are
+marked.
+
 @item
 The @samp{embark-export} command tries to open a buffer in an appropriate
 major mode for the set of candidates. If the candidates are files
