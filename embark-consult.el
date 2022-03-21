@@ -75,8 +75,6 @@
 (defun embark-consult--collect-candidate ()
   "Return candidate at point in collect buffer."
   (and (derived-mode-p 'embark-collect-mode)
-       (active-minibuffer-window)
-       (eq (window-buffer (active-minibuffer-window)) embark-collect-from)
        (get-text-property (point) 'embark--candidate)))
 
 (add-hook 'consult--completion-candidate-hook #'embark-consult--collect-candidate)
@@ -162,7 +160,9 @@ The elements of LINES are assumed to be values of category `consult-line'."
   "Upgrade consult-location cheap markers to real markers.
 This function is meant to be added to `embark-collect-mode-hook'."
   (when (eq embark--type 'consult-location)
-    (mapc #'consult--get-location embark-collect-candidates)))
+    (let ((fn (if (consp (car embark-collect--candidates)) #'car #'identity)))
+      (mapc (lambda (x) (consult--get-location (funcall fn x)))
+            embark-collect--candidates))))
 
 (setf (alist-get 'consult-location embark-collect-initial-view-alist)
       'list)
