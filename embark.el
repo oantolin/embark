@@ -2851,15 +2851,6 @@ Refresh the buffer afterwards."
   (interactive)
   (embark-collect--toggle 'tabulated-list-use-header-line t nil))
 
-(defun embark-collect--initial-view-arg ()
-  "Translate current prefix arg to intial Embark Collect view.
-\\[universal-argument] means grid view, a prefix argument of 1
-means list view, anything else means proceed according to
-`embark-collect-initial-view-alist'."
-  (list (pcase current-prefix-arg
-          ('(4) 'grid)
-          (1 'list))))
-
 (defun embark-collect--update-candidates (buffer)
   "Update candidates for Embark Collect BUFFER."
   (pcase-let* ((`(,type . ,candidates)
@@ -2876,16 +2867,12 @@ means list view, anything else means proceed according to
       (setq embark--type type embark-collect--candidates candidates))))
 
 ;;;###autoload
-(defun embark-collect (&optional initial-view)
+(defun embark-collect ()
   "Create an Embark Collect buffer.
-Optionally start in INITIAL-VIEW (either `list' or `grid')
-instead of what `embark-collect-initial-view-alist' specifies.
-Interactively, \\[universal-argument] means grid view, a prefix
-argument of 1 means list view.
 
 To control the display, add an entry to `display-buffer-alist'
 with key \"Embark Collect\"."
-  (interactive (embark-collect--initial-view-arg))
+  (interactive)
   (let ((from (current-buffer))
         (buffer (generate-new-buffer "*Embark Collect*")))
 
@@ -2896,8 +2883,7 @@ with key \"Embark Collect\"."
       (setq tabulated-list-use-header-line nil) ; default to no header
       (add-hook 'tabulated-list-revert-hook #'embark-collect--revert nil t)
       (setq embark-collect--view
-            (or initial-view
-                (alist-get embark--type embark-collect-initial-view-alist)
+            (or (alist-get embark--type embark-collect-initial-view-alist)
                 (alist-get t embark-collect-initial-view-alist)
                 'list))
       (when (eq embark-collect--view 'zebra)
