@@ -2866,16 +2866,13 @@ Refresh the buffer afterwards."
     (with-current-buffer buffer
       (setq embark--type type embark-collect--candidates candidates))))
 
-;;;###autoload
-(defun embark-collect ()
-  "Create an Embark Collect buffer.
+(defun embark--collect (buffer-name)
+  "Create an Embark Collect buffer named BUFFER-NAME.
 
-To control the display, add an entry to `display-buffer-alist'
-with key \"Embark Collect\"."
+The function `generate-new-buffer-name' is used to ensure the
+buffer has a unique name."
   (interactive)
-  (let ((from (current-buffer))
-        (buffer (generate-new-buffer "*Embark Collect*")))
-
+  (let ((buffer (generate-new-buffer buffer-name)))
     (with-current-buffer buffer
       ;; we'll run the mode hooks once the buffer is displayed, so
       ;; the hooks can make use of the window
@@ -2899,19 +2896,60 @@ with key \"Embark Collect\"."
         (run-mode-hooks)
         (revert-buffer))
       (set-window-dedicated-p window t)
-      (when (minibufferp from)
-        ;; A function added to `minibuffer-exit-hook' locally isn't called if
-        ;; we `abort-recursive-edit' from outside the minibuffer, that is why
-        ;; we use `change-major-mode-hook', which is also run on minibuffer
-        ;; exit.
-        (add-hook
-         'change-major-mode-hook
-         (lambda ()
-              (when (buffer-live-p buffer)
-                (embark--run-after-command #'pop-to-buffer buffer)))
-         nil t))
-      (embark--quit-and-run #'message nil)
       buffer)))
+
+;;;###autoload
+(defun embark-collect ()
+  "Create an Embark Collect buffer.
+
+To control the display, add an entry to `display-buffer-alist'
+with key \"Embark Collect\"."
+  (interactive)
+  (let ((buffer (embark--collect
+                 (format "*Embark Collect: %s*"
+                         (if (minibufferp)
+                             (format "M-x %s RET %s" embark--command
+                                     (minibuffer-contents-no-properties))
+                           (buffer-name))))))
+    (when (minibufferp)
+      (embark--run-after-command #'pop-to-buffer buffer)
+      (embark--quit-and-run #'message nil))))
+
+;;;###autoload
+(defun embark-live ()
+  "Create a live-updating Embark Collect buffer.
+
+To control the display, add an entry to `display-buffer-alist'
+with key \"Embark Live\"."
+  (interactive)
+  (let ((live-buffer (embark--collect
+                      (format "*Embark Live: %s*"
+                              (if (minibufferp)
+                                  (format "M-x %s" embark--command)
+                                (buffer-name)))))
+        (run-collect (make-symbol "run-collect"))
+        (stop-collect (make-symbol "stop-collect"))
+        timer)
+    (setf (symbol-function stop-collect)
+          (lambda ()
+            (remove-hook 'change-major-mode-hook stop-collect t)
+            (remove-hook 'after-change-functions run-collect t)))
+    (setf (symbol-function run-collect)
+          (lambda (_1 _2 _3)
+            (unless timer
+              (setq timer
+                    (run-with-idle-timer
+                     0.05 nil
+                     (lambda ()
+                       (if (not (buffer-live-p live-buffer))
+                           (funcall stop-collect)
+                         (embark-collect--update-candidates live-buffer)
+                         (with-current-buffer live-buffer
+                           (save-excursion (revert-buffer)))
+                         (setq timer nil))))))))
+    (add-hook 'after-change-functions run-collect nil t)
+    (when (minibufferp)
+      (add-hook 'change-major-mode-hook stop-collect nil t))))
 
 ;;;###autoload
 (defun embark-export ()
