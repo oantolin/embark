@@ -2408,6 +2408,9 @@ default is `embark-collect'"
   "Face for annotations in Embark Collect.
 This is only used for annotation that are not already fontified.")
 
+(defface embark-collect-marked '((t (:inherit warning)))
+  "Face for marked candidates in an Embark Collect buffer.")
+
 (defcustom embark-collect-post-revert-hook nil
   "Hook run after an Embark Collect buffer is updated."
   :type 'hook)
@@ -2508,11 +2511,23 @@ all buffers."
   "Return candidates in Embark Collect buffer.
 This makes `embark-export' work in Embark Collect buffers."
   (when (derived-mode-p 'embark-collect-mode)
-    (let ((fn (if (consp (car embark-collect--candidates)) #'car #'identity)))
-      (cons embark--type
-            (mapcar (lambda (x)
-                      (get-text-property 0 'embark--candidate (funcall fn x)))
-                    embark-collect--candidates)))))
+    (cons embark--type
+          (or (save-excursion
+                (mapcar (lambda (ov)
+                          (goto-char (overlay-start ov))
+                          (cadr (embark-target-collect-candidate)))
+                        (nreverse
+                         (seq-filter
+                          (lambda (ov)
+                            (eq (overlay-get ov 'face) 'embark-collect-marked))
+                          (overlays-in (point-min) (point-max))))))
+              (let ((fn (if (consp (car embark-collect--candidates))
+                            #'car
+                          #'identity)))             
+                (mapcar (lambda (x)
+                          (get-text-property 0 'embark--candidate
+                                             (funcall fn x)))
+                        embark-collect--candidates))))))
 
 (defun embark-completions-buffer-candidates ()
   "Return all candidates in a completions buffer."
@@ -2630,11 +2645,16 @@ For other Embark Collect buffers, run the default action on ENTRY."
   "Keymap for Embark collect mode."
   :parent tabulated-list-mode-map
   ("a" embark-act)
-  ("A" embark-collect-direct-action-minor-mode)
+  ("A" embark-act-all)
+  ("M-a" embark-collect-direct-action-minor-mode)
   ("z" embark-collect-zebra-minor-mode)
   ("M-q" embark-collect-toggle-view)
   ("v" embark-collect-toggle-view)
   ("e" embark-export)
+  ("t" embark-collect-toggle-marks)
+  ("m" embark-collect-mark)
+  ("u" embark-collect-unmark)
+  ("U" embark-collect-unmark-all)
   ("s" isearch-forward)
   ("f" forward-button)
   ("b" backward-button)
@@ -2809,6 +2829,52 @@ Refresh the buffer afterwards."
   "Toggle the visibility of the header line of Embark Collect buffer."
   (interactive)
   (embark-collect--toggle 'tabulated-list-use-header-line t nil))
+
+(defun embark-collect--marked-p (&optional location)
+  "Is the candidate at LOCATION marked?
+LOCATION defaults to point."
+  (seq-find (lambda (ov) (eq (overlay-get ov 'face) 'embark-collect-marked))
+            (overlays-at (or location (point)))))
+
+(defun embark-collect-mark (&optional unmark)
+  "Mark the candidate at point in an Embark collect buffer.
+If called from Lisp with a non-nil UNMARK, instead unmark the
+candidate."
+  (interactive)
+  (unless (derived-mode-p 'embark-collect-mode)
+    (user-error "Not in an Embark Collect mode buffer"))
+  (pcase (embark-target-collect-candidate)
+    (`(,_type ,_cand ,start . ,end)
+     (if-let ((ov (embark-collect--marked-p)))
+         (when unmark (delete-overlay ov))
+       (unless unmark
+         (overlay-put (make-overlay start end)
+                      'face 'embark-collect-marked)))
+     (forward-button 1 nil nil t))
+    ('nil (user-error "No candidate at point"))))
+
+(defun embark-collect-unmark ()
+  "Unmark the candidate at point in an Embark collect buffer."
+  (interactive)
+  (embark-collect-mark t))
+
+(defun embark-collect-unmark-all ()
+  "Unmark all marked candidates in an Embark Collect buffer."
+  (interactive)
+  (unless (derived-mode-p 'embark-collect-mode)
+    (user-error "Not in an Embark Collect mode buffer"))
+  (dolist (ov (overlays-in (point-min) (point-max)))
+    (when (eq (overlay-get ov 'face) 'embark-collect-marked)
+      (delete-overlay ov))))
+
+(defun embark-collect-toggle-marks ()
+  "Toggle marks: marked candidates become unmarked, and vice versa."
+  (interactive)
+  (unless (derived-mode-p 'embark-collect-mode)
+    (user-error "Not in an Embark Collect mode buffer"))
+  (save-excursion
+    (goto-char (point-min))
+    (while (embark-collect-mark (embark-collect--marked-p)))))
 
 (defun embark-collect--update-candidates (buffer)
   "Update candidates for Embark Collect BUFFER."
@@ -3626,6 +3692,7 @@ The advice is self-removing so it only affects ACTION once."
   ("w" kill-new)
   ("E" embark-export)
   ("S" embark-collect)
+  ("L" embark-live)
   ("B" embark-become)
   ("A" embark-act-all)
   ("C-s" embark-isearch)
