@@ -719,9 +719,6 @@ This function is meant to be added to `minibuffer-setup-hook'."
 (defvar-local embark-collect--view 'list
   "Type of view in collect buffer: `list' or `grid'.")
 
-(defvar-local embark-collect-affixator nil
-  "Affixation function of minibuffer session for this collect.")
-
 ;;; Core functionality
 
 (defconst embark--verbose-indicator-buffer " *Embark Actions*")
@@ -2552,7 +2549,11 @@ all buffers."
   "Return candidates in Embark Collect buffer.
 This makes `embark-export' work in Embark Collect buffers."
   (when (derived-mode-p 'embark-collect-mode)
-    (cons embark--type embark-collect--candidates)))
+    (let ((fn (if (consp (car embark-collect--candidates)) #'car #'identity)))
+      (cons embark--type
+            (mapcar (lambda (x)
+                      (get-text-property 0 'embark--candidate (funcall fn x)))
+                    embark-collect--candidates)))))
 
 (defun embark-completions-buffer-candidates ()
   "Return all candidates in a completions buffer."
@@ -2704,48 +2705,41 @@ key binding for it.  Or alternatively you might want to enable
                   ;; avoid allocation for full string
                   (push (substring string pos inv) chunks)))
               (setq pos inv))))))
-    (if chunks (apply #'concat (nreverse chunks)) string)))
+    (propertize
+     (if chunks (apply #'concat (nreverse chunks)) string)
+     'embark--candidate string)))
 
 (defun embark-collect--list-view ()
   "List view of candidates and annotations for Embark Collect buffer."
-  (let ((candidates embark-collect--candidates) (max-width 0))
-    (when-let ((affixator embark-collect-affixator)
-               (dir default-directory)) ; smuggle to the target window
-      (with-selected-window (or (embark--target-window) (selected-window))
-          (let ((default-directory dir)) ; for file annotator
-            (setq candidates (funcall affixator candidates)))))
+  (let ((max-width 0)
+        (affixed (consp (car embark-collect--candidates))))
     (if tabulated-list-use-header-line
         (tabulated-list-init-header)
       (setq header-line-format nil tabulated-list--header-string nil))
     (setq tabulated-list-entries
           (mapcar
-           (if embark-collect-affixator
+           (if affixed
                (pcase-lambda (`(,cand ,prefix ,annotation))
-                 (let ((display (embark--for-display cand)))
-                   (setq max-width (max max-width (+ (string-width prefix)
-                                                     (string-width display))))
-                   (let* ((length (length annotation))
-                          (faces (text-property-not-all
-                                  0 length 'face nil annotation)))
-                     (when faces
-                       (add-face-text-property 0 length 'default t annotation))
-                     `(,cand
-                       [(,(propertize display
-                                      'line-prefix prefix
-                                      'embark--candidate cand)
-                         type embark-collect-entry)
-                        (,annotation
-                         skip t
-                         ,@(unless faces
-                             '(face embark-collect-annotation)))]))))
+                 (setq max-width (max max-width (+ (string-width prefix)
+                                                   (string-width cand))))
+                 (let* ((length (length annotation))
+                        (faces (text-property-not-all
+                                0 length 'face nil annotation)))
+                   (when faces
+                     (add-face-text-property 0 length 'default t annotation))
+                   `(,cand
+                     [(,(propertize cand 'line-prefix prefix)
+                       type embark-collect-entry)
+                      (,annotation
+                       skip t
+                       ,@(unless faces
+                           '(face embark-collect-annotation)))])))
              (lambda (cand)
-               (let ((display (embark--for-display cand)))
-                 (setq max-width (max max-width (string-width display)))
-                 `(,cand [(,(propertize display 'embark--candidate cand)
-                           type embark-collect-entry)]))))
-           candidates))
+               (setq max-width (max max-width (string-width cand)))
+               `(,cand [(,cand type embark-collect-entry)])))
+           embark-collect--candidates))
     (setq tabulated-list-format
-          (if embark-collect-affixator
+          (if affixed
               `[("Candidate" ,max-width t) ("Annotation" 0 t)]
             [("Candidate" 0 t)]))))
 
@@ -2792,10 +2786,9 @@ This is specially useful to tell where multi-line entries begin and end."
   (if tabulated-list-use-header-line
       (tabulated-list-init-header)
     (setq header-line-format nil tabulated-list--header-string nil))
-  (let* ((candidates (mapcar (lambda (cand)
-                               (propertize (embark--for-display cand)
-                                           'embark--candidate cand))
-                             embark-collect--candidates))
+  (let* ((candidates (if (consp (car embark-collect--candidates))
+                         (mapcar #'car embark-collect--candidates)
+                       embark-collect--candidates))
          (max-width (or (cl-loop for display in candidates
                                  maximize (string-width display))
                         0))
@@ -2867,6 +2860,21 @@ means list view, anything else means proceed according to
           ('(4) 'grid)
           (1 'list))))
 
+(defun embark-collect--update-candidates (buffer)
+  "Update candidates for Embark Collect BUFFER."
+  (pcase-let* ((`(,type . ,candidates)
+                (run-hook-with-args-until-success 'embark-candidate-collectors))
+               (affixator (embark-collect--affixator type)))
+    (when affixator (setq candidates (funcall affixator candidates)))
+    (setq candidates
+          (if (stringp (car candidates))
+              (mapcar #'embark--for-display candidates)
+            (mapcar (pcase-lambda (`(,cand ,prefix ,annotation))
+                      (list (embark--for-display cand) prefix annotation))
+                    candidates)))
+    (with-current-buffer buffer
+      (setq embark--type type embark-collect--candidates candidates))))
+
 ;;;###autoload
 (defun embark-collect (&optional initial-view)
   "Create an Embark Collect buffer.
@@ -2878,47 +2886,33 @@ argument of 1 means list view.
 To control the display, add an entry to `display-buffer-alist'
 with key \"Embark Collect\"."
   (interactive (embark-collect--initial-view-arg))
-  (pcase-let*
-      ((from (current-buffer))
-       (buffer (generate-new-buffer "*Embark Collect*"))
-       (`(,type . ,candidates)
-        (run-hook-with-args-until-success 'embark-candidate-collectors))
-       (affixator (embark-collect--affixator type)))
-
-    (when (null candidates)
-      (user-error "No candidates to collect"))
+  (let ((from (current-buffer))
+        (buffer (generate-new-buffer "*Embark Collect*")))
 
     (with-current-buffer buffer
       ;; we'll run the mode hooks once the buffer is displayed, so
       ;; the hooks can make use of the window
       (delay-mode-hooks (embark-collect-mode))
-
       (setq tabulated-list-use-header-line nil) ; default to no header
-      
-      (setq embark--type type
-            embark-collect--candidates candidates
-            embark-collect-affixator affixator)
-
       (add-hook 'tabulated-list-revert-hook #'embark-collect--revert nil t)
-
       (setq embark-collect--view
             (or initial-view
-                (alist-get type embark-collect-initial-view-alist)
+                (alist-get embark--type embark-collect-initial-view-alist)
                 (alist-get t embark-collect-initial-view-alist)
                 'list))
       (when (eq embark-collect--view 'zebra)
         (setq embark-collect--view 'list)
-        (embark-collect-zebra-minor-mode))
+        (embark-collect-zebra-minor-mode)))
 
-      (with-current-buffer from (embark--cache-info buffer)))
+    (unless (embark-collect--update-candidates buffer)
+      (user-error "No candidates to collect"))
 
+    (embark--cache-info buffer)
     (let ((window (display-buffer buffer)))
       (with-selected-window window
         (run-mode-hooks)
         (revert-buffer))
-
       (set-window-dedicated-p window t)
-
       (when (minibufferp from)
         ;; A function added to `minibuffer-exit-hook' locally isn't called if
         ;; we `abort-recursive-edit' from outside the minibuffer, that is why
@@ -2930,8 +2924,8 @@ with key \"Embark Collect\"."
               (when (buffer-live-p buffer)
                 (embark--run-after-command #'pop-to-buffer buffer)))
          nil t))
-
-      (embark--quit-and-run #'message nil))))
+      (embark--quit-and-run #'message nil)
+      buffer)))
 
 ;;;###autoload
 (defun embark-export ()
