@@ -713,10 +713,10 @@ This function is meant to be added to `minibuffer-setup-hook'."
 (defvar embark--prompter-history nil
   "History used by the `embark-completing-read-prompter'.")
 
-(defvar-local embark-collect-candidates nil
+(defvar-local embark-collect--candidates nil
   "List of candidates in current collect buffer.")
 
-(defvar-local embark-collect-view 'list
+(defvar-local embark-collect--view 'list
   "Type of view in collect buffer: `list' or `grid'.")
 
 (defvar-local embark-collect-affixator nil
@@ -2552,7 +2552,7 @@ all buffers."
   "Return candidates in Embark Collect buffer.
 This makes `embark-export' work in Embark Collect buffers."
   (when (derived-mode-p 'embark-collect-mode)
-    (cons embark--type embark-collect-candidates)))
+    (cons embark--type embark-collect--candidates)))
 
 (defun embark-completions-buffer-candidates ()
   "Return all candidates in a completions buffer."
@@ -2708,7 +2708,7 @@ key binding for it.  Or alternatively you might want to enable
 
 (defun embark-collect--list-view ()
   "List view of candidates and annotations for Embark Collect buffer."
-  (let ((candidates embark-collect-candidates) (max-width 0))
+  (let ((candidates embark-collect--candidates) (max-width 0))
     (when-let ((affixator embark-collect-affixator)
                (dir default-directory)) ; smuggle to the target window
       (with-selected-window (or (embark--target-window) (selected-window))
@@ -2795,7 +2795,7 @@ This is specially useful to tell where multi-line entries begin and end."
   (let* ((candidates (mapcar (lambda (cand)
                                (propertize (embark--for-display cand)
                                            'embark--candidate cand))
-                             embark-collect-candidates))
+                             embark-collect--candidates))
          (max-width (or (cl-loop for display in candidates
                                  maximize (string-width display))
                         0))
@@ -2836,7 +2836,7 @@ For non-minibuffers, assume candidates are of given TYPE."
 
 (defun embark-collect--revert ()
   "Redisplay Embark Collect candidates for current view type."
-  (if (eq embark-collect-view 'list)
+  (if (eq embark-collect--view 'list)
       (embark-collect--list-view)
     (embark-collect--grid-view)))
 
@@ -2851,7 +2851,7 @@ Refresh the buffer afterwards."
 (defun embark-collect-toggle-view ()
   "Toggle between list and grid views of Embark Collect buffer."
   (interactive)
-  (embark-collect--toggle 'embark-collect-view 'list 'grid))
+  (embark-collect--toggle 'embark-collect--view 'list 'grid))
 
 (defun embark-collect-toggle-header ()
   "Toggle the visibility of the header line of Embark Collect buffer."
@@ -2896,18 +2896,18 @@ with key \"Embark Collect\"."
       (setq tabulated-list-use-header-line nil) ; default to no header
       
       (setq embark--type type
-            embark-collect-candidates candidates
+            embark-collect--candidates candidates
             embark-collect-affixator affixator)
 
       (add-hook 'tabulated-list-revert-hook #'embark-collect--revert nil t)
 
-      (setq embark-collect-view
+      (setq embark-collect--view
             (or initial-view
                 (alist-get type embark-collect-initial-view-alist)
                 (alist-get t embark-collect-initial-view-alist)
                 'list))
-      (when (eq embark-collect-view 'zebra)
-        (setq embark-collect-view 'list)
+      (when (eq embark-collect--view 'zebra)
+        (setq embark-collect--view 'list)
         (embark-collect-zebra-minor-mode))
 
       (with-current-buffer from (embark--cache-info buffer)))
