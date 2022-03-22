@@ -2867,7 +2867,7 @@ candidate."
       (delete-overlay ov))))
 
 (defun embark-collect-toggle-marks ()
-  "Toggle markings: Marked candidates become unmarked, and vice versa."
+  "Toggle each candidate mark: Marked candidates become unmarked, and vice versa."
   (interactive)
   (unless (derived-mode-p 'embark-collect-mode)
     (user-error "Not in an Embark Collect mode buffer"))
