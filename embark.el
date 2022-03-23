@@ -122,7 +122,7 @@
   :group 'minibuffer)
 
 (defcustom embark-keymap-alist
-  '((file . embark-file-map)
+  `((file . embark-file-map)
     (library . embark-library-map)
     (environment-variables . embark-file-map) ; they come up in file completion
     (url . embark-url-map)
@@ -131,8 +131,7 @@
     (tab . embark-tab-map)
     (expression . embark-expression-map)
     (identifier . embark-identifier-map)
-    ;; NOTE: Weird space in front of defun to please package-lint.
-    ( defun . embark-defun-map)
+    (,'defun . embark-defun-map)  ;; Avoid package-lint warning
     (symbol . embark-symbol-map)
     (face . embark-face-map)
     (command . embark-command-map)
@@ -426,7 +425,7 @@ the key :always are executed always."
                 :value-type hook))
 
 (defcustom embark-pre-action-hooks
-  '(;; commands that need to position point at the beginning or end
+  `(;; commands that need to position point at the beginning or end
     (eval-last-sexp embark--end-of-target)
     (indent-pp-sexp embark--beginning-of-target)
     (backward-up-list embark--beginning-of-target)
@@ -473,7 +472,7 @@ the key :always are executed always."
     (embark-kill-buffer-and-window embark--confirm)
     (bookmark-delete embark--confirm)
     (package-delete embark--confirm)
-    (tab-bar-close-tab-by-name embark--confirm)
+    (,'tab-bar-close-tab-by-name embark--confirm) ;; Avoid package-lint warning
     ;; search for region contents outside said region
     (embark-isearch embark--unmark-target)
     (occur embark--unmark-target)
@@ -492,7 +491,7 @@ arguments and more details."
                 :value-type hook))
 
 (defcustom embark-post-action-hooks
-  '((bookmark-delete embark--restart)
+  `((bookmark-delete embark--restart)
     (bookmark-rename embark--restart)
     (delete-file embark--restart)
     (embark-kill-ring-remove embark--restart)
@@ -504,8 +503,8 @@ arguments and more details."
     (make-directory embark--restart)
     (kill-buffer embark--restart)
     (embark-rename-buffer embark--restart)
-    (tab-bar-rename-tab-by-name embark--restart)
-    (tab-bar-close-tab-by-name embark--restart)
+    (,'tab-bar-rename-tab-by-name embark--restart) ;; Avoid package-lint warning
+    (,'tab-bar-close-tab-by-name embark--restart)
     (package-delete embark--restart))
   "Alist associating commands with post-action hooks.
 The hooks are run after an embarked upon action concludes.  See
@@ -2523,7 +2522,7 @@ This makes `embark-export' work in Embark Collect buffers."
                           (overlays-in (point-min) (point-max))))))
               (let ((fn (if (consp (car embark-collect--candidates))
                             #'car
-                          #'identity)))             
+                          #'identity)))
                 (mapcar (lambda (x)
                           (get-text-property 0 'embark--candidate
                                              (funcall fn x)))
@@ -2868,7 +2867,7 @@ candidate."
       (delete-overlay ov))))
 
 (defun embark-collect-toggle-marks ()
-  "Toggle marks: marked candidates become unmarked, and vice versa."
+  "Toggle each candidate mark: Marked candidates become unmarked, and vice versa."
   (interactive)
   (unless (derived-mode-p 'embark-collect-mode)
     (user-error "Not in an Embark Collect mode buffer"))
@@ -3522,15 +3521,15 @@ With a prefix argument EDEBUG, instrument the code for debugging."
                (eval (read (buffer-substring beg end)) lexical-binding)))
       (delete-region beg end))))
 
-;; TODO Report Emacs bug, this function should be provided by Emacs itself.
-(defun embark-elp-restore-package (prefix)
-  "Remove instrumentation from functions with names starting with PREFIX."
-  (interactive "SPrefix: ")
-  (when (fboundp 'elp-restore-list)
-    (elp-restore-list
-     (mapcar #'intern
-             (all-completions (symbol-name prefix)
-                              obarray 'elp-profilable-p)))))
+(when (< emacs-version 29)
+  (defun embark-elp-restore-package (prefix)
+    "Remove instrumentation from functions with names starting with PREFIX."
+    (interactive "SPrefix: ")
+    (when (fboundp 'elp-restore-list)
+      (elp-restore-list
+       (mapcar #'intern
+               (all-completions (symbol-name prefix)
+                                obarray 'elp-profilable-p))))))
 
 (defmacro embark--define-hash (algorithm)
   "Define command which computes hash from a string.
@@ -3986,7 +3985,9 @@ The advice is self-removing so it only affects ACTION once."
   ("a" package-autoremove)
   ("g" package-refresh-contents)
   ("m" elp-instrument-package) ;; m=measure
-  ("M" embark-elp-restore-package))
+  ("M" (if (fboundp 'embark-elp-restore-package)
+           'embark-elp-restore-package
+         'elp-restore-package)))
 
 (embark-define-keymap embark-bookmark-map
   "Keymap for Embark bookmark actions."
