@@ -2401,7 +2401,7 @@ default is `embark-collect'"
      :background "#efefef")
     (((class color) (min-colors 88) (background dark))
      :background "#242424"))
-  "Face to highlight alternate rows in `embark-collect-zebra-minor-mode'.")
+  "Face to highlight alternate rows in Embark Collect zebra minor mode.")
 
 (defface embark-collect-annotation '((t :inherit completions-annotations))
   "Face for annotations in Embark Collect.
@@ -2664,8 +2664,9 @@ For other Embark Collect buffers, run the default action on ENTRY."
   "List of candidates to be acted on.
 The command `embark-act' is bound `embark-collect-mode-map', but
 you might prefer to change the key binding to match your other
-key binding for it.  Or alternatively you might want to enable
-`embark-collect-direct-action-minor-mode' in
+key binding for it. Or alternatively you might want to enable the
+embark collect direct action minor mode by adding the function
+`embark-collect-direct-action-minor-mode' to
 `embark-collect-mode-hook'.")
 
 (defun embark--for-display (string)
@@ -2867,7 +2868,7 @@ candidate."
       (delete-overlay ov))))
 
 (defun embark-collect-toggle-marks ()
-  "Toggle each candidate mark: Marked candidates become unmarked, and vice versa."
+  "Toggle each mark: marked candidates become unmarked, and vice versa."
   (interactive)
   (unless (derived-mode-p 'embark-collect-mode)
     (user-error "Not in an Embark Collect mode buffer"))
