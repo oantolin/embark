@@ -3521,7 +3521,7 @@ With a prefix argument EDEBUG, instrument the code for debugging."
                (eval (read (buffer-substring beg end)) lexical-binding)))
       (delete-region beg end))))
 
-(when (< emacs-version 29)
+(when (< emacs-major-version 29)
   (defun embark-elp-restore-package (prefix)
     "Remove instrumentation from functions with names starting with PREFIX."
     (interactive "SPrefix: ")
