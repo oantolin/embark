@@ -185,7 +185,8 @@ bounds pair of the target at point for highlighting."
     (embark-keybinding . embark--keybinding-command)
     (project-file . embark--project-file-full-path)
     (package . embark--remove-package-version)
-    (multi-category . embark--refine-multi-category))
+    (multi-category . embark--refine-multi-category)
+    (file . embark--simplify-path))
   "Alist associating type to functions for transforming targets.
 Each function should take a type and a target string and return a
 pair of the form a `cons' of the new type and the new target."
@@ -1849,6 +1850,10 @@ minibuffer before executing the action."
            ((and (featurep 'package) (embark--package-desc symbol)) 'package)
            (t 'symbol)))
         target))
+
+(defun embark--simplify-path (_type target)
+  "Simplify and '//' or '~/' in the TARGET file path."
+  (cons 'file (substitute-in-file-name target)))
 
 (defun embark--keybinding-command (_type target)
   "Treat an `embark-keybinding' TARGET as a command."
