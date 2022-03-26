@@ -943,10 +943,8 @@ their own target finder.  See for example
            candidate)
         ,start . ,end))))
 
-(defun embark-target-completion-at-point (&optional relative)
-  "Return the completion candidate at point in a completions buffer.
-If the completions are file names and RELATIVE is non-nil, return
-relative path."
+(defun embark-target-completion-at-point ()
+  "Return the completion candidate at point in a completions buffer."
   (when (derived-mode-p 'completion-list-mode)
     (if (not (get-text-property (point) 'mouse-face))
         (user-error "No completion here")
@@ -964,7 +962,7 @@ relative path."
                       (point-max)))
         (let ((raw (buffer-substring beg end)))
           `(,embark--type
-            ,(if (and (eq embark--type 'file) (not relative))
+            ,(if (eq embark--type 'file)
                  (abbreviate-file-name (expand-file-name raw))
                raw)
             ,beg . ,end))))))
@@ -2079,26 +2077,32 @@ target."
   "Collect candidates and see if they all transform to the same type.
 Return a plist with keys `:type', `:orig-type', `:candidates', and
 `:orig-candidates'."
- (pcase-let ((`(,type . ,candidates)
-              (run-hook-with-args-until-success 'embark-candidate-collectors)))
-   (append
-    (list :orig-type type :orig-candidates candidates)
-    (or (unless (null candidates)
-          (when-let ((transformer (alist-get type embark-transformer-alist)))
-            (pcase-let* ((`(,new-type . ,first-cand)
-                          (funcall transformer type (car candidates))))
-              (let ((new-candidates (list first-cand)))
-                (when (cl-every
-                       (lambda (cand)
-                         (pcase-let ((`(,t-type . ,t-cand)
-                                      (funcall transformer type cand)))
-                           (when (eq t-type new-type)
-                             (push t-cand new-candidates)
-                             t)))
-                       (cdr candidates))
-                  (list :type new-type
-                        :candidates (nreverse new-candidates)))))))
-        (list :type type :candidates candidates)))))
+  (pcase-let ((`(,type . ,candidates)
+               (run-hook-with-args-until-success 'embark-candidate-collectors)))
+    (when (eq type 'file)
+      (let ((dir (embark--default-directory)))
+        (setq candidates
+              (mapcar (lambda (cand)
+                        (abbreviate-file-name (expand-file-name cand dir)))
+                      candidates))))
+    (append
+     (list :orig-type type :orig-candidates candidates)
+     (or (unless (null candidates)
+           (when-let ((transformer (alist-get type embark-transformer-alist)))
+             (pcase-let* ((`(,new-type . ,first-cand)
+                           (funcall transformer type (car candidates))))
+               (let ((new-candidates (list first-cand)))
+                 (when (cl-every
+                        (lambda (cand)
+                          (pcase-let ((`(,t-type . ,t-cand)
+                                       (funcall transformer type cand)))
+                            (when (eq t-type new-type)
+                              (push t-cand new-candidates)
+                              t)))
+                        (cdr candidates))
+                   (list :type new-type
+                         :candidates (nreverse new-candidates)))))))
+         (list :type type :candidates candidates)))))
 
 ;;;###autoload
 (defun embark-act-all (&optional arg)
@@ -2120,15 +2124,11 @@ ARG is the prefix argument."
   (let* ((transformed (embark--maybe-transform-candidates))
          (type (plist-get transformed :type))
          (orig-type (plist-get transformed :orig-type))
-         (dir (embark--default-directory))
          (candidates
           (or (cl-mapcar
                (lambda (cand orig-cand)
-                 (list :type type :orig-type orig-type
-                       ;; TODO The file special casing here seems odd.
-                       ;; Why do we need this?
-                       :target (if (eq type 'file) (expand-file-name cand dir) cand)
-                       :orig-target orig-cand))
+                 (list :type type :target cand
+                       :orig-type orig-type :orig-target orig-cand))
                (plist-get transformed :candidates)
                (plist-get transformed :orig-candidates))
               (user-error "No candidates to act on")))
@@ -2543,8 +2543,7 @@ This makes `embark-export' work in Embark Collect buffers."
        (next-completion 1)
        (let (all)
          (while (not (eobp))
-           ;; TODO next line looks a little funny now
-           (push (cdr (embark-target-completion-at-point 'relative-path)) all)
+           (push (cadr (embark-target-completion-at-point)) all)
            (next-completion 1))
          (nreverse all))))))
 
@@ -2673,25 +2672,6 @@ key binding for it. Or alternatively you might want to enable the
 embark collect direct action minor mode by adding the function
 `embark-collect-direct-action-minor-mode' to
 `embark-collect-mode-hook'.")
-
-(defun embark--for-display (string)
-  "Return visibly equivalent STRING without display and invisible properties."
-  (let ((len (length string)) (pos 0) chunks)
-    (while (/= pos len)
-      (let ((dis (next-single-property-change pos 'display string len))
-            (display (get-text-property pos 'display string)))
-        (if (stringp display)
-            (progn (push display chunks) (setq pos dis))
-          (while (/= pos dis)
-            (let ((inv (next-single-property-change pos 'invisible string dis)))
-              (unless (get-text-property pos 'invisible string)
-                (unless (and (= pos 0) (= inv len))
-                  ;; avoid allocation for full string
-                  (push (substring string pos inv) chunks)))
-              (setq pos inv))))))
-    (propertize
-     (if chunks (apply #'concat (nreverse chunks)) string)
-     'embark--candidate string)))
 
 (defun embark-collect--list-view ()
   "List view of candidates and annotations for Embark Collect buffer."
@@ -2881,11 +2861,38 @@ candidate."
     (goto-char (point-min))
     (while (embark-collect-mark (embark-collect--marked-p)))))
 
+(defun embark--for-display (string)
+  "Return visibly equivalent STRING without display and invisible properties."
+  (let ((len (length string)) (pos 0) chunks)
+    (while (/= pos len)
+      (let ((dis (next-single-property-change pos 'display string len))
+            (display (get-text-property pos 'display string)))
+        (if (stringp display)
+            (progn (push display chunks) (setq pos dis))
+          (while (/= pos dis)
+            (let ((inv (next-single-property-change pos 'invisible string dis)))
+              (unless (get-text-property pos 'invisible string)
+                (unless (and (= pos 0) (= inv len))
+                  ;; avoid allocation for full string
+                  (push (substring string pos inv) chunks)))
+              (setq pos inv))))))
+    (propertize
+     (if chunks (apply #'concat (nreverse chunks)) string)
+     'embark--candidate string)))
+
 (defun embark-collect--update-candidates (buffer)
   "Update candidates for Embark Collect BUFFER."
-  (pcase-let* ((`(,type . ,candidates)
-                (run-hook-with-args-until-success 'embark-candidate-collectors))
-               (affixator (embark-collect--affixator type)))
+  (let* ((transformed (embark--maybe-transform-candidates))
+         (type (plist-get transformed :orig-type)) ; we need the originals for
+         (candidates (plist-get transformed :orig-candidates)) ; default action
+         (affixator (embark-collect--affixator type)))
+    (when (eq type 'file)
+      (let ((dir (buffer-local-value 'default-directory buffer)))
+        (setq candidates
+              (mapcar (lambda (cand)
+                        (let ((rel (file-relative-name cand dir)))
+                          (if (string-prefix-p "../" rel) cand rel)))
+                      candidates))))
     (when affixator (setq candidates (funcall affixator candidates)))
     (setq candidates
           (if (stringp (car candidates))
@@ -2906,7 +2913,13 @@ buffer has a unique name."
     (with-current-buffer buffer
       ;; we'll run the mode hooks once the buffer is displayed, so
       ;; the hooks can make use of the window
-      (delay-mode-hooks (embark-collect-mode))
+      (delay-mode-hooks (embark-collect-mode)))
+
+    (embark--cache-info buffer)
+    (unless (embark-collect--update-candidates buffer)
+      (user-error "No candidates to collect"))
+
+    (with-current-buffer buffer
       (setq tabulated-list-use-header-line nil) ; default to no header
       (add-hook 'tabulated-list-revert-hook #'embark-collect--revert nil t)
       (setq embark-collect--view
@@ -2917,10 +2930,6 @@ buffer has a unique name."
         (setq embark-collect--view 'list)
         (embark-collect-zebra-minor-mode)))
 
-    (unless (embark-collect--update-candidates buffer)
-      (user-error "No candidates to collect"))
-
-    (embark--cache-info buffer)
     (let ((window (display-buffer buffer)))
       (with-selected-window window
         (run-mode-hooks)
