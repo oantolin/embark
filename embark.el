@@ -93,8 +93,8 @@
 
 ;; - The `embark-collect' command produces a buffer listing all
 ;;   candidates, for you to peruse and run actions on at your leisure.
-;;   The candidates can be viewed in a grid or as a list showing
-;;   additional annotations.
+;;   The candidates are displayed as a list showing additional
+;;   annotations.
 
 ;; - The `embark-export' command tries to open a buffer in an
 ;;   appropriate major mode for the set of candidates.  If the
@@ -683,9 +683,6 @@ This function is meant to be added to `minibuffer-setup-hook'."
 
 (defvar-local embark-collect--candidates nil
   "List of candidates in current collect buffer.")
-
-(defvar-local embark-collect--view 'list
-  "Type of view in collect buffer: `list' or `grid'.")
 
 ;;; Core functionality
 
@@ -2353,22 +2350,18 @@ candidates and whose `cdr' is the list of candidates, each of
 which should be a string."
   :type 'hook)
 
-(defcustom embark-collect-initial-view-alist
-  '((file . grid)
-    (buffer . grid)
-    (symbol . list)
-    (kill-ring . zebra)
-    (t . list))
-  "Initial views for Embark Collect buffers by type.
-This is an alist associating completion types to either `list',
-`grid' or `zebra' (which means list view the Embark Collect Zebra
-minor mode activated).  Additionally you can associate t to a
-default initial view for types not mentioned separately."
-  :type '(alist
-          :key-type symbol
-          :value-type (choice (const :tag "List view" list)
-                              (const :tag "Grid view" grid)
-                              (const :tag "List with Zebra stripes" zebra))))
+(make-obsolete-variable
+   'embark-collect-initial-view-alist
+   "Support for different collect views has been removed.
+The zebra mode can be configured per completion type via `embark-collect-zebra-types'."
+   "0.16")
+
+(defcustom embark-collect-zebra-types
+  '(kill-ring)
+  "List of completion types for which zebra stripes should be activated.
+The candidates of the given types are displayed with zebra stripes
+in Embark Collect buffers."
+  :type '(repeat symbol))
 
 (defcustom embark-exporters-alist
   '((buffer . embark-export-ibuffer)
@@ -2651,8 +2644,6 @@ For other Embark Collect buffers, run the default action on ENTRY."
   ("A" embark-act-all)
   ("M-a" embark-collect-direct-action-minor-mode)
   ("z" embark-collect-zebra-minor-mode)
-  ("M-q" embark-collect-toggle-view)
-  ("v" embark-collect-toggle-view)
   ("e" embark-export)
   ("t" embark-collect-toggle-marks)
   ("m" embark-collect-mark)
@@ -2673,7 +2664,7 @@ embark collect direct action minor mode by adding the function
 `embark-collect-direct-action-minor-mode' to
 `embark-collect-mode-hook'.")
 
-(defun embark-collect--list-view ()
+(defun embark-collect--revert ()
   "List view of candidates and annotations for Embark Collect buffer."
   (let ((max-width 0)
         (affixed (consp (car embark-collect--candidates))))
@@ -2735,7 +2726,6 @@ embark collect direct action minor mode by adding the function
   "Minor mode to highlight alternate rows in an Embark Collect buffer.
 This is specially useful to tell where multi-line entries begin and end."
   :init-value nil
-  :lighter " Zebra"
   (if embark-collect-zebra-minor-mode
       (progn
         (add-hook 'embark-collect-post-revert-hook
@@ -2744,31 +2734,6 @@ This is specially useful to tell where multi-line entries begin and end."
     (remove-hook 'embark-collect-post-revert-hook
                  #'embark-collect--add-zebra-stripes t)
     (embark-collect--remove-zebra-stripes)))
-
-(defun embark-collect--grid-view ()
-  "Grid view of candidates for Embark Collect buffer."
-  (if tabulated-list-use-header-line
-      (tabulated-list-init-header)
-    (setq header-line-format nil tabulated-list--header-string nil))
-  (let* ((candidates (if (consp (car embark-collect--candidates))
-                         (mapcar #'car embark-collect--candidates)
-                       embark-collect--candidates))
-         (max-width (or (cl-loop for display in candidates
-                                 maximize (string-width display))
-                        0))
-         (column-width (min (1+ max-width) (1- (floor (window-width) 2))))
-         (columns (/ (window-width) (1+ column-width))))
-    (setq tabulated-list-format
-          (make-vector columns `("Candidate" ,column-width nil))
-          tabulated-list-entries
-          (cl-loop while candidates
-                   collect
-                   (list nil
-                         (apply #'vector
-                                (cl-loop repeat columns
-                                         collect
-                                         `(,(or (pop candidates) "")
-                                           type embark-collect-entry))))))))
 
 (defun embark-collect--metadatum (type metadatum)
   "Get METADATUM for current buffer's candidates.
@@ -2791,29 +2756,11 @@ For non-minibuffers, assume candidates are of given TYPE."
                     (if-let (a (funcall annotator c)) (list c "" a) c))
                   candidates)))))
 
-(defun embark-collect--revert ()
-  "Redisplay Embark Collect candidates for current view type."
-  (if (eq embark-collect--view 'list)
-      (embark-collect--list-view)
-    (embark-collect--grid-view)))
-
-(defun embark-collect--toggle (variable this that)
-  "Toggle Embark Collect buffer's local VARIABLE between THIS and THAT.
-Refresh the buffer afterwards."
-  (when (derived-mode-p 'embark-collect-mode)
-    (set variable
-         (if (eq (symbol-value variable) this) that this))
-    (revert-buffer)))
-
-(defun embark-collect-toggle-view ()
-  "Toggle between list and grid views of Embark Collect buffer."
-  (interactive)
-  (embark-collect--toggle 'embark-collect--view 'list 'grid))
-
 (defun embark-collect-toggle-header ()
   "Toggle the visibility of the header line of Embark Collect buffer."
   (interactive)
-  (embark-collect--toggle 'tabulated-list-use-header-line t nil))
+  (setq tabulated-list-use-header-line (not tabulated-list-use-header-line))
+  (revert-buffer))
 
 (defun embark-collect--marked-p (&optional location)
   "Is the candidate at LOCATION marked?
@@ -2922,12 +2869,7 @@ buffer has a unique name."
     (with-current-buffer buffer
       (setq tabulated-list-use-header-line nil) ; default to no header
       (add-hook 'tabulated-list-revert-hook #'embark-collect--revert nil t)
-      (setq embark-collect--view
-            (or (alist-get embark--type embark-collect-initial-view-alist)
-                (alist-get t embark-collect-initial-view-alist)
-                'list))
-      (when (eq embark-collect--view 'zebra)
-        (setq embark-collect--view 'list)
+      (when (memq embark--type embark-collect-zebra-types)
         (embark-collect-zebra-minor-mode)))
 
     (let ((window (display-buffer buffer)))

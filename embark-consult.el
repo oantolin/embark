@@ -164,8 +164,6 @@ This function is meant to be added to `embark-collect-mode-hook'."
       (mapc (lambda (x) (consult--get-location (funcall fn x)))
             embark-collect--candidates))))
 
-(setf (alist-get 'consult-location embark-collect-initial-view-alist)
-      'list)
 (setf (alist-get 'consult-location embark-exporters-alist)
       #'embark-consult-export-occur)
 (cl-pushnew #'embark-consult--upgrade-markers embark-collect-mode-hook)
@@ -205,8 +203,6 @@ This function is meant to be added to `embark-collect-mode-hook'."
       #'embark-consult-goto-grep)
 (setf (alist-get 'consult-grep embark-exporters-alist)
       #'embark-consult-export-grep)
-(setf (alist-get 'consult-grep embark-collect-initial-view-alist)
-      'list)
 
 ;;; Support for consult-isearch
 
