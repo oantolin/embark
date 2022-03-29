@@ -1751,6 +1751,7 @@ If called from a minibuffer with non-nil QUIT, quit the
 minibuffer before executing the action."
   (if (memq action '(embark-become       ; these actions should not
                      embark-collect
+                     embark-live
                      embark-export
                      embark-act-all))
       (command-execute action)
