@@ -2708,19 +2708,18 @@ embark collect direct action minor mode by adding the function
   (save-excursion
     (goto-char (point-min))
     (when (overlays-at (point)) (forward-line))
-    (let ((columns (length tabulated-list-format)))
-      (while (not (eobp))
-        (condition-case nil
-            (forward-button columns)
-          (user-error (goto-char (point-max))))
-        (unless (eobp)
-          (let ((pt (point)))
-            (condition-case nil
-                (forward-button columns)
-              (user-error (goto-char (point-max))))
-            (let ((stripe (make-overlay pt (point))))
-              (overlay-put stripe 'priority -100) ; below hl-line-mode's -50
-              (overlay-put stripe 'face 'embark-collect-zebra-highlight))))))))
+    (while (not (eobp))
+      (condition-case nil
+          (forward-button 1)
+        (user-error (goto-char (point-max))))
+      (unless (eobp)
+        (let ((pt (point)))
+          (condition-case nil
+              (forward-button 1)
+            (user-error (goto-char (point-max))))
+          (let ((stripe (make-overlay pt (point))))
+            (overlay-put stripe 'priority -100) ; below hl-line-mode's -50
+            (overlay-put stripe 'face 'embark-collect-zebra-highlight)))))))
 
 (define-minor-mode embark-collect-zebra-minor-mode
   "Minor mode to highlight alternate rows in an Embark Collect buffer.
