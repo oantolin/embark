@@ -2925,7 +2925,8 @@ with key \"Embark Live\"."
                            (funcall stop-collect)
                          (embark-collect--update-candidates live-buffer)
                          (with-current-buffer live-buffer
-                           (save-excursion (revert-buffer)))
+                           ;; TODO figure out why I can't restore point
+                           (tabulated-list-print nil t))
                          (setq timer nil))))))))
     (add-hook 'after-change-functions run-collect nil t)
     (when (minibufferp)
