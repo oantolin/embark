@@ -2939,34 +2939,40 @@ with key \"Embark Live\"."
 
 (defun embark--export-revert-function ()
   "Return an appropriate revert function for an export buffer in this context."
-  ;; TODO Display new export buffer in same window as previous.
   ;; TODO Fix this for async commands.
   (let ((buffer (or embark--target-buffer (embark--target-buffer))))
-    (if (minibufferp)
-        (let* ((command embark--command)
-               (input (minibuffer-contents-no-properties)))
-          (lambda (&rest _)
-            (kill-buffer)
-            (minibuffer-with-setup-hook
-                (lambda ()
-                  (delete-minibuffer-contents)
-                  (insert input)
-                  (add-hook 'post-command-hook
-                            (lambda ()
-                              (let ((embark--command command)
-                                    (embark--target-buffer buffer))
-                                (embark-export)))
-                            nil t))
-              (with-current-buffer buffer (command-execute command)))))
-      (lambda (&rest _)
-        (kill-buffer)
-        (with-current-buffer buffer (embark-export))))))
+    (cl-flet ((reverter (action)
+                (lambda (&rest _)
+                  (let ((windows (get-buffer-window-list nil nil t)))
+                    (kill-buffer)
+                    (with-current-buffer buffer
+                      (funcall action windows))))))
+        (if (minibufferp)
+          (reverter
+           (let ((command embark--command)
+                 (input (minibuffer-contents-no-properties)))
+             (lambda (windows)
+               (minibuffer-with-setup-hook
+                   (lambda ()
+                     (delete-minibuffer-contents)
+                     (insert input)
+                     (add-hook 'post-command-hook
+                               (lambda ()
+                                 (let ((embark--command command)
+                                       (embark--target-buffer buffer))
+                                   (embark-export windows)))
+                               nil t))
+                 (command-execute command)))))
+      (reverter #'embark-export)))))
 
 ;;;###autoload
-(defun embark-export ()
+(defun embark-export (&optional windows)
   "Create a type-specific buffer to manage current candidates.
 The variable `embark-exporters-alist' controls how to make the
-buffer for each type of completion."
+buffer for each type of completion.
+
+If WINDOWS is nil, display the buffer using `pop-to-buffer',
+otherwise display it in each of the WINDOWS."
   (interactive)
   (let* ((transformed (embark--maybe-transform-candidates))
          (candidates (or (plist-get transformed :candidates)
@@ -2981,10 +2987,16 @@ buffer for each type of completion."
               (revert (embark--export-revert-function)))
           (embark--quit-and-run
            (lambda ()
+             (let ((display-buffer-alist
+                    '(("" display-buffer-no-window (allow-no-window . t)))))
+               (funcall exporter candidates))
+             (rename-buffer name t)
+             (setq-local revert-buffer-function revert)
+             (if windows
+                 (dolist (window windows)
+                   (set-window-buffer window (current-buffer)))
+               (pop-to-buffer (current-buffer)))
              (let ((embark-after-export-hook after))
-               (funcall exporter candidates)
-               (rename-buffer name t)
-               (setq-local revert-buffer-function revert)
                (run-hooks 'embark-after-export-hook)))))))))
 
 (defmacro embark--export-rename (buffer title &rest body)
@@ -2994,20 +3006,18 @@ buffer for each type of completion."
     `(let ((,saved (embark-rename-buffer
                     ,buffer " *Embark Saved*" t)))
        ,@body
-       (pop-to-buffer (embark-rename-buffer
-                       ,buffer ,(format "*Embark Export %s*" title) t))
+       (set-buffer (embark-rename-buffer
+                    ,buffer ,(format "*Embark Export %s*" title) t))
        (when ,saved (embark-rename-buffer ,saved ,buffer)))))
 
-(defun embark--export-customize (items title type pred)
+(defun embark--export-customize (items type pred)
   "Create a customization buffer listing ITEMS.
 TYPE is the items type.
-TITLE is the buffer title.
 PRED is a predicate function used to filter the items."
   (custom-buffer-create
    (cl-loop for item in items
             for sym = (intern-soft item)
-            when (and sym (funcall pred sym)) collect `(,sym ,type))
-   (format "*Embark Export %s*" title)))
+            when (and sym (funcall pred sym)) collect `(,sym ,type))))
 
 (autoload 'apropos-parse-pattern "apropos")
 (autoload 'apropos-symbols-internal "apropos")
@@ -3017,14 +3027,11 @@ PRED is a predicate function used to filter the items."
     (apropos-parse-pattern "") ;; Initialize apropos pattern
     (apropos-symbols-internal
      (delq nil (mapcar #'intern-soft symbols))
-     (bound-and-true-p apropos-do-all))
-    (with-current-buffer "*Apropos*"
-      ;; Reverting the apropos buffer is not possible
-      (setq-local revert-buffer-function #'revert-buffer--default))))
+     (bound-and-true-p apropos-do-all))))
 
 (defun embark-export-customize-face (faces)
   "Create a customization buffer listing FACES."
-  (embark--export-customize faces "Faces" 'custom-face #'facep))
+  (embark--export-customize faces 'custom-face #'facep))
 
 (defun embark-export-customize-variable (variables)
   "Create a customization buffer listing VARIABLES."
@@ -3043,7 +3050,7 @@ PRED is a predicate function used to filter the items."
                 (let ((str (funcall orig-write widget val)))
                   (puthash str val ht)
                   str))))
-    (embark--export-customize variables "Variables" 'custom-variable #'boundp)))
+    (embark--export-customize variables 'custom-variable #'boundp)))
 
 (defun embark-export-ibuffer (buffers)
   "Create an ibuffer buffer listing BUFFERS."
