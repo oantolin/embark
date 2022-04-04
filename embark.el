@@ -2937,6 +2937,30 @@ with key \"Embark Live\"."
     (when (minibufferp)
       (add-hook 'change-major-mode-hook stop-collect nil t))))
 
+(defun embark--export-revert-function ()
+  "Return an appropriate revert function for an export buffer in this context."
+  ;; TODO Display new export buffer in same window as previous.
+  ;; TODO Fix this for async commands.
+  (let ((buffer (or embark--target-buffer (embark--target-buffer))))
+    (if (minibufferp)
+        (let* ((command embark--command)
+               (input (minibuffer-contents-no-properties)))
+          (lambda (&rest _)
+            (kill-buffer)
+            (minibuffer-with-setup-hook
+                (lambda ()
+                  (insert input)
+                  (add-hook 'post-command-hook
+                            (lambda ()
+                              (let ((embark--command command)
+                                    (embark--target-buffer buffer))
+                                (embark-export)))
+                            nil t))
+              (with-current-buffer buffer (command-execute command)))))
+      (lambda (&rest _)
+        (kill-buffer)
+        (with-current-buffer buffer (embark-export))))))
+
 ;;;###autoload
 (defun embark-export ()
   "Create a type-specific buffer to manage current candidates.
@@ -2951,18 +2975,15 @@ buffer for each type of completion."
                         (alist-get t embark-exporters-alist))))
       (if (eq exporter 'embark-collect)
           (embark-collect)
-        (let ((dir (embark--default-directory))
-              (after embark-after-export-hook)
-              (name (embark--descriptive-buffer-name 'export)))
+        (let ((after embark-after-export-hook)
+              (name (embark--descriptive-buffer-name 'export))
+              (revert (embark--export-revert-function)))
           (embark--quit-and-run
            (lambda ()
-             ;; TODO see embark--quit-and-run and embark--run-after-command,
-             ;; there the default-directory is also smuggled to the lambda.
-             ;; This should be fixed properly.
-             (let ((default-directory dir) ;; dired needs this info
-                   (embark-after-export-hook after))
+             (let ((embark-after-export-hook after))
                (funcall exporter candidates)
                (rename-buffer name t)
+               (setq-local revert-buffer-function revert)
                (run-hooks 'embark-after-export-hook)))))))))
 
 (defmacro embark--export-rename (buffer title &rest body)
