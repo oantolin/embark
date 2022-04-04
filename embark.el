@@ -2878,6 +2878,16 @@ buffer has a unique name."
       (set-window-dedicated-p window t)
       buffer)))
 
+(defun embark--descriptive-buffer-name (type)
+  "Return a descriptive name for an Embark collect or export buffer.
+TYPE should be either `collect' or `export'."
+  (format "*Embark %s: %s*"
+          (capitalize (symbol-name type))
+          (if (minibufferp)
+              (format "M-x %s RET %s" embark--command
+                      (minibuffer-contents-no-properties))
+            (buffer-name))))
+
 ;;;###autoload
 (defun embark-collect ()
   "Create an Embark Collect buffer.
@@ -2885,12 +2895,7 @@ buffer has a unique name."
 To control the display, add an entry to `display-buffer-alist'
 with key \"Embark Collect\"."
   (interactive)
-  (let ((buffer (embark--collect
-                 (format "*Embark Collect: %s*"
-                         (if (minibufferp)
-                             (format "M-x %s RET %s" embark--command
-                                     (minibuffer-contents-no-properties))
-                           (buffer-name))))))
+  (let ((buffer (embark--collect (embark--descriptive-buffer-name 'collect))))
     (when (minibufferp)
       (embark--run-after-command #'pop-to-buffer buffer)
       (embark--quit-and-run #'message nil))))
@@ -2947,7 +2952,8 @@ buffer for each type of completion."
       (if (eq exporter 'embark-collect)
           (embark-collect)
         (let ((dir (embark--default-directory))
-              (after embark-after-export-hook))
+              (after embark-after-export-hook)
+              (name (embark--descriptive-buffer-name 'export)))
           (embark--quit-and-run
            (lambda ()
              ;; TODO see embark--quit-and-run and embark--run-after-command,
@@ -2956,6 +2962,7 @@ buffer for each type of completion."
              (let ((default-directory dir) ;; dired needs this info
                    (embark-after-export-hook after))
                (funcall exporter candidates)
+               (rename-buffer name t)
                (run-hooks 'embark-after-export-hook)))))))))
 
 (defmacro embark--export-rename (buffer title &rest body)
