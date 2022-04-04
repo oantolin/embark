@@ -2949,6 +2949,7 @@ with key \"Embark Live\"."
             (kill-buffer)
             (minibuffer-with-setup-hook
                 (lambda ()
+                  (delete-minibuffer-contents)
                   (insert input)
                   (add-hook 'post-command-hook
                             (lambda ()
