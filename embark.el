@@ -2855,7 +2855,6 @@ candidate."
 
 The function `generate-new-buffer-name' is used to ensure the
 buffer has a unique name."
-  (interactive)
   (let ((buffer (generate-new-buffer buffer-name)))
     (with-current-buffer buffer
       ;; we'll run the mode hooks once the buffer is displayed, so
