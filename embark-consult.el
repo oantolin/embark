@@ -118,6 +118,14 @@
 (setf (alist-get 'consult-location embark-default-action-overrides)
       #'embark-consult-goto-location)
 
+(defun embark-consult--await ()
+  "Wait for a Consult async search commmand to finish."
+  (when-let (((minibufferp))
+             (ov (car (overlays-at (- (minibuffer-prompt-end) 2)))))
+    (while (not (equal (overlay-get ov 'display) ":"))
+      (sit-for 0.3 t))
+    (sit-for 0.3 t)))
+
 (defun embark-consult-export-occur (lines)
   "Create an occur mode buffer listing LINES.
 The elements of LINES are assumed to be values of category `consult-line'."
@@ -182,7 +190,8 @@ This function is meant to be added to `embark-collect-mode-hook'."
       (goto-char (point-min))
       (grep-mode)
       (setq-local wgrep-header/footer-parser #'ignore)
-      (when (fboundp 'wgrep-setup) (wgrep-setup)))
+      (when (fboundp 'wgrep-setup) (wgrep-setup))
+      (add-hook 'embark--export-pre-revert-hook #'embark-consult--await nil t))
     (pop-to-buffer buf)))
 
 (defun embark-consult-goto-grep (location)
