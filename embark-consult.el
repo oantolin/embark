@@ -181,6 +181,10 @@ This function is meant to be added to `embark-collect-mode-hook'."
 (defvar wgrep-header/footer-parser)
 (declare-function wgrep-setup "ext:wgrep")
 
+(embark-define-keymap embark-consult-export-grep-map
+  "A keymap for Embark Export grep-mode buffers."
+  ("g" revert-buffer))
+
 (defun embark-consult-export-grep (lines)
   "Create a grep mode buffer listing LINES."
   (let ((buf (generate-new-buffer "*Embark Export Grep*")))
@@ -191,7 +195,10 @@ This function is meant to be added to `embark-collect-mode-hook'."
       (grep-mode)
       (setq-local wgrep-header/footer-parser #'ignore)
       (when (fboundp 'wgrep-setup) (wgrep-setup))
-      (add-hook 'embark--export-pre-revert-hook #'embark-consult--await nil t))
+      (add-hook 'embark--export-pre-revert-hook #'embark-consult--await nil t)
+      (use-local-map (make-composed-keymap
+                      embark-consult-export-grep-map
+                      (current-local-map))))
     (pop-to-buffer buf)))
 
 (defun embark-consult-goto-grep (location)
