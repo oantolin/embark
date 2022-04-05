@@ -213,6 +213,14 @@ This function is meant to be added to `embark-collect-mode-hook'."
 (setf (alist-get 'consult-grep embark-exporters-alist)
       #'embark-consult-export-grep)
 
+;;; Support for reverting export from consult-find
+
+(defun embark-consult--wait-for-find ()
+  (when (eq embark--command 'consult-find)
+    (add-hook 'embark--export-pre-revert-hook #'embark-consult--await nil t)))
+
+(add-hook 'embark-after-export-hook #'embark-consult--wait-for-find)
+
 ;;; Support for consult-isearch
 
 (setf (alist-get 'consult-isearch embark-transformer-alist)

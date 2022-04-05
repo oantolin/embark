@@ -2992,6 +2992,7 @@ otherwise display it in each of the WINDOWS."
       (if (eq exporter 'embark-collect)
           (embark-collect)
         (let ((after embark-after-export-hook)
+              (cmd embark--command)
               (name (embark--descriptive-buffer-name 'export))
               (revert (embark--export-revert-function)))
           (embark--quit-and-run
@@ -3005,7 +3006,8 @@ otherwise display it in each of the WINDOWS."
                  (dolist (window windows)
                    (set-window-buffer window (current-buffer)))
                (pop-to-buffer (current-buffer)))
-             (let ((embark-after-export-hook after))
+             (let ((embark-after-export-hook after)
+                   (embark--command cmd))
                (run-hooks 'embark-after-export-hook)))))))))
 
 (defmacro embark--export-rename (buffer title &rest body)
