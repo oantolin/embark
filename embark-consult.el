@@ -220,7 +220,10 @@ This function is meant to be added to `embark-collect-mode-hook'."
 (setf (alist-get 'consult-grep embark-exporters-alist)
       #'embark-consult-export-grep)
 
-;;; Support for reverting export from consult-find
+;;; Support for consult-find
+
+(setf (alist-get '(file . consult-find) embark-default-action-overrides)
+      #'find-file)
 
 (defun embark-consult--wait-for-find ()
   (when (eq embark--command 'consult-find)

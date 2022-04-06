@@ -378,8 +378,20 @@ completion candidates is `delete-file' itself.  You may prefer to
 make `find-file' the default action for all files, even if they
 wre obtained from a `delete-file' prompt.  In that case you can
 configure that by adding an entry to this variable pairing `file'
-with `find-file'."
-  :type '(alist :key-type symbol :value-type function))
+with `find-file'.
+
+In addition to target types, you can also use as keys in this
+alist, pairs of a target type and a command name.  Such a pair
+indicates that the override only applies if the target was
+obtained from minibuffer completion from that command.  For
+example adding an entry '((file . delete-file) . find-file) to
+this alist would indicate that for files at the prompt of the
+`delete-file' command, `find-file' should be used as the default
+action."
+  :type '(alist :key-type (choice (symbol :tag "Type")
+                                  (cons (symbol :tag "Type")
+                                        (symbol :tag "Command")))
+                :value-type (function :tag "Default action")))
 
 (make-obsolete-variable
    'embark-allow-edit-actions
@@ -1953,7 +1965,9 @@ For targets that do not come from minibuffer completion
 type is not listed in `embark-default-action-overrides', the
 default action is given by whatever binding RET has in the action
 keymap for the given type."
-  (or (alist-get type embark-default-action-overrides)
+  (or (alist-get (cons type embark--command) embark-default-action-overrides
+                 nil nil #'equal)
+      (alist-get type embark-default-action-overrides)
       (alist-get t embark-default-action-overrides)
       embark--command
       (lookup-key (symbol-value (or (alist-get type embark-keymap-alist)
