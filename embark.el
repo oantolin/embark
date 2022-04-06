@@ -972,7 +972,8 @@ their own target finder.  See for example
         (setq beg (previous-single-property-change beg 'mouse-face))
         (setq end (or (next-single-property-change end 'mouse-face)
                       (point-max)))
-        (let ((raw (buffer-substring beg end)))
+        (let ((raw (or (get-text-property beg 'completion--string)
+                       (buffer-substring beg end))))
           `(,embark--type
             ,(if (eq embark--type 'file)
                  (abbreviate-file-name (expand-file-name raw))
