@@ -738,16 +738,7 @@ In `dired-mode', it uses `dired-get-filename' instead."
                . ,(point)))
     (when-let* ((ffap-file (ffap-file-at-point))
                 (tap-file (thing-at-point 'filename))
-                ;; check the thingatpt candidate is a substring of the
-                ;; ffap candidate, this avoids URLs and keyword
-                ;; symbols when point is on the colon (see bug#52441)
-                ((string-match-p (regexp-quote
-                                  (if (derived-mode-p 'dired-mode)
-                                      ;; directory line, thingatpt includes ":"
-                                      (string-remove-suffix ":" tap-file)
-                                    tap-file))
-                                 ffap-file))
-                ((not (ffap-el-mode tap-file))))
+                ((not (or (ffap-url-p tap-file) (ffap-el-mode tap-file)))))
       `(file ,(abbreviate-file-name (expand-file-name ffap-file))
              ;; TODO the boundaries may be wrong, this should be generalized.
              ;; Unfortunately ffap does not make the bounds available.
