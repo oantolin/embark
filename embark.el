@@ -693,9 +693,6 @@ This function is meant to be added to `minibuffer-setup-hook'."
 (defvar embark--prompter-history nil
   "History used by the `embark-completing-read-prompter'.")
 
-(defvar-local embark--export-pre-revert-hook nil
-  "Hook run before reverting an Embark Export buffer.")
-
 ;;; Core functionality
 
 (defconst embark--verbose-indicator-buffer " *Embark Actions*")
@@ -2920,48 +2917,35 @@ with key \"Embark Live\"."
     (when (minibufferp)
       (add-hook 'change-major-mode-hook stop-collect nil t))))
 
-(defun embark--export-revert-function ()
-  "Return an appropriate revert function for an export buffer in this context."
-  (let ((buffer (or embark--target-buffer (embark--target-buffer))))
-    (cl-flet ((reverter (wrapper)
+(defun embark--revert-function (kind)
+  "Return a revert function for an export or collect buffer in this context.
+The parameter KIND should be either `embark-export' or `embark-collect'."
+  (let ((buffer (or embark--target-buffer (embark--target-buffer)))
+        (command embark--command))
+    (cl-flet ((reverter (action)
                 (lambda (&rest _)
-                  (let ((windows (get-buffer-window-list nil nil t))
-                        (old (current-buffer))
-                        (hook embark--export-pre-revert-hook))
-                    (kill-buffer old)
-                    (with-current-buffer
-                        (if (buffer-live-p buffer) buffer (current-buffer))
-                      (funcall wrapper
-                               (lambda ()
-                                 (let ((embark--export-pre-revert-hook hook))
-                                   (run-hooks 'embark--export-pre-revert-hook))
-                                 (embark-export windows))))))))
+                  (quit-window 'kill-buffer)
+                  (with-current-buffer
+                      (if (buffer-live-p buffer) buffer (current-buffer))
+                    (let ((embark--command command))
+                      (funcall action))))))
         (if (minibufferp)
           (reverter
-           (let ((command embark--command)
-                 (input (minibuffer-contents-no-properties)))
-             (lambda (export)
+           (let ((input (minibuffer-contents-no-properties)))
+             (lambda ()
                (minibuffer-with-setup-hook
                    (lambda ()
                      (delete-minibuffer-contents)
-                     (insert input)
-                     (add-hook 'post-command-hook
-                               (lambda ()
-                                 (let ((embark--command command)
-                                       (embark--target-buffer buffer))
-                                   (funcall export)))
-                               nil t))
-                 (command-execute command)))))
-          (reverter #'funcall)))))
+                     (insert input))
+                 (setq this-command embark--command)
+                 (command-execute embark--command)))))
+          (reverter kind)))))
 
 ;;;###autoload
-(defun embark-export (&optional windows)
+(defun embark-export ()
   "Create a type-specific buffer to manage current candidates.
 The variable `embark-exporters-alist' controls how to make the
-buffer for each type of completion.
-
-If WINDOWS is nil, display the buffer using `pop-to-buffer',
-otherwise display it in each of the WINDOWS."
+buffer for each type of completion."
   (interactive)
   (let* ((transformed (embark--maybe-transform-candidates))
          (candidates (or (plist-get transformed :candidates)
@@ -2974,7 +2958,7 @@ otherwise display it in each of the WINDOWS."
         (let ((after embark-after-export-hook)
               (cmd embark--command)
               (name (embark--descriptive-buffer-name 'export))
-              (revert (embark--export-revert-function)))
+              (revert (embark--revert-function #'embark-export)))
           (embark--quit-and-run
            (lambda ()
              (let ((display-buffer-alist
@@ -2982,10 +2966,7 @@ otherwise display it in each of the WINDOWS."
                (funcall exporter candidates))
              (rename-buffer name t)
              (setq-local revert-buffer-function revert)
-             (if windows
-                 (dolist (window windows)
-                   (set-window-buffer window (current-buffer)))
-               (pop-to-buffer (current-buffer)))
+             (pop-to-buffer (current-buffer))
              (let ((embark-after-export-hook after)
                    (embark--command cmd))
                (run-hooks 'embark-after-export-hook)))))))))

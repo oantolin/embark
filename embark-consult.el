@@ -118,14 +118,6 @@
 (setf (alist-get 'consult-location embark-default-action-overrides)
       #'embark-consult-goto-location)
 
-(defun embark-consult--await ()
-  "Wait for a Consult async search commmand to finish."
-  (when-let (((minibufferp))
-             (ov (car (overlays-at (- (minibuffer-prompt-end) 2)))))
-    (while (not (equal (overlay-get ov 'display) ":"))
-      (sit-for 0.3 t))
-    (sit-for 0.3 t)))
-
 (defun embark-consult-export-occur (lines)
   "Create an occur mode buffer listing LINES.
 The elements of LINES are assumed to be values of category `consult-line'."
@@ -194,7 +186,6 @@ This function is meant to be added to `embark-collect-mode-hook'."
       (grep-mode)
       (setq-local wgrep-header/footer-parser #'ignore)
       (when (fboundp 'wgrep-setup) (wgrep-setup))
-      (add-hook 'embark--export-pre-revert-hook #'embark-consult--await nil t)
       (use-local-map (make-composed-keymap
                       embark-consult-export-grep-map
                       (current-local-map))))
@@ -226,12 +217,6 @@ This function is meant to be added to `embark-collect-mode-hook'."
 
 (setf (alist-get '(file . consult-locate) embark-default-action-overrides)
       #'find-file)
-
-(defun embark-consult--wait-for-find ()
-  (when (eq embark--command 'consult-find)
-    (add-hook 'embark--export-pre-revert-hook #'embark-consult--await nil t)))
-
-(add-hook 'embark-after-export-hook #'embark-consult--wait-for-find)
 
 ;;; Support for consult-isearch
 
