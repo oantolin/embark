@@ -2810,11 +2810,10 @@ candidate."
 
 (defun embark-collect--update-candidates (buffer)
   "Update candidates for Embark Collect BUFFER."
-  (when-let ((transformed (embark--maybe-transform-candidates))
-             ;; we need the originals for default action:
-             (type (plist-get transformed :orig-type))
-             (candidates (plist-get transformed :orig-candidates))
-             (affixator (embark-collect--affixator type)))
+  (let* ((transformed (embark--maybe-transform-candidates))
+         (type (plist-get transformed :orig-type)) ; we need the originals for
+         (candidates (plist-get transformed :orig-candidates)) ; default action
+         (affixator (embark-collect--affixator type)))
     (when (eq type 'file)
       (let ((dir (buffer-local-value 'default-directory buffer)))
         (setq candidates
@@ -2825,7 +2824,8 @@ candidate."
     (setq candidates (funcall affixator candidates))
     (with-current-buffer buffer
       (setq embark--type type)
-      (embark-collect--format-entries candidates))))
+      (embark-collect--format-entries candidates))
+    candidates))
 
 (defun embark--collect (buffer-name)
   "Create an Embark Collect buffer named BUFFER-NAME.
