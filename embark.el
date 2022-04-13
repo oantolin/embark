@@ -2940,6 +2940,7 @@ with key \"Embark Live\"."
                          (embark-collect--update-candidates live-buffer)
                          (with-current-buffer live-buffer
                            ;; TODO figure out why I can't restore point
+                           (embark-collect--revert)
                            (tabulated-list-print nil t))
                          (setq timer nil))))))))
     (add-hook 'after-change-functions run-collect nil t)
