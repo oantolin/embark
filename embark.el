@@ -2781,9 +2781,7 @@ candidate."
                   ;; avoid allocation for full string
                   (push (substring string pos inv) chunks)))
               (setq pos inv))))))
-    (propertize
-     (if chunks (apply #'concat (nreverse chunks)) string)
-     'embark--candidate string)))
+    (if chunks (apply #'concat (nreverse chunks)) string)))
 
 (defun embark-collect--format-entries (candidates)
   "Format CANDIDATES for `tabulated-list-mode'."
