@@ -2834,7 +2834,8 @@ candidate."
 
 The function `generate-new-buffer-name' is used to ensure the
 buffer has a unique name."
-  (let ((buffer (generate-new-buffer buffer-name)))
+  (let ((buffer (generate-new-buffer buffer-name))
+        (revert (embark--revert-function #'embark-collect)))
     (with-current-buffer buffer
       ;; we'll run the mode hooks once the buffer is displayed, so
       ;; the hooks can make use of the window
@@ -2845,9 +2846,10 @@ buffer has a unique name."
       (user-error "No candidates to collect"))
 
     (with-current-buffer buffer
-      (setq tabulated-list-use-header-line nil  ; default to no header
+      (setq tabulated-list-use-header-line nil ; default to no header
             header-line-format nil
             tabulated-list--header-string nil)
+      (setq revert-buffer-function revert)
       (when (memq embark--type embark-collect-zebra-types)
         (embark-collect-zebra-minor-mode)))
 
