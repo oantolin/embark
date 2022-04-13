@@ -2660,7 +2660,16 @@ you might prefer to change the key binding to match your other
 key binding for it. Or alternatively you might want to enable the
 embark collect direct action minor mode by adding the function
 `embark-collect-direct-action-minor-mode' to
-`embark-collect-mode-hook'.")
+`embark-collect-mode-hook'.
+
+Reverting an Embark Collect buffer has slightly unusual behavior
+if the buffer was obtained by running `embark-collect' from
+within a minibuffer completion session.  In that case reverting
+just restarts the completion session, that is, the command that
+opened the minibuffer is run again and the minibuffer contents
+restored.  You can then interact normally with the command,
+perhaps editing the minibuffer contents, and, if you wish, you
+can rerun `embark-collect' to get an updated buffer.")
 
 (defun embark-collect--remove-zebra-stripes ()
   "Remove highlighting of alternate rows."
@@ -2873,7 +2882,16 @@ TYPE should be either `collect' or `export'."
   "Create an Embark Collect buffer.
 
 To control the display, add an entry to `display-buffer-alist'
-with key \"Embark Collect\"."
+with key \"Embark Collect\".
+
+Reverting an Embark Collect buffer has slightly unusual behavior
+if the buffer was obtained by running `embark-collect' from
+within a minibuffer completion session.  In that case reverting
+just restarts the completion session, that is, the command that
+opened the minibuffer is run again and the minibuffer contents
+restored.  You can then interact normally with the command,
+perhaps editing the minibuffer contents, and, if you wish, you
+can rerun `embark-collect' to get an updated buffer."
   (interactive)
   (let ((buffer (embark--collect (embark--descriptive-buffer-name 'collect))))
     (when (minibufferp)
@@ -2945,7 +2963,16 @@ The parameter KIND should be either `embark-export' or `embark-collect'."
 (defun embark-export ()
   "Create a type-specific buffer to manage current candidates.
 The variable `embark-exporters-alist' controls how to make the
-buffer for each type of completion."
+buffer for each type of completion.
+
+Reverting an Embark Export buffer has slightly unusual behavior if
+the buffer was obtained by running `embark-export' from within a
+minibuffer completion session.  In that case reverting just
+restarts the completion session, that is, the command that opened
+the minibuffer is run again and the minibuffer contents restored.
+You can then interact normally with the command, perhaps editing
+the minibuffer contents, and, if you wish, you can rerun
+`embark-export' to get an updated buffer."
   (interactive)
   (let* ((transformed (embark--maybe-transform-candidates))
          (candidates (or (plist-get transformed :candidates)

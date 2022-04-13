@@ -192,6 +192,15 @@ and are bound to =A=, =S= (for "snapshot"), and =E=, respectively, in
 key bindings for these (although you can, of course!), just a key
 binding for =embark-act=.
 
+Reverting an Embark Collect or Embark Export buffer has slightly
+unusual behavior if the buffer was obtained by running =embark-collect=
+or =embark-export= from within a minibuffer completion session. In that
+case reverting just restarts the completion session, that is, the
+command that opened the minibuffer is run again and the minibuffer
+contents restored. You can then interact normally with the command,
+perhaps editing the minibuffer contents, and, if you wish, you can
+rerun =embark-collect= or =embark-export= to get an updated buffer.
+
 ** Switching to a different command without losing what you've typed
 
 Embark also has the =embark-become= command which is useful for when

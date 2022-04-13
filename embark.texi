@@ -250,8 +250,7 @@ option @samp{embark-confirm-act-all} to @samp{nil}.)
 @item
 The @samp{embark-collect} command produces a buffer listing all the current
 candidates, for you to peruse and run actions on at your leisure.
-The candidates can be viewed in a grid or as a list showing
-additional annotations.
+The candidates are displayed as a list showing additional annotations.
 
 The Embark Collect buffer is ``dired-like'': you can mark and unmark
 candidates with @samp{m} and @samp{u}, you can unmark all marked candidates with @samp{U}
@@ -287,6 +286,15 @@ and are bound to @samp{A}, @samp{S} (for ``snapshot''), and @samp{E}, respective
 @samp{embark-general-map}. This means that you do not have to bind your own
 key bindings for these (although you can, of course!), just a key
 binding for @samp{embark-act}.
+
+Reverting an Embark Collect or Embark Export buffer has slightly
+unusual behavior if the buffer was obtained by running @samp{embark-collect}
+or @samp{embark-export} from within a minibuffer completion session. In that
+case reverting just restarts the completion session, that is, the
+command that opened the minibuffer is run again and the minibuffer
+contents restored. You can then interact normally with the command,
+perhaps editing the minibuffer contents, and, if you wish, you can
+rerun @samp{embark-collect} or @samp{embark-export} to get an updated buffer.
 
 @node Switching to a different command without losing what you've typed
 @section Switching to a different command without losing what you've typed
