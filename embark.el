@@ -2723,7 +2723,7 @@ For non-minibuffers, assume candidates are of given TYPE."
   (or (embark-collect--metadatum type 'affixation-function)
       (let ((annotator
              (or (embark-collect--metadatum type 'annotation-function)
-                 (cl-constantly ""))))
+                 (lambda (_) ""))))
         (lambda (candidates)
           (mapcar (lambda (c)
                     (if-let (a (funcall annotator c)) (list c "" a) c))
