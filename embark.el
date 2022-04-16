@@ -415,6 +415,7 @@ entry of `embark-target-injection-hooks' whose key is the action."
     (eval-last-sexp embark--ignore-target)
     (embark-eval-replace embark--ignore-target)
     ;; commands which prompt for something that is *not* the target
+    (align-regexp embark--ignore-target)
     (write-region embark--ignore-target)
     (append-to-file embark--ignore-target)
     (shell-command-on-region embark--ignore-target)
