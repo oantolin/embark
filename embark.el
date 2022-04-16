@@ -421,7 +421,8 @@ entry of `embark-target-injection-hooks' whose key is the action."
     (format-encode-region embark--ignore-target)
     (format-decode-region embark--ignore-target)
     (xref-find-definitions embark--ignore-target)
-    (sort-regexp-fields embark--ignore-target))
+    (sort-regexp-fields embark--ignore-target)
+    (align-regexp embark--ignore-target))
   "Alist associating commands with post-injection setup hooks.
 For commands appearing as keys in this alist, run the
 corresponding value as a setup hook after injecting the target
