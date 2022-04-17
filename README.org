@@ -556,6 +556,11 @@ For pre-action hooks:
   which you'd like to be able to come back to where you were using
   =xref-pop-marker-stack=. This is used by default for =find-library=.
 
+- =embark--cd= :: Run the action with =default-directory= set to the
+  directory associated to the current target. The target should be of
+  type =file=, =buffer=, =bookmark= or =library=, and the associated directory
+  is what you'd expect in each case.
+
 For post-action hooks:
 
 - =embark--restart= :: Restart the command currently prompting in the

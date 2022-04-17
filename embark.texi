@@ -684,6 +684,12 @@ Push the current location on the xref
 marker stack. Use this for commands that take you somewhere and for
 which you'd like to be able to come back to where you were using
 @samp{xref-pop-marker-stack}. This is used by default for @samp{find-library}.
+
+@item @samp{embark--cd}
+Run the action with @samp{default-directory} set to the
+directory associated to the current target. The target should be of
+type @samp{file}, @samp{buffer}, @samp{bookmark} or @samp{library}, and the associated directory
+is what you'd expect in each case.
 @end table
 
 For post-action hooks:
