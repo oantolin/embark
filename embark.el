@@ -1751,9 +1751,9 @@ arguments are passed to the hooks as keyword arguments."
   "Perform ACTION injecting the TARGET.
 If called from a minibuffer with non-nil QUIT, quit the
 minibuffer before executing the action."
-  (if (memq action '(embark-become       ; these actions should not
-                     embark-collect
-                     embark-live
+  (if (memq action '(embark-become       ; these actions should run in
+                     embark-collect      ; the current buffer, not the
+                     embark-live         ; target buffer
                      embark-export
                      embark-act-all))
       (command-execute action)
