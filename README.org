@@ -474,6 +474,7 @@ you should replace it with:
         (alist-get 'my-command embark-target-injection-hooks))
 #+end_src
 
+
 Also note that while you could abuse =embark--allow-edit= so that you
 have to confirm "dangerous" actions such as =delete-file=, it is better
 to implement confirmation by adding the =embark--confirm= function to
@@ -523,6 +524,17 @@ For pre-action hooks:
   s-expression targets, or for =fill-region= so that it works on
   paragraph targets.
 
+- =embark--unmark-target= :: Unmark the active region. Use this for
+  commands you want to act on the region contents but without the
+  region being active. The default configuration uses this function as
+  a pre-action hook for =occur= and =query-replace=, for example, so that
+  you can use them as actions with region targets to search the whole
+  buffer for the text contained in the region. Without this pre-action
+  hook using =occur= as an action for a region target would be
+  pointless: it would search for the the region contents /in the
+  region/, (typically, due to the details of regexps) finding only one
+  match!
+
 - =embark--beginning-of-target= :: Move to the beginning of the target
   (for targets that report bounds). This is used by default for
   backward motion commands such as =backward-sexp=, so that they don't
@@ -539,6 +551,11 @@ For pre-action hooks:
   don't already work on just the region. In the default configuration
   it is used for =repunctuate-sentences=.
 
+- =embark--xref-push-markers= :: Push the current location on the xref
+  marker stack. Use this for commands that take you somewhere and for
+  which you'd like to be able to come back to where you were using
+  =xref-pop-marker-stack=. This is used by default for =find-library=.
+
 For post-action hooks:
 
 - =embark--restart= :: Restart the command currently prompting in the
@@ -547,26 +564,6 @@ For post-action hooks:
   rename a completion candidate; for example the default value of
   =embark-post-action-hooks= uses it for =delete-file=, =kill-buffer=,
   =rename-file=, =rename-buffer=, etc.
-
-In addition to those Embark functions, the default values of
-=embark-pre-action-hooks= and =embark-post-action-hooks=, use some
-built-in Emacs functions that you may want to consider for some
-actions of your own:
-
-- =deactivate-mark= :: Unmark the active region. Use this for commands
-  you want to act on the region contents but without the region being
-  active. The default configuration uses this function as a pre-action
-  hook for =occur= and =query-replace=, for example, so that you can use
-  them as actions with region targets to search the whole buffer for
-  the text contained in the region. Without this pre-action hook using
-  =occur= as an action for a region target would be pointless: it would
-  search for the the region contents /in the region/, (typically, due to
-  the details of regexps) finding only one match!
-
-- =xref-push-marker-stack= :: Push the current location on the xref
-  marker stack. Use this for commands that take you somewhere and for
-  which you'd like to be able to come back to where you were using
-  =xref-pop-marker-stack=. This is used by default for =find-library=.
 
 ** Creating your own keymaps
 

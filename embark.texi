@@ -594,6 +594,7 @@ you should replace it with:
       (alist-get 'my-command embark-target-injection-hooks))
 @end lisp
 
+
 Also note that while you could abuse @samp{embark--allow-edit} so that you
 have to confirm ``dangerous'' actions such as @samp{delete-file}, it is better
 to implement confirmation by adding the @samp{embark--confirm} function to
@@ -647,6 +648,18 @@ example, it is used by default for @samp{indent-region} so that it works on
 s-expression targets, or for @samp{fill-region} so that it works on
 paragraph targets.
 
+@item @samp{embark--unmark-target}
+Unmark the active region. Use this for
+commands you want to act on the region contents but without the
+region being active. The default configuration uses this function as
+a pre-action hook for @samp{occur} and @samp{query-replace}, for example, so that
+you can use them as actions with region targets to search the whole
+buffer for the text contained in the region. Without this pre-action
+hook using @samp{occur} as an action for a region target would be
+pointless: it would search for the the region contents @emph{in the
+region}, (typically, due to the details of regexps) finding only one
+match!
+
 @item @samp{embark--beginning-of-target}
 Move to the beginning of the target
 (for targets that report bounds). This is used by default for
@@ -665,6 +678,12 @@ Narrow buffer to current target. Use
 this as a pre-action hook to localize the effect of actions that
 don't already work on just the region. In the default configuration
 it is used for @samp{repunctuate-sentences}.
+
+@item @samp{embark--xref-push-markers}
+Push the current location on the xref
+marker stack. Use this for commands that take you somewhere and for
+which you'd like to be able to come back to where you were using
+@samp{xref-pop-marker-stack}. This is used by default for @samp{find-library}.
 @end table
 
 For post-action hooks:
@@ -677,30 +696,6 @@ This is useful as a post action hook for commands that delete or
 rename a completion candidate; for example the default value of
 @samp{embark-post-action-hooks} uses it for @samp{delete-file}, @samp{kill-buffer},
 @samp{rename-file}, @samp{rename-buffer}, etc.
-@end table
-
-In addition to those Embark functions, the default values of
-@samp{embark-pre-action-hooks} and @samp{embark-post-action-hooks}, use some
-built-in Emacs functions that you may want to consider for some
-actions of your own:
-
-@table @asis
-@item @samp{deactivate-mark}
-Unmark the active region. Use this for commands
-you want to act on the region contents but without the region being
-active. The default configuration uses this function as a pre-action
-hook for @samp{occur} and @samp{query-replace}, for example, so that you can use
-them as actions with region targets to search the whole buffer for
-the text contained in the region. Without this pre-action hook using
-@samp{occur} as an action for a region target would be pointless: it would
-search for the the region contents @emph{in the region}, (typically, due to
-the details of regexps) finding only one match!
-
-@item @samp{xref-push-marker-stack}
-Push the current location on the xref
-marker stack. Use this for commands that take you somewhere and for
-which you'd like to be able to come back to where you were using
-@samp{xref-pop-marker-stack}. This is used by default for @samp{find-library}.
 @end table
 
 @node Creating your own keymaps
