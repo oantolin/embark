@@ -1756,7 +1756,11 @@ minibuffer before executing the action."
                      embark-live         ; target buffer
                      embark-export
                      embark-act-all))
-      (command-execute action)
+      (progn
+        (embark--run-action-hooks embark-pre-action-hooks action target quit)
+        (unwind-protect (command-execute action)
+          (embark--run-action-hooks embark-post-action-hooks
+                                    action target quit)))
     (let* ((command embark--command)
            (prefix prefix-arg)
            (action-window (embark--target-window t))
