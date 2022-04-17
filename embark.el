@@ -408,7 +408,7 @@ entry of `embark-target-injection-hooks' whose key is the action."
   '((async-shell-command embark--allow-edit embark--shell-prep)
     (shell-command embark--allow-edit embark--shell-prep)
     (pp-eval-expression embark--eval-prep)
-    (package-delete embark--force-complete)
+    (package-delete minibuffer-force-complete)
     ;; commands evaluating code found in the buffer, which may in turn prompt
     (embark-pp-eval-defun embark--ignore-target)
     (eval-defun embark--ignore-target)
@@ -426,17 +426,21 @@ entry of `embark-target-injection-hooks' whose key is the action."
   "Alist associating commands with post-injection setup hooks.
 For commands appearing as keys in this alist, run the
 corresponding value as a setup hook after injecting the target
-into in the minibuffer and before acting on it.  The hooks must
-accept arbitrary keyword argument. The :action symbol, the
-:target string and target :type are always present.  For actions
-at point the target bounds are passed too.  The default pre-action
-hook is specified by the entry with key t.  Furthermore, hooks with
-the key :always are executed always."
+into in the minibuffer and before acting on it.  The hooks can
+either be functions of no arguments or else they must accept
+arbitrary keyword arguments. In the latter case, the :action
+command, the :target string and target :type are always present.
+For actions at point the target bounds are passed too using the
+:bounds keyword.  The default pre-action hook is specified by the
+entry with key t.  Furthermore, hooks with the key :always are
+executed always."
   :type '(alist :key-type
                 (choice symbol
                         (const :tag "Default" t)
                         (const :tag "Always" :always))
                 :value-type hook))
+
+(autoload 'xref-push-marker-stack "xref")
 
 (defcustom embark-pre-action-hooks
   `(;; commands that need to position point at the beginning or end
@@ -478,7 +482,7 @@ the key :always are executed always."
     ;; commands we want to be able to jump back from
     ;; (embark-find-definition achieves this by calling
     ;; xref-find-definitions which pushes the markers itself)
-    (find-library embark--xref-push-marker)
+    (find-library xref-push-marker-stack)
     ;; commands which prompt the user for confirmation before running
     (delete-file embark--confirm)
     (delete-directory embark--confirm)
@@ -488,10 +492,10 @@ the key :always are executed always."
     (package-delete embark--confirm)
     (,'tab-bar-close-tab-by-name embark--confirm) ;; Avoid package-lint warning
     ;; search for region contents outside said region
-    (embark-isearch embark--unmark-target)
-    (occur embark--unmark-target)
-    (query-replace embark--beginning-of-target embark--unmark-target)
-    (query-replace-regexp embark--beginning-of-target embark--unmark-target)
+    (embark-isearch deactivate-mark)
+    (occur deactivate-mark)
+    (query-replace embark--beginning-of-target deactivate-mark)
+    (query-replace-regexp embark--beginning-of-target deactivate-mark)
     ;; narrow to target for duration of action
     (repunctuate-sentences embark--narrow-to-target))
   "Alist associating commands with pre-action hooks.
@@ -1739,13 +1743,19 @@ If called outside the minibuffer, simply apply FN to ARGS."
 The HOOKS argument must be alist.  The keys t and :always are
 treated specially.  The :always hooks are executed always and the
 t hooks are the default hooks, for when there are no
-command-specific hooks for ACTION.  The QUIT, ACTION and TARGET
-arguments are passed to the hooks as keyword arguments."
-  (mapc (lambda (h) (apply h :action action :quit quit target))
-        (or (alist-get action hooks)
-            (alist-get t hooks)))
-  (mapc (lambda (h) (apply h :action action :quit quit target))
-        (alist-get :always hooks)))
+command-specific hooks for ACTION.
+
+Each hook can either be a function of no arguments or a function
+that accepts QUIT, ACTION and TARGET keyword arguments.  In the
+latter case, the hook should also allow other keys, which it may
+recieve depending on the target, for example, it may recieve a
+:bounds keyword argument for targets outside the minibuffer."
+  (cl-flet ((run (hook)
+              (condition-case nil
+                  (apply hook :action action :quit quit target)
+                (wrong-number-of-arguments (funcall hook)))))
+    (mapc #'run (or (alist-get action hooks) (alist-get t hooks)))
+    (mapc #'run (alist-get :always hooks))))
 
 (defun embark--act (action target &optional quit)
   "Perform ACTION injecting the TARGET.
@@ -3575,14 +3585,14 @@ ALGORITHM is the hash algorithm symbol understood by `secure-hash'."
 
 ;;; Setup and pre-action hooks
 
-(defun embark--restart (&rest _)
+(defun embark--restart ()
   "Restart current command with current input.
 Use this to refresh the list of candidates for commands that do
 not handle that themselves."
   (when (minibufferp)
     (embark--become-command embark--command (minibuffer-contents))))
 
-(defun embark--shell-prep (&rest _)
+(defun embark--shell-prep ()
   "Prepare target for use as argument for a shell command.
 This quotes the spaces, inserts an extra space at the beginning
 and leaves the point to the left of it."
@@ -3591,11 +3601,7 @@ and leaves the point to the left of it."
     (insert " " (shell-quote-wildcard-pattern contents))
     (goto-char (minibuffer-prompt-end))))
 
-(defun embark--force-complete (&rest _)
-  "Select first minibuffer completion candidate matching target."
-  (minibuffer-force-complete))
-
-(defun embark--eval-prep (&rest _)
+(defun embark--eval-prep ()
   "If target is: a variable, skip edit; a function, wrap in parens."
   (when (fboundp (intern-soft (minibuffer-contents)))
     (embark--allow-edit)
@@ -3621,10 +3627,6 @@ and leaves the point to the left of it."
     (set-mark (cdr bounds))
     (goto-char (car bounds))))
 
-(cl-defun embark--unmark-target (&rest _)
-  "Deactivate the region target."
-  (deactivate-mark t))
-
 (cl-defun embark--narrow-to-target (&key action bounds &allow-other-keys)
   "Narrow buffer to target if its BOUNDS are known.
 Intended for use as an Embark pre-action hook.  This function
@@ -3640,20 +3642,15 @@ The advice is self-removing so it only affects ACTION once."
                         (advice-remove action #'with-restriction))))))
       (advice-add action :around #'with-restriction))))
 
-(defun embark--allow-edit (&rest _)
+(defun embark--allow-edit ()
   "Allow editing the target."
   (remove-hook 'post-command-hook 'exit-minibuffer t)
   (remove-hook 'post-command-hook 'ivy-immediate-done t))
 
-(defun embark--ignore-target (&rest _)
+(defun embark--ignore-target ()
   "Ignore the target."
   (delete-minibuffer-contents)
   (embark--allow-edit))
-
-(autoload 'xref-push-marker-stack "xref")
-(defun embark--xref-push-marker (&rest _)
-  "Push a marker onto the xref marker stack."
-  (xref-push-marker-stack))
 
 (cl-defun embark--confirm (&key action target &allow-other-keys)
   "Ask for confirmation before running the ACTION on the TARGET."
