@@ -74,8 +74,7 @@
 
 (defun embark-consult--collect-candidate ()
   "Return candidate at point in collect buffer."
-  (and (derived-mode-p 'embark-collect-mode)
-       (get-text-property (point) 'embark--candidate)))
+  (cadr (embark-target-collect-candidate)))
 
 (add-hook 'consult--completion-candidate-hook #'embark-consult--collect-candidate)
 
