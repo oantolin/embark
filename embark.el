@@ -2996,12 +2996,9 @@ the minibuffer contents, and, if you wish, you can rerun
               (revert (embark--revert-function #'embark-export)))
           (embark--quit-and-run
            (lambda ()
-             (let ((display-buffer-alist
-                    '(("" display-buffer-no-window (allow-no-window . t)))))
-               (funcall exporter candidates))
+             (funcall exporter candidates)
              (rename-buffer name t)
              (setq-local revert-buffer-function revert)
-             (pop-to-buffer (current-buffer))
              (let ((embark-after-export-hook after)
                    (embark--command cmd))
                (run-hooks 'embark-after-export-hook)))))))))
