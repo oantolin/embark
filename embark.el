@@ -188,8 +188,14 @@ bounds pair of the target at point for highlighting."
     (multi-category . embark--refine-multi-category)
     (file . embark--simplify-path))
   "Alist associating type to functions for transforming targets.
-Each function should take a type and a target string and return a
-pair of the form a `cons' of the new type and the new target."
+Each function should take a type symbol and a target string and
+return either:
+
+1. a pair of the new type and the new target (in this case the
+default action will use the original untransformed target), or
+
+2. a three element list consisting of the new type, the new
+target and a new target for use by the default action."
   :type '(alist :key-type symbol :value-type function))
 
 (defcustom embark-become-keymaps
@@ -1830,8 +1836,9 @@ minibuffer before executing the action."
 
 (defun embark--refine-multi-category (_type target)
   "Refine `multi-category' TARGET to its actual type."
-  (or (get-text-property 0 'multi-category target)
-      (cons 'general target)))
+  (pcase (get-text-property 0 'multi-category target)
+    (`(,type . ,cand) (list type cand (concat cand (substring target -1))))
+    ('nil (cons 'general target))))
 
 (defun embark--refine-symbol-type (_type target)
   "Refine symbol TARGET to more specific type if possible."
@@ -1934,11 +1941,15 @@ plist concerns one target, and has keys `:type', `:target',
                 (bounds (and (consp target+bounds) (cdr target+bounds)))
                 (full-target
                  (append
-                  (list :orig-type type :orig-target target :bounds bounds)
                   (if-let (transform (alist-get type embark-transformer-alist))
-                      (let ((trans (funcall transform type target)))
-                        (list :type (car trans) :target (cdr trans)))
-                    (list :type type :target target)))))
+                      (pcase-let ((`(,new-type . ,new-target)
+                                   (funcall transform type target)))
+                        (when (consp new-target)
+                          (setq target (cdr new-target)
+                                new-target (car new-target)))
+                        (list :type new-type :target new-target))
+                    (list :type type :target target))
+                  (list :orig-type type :orig-target target :bounds bounds))))
            (push full-target targets)
            (minibufferp)))))
     (cl-delete-duplicates
