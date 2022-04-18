@@ -6,7 +6,7 @@
 @documentlanguage en
 @c %**end of header
 
-@dircategory Emacs
+@dircategory Emacs misc features
 @direntry
 * Embark: (embark).     Emacs Mini-Buffer Actions Rooted in Keymaps.
 @end direntry
