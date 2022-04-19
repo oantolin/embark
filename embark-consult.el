@@ -173,6 +173,7 @@ This function is meant to be added to `embark-collect-mode-hook'."
 
 (embark-define-keymap embark-consult-export-grep-map
   "A keymap for Embark Export grep-mode buffers."
+  :parent nil
   ("g" revert-buffer))
 
 (defun embark-consult-export-grep (lines)
@@ -183,11 +184,13 @@ This function is meant to be added to `embark-collect-mode-hook'."
       (dolist (line lines) (insert line "\n"))
       (goto-char (point-min))
       (grep-mode)
-      (setq-local wgrep-header/footer-parser #'ignore)
-      (when (fboundp 'wgrep-setup) (wgrep-setup))
+      ;; Set up keymap before possible wgrep-setup, so that wgrep
+      ;; restores our binding too when the user finishes editing.
       (use-local-map (make-composed-keymap
                       embark-consult-export-grep-map
-                      (current-local-map))))
+                      (current-local-map)))
+      (setq-local wgrep-header/footer-parser #'ignore)
+      (when (fboundp 'wgrep-setup) (wgrep-setup)))
     (pop-to-buffer buf)))
 
 (defun embark-consult-goto-grep (location)
