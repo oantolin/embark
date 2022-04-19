@@ -382,6 +382,29 @@ starting configuration:
   (embark-collect-mode . consult-preview-at-point-mode))
 @end lisp
 
+About the suggested key bindings for @samp{embark-act} and @samp{embark-dwim}:
+@itemize
+@item
+Those key bindings are unlikely to work in the terminal, but
+terminal users are probably well aware of this and will know to
+select different bindings.
+@item
+The suggested @samp{C-.} binding is used by default in (at least some
+installations of) GNOME to input emojis, and Emacs doesn't even get
+a chance to respond to the binding. You can select a different key
+binding for @samp{embark-act} or use @samp{ibus-setup} to change the shortcut for
+emoji insertion (Emacs uses @samp{C-x 8 e e}, in case you want to set the
+same one system-wide).
+@item
+The suggested alternative of @samp{M-.} for @samp{embark-dwim} is bound by default
+to @samp{xref-find-definitions}. That is a very useful command but
+overwriting it with @samp{embark-dwim} is sensible since in Embark's
+default configuration, @samp{embark-dwim} will also find the definition of
+the identifier at point. (Note that @samp{xref-find-definitions} with a
+prefix argument prompts you for an identifier, @samp{embark-dwim} does not
+cover this case).
+@end itemize
+
 Other Embark commands such as @samp{embark-act-all}, @samp{embark-become},
 @samp{embark-collect}, and @samp{embark-export} can be run through @samp{embark-act} as
 actions bound to @samp{A}, @samp{B}, @samp{S} (for ``snapshot''), and @samp{E} respectively, and

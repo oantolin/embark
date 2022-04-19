@@ -285,6 +285,24 @@ starting configuration:
     (embark-collect-mode . consult-preview-at-point-mode))
 #+end_src
 
+About the suggested key bindings for =embark-act= and =embark-dwim=:
+- Those key bindings are unlikely to work in the terminal, but
+  terminal users are probably well aware of this and will know to
+  select different bindings.
+- The suggested =C-.= binding is used by default in (at least some
+  installations of) GNOME to input emojis, and Emacs doesn't even get
+  a chance to respond to the binding. You can select a different key
+  binding for =embark-act= or use =ibus-setup= to change the shortcut for
+  emoji insertion (Emacs uses =C-x 8 e e=, in case you want to set the
+  same one system-wide).
+- The suggested alternative of =M-.= for =embark-dwim= is bound by default
+  to =xref-find-definitions=. That is a very useful command but
+  overwriting it with =embark-dwim= is sensible since in Embark's
+  default configuration, =embark-dwim= will also find the definition of
+  the identifier at point. (Note that =xref-find-definitions= with a
+  prefix argument prompts you for an identifier, =embark-dwim= does not
+  cover this case).
+
 Other Embark commands such as =embark-act-all=, =embark-become=,
 =embark-collect=, and =embark-export= can be run through =embark-act= as
 actions bound to =A=, =B=, =S= (for "snapshot"), and =E= respectively, and
