@@ -604,6 +604,9 @@ the variable `embark--target-buffer'.")
 (defvar-local embark--command nil
   "Command that started the completion session.")
 
+(defvar-local embark--toggle-quit nil
+  "Should we toggle the default quitting behavior for the next action?")
+
 (defun embark--minibuffer-point ()
   "Return length of minibuffer contents."
   (max 0 (- (point) (minibuffer-prompt-end))))
@@ -1120,7 +1123,7 @@ UPDATE is the indicator update function."
            (quit-window 'kill-buffer win))
          (embark-completing-read-prompter prefix-map update)))
       ((or 'universal-argument 'universal-argument-more
-           'negative-argument 'digit-argument)
+           'negative-argument 'digit-argument 'embark-toggle-quit)
        ;; prevent `digit-argument' from modifying the overriding map
        (let ((overriding-terminal-local-map overriding-terminal-local-map))
          (command-execute cmd))
@@ -1270,11 +1273,17 @@ UPDATE function is passed to it."
   (let* ((candidates+def (embark--formatted-bindings keymap))
          (candidates (car candidates+def))
          (def (and (not no-default) (cdr candidates+def)))
+         (buf (current-buffer))
          (choice
           (catch 'choice
             (minibuffer-with-setup-hook
                 (lambda ()
                   (let ((map (make-sparse-keymap)))
+                    (define-key map (kbd "M-q")
+                                (lambda ()
+                                  (interactive)
+                                  (with-current-buffer buf
+                                    (embark-toggle-quit))))
                     (when-let (cycle (embark--cycle-key))
                       ;; Rebind `embark-cycle' in order allow cycling
                       ;; from the `completing-read' prompter. Additionally
@@ -1989,7 +1998,10 @@ performing the ACTION, assuming this is done from a minibuffer.
 If NEGATE is non-nil, return the opposite value."
   (let* ((cfg embark-quit-after-action)
          (quit (if (consp cfg) (alist-get action cfg (alist-get t cfg)) cfg)))
-    (if negate (not quit) quit)))
+    (when negate (setq quit (not quit))) ; Emacs 27.1 has an xor function...
+    (when embark--toggle-quit (setq quit (not quit)))
+    (setq embark--toggle-quit nil)
+    quit))
 
 ;;;###autoload
 (defun embark-act (&optional arg)
@@ -3239,6 +3251,13 @@ Return the category metadatum as the type of the target."
   (interactive)
   (user-error "Not meant to be called directly"))
 
+(defun embark-toggle-quit ()
+  "Toggle whether the following action quits the minibuffer."
+  (interactive)
+  (when (minibufferp)
+    (setq embark--toggle-quit (not embark--toggle-quit))
+    (message "Quitting toggled.")))
+
 (defun embark-insert (string &optional multiline)
   "Insert STRING at point.
 Some whitespace is also inserted if necessary to avoid having the
@@ -3703,6 +3722,7 @@ library, which have an obvious notion of associated directory."
   :parent embark-meta-map
   ("i" embark-insert)
   ("w" kill-new)
+  ("q" embark-toggle-quit)
   ("E" embark-export)
   ("S" embark-collect)
   ("L" embark-live)
