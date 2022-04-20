@@ -3885,7 +3885,7 @@ library, which have an obvious notion of associated directory."
   ("b" switch-to-buffer)
   ("o" switch-to-buffer-other-window)
   ("z" embark-bury-buffer)
-  ("q" embark-kill-buffer-and-window)
+  ("K" embark-kill-buffer-and-window)
   ("r" embark-rename-buffer)
   ("=" ediff-buffers)
   ("|" embark-shell-command-on-buffer)
