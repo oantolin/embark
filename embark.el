@@ -2639,15 +2639,7 @@ If NESTED is non-nil subkeymaps are not flattened."
      (substring contents pt))))
 
 (defun embark-collect-choose (entry)
-  "Select a completion or run default action on Embark Collect ENTRY.
-
-If the current buffer is an Embark Collect Completions buffer,
-complete the minibuffer input to ENTRY and, unless this leads to
-new completion candidates (for example, when entering a directory
-in `find-file') or the command was called with a prefix argument,
-exit the minibuffer.
-
-For other Embark Collect buffers, run the default action on ENTRY."
+  "Run default action on Embark Collect ENTRY."
   (pcase-let ((`(,type ,text ,start . ,end)
                (save-excursion
                  (goto-char entry)
