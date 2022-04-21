@@ -3258,8 +3258,12 @@ Return the category metadatum as the type of the target."
   (interactive)
   (when (minibufferp)
     (setq embark--toggle-quit (not embark--toggle-quit))
-    (message "Will %sobey embark-quit-after-action."
-             (if embark--toggle-quit "dis" ""))))
+    (if (consp embark-quit-after-action)
+        (message "Will %sobey embark-quit-after-action."
+                 (if embark--toggle-quit "dis" ""))
+      (message
+       "Will %squit minibuffer after action"
+       (if (eq embark--toggle-quit embark-quit-after-action) "not " "")))))
 
 (defun embark-insert (string &optional multiline)
   "Insert STRING at point.
