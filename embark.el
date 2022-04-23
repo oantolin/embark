@@ -3673,22 +3673,27 @@ The advice is self-removing so it only affects ACTION once."
   (unless (y-or-n-p (format "Run %s on %s? " action target))
     (user-error "Cancelled")))
 
+(defun embark--associated-directory (target type)
+  "Return directory associated to TARGET of given TYPE.
+The supported values of TYPE are file, buffer, bookmark and
+library, which have an obvious notion of associated directory."
+  (pcase type
+    ('file
+     (file-name-directory target))
+    ('buffer
+     (buffer-local-value 'default-directory (get-buffer target)))
+    ('bookmark
+     (file-name-directory (bookmark-location target)))
+    ('library
+     (file-name-directory (locate-library target)))))
+
 (autoload 'bookmark-location "bookmark")
 (cl-defun embark--cd (&key action target type &allow-other-keys)
   "Run ACTION with `default-directory' set to the directory of TARGET.
 The supported values of TYPE are file, buffer, bookmark and
 library, which have an obvious notion of associated directory."
   (when-let (((symbolp action))
-             (directory
-              (pcase type
-                ('file
-                 (file-name-directory target))
-                ('buffer
-                 (buffer-local-value 'default-directory (get-buffer target)))
-                ('bookmark
-                 (file-name-directory (bookmark-location target)))
-                ('library
-                 (file-name-directory (locate-library target))))))
+             (directory (embark--associated-directory target type)))
     (cl-labels ((in-directory (fn &rest args)
                   (advice-remove action #'in-directory)
                   (let ((default-directory directory))

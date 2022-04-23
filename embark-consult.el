@@ -288,26 +288,33 @@ This is intended to be used in `embark-target-injection-hooks'."
   (cl-pushnew #'embark-consult--unique-match
               (alist-get cmd embark-target-injection-hooks)))
 
-(defun embark-consult--add-async-separator (&rest _)
-  "Add Consult's async separator at the beginning.
-This is intended to be used in `embark-target-injection-hooks' for any action
-that is a Consult async command."
+(cl-defun embark-consult--prep-async (&key type target &allow-other-keys)
+  "Either add Consult's async separator or ignore the TARGET depending on TYPE.
+If the TARGET of the given TYPE has an associated notion of
+directory, we don't want to search for the text of target, but
+rather just start a search in the associated directory.
+
+This is intended to be used in `embark-target-injection-hooks'
+for any action that is a Consult async command."
   (let* ((style (alist-get consult-async-split-style
                            consult-async-split-styles-alist))
          (initial (plist-get style :initial))
-         (separator (plist-get style :separator)))
-    (cond
-     (initial
+         (separator (plist-get style :separator))
+         (directory (embark--associated-directory target type)))
+    (when directory
+      (delete-minibuffer-contents))
+    (when initial
       (goto-char (minibuffer-prompt-end))
       (insert initial)
       (goto-char (point-max)))
-     (separator
+    (when (and separator (null directory))
       (goto-char (point-max))
-      (insert separator)))))
+      (insert separator))))
 
 (map-keymap
  (lambda (_key cmd)
-   (cl-pushnew #'embark-consult--add-async-separator
+   (cl-pushnew #'embark--cd (alist-get cmd embark-pre-action-hooks))
+   (cl-pushnew #'embark-consult--prep-async
                (alist-get cmd embark-target-injection-hooks)))
  embark-consult-async-search-map)
 
