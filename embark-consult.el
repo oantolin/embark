@@ -171,8 +171,8 @@ This function is meant to be added to `embark-collect-mode-hook'."
 (defvar wgrep-header/footer-parser)
 (declare-function wgrep-setup "ext:wgrep")
 
-(embark-define-keymap embark-consult-export-grep-map
-  "A keymap for Embark Export grep-mode buffers."
+(embark-define-keymap embark-consult-revert-map
+  "A keymap with a binding for revert-buffer."
   :parent nil
   ("g" revert-buffer))
 
@@ -187,7 +187,7 @@ This function is meant to be added to `embark-collect-mode-hook'."
       ;; Set up keymap before possible wgrep-setup, so that wgrep
       ;; restores our binding too when the user finishes editing.
       (use-local-map (make-composed-keymap
-                      embark-consult-export-grep-map
+                      embark-consult-revert-map
                       (current-local-map)))
       (setq-local wgrep-header/footer-parser #'ignore)
       (when (fboundp 'wgrep-setup) (wgrep-setup)))
@@ -211,6 +211,25 @@ This function is meant to be added to `embark-collect-mode-hook'."
       #'embark-consult-goto-grep)
 (setf (alist-get 'consult-grep embark-exporters-alist)
       #'embark-consult-export-grep)
+
+;;; Support for consult-xref
+
+(declare-function xref--show-xref-buffer "ext:xref")
+
+(defun embark-consult-export-xref (items)
+  "Create an xref buffer listing ITEMS."
+  (let ((xref-items (mapcar (lambda (item)
+                              (get-text-property 0 'consult-xref item))
+                            items)))
+    (set-buffer
+     (xref--show-xref-buffer
+      (lambda () xref-items)
+      `((window . ,(embark--target-window))
+        (auto-jump . ,xref-auto-jump-to-first-xref)
+        (display-action))))))
+
+(setf (alist-get 'consult-xref embark-exporters-alist)
+      #'embark-consult-export-xref)
 
 ;;; Support for consult-find and consult-locate
 
