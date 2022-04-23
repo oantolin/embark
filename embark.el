@@ -2999,10 +2999,13 @@ the minibuffer contents, and, if you wish, you can rerun
         (let ((after embark-after-export-hook)
               (cmd embark--command)
               (name (embark--descriptive-buffer-name 'export))
-              (revert (embark--revert-function #'embark-export)))
+              (revert (embark--revert-function #'embark-export))
+              (buffer (save-excursion
+                        (funcall exporter candidates)
+                        (current-buffer))))
           (embark--quit-and-run
            (lambda ()
-             (funcall exporter candidates)
+             (pop-to-buffer buffer)
              (rename-buffer name t)
              (setq-local revert-buffer-function revert)
              (let ((embark-after-export-hook after)
