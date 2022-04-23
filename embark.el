@@ -2887,7 +2887,7 @@ TYPE should be either `collect' or `export'."
   (format "*Embark %s: %s*"
           (capitalize (symbol-name type))
           (if (minibufferp)
-              (format "M-x %s RET %s" embark--command
+              (format "%s - %s" embark--command
                       (minibuffer-contents-no-properties))
             (buffer-name))))
 
