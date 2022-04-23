@@ -224,7 +224,7 @@ This function is meant to be added to `embark-collect-mode-hook'."
     (set-buffer
      (xref--show-xref-buffer
       (lambda () xref-items)
-      `((window . ,(embark--target-window))
+      `((window . ,(selected-window))
         (auto-jump . ,xref-auto-jump-to-first-xref)
         (display-action))))))
 
