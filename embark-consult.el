@@ -218,15 +218,33 @@ This function is meant to be added to `embark-collect-mode-hook'."
 
 (defun embark-consult-export-xref (items)
   "Create an xref buffer listing ITEMS."
-  (let ((xref-items (mapcar (lambda (item)
-                              (get-text-property 0 'consult-xref item))
-                            items)))
-    (set-buffer
-     (xref--show-xref-buffer
-      (lambda () xref-items)
-      `((window . ,(selected-window))
-        (auto-jump . ,xref-auto-jump-to-first-xref)
-        (display-action))))))
+  (cl-flet ((xref-items (items)
+              (mapcar (lambda (item) (get-text-property 0 'consult-xref item))
+                      items)))
+    (let ((fetcher consult-xref--fetcher)
+          (input (minibuffer-contents)))
+      (set-buffer
+       (xref--show-xref-buffer
+        (lambda ()
+          (catch 'xref-items
+            (minibuffer-with-setup-hook
+                (lambda ()
+                  (insert input)
+                  (add-hook 'minibuffer-exit-hook
+                            (lambda ()
+                              (throw 'xref-items
+                                (xref-items
+                                 (or
+                                  (plist-get
+                                   (embark--maybe-transform-candidates)
+                                   :candidates)
+                                  (user-error "No candidates for export")))))
+                            nil t))
+              (consult-xref fetcher))))
+        `((fetched-xrefs . ,(xref-items items))
+          (window . ,(embark--target-window))
+          (auto-jump . ,xref-auto-jump-to-first-xref)
+          (display-action)))))))
 
 (setf (alist-get 'consult-xref embark-exporters-alist)
       #'embark-consult-export-xref)
