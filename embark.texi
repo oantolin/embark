@@ -63,6 +63,11 @@ How does Embark call the actions?
 
 * Non-interactive functions as actions::
 
+Embark, Marginalia and Consult
+
+* Marginalia::
+* Consult::
+
 @end detailmenu
 @end menu
 
@@ -1053,8 +1058,21 @@ non-string target.
 @chapter Embark, Marginalia and Consult
 
 Embark cooperates well with the @uref{https://github.com/minad/marginalia, Marginalia} and @uref{https://github.com/minad/consult, Consult} packages.
-Neither of those packages is a dependency of Embark, but Marginalia is
-highly recommended, for reasons explained in the rest of this section.
+Neither of those packages is a dependency of Embark, but both are
+highly recommended companions to Embark, for opposite reasons:
+Marginalia greatly enhances Embark's usefulness, while Embark can help
+enhance Consult.
+
+In the remainder of this section I'll explain what exactly Marginalia
+does for Embark, and what Embark can do for Consult.
+
+@menu
+* Marginalia::
+* Consult::
+@end menu
+
+@node Marginalia
+@section Marginalia
 
 Embark comes with actions for symbols (commands, functions, variables
 with actions such as finding the definition, looking up the
@@ -1074,32 +1092,89 @@ augments many Emacs command to report accurate category metadata.
 Simply activating @samp{marginalia-mode} allows Embark to offer you the
 package and symbol actions when appropriate again. Candidate
 annotations in the Embark collect buffer are also provided by the
-Marginalia package.
+Marginalia package:
 
 @itemize
 @item
-If you install Marginalia and activate @samp{marginalia-mode}, the list
-view in Embark Collect buffers will use the Marginalia annotations
-automatically.
+If you install Marginalia and activate @samp{marginalia-mode}, Embark
+Collect buffers will use the Marginalia annotations automatically.
 
 @item
 If you don't install Marginalia, you will see only the annotations
 that come with Emacs (such as key bindings in @samp{M-x}, or the unicode
 characters in @samp{C-x 8 RET}).
+@end itemize
+
+@node Consult
+@section Consult
+
+The excellent Consult package provides many commands that use
+minibuffer completion, via the @samp{completing-read} function; plenty of its
+commands can be considered enhanced versions of built-in Emacs
+commands, and some are completely new functionality. One common
+enhancement provided in all commands for which it makes sense is
+preview functionality, for example @samp{consult-buffer} will show you a
+quick preview of a buffer before you actually switch to it.
+
+If you use both Consult and Embark you should absolutely install the
+@samp{embark-consult} package which provides integration between the two. It
+provides exporters for several Consult commands and also tweaks the
+behavior of many Consult commands when used as actions with @samp{embark-act}
+in subtle ways that you may not even notice, but make for a smoother
+experience.
+
+The @samp{embark-consult} package provides the following exporters:
+
+@itemize
+@item
+You can use @samp{embark-export} from @samp{consult-line}, @samp{consult-outline}, or
+@samp{consult-mark} to obtain an @samp{occur-mode} buffer. As with the built-in
+@samp{occur} command you use that buffer to jump to a match and after that,
+you can then use @samp{next-error} and @samp{previous-error} to navigate to other
+matches. You can also press @samp{e} to activate @samp{occur-edit-mode} and edit
+the matches in place!
 
 @item
-If you have Consult installed and call @samp{embark-collect} from
-@samp{consult-line}, @samp{consult-mark} or @samp{consult-outline}, you will notice the
-Embark Collect buffer starts in list view by default. Similarly,
-you'll notice that the @samp{consult-yank} family of commands start out in
-list view with zebra stripes, so you can easily tell where
-multi-line kill-ring entries start and end.
+You can export from any of the Consult asynchronous search commands,
+@samp{consult-grep}, @samp{consult-git-grep}, or @samp{consult-ripgrep} to get a
+@samp{grep-mode} buffer. Here too you can use @samp{next-error} and @samp{previous-error}
+to navigate among matches, and, if you install the @uref{http://github.com/mhayashi1120/Emacs-wgrep/raw/master/wgrep.el , wgrep} package,
+you can use it to edit the matches in place.
+@end itemize
+
+In both cases, pressing @samp{g} to revert the exported buffer will rerun the
+Consult command you had exported from and re-enter the input you had
+typed. You can then proceed to re-export if that's what you want, but
+you can also edit the input changing the search terms or simply cancel
+if you see you are done with that search.
+
+Besides those exporters, the @samp{embark-consult} package provides many
+subtle tweaks and small integrations between Embark and Consult. For
+example, if you run @samp{embark-collect} from any of the the @samp{consult-yank}
+family of commands, you'll see the Embark Collect buffers has full
+multi-line kill-ring entries with zebra stripes, so you can easily tell
+where they start and end.
+
+Some examples of little tweaks provided by @samp{embark-consult} to the
+behavior of Consult commands when used as Embark actions are:
+
+@itemize
+@item
+The asynchronous search commands will start in the directory
+associated to the Embark target if that target is a file, buffer,
+bookmark or Emacs Lisp library.
+
+@itemize
+@item
+For all other target types, a Consult search command (asynchronous
+or not) will search for the text of the target but leave the
+minibuffer open so you can interact with the Consult command.
+@end itemize
 
 @item
-The function @samp{embark-open-externally} has been removed following the
-policy of avoiding overlap with Consult. If you used that action,
-add @uref{https://github.com/minad/consult/blob/373498acb76b9395e5e590fb8e39f671a9363cd7/consult.el#L707, the small function} to your configuration or install Consult and
-use @samp{consult-file-externally}.
+@samp{consult-imenu} will search for the target and take you directly to
+the location if it matches a unique imenu entry, otherwise it will
+leave the minibuffer open so you can navigate among the matches.
 @end itemize
 
 @node Resources
