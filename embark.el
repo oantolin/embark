@@ -1371,8 +1371,9 @@ matching an element of this list."
   :type '(choice
           (const :tag "Exclude nothing" nil)
           (const :tag "Exclude Embark general actions"
-                 (embark-collect embark-cycle embark-export
-                  embark-keymap-help embark-become embark-isearch))
+                 (embark-collect embark-live embark-export
+                  embark-cycle embark-act-all embark-keymap-help
+                  embark-become embark-isearch))
           (repeat :tag "Other" (choice regexp symbol))))
 
 (defcustom embark-verbose-indicator-buffer-sections
