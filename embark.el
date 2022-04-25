@@ -533,7 +533,7 @@ arguments and more details."
                         (const :tag "Always" :always))
                 :value-type hook))
 
-(defcustom embark-multitarget-actions '(embark-insert embark-kill-ring-save)
+(defcustom embark-multitarget-actions '(embark-insert embark-copy-as-kill)
   "Commands for which `embark-act-all' should pass a list of targets.
 Normally `embark-act-all' runs the same action on each candiate
 separately, but when a command included in this variable's value
@@ -2424,7 +2424,7 @@ default is `embark-collect'"
 (defvar embark-separator-history nil
   "Input history for the separators used by some embark commands.
 The commands that prompt for a string separator are
-`embark-insert' and `embark-kill-ring-save'.")
+`embark-insert' and `embark-copy-as-kill'.")
 
 (defface embark-collect-candidate '((t :inherit default))
   "Face for candidates in Embark Collect.")
@@ -3278,7 +3278,7 @@ With a prefix argument, prompt the user (unless STRINGS has 0 or
       (read-string "Separator: " nil 'embark-separator-history)
     "\n"))
 
-(defun embark-kill-ring-save (strings)
+(defun embark-copy-as-kill (strings)
   "Join STRINGS and save on the kill-ring.
 With a prefix argument, prompt for the separator to join the
 STRINGS, which defaults to a newline."
@@ -3751,7 +3751,7 @@ library, which have an obvious notion of associated directory."
   "Keymap for Embark general actions."
   :parent embark-meta-map
   ("i" embark-insert)
-  ("w" embark-kill-ring-save)
+  ("w" embark-copy-as-kill)
   ("q" embark-toggle-quit)
   ("E" embark-export)
   ("S" embark-collect)
