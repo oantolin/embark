@@ -533,7 +533,7 @@ arguments and more details."
                         (const :tag "Always" :always))
                 :value-type hook))
 
-(defcustom embark-multitarget-actions nil
+(defcustom embark-multitarget-actions '(embark-insert embark-kill-ring-save)
   "Commands for which `embark-act-all' should pass a list of targets.
 Normally `embark-act-all' runs the same action on each candiate
 separately, but when a command included in this variable's value
@@ -1833,9 +1833,12 @@ minibuffer before executing the action."
                   (with-selected-window action-window
                     (embark--run-action-hooks embark-pre-action-hooks
                                               action target quit)
-                    (unwind-protect (funcall action argument)
+                    (unwind-protect
+                        (let ((current-prefix-arg prefix))
+                          (funcall action argument))
                       (embark--run-action-hooks embark-post-action-hooks
                                                 action target quit))))))))
+      (setq prefix-arg nil)
       (if quit (embark--quit-and-run run-action) (funcall run-action)))))
 
 (defun embark--refine-multi-category (_type target)
@@ -2186,6 +2189,7 @@ ARG is the prefix argument."
                 (when (memq 'embark--restart
                             (alist-get action embark-post-action-hooks))
                   (embark--restart))))))
+      (setq prefix-arg nil)
       (mapc #'funcall indicators))))
 
 (defun embark-highlight-indicator ()
@@ -2416,6 +2420,11 @@ default is `embark-collect'"
 (defcustom embark-after-export-hook nil
   "Hook run after `embark-export' in the newly created buffer."
   :type 'hook)
+
+(defvar embark-separator-history nil
+  "Input history for the separators used by some embark commands.
+The commands that prompt for a string separator are
+`embark-insert' and `embark-kill-ring-save'.")
 
 (defface embark-collect-candidate '((t :inherit default))
   "Face for candidates in Embark Collect.")
@@ -3261,8 +3270,25 @@ Return the category metadatum as the type of the target."
        "Will %squit minibuffer after action"
        (if (eq embark--toggle-quit embark-quit-after-action) "not " "")))))
 
-(defun embark-insert (string &optional multiline)
-  "Insert STRING at point.
+(defun embark--separator (strings)
+  "Return a separator to join the STRINGS together.
+With a prefix argument, prompt the user (unless STRINGS has 0 or
+1 elements, in which case a separator is not needed)."
+  (if (and current-prefix-arg (cdr strings))
+      (read-string "Separator: " nil 'embark-separator-history)
+    "\n"))
+
+(defun embark-kill-ring-save (strings)
+  "Join STRINGS and save on the kill-ring.
+With a prefix argument, prompt for the separator to join the
+STRINGS, which defaults to a newline."
+  (kill-new (string-join strings (embark--separator strings))))
+
+(defun embark-insert (strings)
+  "Join STRINGS and insert the result at point.
+With a prefix argument, prompt for the separator to join the
+STRINGS, which defaults to a newline.
+
 Some whitespace is also inserted if necessary to avoid having the
 inserted string blend into the existing buffer text.  More
 precisely:
@@ -3273,31 +3299,27 @@ constituent character next to an existing word constituent.
 
 2. For a multiline inserted string, newlines may be added before
 or after as needed to ensure the inserted string is on lines of
-its own.
-
-If MULTILINE is non-nil (interactively, if called with a prefix
-argument), force the behavior for of the multiline case even if
-STRING contains no newlines."
-  (interactive "sInsert: \nP")
-  (setq multiline (or multiline (string-match-p "\n" string)))
-  (cl-flet* ((maybe-space ()
-               (and (looking-at "\\w") (looking-back "\\w" 1)
-                    (insert " ")))
-             (maybe-newline ()
-               (or (looking-back "^[ \t]*" 40) (looking-at "\n\n")
-                   (newline-and-indent)))
-             (maybe-whitespace ()
-               (if multiline (maybe-newline) (maybe-space)))
-             (ins-string ()
-               (save-excursion
-                 (insert string)
-                 (when (looking-back "\n" 1) (delete-char -1))
-                 (maybe-whitespace))
-               (maybe-whitespace)))
-    (if buffer-read-only
-        (with-selected-window (other-window-for-scrolling)
-          (ins-string))
-      (ins-string))))
+its own."
+  (let ((multiline (seq-some (lambda (s) (string-match-p "\n" s)) strings))
+        (separator (embark--separator strings)))
+    (cl-labels ((maybe-space ()
+                  (and (looking-at "\\w") (looking-back "\\w" 1)
+                       (insert " ")))
+                (maybe-newline ()
+                  (or (looking-back "^[ \t]*" 40) (looking-at "\n\n")
+                      (newline-and-indent)))
+                (maybe-whitespace ()
+                  (if multiline (maybe-newline) (maybe-space)))
+                (ins-string ()
+                  (save-excursion
+                    (insert (string-join strings separator))
+                    (when (looking-back "\n" 1) (delete-char -1))
+                    (maybe-whitespace))
+                  (maybe-whitespace)))
+      (if buffer-read-only
+          (with-selected-window (other-window-for-scrolling)
+            (ins-string))
+        (ins-string)))))
 
 ;; For Emacs 28 dired-jump will be moved to dired.el, but it seems
 ;; that since it already has an autoload in Emacs 28, this next
@@ -3729,7 +3751,7 @@ library, which have an obvious notion of associated directory."
   "Keymap for Embark general actions."
   :parent embark-meta-map
   ("i" embark-insert)
-  ("w" kill-new)
+  ("w" embark-kill-ring-save)
   ("q" embark-toggle-quit)
   ("E" embark-export)
   ("S" embark-collect)
