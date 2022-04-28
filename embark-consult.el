@@ -215,6 +215,8 @@ This function is meant to be added to `embark-collect-mode-hook'."
 ;;; Support for consult-xref
 
 (declare-function xref--show-xref-buffer "ext:xref")
+(declare-function consult-xref "ext:consult-xref")
+(defvar consult-xref--fetcher)
 
 (defun embark-consult-export-xref (items)
   "Create an xref buffer listing ITEMS."
