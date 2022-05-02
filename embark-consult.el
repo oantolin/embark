@@ -7,7 +7,7 @@
 ;; Keywords: convenience
 ;; Version: 0.5
 ;; Homepage: https://github.com/oantolin/embark
-;; Package-Requires: ((emacs "26.1") (embark "0.12") (consult "0.10"))
+;; Package-Requires: ((emacs "27.1") (embark "0.12") (consult "0.10"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -216,6 +216,7 @@ This function is meant to be added to `embark-collect-mode-hook'."
 
 (declare-function xref--show-xref-buffer "ext:xref")
 (declare-function consult-xref "ext:consult-xref")
+(defvar xref-auto-jump-to-first-xref)
 (defvar consult-xref--fetcher)
 
 (defun embark-consult-export-xref (items)
@@ -281,8 +282,8 @@ This function is meant to be added to `embark-collect-mode-hook'."
   "Keymap for Consult sync search commands"
   :parent nil
   ("o" consult-outline)
-  ("i" consult-imenu)
-  ("I" consult-imenu-multi)
+  ("i" 'consult-imenu)
+  ("I" 'consult-imenu-multi)
   ("l" consult-line)
   ("L" consult-line-multi))
 
@@ -373,15 +374,18 @@ for any action that is a Consult async command."
   (cons 'imenu (mapcar #'car (consult-imenu--items))))
 
 (defvar consult-imenu-config)
-(defun embark-consult--imenu-group-function (metadata prop)
-  "Return a suitable group-function for imenu METADATA.
-Meant as :after-until advice for `completion-metadata-get'."
-  (when-let (((eq (alist-get 'category metadata) 'imenu))
+(defun embark-consult--imenu-group-function (type prop)
+  "Return a suitable group-function for imenu.
+TYPE is the completion category.
+PROP is the metadata property.
+Meant as :after-until advice for `embark-collect--metadatum'."
+  (when-let (((and (eq type 'imenu) (eq prop 'group-function)))
              (config (plist-get
                       (cdr (seq-find (lambda (x) (derived-mode-p (car x)))
                                      consult-imenu-config))
                       :types)))
     ;; taken from consult-imenu
+    ;; TODO extract the function from consult-imenu, reuse it here.
     (lambda (cand transform)
       (let ((type (get-text-property 0 'consult--type cand)))
         (cond
@@ -391,16 +395,18 @@ Meant as :after-until advice for `completion-metadata-get'."
          (transform cand)
          (type (car (alist-get type config))))))))
 
+;; TODO can we find a better solution than the advice here?
+;; Can we hook more directly into `embark-collect--metadatum'?
+(advice-add #'embark-collect--metadatum :after-until
+            #'embark-consult--imenu-group-function)
+
 (defun embark-consult-imenu-or-outline-candidates ()
   "Collect imenu items in prog modes buffer or outline headings otherwise."
   (if (derived-mode-p 'prog-mode)
       (embark-consult-imenu-candidates)
     (embark-consult-outline-candidates)))
 
-(advice-add 'completion-metadata-get :after-until
-            #'embark-consult--imenu-group-function)
-
-(setf (alist-get 'imenu embark-default-action-overrides) #'consult-imenu)
+(setf (alist-get 'imenu embark-default-action-overrides) 'consult-imenu)
 
 (add-to-list 'embark-candidate-collectors
              #'embark-consult-imenu-or-outline-candidates
