@@ -372,8 +372,39 @@ for any action that is a Consult async command."
   "Collect all imenu items in the current buffer."
   (cons 'imenu (mapcar #'car (consult-imenu--items))))
 
+(defvar consult-imenu-config)
+(defun embark-consult--imenu-group-function (metadata prop)
+  "Return a suitable group-function for imenu METADATA.
+Meant as :after-until advice for `completion-metadata-get'."
+  (when-let (((eq (alist-get 'category metadata) 'imenu))
+             (config (plist-get
+                      (cdr (seq-find (lambda (x) (derived-mode-p (car x)))
+                                     consult-imenu-config))
+                      :types)))
+    ;; taken from consult-imenu
+    (lambda (cand transform)
+      (let ((type (get-text-property 0 'consult--type cand)))
+        (cond
+         ((and transform type)
+          (substring
+           cand (1+ (next-single-property-change 0 'consult--type cand))))
+         (transform cand)
+         (type (car (alist-get type config))))))))
+
+(defun embark-consult-imenu-or-outline-candidates ()
+  "Collect imenu items in prog modes buffer or outline headings otherwise."
+  (if (derived-mode-p 'prog-mode)
+      (embark-consult-imenu-candidates)
+    (embark-consult-outline-candidates)))
+
+(advice-add 'completion-metadata-get :after-until
+            #'embark-consult--imenu-group-function)
+
 (setf (alist-get 'imenu embark-default-action-overrides) #'consult-imenu)
-(add-to-list 'embark-candidate-collectors #'embark-consult-outline-candidates 'append)
+
+(add-to-list 'embark-candidate-collectors
+             #'embark-consult-imenu-or-outline-candidates
+             'append)
 
 ;; consult-completing-read-multiple
 
