@@ -2427,11 +2427,24 @@ The commands that prompt for a string separator are
 `embark-insert' and `embark-copy-as-kill'.")
 
 (defface embark-collect-candidate '((t :inherit default))
-  "Face for candidates in Embark Collect.")
+  "Face for candidates in Embark Collect buffers.")
 
 (defface embark-collect-group-title
   '((t :inherit shadow :slant italic :height 1.1))
-  "Face for candidates in Embark Collect.")
+  "Face for group titles in Embark Collect buffers.")
+
+(defface embark-collect-group-separator
+  '((t :inherit shadow :strike-through t italic :height 1.1))
+  "Face for group titles in Embark Collect buffers.")
+
+(defcustom embark-collect-group-format
+  (concat
+   (propertize "    " 'face 'embark-collect-group-separator)
+   (propertize " %s " 'face 'embark-collect-group-title)
+   (propertize " " 'face 'completions-group-separator
+               'display '(space :align-to right)))
+  "Format string used for the group title in Embark Collect buffers."
+  :type 'string)
 
 (defface embark-collect-zebra-highlight
   '((default :extend t)
@@ -2688,6 +2701,10 @@ If NESTED is non-nil subkeymaps are not flattened."
   ([remap backward-paragraph] 'outline-previous-heading)
   ("{" 'outline-previous-heading))
 
+(defconst embark-collect--outline-string (string #x210000)
+  "Special string used for outine headings in Embark Collect buffers.
+Chosen to be extremely unlikely to appear in a candidate.")
+
 (define-derived-mode embark-collect-mode tabulated-list-mode "Embark Collect"
   "List of candidates to be acted on.
 The command `embark-act' is bound `embark-collect-mode-map', but
@@ -2705,7 +2722,7 @@ opened the minibuffer is run again and the minibuffer contents
 restored.  You can then interact normally with the command,
 perhaps editing the minibuffer contents, and, if you wish, you
 can rerun `embark-collect' to get an updated buffer."
-  (setq-local outline-regexp "● ")
+  (setq-local outline-regexp embark-collect--outline-string)
   (outline-minor-mode))
 
 (defun embark-collect--remove-zebra-stripes ()
@@ -2845,7 +2862,10 @@ example)."
           (mapcan
            (lambda (group)
              (cons
-              `(nil [(,(concat "● " (car group)) type embark-collect-group)
+              `(nil [(,(concat (propertize embark-collect--outline-string
+                                           'invisible t)
+                               (format embark-collect-group-format (car group)))
+                      type embark-collect-group)
                      ("" skip t)])
               (mapcar
                (pcase-lambda (`(,cand ,prefix ,annotation))
