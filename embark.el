@@ -2721,9 +2721,7 @@ just restarts the completion session, that is, the command that
 opened the minibuffer is run again and the minibuffer contents
 restored.  You can then interact normally with the command,
 perhaps editing the minibuffer contents, and, if you wish, you
-can rerun `embark-collect' to get an updated buffer."
-  (setq-local outline-regexp embark-collect--outline-string)
-  (outline-minor-mode))
+can rerun `embark-collect' to get an updated buffer.")
 
 (defun embark-collect--remove-zebra-stripes ()
   "Remove highlighting of alternate rows."
@@ -2889,7 +2887,10 @@ example)."
                (seq-group-by (lambda (item) (funcall grouper (car item) nil))
                              candidates)
              (list (cons "" candidates)))))
-    (unless grouper (pop tabulated-list-entries))
+    (if (null grouper)
+        (pop tabulated-list-entries)
+      (setq-local outline-regexp embark-collect--outline-string)
+      (outline-minor-mode))
     (setq tabulated-list-format
           `[("Candidate" ,max-width t) ("Annotation" 0 t)])))
 
