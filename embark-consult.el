@@ -395,8 +395,6 @@ Meant as :after-until advice for `embark-collect--metadatum'."
          (transform cand)
          (type (car (alist-get type config))))))))
 
-;; TODO can we find a better solution than the advice here?
-;; Can we hook more directly into `embark-collect--metadatum'?
 (advice-add #'embark-collect--metadatum :after-until
             #'embark-consult--imenu-group-function)
 
