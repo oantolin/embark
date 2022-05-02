@@ -2685,8 +2685,8 @@ If NESTED is non-nil subkeymaps are not flattened."
   ("b" backward-button)
   ("<right>" forward-button)
   ("<left>" backward-button)
-  ("M-n" 'outline-next-heading)
-  ("M-p" 'outline-previous-heading))
+  ([remap forward-paragraph] 'outline-next-heading)
+  ([remap backward-paragraph] 'outline-previous-heading))
 
 (define-derived-mode embark-collect-mode tabulated-list-mode "Embark Collect"
   "List of candidates to be acted on.
