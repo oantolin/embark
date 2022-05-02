@@ -2430,11 +2430,11 @@ The commands that prompt for a string separator are
   "Face for candidates in Embark Collect buffers.")
 
 (defface embark-collect-group-title
-  '((t :inherit shadow :slant italic :height 1.1))
+  '((t :inherit shadow :slant italic))
   "Face for group titles in Embark Collect buffers.")
 
 (defface embark-collect-group-separator
-  '((t :inherit shadow :strike-through t italic :height 1.1))
+  '((t :inherit shadow :strike-through t italic))
   "Face for group titles in Embark Collect buffers.")
 
 (defcustom embark-collect-group-format
