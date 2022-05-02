@@ -381,14 +381,13 @@ wre obtained from a `delete-file' prompt.  In that case you can
 configure that by adding an entry to this variable pairing `file'
 with `find-file'.
 
-In addition to target types, you can also use as keys in this
-alist, pairs of a target type and a command name.  Such a pair
-indicates that the override only applies if the target was
-obtained from minibuffer completion from that command.  For
-example adding an entry '((file . delete-file) . find-file) to
-this alist would indicate that for files at the prompt of the
-`delete-file' command, `find-file' should be used as the default
-action."
+In addition to target types, you can also use as keys in this alist,
+pairs of a target type and a command name. Such a pair indicates that
+the override only applies if the target was obtained from minibuffer
+completion from that command. For example adding an
+entry (cons (cons 'file 'delete-file) 'find-file) to this alist would
+indicate that for files at the prompt of the `delete-file' command,
+`find-file' should be used as the default action."
   :type '(alist :key-type (choice (symbol :tag "Type")
                                   (cons (symbol :tag "Type")
                                         (symbol :tag "Command")))
@@ -3313,7 +3312,7 @@ With a prefix argument, prompt the user (unless STRINGS has 0 or
     "\n"))
 
 (defun embark-copy-as-kill (strings)
-  "Join STRINGS and save on the kill-ring.
+  "Join STRINGS and save on the `kill-ring'.
 With a prefix argument, prompt for the separator to join the
 STRINGS, which defaults to a newline."
   (kill-new (string-join strings (embark--separator strings))))
