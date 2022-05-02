@@ -2604,15 +2604,23 @@ This makes `embark-export' work in Embark Collect buffers."
                 (forward-line))
               (nreverse symbols))))))
 
+
+(defun embark-collect--target ()
+  "Return the Embark Collect candidate at point.
+This takes into account `embark-transformer-alist'."
+  (let ((embark-target-finders '(embark-target-collect-candidate)))
+    (car (embark--targets))))
+
 (defun embark--action-command (action)
   "Turn an ACTION into a command to perform the action.
 Returns the name of the command."
   (let ((name (intern (format "embark-action--%s"
-                              (embark--command-name action)))))
-    (fset name (lambda ()
-                 (interactive)
-                 (when-let (target (car (embark--targets)))
-                   (embark--act action target))))
+                              (embark--command-name action))))) 
+    (fset name (lambda (arg)
+                 (interactive "P")
+                 (when-let (target (embark-collect--target))
+                   (let ((prefix-arg arg))
+                     (embark--act action target)))))
     (put name 'function-documentation (documentation action))
     name))
 
@@ -2627,29 +2635,45 @@ If NESTED is non-nil subkeymaps are not flattened."
          (if nested
              (push (cons (vector key) def) maps)
            (dolist (bind (embark--all-bindings def))
-             (push (cons (vconcat (vector key) (car bind))
-                         (cdr bind))
+             (push (cons (vconcat (vector key) (car bind)) (cdr bind))
                    maps))))
         (def (push (cons (vector key) def) bindings))))
      (keymap-canonicalize keymap))
     (nconc (nreverse bindings) (nreverse maps))))
 
-(defvar embark-collect-direct-action-minor-mode-map (make-sparse-keymap)
-  "Keymap for direct bindings to embark actions.")
+(defun embark-collect--direct-action-map (type)
+  "Return a direct action keymap for targets of given TYPE."
+  (let* ((actions (embark--action-keymap type nil))
+         (map (make-sparse-keymap)))
+    (set-keymap-parent map button-map)
+    (pcase-dolist (`(,key . ,cmd) (embark--all-bindings actions))
+      (unless (or (equal key [13])
+                  (memq cmd '(digit-argument negative-argument)))
+        (define-key map key (if (eq cmd 'embark-keymap-help)
+                                #'embark-bindings-at-point
+                              (embark--action-command cmd)))))
+    map))
 
 (define-minor-mode embark-collect-direct-action-minor-mode
   "Bind type-specific actions directly (without need for `embark-act')."
   :init-value nil
   :lighter " Act"
-  :keymap embark-collect-direct-action-minor-mode-map
-  (when embark-collect-direct-action-minor-mode
-    ;; must mutate keymap, not make new one
-    (let ((map embark-collect-direct-action-minor-mode-map))
-      (setcdr map nil)
-      (cl-loop for (key . cmd) in (embark--all-bindings
-                                   (embark--action-keymap embark--type nil))
-               unless (eq cmd 'embark-keymap-help)
-               do (define-key map key (embark--action-command cmd))))))
+  (unless (derived-mode-p 'embark-collect-mode)
+    (user-error "Not in an Embark Collect buffer"))
+  (save-excursion
+    (goto-char (point-min))
+    (let ((inhibit-read-only t) maps)
+      (while (progn
+               (when (tabulated-list-get-id)
+                 (put-text-property
+                  (point) (button-end (point)) 'keymap
+                  (if embark-collect-direct-action-minor-mode
+                      (when-let ((target (embark-collect--target))
+                                 (type (plist-get target :type)))
+                        (or (alist-get type maps)
+                            (setf (alist-get type maps)
+                                  (embark-collect--direct-action-map type)))))))
+               (forward-button 1 nil nil t))))))
 
 (define-button-type 'embark-collect-entry
   'face 'embark-collect-candidate
