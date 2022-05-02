@@ -369,31 +369,20 @@ for any action that is a Consult async command."
   (cons 'consult-location (consult--outline-candidates)))
 
 (autoload 'consult-imenu--items "consult-imenu")
+
 (defun embark-consult-imenu-candidates ()
   "Collect all imenu items in the current buffer."
   (cons 'imenu (mapcar #'car (consult-imenu--items))))
 
-(defvar consult-imenu-config)
+(declare-function consult-imenu--group "ext:consult-imenu")
+
 (defun embark-consult--imenu-group-function (type prop)
   "Return a suitable group-function for imenu.
 TYPE is the completion category.
 PROP is the metadata property.
 Meant as :after-until advice for `embark-collect--metadatum'."
-  (when-let (((and (eq type 'imenu) (eq prop 'group-function)))
-             (config (plist-get
-                      (cdr (seq-find (lambda (x) (derived-mode-p (car x)))
-                                     consult-imenu-config))
-                      :types)))
-    ;; taken from consult-imenu
-    ;; TODO extract the function from consult-imenu, reuse it here.
-    (lambda (cand transform)
-      (let ((type (get-text-property 0 'consult--type cand)))
-        (cond
-         ((and transform type)
-          (substring
-           cand (1+ (next-single-property-change 0 'consult--type cand))))
-         (transform cand)
-         (type (car (alist-get type config))))))))
+  (when (and (eq type 'imenu) (eq prop 'group-function))
+    (consult-imenu--group)))
 
 (advice-add #'embark-collect--metadatum :after-until
             #'embark-consult--imenu-group-function)
