@@ -113,7 +113,8 @@
 
 (eval-when-compile (require 'subr-x))
 
-(require 'ffap) ; used it to recognize file and url targets
+(require 'ffap)    ; used to recognize file and url targets
+(require 'outline) ; used for group-function support in collect buffers
 
 ;;; User facing options
 
@@ -2430,6 +2431,10 @@ The commands that prompt for a string separator are
 (defface embark-collect-candidate '((t :inherit default))
   "Face for candidates in Embark Collect.")
 
+(defface embark-collect-group-title
+  '((t :inherit shadow :slant italic :height 1.1))
+  "Face for candidates in Embark Collect.")
+
 (defface embark-collect-zebra-highlight
   '((default :extend t)
     (((class color) (min-colors 88) (background light))
@@ -2639,6 +2644,10 @@ If NESTED is non-nil subkeymaps are not flattened."
   'face 'embark-collect-candidate
   'action 'embark-collect-choose)
 
+(define-button-type 'embark-collect-group
+  'face 'embark-collect-group-title
+  'action (lambda (_) (outline-toggle-children)))
+
 (defun embark--boundaries ()
   "Get current minibuffer completion boundaries."
   (let ((contents (minibuffer-contents))
@@ -2676,7 +2685,9 @@ If NESTED is non-nil subkeymaps are not flattened."
   ("f" forward-button)
   ("b" backward-button)
   ("<right>" forward-button)
-  ("<left>" backward-button))
+  ("<left>" backward-button)
+  ("M-n" outline-next-heading)
+  ("M-p" outline-previous-heading))
 
 (define-derived-mode embark-collect-mode tabulated-list-mode "Embark Collect"
   "List of candidates to be acted on.
@@ -2694,7 +2705,9 @@ just restarts the completion session, that is, the command that
 opened the minibuffer is run again and the minibuffer contents
 restored.  You can then interact normally with the command,
 perhaps editing the minibuffer contents, and, if you wish, you
-can rerun `embark-collect' to get an updated buffer.")
+can rerun `embark-collect' to get an updated buffer."
+  (setq-local outline-regexp "● ")
+  (outline-minor-mode))
 
 (defun embark-collect--remove-zebra-stripes ()
   "Remove highlighting of alternate rows."
@@ -2817,28 +2830,47 @@ candidate."
               (setq pos inv))))))
     (if chunks (apply #'concat (nreverse chunks)) string)))
 
-(defun embark-collect--format-entries (candidates)
-  "Format CANDIDATES for `tabulated-list-mode'."
-  (let ((max-width 0))
+(defun embark-collect--format-entries (candidates grouper)
+  "Format CANDIDATES for `tabulated-list-mode' grouped by GROUPER.
+The GROUPER is either nil or a function like the `group-function'
+completion metadatum, that is, a function of two arguments, the
+first of which is a candidate and the second controls what is
+computed: if nil, the title of the group the candidate belongs
+to, and if non-nil, a rewriting of the candidate (useful to
+simplify the candidate so it doesn't repeat the group title, for
+example)."
+  (let ((max-width 0)
+        (transform
+         (if grouper (lambda (cand) (funcall grouper cand t)) #'identity)))
     (setq tabulated-list-entries
-          (mapcar
-           (pcase-lambda (`(,cand ,prefix ,annotation))
-             (let* ((display (embark--for-display cand))
-                    (length (length annotation))
-                    (faces (text-property-not-all
-                            0 length 'face nil annotation)))
-               (setq max-width (max max-width (+ (string-width prefix)
-                                                 (string-width display))))
-               (when faces
-                 (add-face-text-property 0 length 'default t annotation))
-               `(,cand
-                 [(,(propertize display 'line-prefix prefix)
-                   type embark-collect-entry)
-                  (,annotation
-                   skip t
-                   ,@(unless faces
-                       '(face embark-collect-annotation)))])))
-           candidates))
+          (mapcan
+           (lambda (group)
+             (cons
+              `(nil [(,(concat "● " (car group)) type embark-collect-group)
+                     ("" skip t)])
+              (mapcar
+               (pcase-lambda (`(,cand ,prefix ,annotation))
+                 (let* ((display (embark--for-display (funcall transform cand)))
+                        (length (length annotation))
+                        (faces (text-property-not-all
+                                0 length 'face nil annotation)))
+                   (setq max-width (max max-width (+ (string-width prefix)
+                                                     (string-width display))))
+                   (when faces
+                     (add-face-text-property 0 length 'default t annotation))
+                   `(,cand
+                     [(,(propertize display 'line-prefix prefix)
+                       type embark-collect-entry)
+                      (,annotation
+                       skip t
+                       ,@(unless faces
+                           '(face embark-collect-annotation)))])))
+               (cdr group))))
+           (if grouper
+               (seq-group-by (lambda (item) (funcall grouper (car item) nil))
+                             candidates)
+             (list (cons "" candidates)))))
+    (unless grouper (pop tabulated-list-entries))
     (setq tabulated-list-format
           `[("Candidate" ,max-width t) ("Annotation" 0 t)])))
 
@@ -2847,7 +2879,8 @@ candidate."
   (let* ((transformed (embark--maybe-transform-candidates))
          (type (plist-get transformed :orig-type)) ; we need the originals for
          (candidates (plist-get transformed :orig-candidates)) ; default action
-         (affixator (embark-collect--affixator type)))
+         (affixator (embark-collect--affixator type))
+         (grouper (embark-collect--metadatum type 'group-function)))
     (when (eq type 'file)
       (let ((dir (buffer-local-value 'default-directory buffer)))
         (setq candidates
@@ -2858,7 +2891,7 @@ candidate."
     (setq candidates (funcall affixator candidates))
     (with-current-buffer buffer
       (setq embark--type type)
-      (embark-collect--format-entries candidates))
+      (embark-collect--format-entries candidates grouper))
     candidates))
 
 (defun embark--collect (buffer-name)
