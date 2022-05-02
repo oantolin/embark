@@ -2560,7 +2560,7 @@ This makes `embark-export' work in Embark Collect buffers."
                           (lambda (ov)
                             (eq (overlay-get ov 'face) 'embark-collect-marked))
                           (overlays-in (point-min) (point-max))))))
-              (mapcar #'car tabulated-list-entries)))))
+              (delq nil (mapcar #'car tabulated-list-entries))))))
 
 (defun embark-completions-buffer-candidates ()
   "Return all candidates in a completions buffer."
