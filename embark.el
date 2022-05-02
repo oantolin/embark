@@ -113,8 +113,7 @@
 
 (eval-when-compile (require 'subr-x))
 
-(require 'ffap)    ; used to recognize file and url targets
-(require 'outline) ; used for group-function support in collect buffers
+(require 'ffap) ; used to recognize file and url targets
 
 ;;; User facing options
 
@@ -2643,6 +2642,7 @@ If NESTED is non-nil subkeymaps are not flattened."
   'face 'embark-collect-candidate
   'action 'embark-collect-choose)
 
+(declare-function outline-toggle-children "outline")
 (define-button-type 'embark-collect-group
   'face 'embark-collect-group-title
   'action (lambda (_) (outline-toggle-children)))
@@ -2685,8 +2685,8 @@ If NESTED is non-nil subkeymaps are not flattened."
   ("b" backward-button)
   ("<right>" forward-button)
   ("<left>" backward-button)
-  ("M-n" outline-next-heading)
-  ("M-p" outline-previous-heading))
+  ("M-n" 'outline-next-heading)
+  ("M-p" 'outline-previous-heading))
 
 (define-derived-mode embark-collect-mode tabulated-list-mode "Embark Collect"
   "List of candidates to be acted on.
