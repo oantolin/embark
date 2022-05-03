@@ -1222,6 +1222,7 @@ If NESTED is non-nil subkeymaps are not flattened."
                    unless (or
                            ;; skip which-key pseudo keys and other invalid pairs
                            (and (not (keymapp cmd))
+                                (not (functionp cmd))
                                 (consp cmd)
                                 (not (stringp (car cmd))))
                            (memq cmd '(embark-keymap-help
