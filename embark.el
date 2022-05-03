@@ -2621,7 +2621,8 @@ Returns the name of the command."
                  (when-let (target (embark-collect--target))
                    (let ((prefix-arg arg))
                      (embark--act action target)))))
-    (put name 'function-documentation (documentation action))
+    (when (fboundp action)
+      (put name 'function-documentation (documentation action)))
     name))
 
 (defun embark--all-bindings (keymap &optional nested)
