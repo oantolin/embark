@@ -2348,7 +2348,19 @@ to bind.
 Before the actual list of binding pairs you can include the
 keyword `:parent' followed by a keymap, to specify a parent for
 the defined keymap.  If the `:parent' keymap is absent,
-`embark-general-map' is used by default."
+`embark-general-map' is used by default.
+
+If you intend to use the keymap defined by this macro with Embark
+as an action keymap, it is recommended that you add a binding for
+RET to an action that makes sense as a default for the type of
+target you will the keymap for.  For example, in
+`embark-file-map' RET is bound to `find-file' by default.
+
+Note, though, that the binding for RET may be overridden at the
+moment `embark-act' is called, either by an entry from
+`embark-default-action-overrides', or if there is no relevant
+entry there but `embark-act' is called from the minibuffer, by
+the command that opened the minibuffer in the first place."
   (declare (indent 1))
   (let* ((map (make-symbol "map"))
          (parent (if (eq :parent (car bindings))
