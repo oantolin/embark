@@ -399,14 +399,5 @@ Meant as :after-until advice for `embark-collect--metadatum'."
              #'embark-consult-imenu-or-outline-candidates
              'append)
 
-;; consult-completing-read-multiple
-
-(defun embark-consult--crm-selected ()
-  "Return selected candidates from `consult-completing-read-multiple'."
-  (when-let (cands (consult--crm-selected))
-    (cons (completion-metadata-get (embark--metadata) 'category) cands)))
-
-(add-hook 'embark-candidate-collectors #'embark-consult--crm-selected)
-
 (provide 'embark-consult)
 ;;; embark-consult.el ends here
