@@ -201,6 +201,30 @@ contents restored. You can then interact normally with the command,
 perhaps editing the minibuffer contents, and, if you wish, you can
 rerun =embark-collect= or =embark-export= to get an updated buffer.
 
+*** =embark-live= a live-updating variant of =embark-collect=
+
+Finally, there is also an =embark-live= variant of the =embark-collect=
+command which automatically updates the collection after each change
+in the source buffer. Users of a completion UI that automatically
+updates and displays the candidate list (such as Vertico, Icomplete,
+Selectrum, Fido-mode, or MCT) will probably not want to use
+=embark-live= from the minibuffer as they will then have two live
+updating displays of the completion candidates!
+
+A more likely use of =embark-live= is to be called from a regular buffer
+to display a sort of live updating "table of contents" for the buffer.
+This depends on having appropriate candidate collectors configured in
+=embark-candidate-collectors=. There are not many in Embark's default
+configuration, but you can try this experiment: open a dired buffer in
+a directory that has very many files, mark a few, and run =embark-live=.
+You'll get an Embark Collect buffer containing only the marked files,
+which updates as you mark or unmark files in dired. To make
+=embark-live= genuinely useful other candidate collectors are required.
+The =embark-consult= package (documented near the end of this manual)
+contains a few: one for imenu items and one for outline headings as
+used by =outline-minor-mode=. Those collectors really do give
+=embark-live= a table-of-contents feel.
+
 ** Switching to a different command without losing what you've typed
 
 Embark also has the =embark-become= command which is useful for when
@@ -959,12 +983,30 @@ typed. You can then proceed to re-export if that's what you want, but
 you can also edit the input changing the search terms or simply cancel
 if you see you are done with that search.
 
-Besides those exporters, the =embark-consult= package provides many
-subtle tweaks and small integrations between Embark and Consult. For
-example, if you run =embark-collect= from any of the the =consult-yank=
-family of commands, you'll see the Embark Collect buffers has full
-multi-line kill-ring entries with zebra stripes, so you can easily tell
-where they start and end.
+The =embark-consult= also contains some candidates collectors that allow
+you to run =embark-live= to get a live-updating table of contents for
+your buffer:
+
+- =embark-consult-outline-candidates= produces the outline headings of
+  the current buffer, using =consult-outline=.
+- =embark-consult-imenu-candidates= produces the imenu items of
+  the current buffer, using =consult-imenu=.
+- =embark-consult-imenu-or-outline-candidates= is a simple combination
+  of the two previous functions: it produces imenu items in buffers
+  deriving from =prog-mode= and otherwise outline headings.
+
+The way to configure =embark-live= (or =embark-collect= and =embark-export=
+for that matter) to use one of these function is to add it at the end
+of the =embark-candidate-collectors= list. The =embark-consult= package by
+default adds the last one, which seems to be the most sensible
+default.
+
+Besides those exporters and candidate collectors, the =embark-consult=
+package provides many subtle tweaks and small integrations between
+Embark and Consult. For example, if you run =embark-collect= from any of
+the the =consult-yank= family of commands, you'll see the Embark Collect
+buffers has full multi-line kill-ring entries with zebra stripes, so
+you can easily tell where they start and end.
 
 Some examples of little tweaks provided by =embark-consult= to the
 behavior of Consult commands when used as Embark actions are:
