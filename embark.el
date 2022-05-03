@@ -1164,7 +1164,11 @@ first line of the documentation string; otherwise use the word
     ((keymapp cmd)
      (propertize (if (symbolp cmd) (format "+%s" cmd) "<keymap>")
                  'face 'embark-keymap))
-    ((symbolp cmd) (symbol-name cmd))
+    ((symbolp cmd)
+     (let ((name (symbol-name cmd)))
+       (if (string-prefix-p "embark-action--" name) ; direct action mode
+           (format "(%s)" (string-remove-prefix "embark-action--" name))
+         name)))
     ((when-let (doc (and (functionp cmd) (ignore-errors (documentation cmd))))
        (save-match-data
          (when (string-match "^\\(.*\\)$" doc)
