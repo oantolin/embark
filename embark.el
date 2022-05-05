@@ -2076,7 +2076,8 @@ target."
                       (embark--act
                        action
                        (if (and (eq action default-action)
-                                (eq action embark--command))
+                                (eq action embark--command)
+                                (not (memq action embark-multitarget-actions)))
                            (embark--orig-target target)
                          target)
                        (embark--quit-p action))
@@ -2271,7 +2272,9 @@ See `embark-act' for the meaning of the prefix ARG."
              (action (or (command-remapping default-action) default-action)))
         (when (and arg (minibufferp)) (setq embark--toggle-quit t))
         (embark--act action
-                     (if (eq default-action embark--command)
+                     (if (and (eq default-action embark--command)
+                              (not (memq default-action
+                                         embark-multitarget-actions)))
                          (embark--orig-target target)
                        target)
                      (embark--quit-p action)))
