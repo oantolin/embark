@@ -180,7 +180,7 @@ what part or in what format the link is copied."
 (embark-org-define-link-copier
  as-markdown (format "[%s](%s)" description target) "as Markdown")
 
-(fset 'embark-org-copy-link-inner-target 'embark-copy-as-kill)
+(fset 'embark-org-copy-link-inner-target 'kill-new)
 (put 'embark-org-copy-link-inner-target 'function-documentation
       "Copy 'inner part' of the Org link at point's target.
 For mailto and elisp links, the inner part is the portion of the
@@ -191,7 +191,8 @@ For file links the inner part is the file name, without the
 IDs or search terms).
 
 For URLs the inner part is the whole target including the 'http:'
-or 'https:' prefix.")
+or 'https:' prefix.  For any other type of link the inner part is
+also the whole target.")
 
 (embark-define-keymap embark-org-copy-map
   "Keymap for different ways to copy Org links to the kill-ring."
