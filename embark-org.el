@@ -32,17 +32,94 @@
 (require 'embark)
 (require 'org)
 
+;;; Basic target finder for Org
+
+;; There are very many org element and objects types, we'll only
+;; recognize those for which there are specific actions we can put in
+;; a keymap, or for even if there aren't any specific actions, if it's
+;; import to be able to kill, delete or duplicate (embark-insert) them
+;; conveniently.  I'll start conservatively and we can add more later
+
+(defconst embark-org--types
+  '(
+    babel-call
+    ;; bold
+    ;; center-block
+    ;; citation
+    ;; citation-reference
+    ;; clock
+    ;; code
+    ;; comment
+    ;; comment-block
+    ;; diary-sexp
+    ;; drawer
+    ;; dynamic-block
+    ;; entity
+    ;; example-block
+    ;; export-block
+    ;; export-snippet
+    ;; fixed-width
+    footnote-definition
+    footnote-reference
+    ;; headline ; the bounds include the entire subtree!
+    ;; horizontal-rule
+    ;; inline-babel-call
+    ;; inline-src-block
+    ;; inlinetask
+    ;; italic
+    item
+    ;; keyword
+    ;; latex-environment
+    ;; latex-fragment
+    ;; line-break
+    link
+    ;; macro
+    ;; node-property
+    ;; paragraph ; the existing general support seems fine
+    plain-list
+    ;; planning
+    ;; property-drawer
+    ;; quote-block
+    ;; radio-target
+    ;; section
+    ;; special-block
+    src-block
+    ;; statistics-cookie
+    ;; strike-through
+    ;; subscript
+    ;; superscript
+    ;; table ; supported via a specific target finder
+    table-cell
+    ;; table-row ; we'll put row & column actions in the cell map
+    ;; target ; I think there are no useful actions for radio targets
+    timestamp
+    ;; underline
+    ;; verbatim
+    ;; verse-block
+    )
+  "Supported Org object and element types")
+
+(defun embark-org-target-element-context ()
+  "Target the smallest Org element or object around point."
+  (when-let (((derived-mode-p 'org-mode))
+             (element (org-element-context))
+             ((memq (car element) embark-org--types))
+             (begin (org-element-property :begin element))
+             (end (org-element-property :end element))
+             (target (buffer-substring begin end)))
+    ;; Adjust table-cell to exclude final |. (Why is that there?)
+    ;; Note: We are not doing this is an embark transformer because we
+    ;; want to adjust the bounds too.
+    ;; TODO? If more adjustments like this become necessary, add a
+    ;; nice mechanism for doing them.
+    (when (and (eq (car element) 'table-cell) (string-suffix-p "|" target))
+      (setq target (string-trim (string-remove-suffix "|" target))
+            end (1- end)))
+    `(,(intern (format "org-%s" (car element))) ,target ,begin . ,end)))
+
+(add-to-list 'embark-target-finders 'embark-org-target-element-context)
+
 ;;; Tables
-
-;; We define both cell and table targets
-
-(defun embark-org-target-cell ()
-  "Target contents of Org table cell at point."
-  (when (and (derived-mode-p 'org-mode) (org-at-table-p))
-    `(org-table-cell
-      ,(save-excursion (string-trim (org-table-get-field)))
-      . (,(save-excursion (skip-chars-backward "^|") (point))
-         . ,(save-excursion (skip-chars-forward "^|") (point))))))
 
 (defun embark-org-target-table ()
   "Target entire Org table at point."
@@ -79,10 +156,11 @@
   ("i" org-table-iterate)
   ("e" org-table-export))
 
-(add-to-list 'embark-target-finders #'embark-org-target-table)
+(push 'embark-org-target-table
+      (cdr (memq 'embark-org-target-element-context embark-target-finders)))
+
 (add-to-list 'embark-keymap-alist '(org-table . embark-org-table-map))
 
-(add-to-list 'embark-target-finders #'embark-org-target-cell)
 (add-to-list 'embark-keymap-alist '(org-table-cell . embark-org-table-cell-map))
 
 ;;; Links
@@ -128,32 +206,30 @@
 ;; slightly more complex design allows both whole-link and inner
 ;; target actions to work without cycling.
 
-(defun embark-org-target-link ()
-  "Target destination of Org link."
-  (when (and (derived-mode-p 'org-mode 'org-agenda-mode)
-             (org-in-regexp org-link-any-re))
-    (let ((target (or (match-string-no-properties 2)
-                      (match-string-no-properties 0))))
-      (append
-       (cond
-        ((string-prefix-p "http" target)
-         (list 'org-url-link target))
-        ((string-prefix-p "mailto:" target)
-         (list 'org-email-link (string-remove-prefix "mailto:" target)))
-        ((string-prefix-p "file:" target)
-         (list 'org-file-link
-               (replace-regexp-in-string
-                "::.*" "" (string-remove-prefix "file:" target))))
-        ((string-match-p "^[./]" target)
-         (list 'org-file-link (abbreviate-file-name (expand-file-name target))))
-        ((string-prefix-p "elisp:(" target)
-         (list 'org-expression-link (string-remove-prefix "elisp:" target)))
-        ((string-prefix-p "elisp:" target)
-         (list 'command (string-remove-prefix "elisp:" target)))
-        (t (list 'org-link target)))
-       (cons (match-beginning 0) (match-end 0))))))
+(defun embark-org--refine-link-type (_type target)
+  "Refine link type if we have more specific actions available."
+  (when (string-match org-link-any-re target)
+    (let ((target (or (match-string-no-properties 2 target)
+                      (match-string-no-properties 0 target))))
+      (cond
+       ((string-prefix-p "http" target)
+        (cons 'org-url-link target))
+       ((string-prefix-p "mailto:" target)
+        (cons 'org-email-link (string-remove-prefix "mailto:" target)))
+       ((string-prefix-p "file:" target)
+        (cons 'org-file-link
+              (replace-regexp-in-string
+               "::.*" "" (string-remove-prefix "file:" target))))
+       ((string-match-p "^[./]" target)
+        (cons 'org-file-link (abbreviate-file-name (expand-file-name target))))
+       ((string-prefix-p "elisp:(" target)
+        (cons 'org-expression-link (string-remove-prefix "elisp:" target)))
+       ((string-prefix-p "elisp:" target)
+        (cons 'command (string-remove-prefix "elisp:" target)))
+       (t (cons 'org-link target))))))
 
-(add-to-list 'embark-target-finders #'embark-org-target-link)
+(add-to-list 'embark-transformer-alist
+             '(org-link . embark-org--refine-link-type))
 
 (defmacro embark-org-define-link-copier (name formula description)
   "Define a command that copies the Org link at point according to FORMULA.
