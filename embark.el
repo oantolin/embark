@@ -3792,7 +3792,7 @@ The advice is self-removing so it only affects ACTION once."
   (let ((contents
          (get-text-property (minibuffer-prompt-end) 'embark--initial-input)))
     (delete-minibuffer-contents)
-    (insert contents))
+    (when contents (insert contents)))
   (embark--allow-edit))
 
 (autoload 'xref-push-marker-stack "xref")
