@@ -1784,8 +1784,12 @@ minibuffer before executing the action."
            (action-window (embark--target-window t))
            (inject
             (lambda ()
-              (delete-minibuffer-contents)
-              (insert (substring-no-properties (plist-get target :target)))
+              (let ((contents (minibuffer-contents)))
+                (delete-minibuffer-contents)
+                (insert
+                 (propertize
+                  (substring-no-properties (plist-get target :target))
+                  'embark--initial-input contents)))
               (if (memq 'ivy--queue-exhibit post-command-hook)
                   ;; Ivy has special needs: (1) for file names
                   ;; ivy-immediate-done is not equivalent to
@@ -3785,7 +3789,10 @@ The advice is self-removing so it only affects ACTION once."
 
 (defun embark--ignore-target (&rest _)
   "Ignore the target."
-  (delete-minibuffer-contents)
+  (let ((contents
+         (get-text-property (minibuffer-prompt-end) 'embark--initial-input)))
+    (delete-minibuffer-contents)
+    (insert contents))
   (embark--allow-edit))
 
 (autoload 'xref-push-marker-stack "xref")
