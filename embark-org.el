@@ -137,6 +137,7 @@
 
 (embark-define-keymap embark-org-table-cell-map
   "Keymap for actions the current cells, column or row of an Org table."
+  ;; TODO: default action?
   ("<up>"    org-table-move-cell-up)
   ("<down>"  org-table-move-cell-down)
   ("<left>"  org-table-move-cell-left)
@@ -147,6 +148,7 @@
 
 (embark-define-keymap embark-org-table-map
   "Keymap for actions on entire Org table."
+  ;; TODO: default action?
   ("=" org-table-edit-formulas)
   ("c" org-table-convert)
   ("t" org-table-transpose-table-at-point)
@@ -284,7 +286,7 @@ also the whole target.")
 (embark-define-keymap embark-org-link-map
   "Keymap for actions on Org links"
   ("RET" org-open-at-point)
-  ("TAB" org-insert-link)
+  ("'" org-insert-link)
   ("w" 'embark-org-copy-map))
 
 (defmacro embark-org--define-link-keymap (type)
@@ -315,6 +317,25 @@ The keymap will inherit from `embark-org-link-map' and from
 (add-to-list 'embark-keymap-alist '(org-file-link . embark-org-file-link-map))
 (add-to-list 'embark-keymap-alist
              '(org-expression-link . embark-org-expression-link-map))
+
+;;; Source blocks and babel calls
+
+(embark-define-keymap embark-org-src-block-map
+  "Keymap for actions on Org source blocks"
+  ("RET" org-babel-execute-src-block)
+  ("c" org-babel-check-src-block)
+  ("k" org-babel-remove-result-one-or-many)
+  ("p" org-babel-previous-src-block)
+  ("n" org-babel-next-src-block)
+  ("t" org-babel-tangle)
+  ("s" org-babel-switch-to-session)
+  ("l" org-babel-load-in-session)
+  ("'" org-edit-special))
+
+(dolist (motion '(org-babel-next-src-blockorg-babel-previous-src-block))
+  (add-to-list 'embark-repeat-actions motion))
+
+(add-to-list 'embark-keymap-alist '(org-src-block . embark-org-src-block-map))
 
 (provide 'embark-org)
 ;;; embark-org.el ends here
