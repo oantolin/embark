@@ -211,7 +211,7 @@ also the whole target.")
   ("TAB" org-insert-link)
   ("w" 'embark-org-copy-map))
 
-(defmacro embark-org-define-link-keymap (type)
+(defmacro embark-org--define-link-keymap (type)
   "Define a keymap for Org link of given TYPE.
 The keymap will inherit from `embark-org-link-map' and from
 `embark-TYPE-map' in that order."
@@ -225,10 +225,13 @@ The keymap will inherit from `embark-org-link-map' and from
 (push 'embark--ignore-target
       (alist-get 'org-open-at-point embark-target-injection-hooks))
 
-(embark-org-define-link-keymap url)
-(embark-org-define-link-keymap file)
-(embark-org-define-link-keymap email)
-(embark-org-define-link-keymap expression)
+(push 'embark--ignore-target
+      (alist-get 'org-insert-link embark-target-injection-hooks))
+
+(embark-org--define-link-keymap url)
+(embark-org--define-link-keymap file)
+(embark-org--define-link-keymap email)
+(embark-org--define-link-keymap expression)
 
 (add-to-list 'embark-keymap-alist '(org-link . embark-org-link-map))
 (add-to-list 'embark-keymap-alist '(org-url-link . embark-org-url-link-map))
