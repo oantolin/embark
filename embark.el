@@ -880,7 +880,10 @@ As a convenience, in Org Mode an initial ' or surrounding == or
                (cl-incf (car bounds))
                (cl-decf (cdr bounds)))))
       `(,(if (or (derived-mode-p 'emacs-lisp-mode 'inferior-emacs-lisp-mode)
-                 (and (intern-soft name) (not (derived-mode-p 'prog-mode))))
+                 (and
+                  (not (derived-mode-p 'prog-mode))
+                  (when-let ((sym (intern-soft name)))
+                    (or (boundp sym) (fboundp sym) (symbol-plist sym)))))
              'symbol
            'identifier)
         ,name
