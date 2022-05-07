@@ -21,11 +21,11 @@
 ;;; Commentary:
 
 ;; This package configures the Embark package for use in Org Mode
-;; buffers. It teaches Embark a number of Org related targets and
-;; appropriate actions. Currently it has table cells, whole tables,
-;; and links. Targets to add: headings (Embark already has generic
-;; support for outlines, so we just nee to add Org specific actions),
-;; dates, source blocks, etc.
+;; buffers.  It teaches Embark a number of Org related targets and
+;; appropriate actions.  Currently it has table cells, whole tables,
+;; source blocks and links.  Targets to add: headings (Embark already
+;; has generic support for outlines, so we just nee to add Org
+;; specific actions), timestamps, etc.
 
 ;;; Code:
 
