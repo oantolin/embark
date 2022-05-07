@@ -1,6 +1,6 @@
 ;;; embark-org.el --- Embark targets and actions for Org Mode  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2021  Omar Antolín Camarena
+;; Copyright (C) 2022  Free Software Foundation, Inc.
 
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Keywords: convenience
