@@ -13,39 +13,27 @@
 * Overview
 
 Embark makes it easy to choose a command to run based on what is near
-point. If the command you choose prompts you for input, Embark can
-fill in the data for you. Bind the =embark-act= command to a key and it
-acts like a prefix key for a keymap of /actions/ (commands) relevant to
-the /target/ found around point. For example, if point is on a file
-name, you can rename or copy it by choosing the standard Emacs
-commands =rename-file= or =copy-file=. Those commands prompt for a
-filename to copy or rename and Embark will enter the file name at
-point.
-
-Other examples include: with point on a URL you can open it in a
-browser or in eww; with point on a lisp function name you can go to
-its definition, get help for it, or trace calls to it; if while
-switching buffers you spot an old one, you can kill it right there and
-continue to select another.
-
-Users of Helm or Counsel will be familiar with this way of choosing
-actions for minibuffer completion candidates, and Embark extends this
-idea to all buffers, not just the minibuffer.
-
-Embark can also gather all minibuffer completion candidates into
-their own buffer where you can examine them and run commands on them
-at your leisure. The buffer the candidates are gathered into can be in
-a dired-like major mode provided by Embark suitable for all types of
-candidates, or it can be in a major mode specific to the type of
-candidates you are collecting such as dired mode for files, ibuffer
-for buffers, occur-mode for search results in the current buffer,
-or grep-mode for search results from several files.
+point, both during a minibuffer completion session (in a way familiar
+to Helm or Counsel users) and in normal buffers. Bind the command
+=embark-act= to a key and it acts like prefix-key for a keymap of
+/actions/ (commands) relevant to the /target/ around point. With point on
+an URL in a buffer you can open the URL in a browser or eww or
+download the file it points to. If while switching buffers you spot an
+old one, you can kill it right there and continue to select another.
+Embark comes preconfigured with over a hundred actions for common
+types of targets such as files, buffers, identifiers, s-expressions,
+sentences; and it is easy to add more actions and more target types.
+Embark can also collect all the candidates in a minibuffer to an
+occur-like buffer or export them to a buffer in a major-mode specific
+to the type of candidates, such as dired for a set of files, ibuffer
+for a set of buffers, or customize for a set of variables.
 
 ** Acting on targets
 
-The =embark-act= command (which you should bind to a convenient key),
-acts as a prefix for a keymap offering you relevant /actions/ to use on
-a /target/ determined by the context:
+You can think of =embark-act= as a keyboard-based version of a
+right-click contextual menu. The =embark-act= command (which you should
+bind to a convenient key), acts as a prefix for a keymap offering you
+relevant /actions/ to use on a /target/ determined by the context:
 
 - In the minibuffer, the target is the current top completion
   candidate.
