@@ -150,8 +150,9 @@
   "Keymap for actions on entire Org table."
   ;; TODO: default action?
   ("=" org-table-edit-formulas)
-  ("c" org-table-convert)
+  ("s" org-table-sort-lines)
   ("t" org-table-transpose-table-at-point)
+  ("c" org-table-convert)
   ("f" org-table-follow-field-mode)
   ("y" org-table-paste-rectangle)
   ("d" org-table-toggle-formula-debugger)
