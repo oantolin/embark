@@ -289,15 +289,6 @@ also the whole target.")
   ("'" org-insert-link)
   ("w" 'embark-org-copy-map))
 
-(defmacro embark-org--define-link-keymap (type)
-  "Define a keymap for Org link of given TYPE.
-The keymap will inherit from `embark-org-link-map' and from
-`embark-TYPE-map' in that order."
-  `(defvar ,(intern (format "embark-org-%s-link-map" type))
-     (make-composed-keymap embark-org-link-map
-                           ,(intern (format "embark-%s-map" type)))
-     ,(format "Keymap for Embark actions on Org %s links" type)))
-
 ;; The reason for this is left as an exercise to the reader.
 ;; Solution: Na ryvfc gnetrg znl cebzcg gur hfre sbe fbzrguvat!
 (push 'embark--ignore-target
@@ -306,17 +297,16 @@ The keymap will inherit from `embark-org-link-map' and from
 (push 'embark--ignore-target
       (alist-get 'org-insert-link embark-target-injection-hooks))
 
-(embark-org--define-link-keymap url)
-(embark-org--define-link-keymap file)
-(embark-org--define-link-keymap email)
-(embark-org--define-link-keymap expression)
-
-(add-to-list 'embark-keymap-alist '(org-link . embark-org-link-map))
-(add-to-list 'embark-keymap-alist '(org-url-link . embark-org-url-link-map))
-(add-to-list 'embark-keymap-alist '(org-email-link . embark-org-email-link-map))
-(add-to-list 'embark-keymap-alist '(org-file-link . embark-org-file-link-map))
 (add-to-list 'embark-keymap-alist
-             '(org-expression-link . embark-org-expression-link-map))
+             '(org-link embark-org-link-map))
+(add-to-list 'embark-keymap-alist
+             '(org-url-link embark-org-link-map embark-url-map))
+(add-to-list 'embark-keymap-alist
+             '(org-email-link embark-org-link-map embark-email-map))
+(add-to-list 'embark-keymap-alist
+             '(org-file-link embark-org-link-map embark-file-map))
+(add-to-list 'embark-keymap-alist
+             '(org-expression-link embark-org-link-map embark-expression-map))
 
 ;;; Source blocks and babel calls
 

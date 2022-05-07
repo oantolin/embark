@@ -122,35 +122,38 @@
   :group 'minibuffer)
 
 (defcustom embark-keymap-alist
-  `((file . embark-file-map)
-    (library . embark-library-map)
-    (environment-variables . embark-file-map) ; they come up in file completion
-    (url . embark-url-map)
-    (email . embark-email-map)
-    (buffer . embark-buffer-map)
-    (tab . embark-tab-map)
-    (expression . embark-expression-map)
-    (identifier . embark-identifier-map)
-    (,'defun . embark-defun-map)  ;; Avoid package-lint warning
-    (symbol . embark-symbol-map)
-    (face . embark-face-map)
-    (command . embark-command-map)
-    (variable . embark-variable-map)
-    (function . embark-function-map)
-    (minor-mode . embark-command-map)
-    (unicode-name . embark-unicode-name-map)
-    (package . embark-package-map)
-    (bookmark . embark-bookmark-map)
-    (region . embark-region-map)
-    (sentence . embark-sentence-map)
-    (paragraph . embark-paragraph-map)
-    (kill-ring . embark-kill-ring-map)
-    (heading . embark-heading-map)
-    (t . embark-general-map))
+  '((file embark-file-map)
+    (library embark-library-map)
+    (environment-variables embark-file-map) ; they come up in file completion
+    (url embark-url-map)
+    (email embark-email-map)
+    (buffer embark-buffer-map)
+    (tab embark-tab-map)
+    (expression embark-expression-map)
+    (identifier embark-identifier-map)
+    (defun embark-defun-map)
+    (symbol embark-symbol-map)
+    (face embark-face-map)
+    (command embark-command-map)
+    (variable embark-variable-map)
+    (function embark-function-map)
+    (minor-mode embark-command-map)
+    (unicode-name embark-unicode-name-map)
+    (package embark-package-map)
+    (bookmark embark-bookmark-map)
+    (region embark-region-map)
+    (sentence embark-sentence-map)
+    (paragraph embark-paragraph-map)
+    (kill-ring embark-kill-ring-map)
+    (heading embark-heading-map)
+    (t embark-general-map))
   "Alist of action types and corresponding keymaps.
-For any type not listed here, `embark-act' will use
-`embark-general-map'."
-  :type '(alist :key-type symbol :value-type variable))
+The special key `t' is associated with the default keymap to use.
+Each value can be either a single symbol whose value is a keymap,
+or a list of such symbols."
+  :type '(alist :key-type (symbol :tag "Target type")
+                :value-type (choice (variable :tag "Keymap")
+                             (repeat :tag "Keymaps" variable))))
 
 (defcustom embark-target-finders
   '(embark-target-top-minibuffer-completion
@@ -976,6 +979,17 @@ their own target finder.  See for example
   "Return the key to use for `embark-cycle'."
   (or embark-cycle-key (car (where-is-internal #'embark-act))))
 
+(defun embark--raw-action-keymap (type)
+  "Return raw action map for targets of given TYPE.
+This does not take into account the default action, help key or
+cycling bindings, just what's registered in
+`embark-keymap-alist'."
+  (make-composed-keymap
+   (mapcar #'symbol-value
+           (let ((actions (or (alist-get type embark-keymap-alist)
+                              (alist-get t embark-keymap-alist))))
+             (if (consp actions) actions (list actions))))))
+
 (defun embark--action-keymap (type cycle)
   "Return action keymap for targets of given TYPE.
 If CYCLE is non-nil bind `embark-cycle'."
@@ -988,8 +1002,7 @@ If CYCLE is non-nil bind `embark-cycle'."
      (when embark-help-key
        (define-key map embark-help-key #'embark-keymap-help))
      map)
-   (symbol-value (or (alist-get type embark-keymap-alist)
-                     (alist-get t embark-keymap-alist)))))
+   (embark--raw-action-keymap type)))
 
 (defun embark--truncate-target (target)
   "Truncate TARGET string."
@@ -1986,9 +1999,7 @@ keymap for the given type."
       (alist-get type embark-default-action-overrides)
       (alist-get t embark-default-action-overrides)
       embark--command
-      (lookup-key (symbol-value (or (alist-get type embark-keymap-alist)
-                                    (alist-get t embark-keymap-alist)))
-                  (kbd "RET"))))
+      (lookup-key (embark--raw-action-keymap type) (kbd "RET"))))
 
 (defun embark--rotate (list k)
   "Rotate LIST by K elements and return the rotated list."
