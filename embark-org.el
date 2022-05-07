@@ -119,6 +119,22 @@
 
 (add-to-list 'embark-target-finders 'embark-org-target-element-context)
 
+;;; Custom Org actions
+
+(defun embark-org-copy-as-markdown (start end)
+  "Export the region from START to END to markdown and save on the kill-ring."
+  (interactive "r")
+  (kill-new
+   (let (org-export-with-toc)
+     (string-trim
+      (org-export-string-as (buffer-substring-no-properties start end) 'md t))))
+  (deactivate-mark))
+
+(add-to-list 'embark-pre-action-hooks
+             '(embark-org-copy-as-markdown embark--mark-target))
+
+(define-key embark-region-map "M" #'embark-org-copy-as-markdown) ; good idea?
+
 ;;; Tables
 
 (defun embark-org-target-table ()
@@ -256,8 +272,6 @@ what part or in what format the link is copied."
 (embark-org-define-link-copier in-full full " in full")
 (embark-org-define-link-copier description description "'s description")
 (embark-org-define-link-copier target target "'s target")
-(embark-org-define-link-copier
- as-markdown (format "[%s](%s)" description target) "as Markdown")
 
 (fset 'embark-org-copy-link-inner-target 'kill-new)
 (put 'embark-org-copy-link-inner-target 'function-documentation
@@ -273,22 +287,22 @@ For URLs the inner part is the whole target including the 'http:'
 or 'https:' prefix.  For any other type of link the inner part is
 also the whole target.")
 
-(embark-define-keymap embark-org-copy-map
+(embark-define-keymap embark-org-link-copy-map
   "Keymap for different ways to copy Org links to the kill-ring."
   :parent nil
   ("w" embark-org-copy-link-in-full)
   ("d" embark-org-copy-link-description)
   ("t" embark-org-copy-link-target)
   ("i" embark-org-copy-link-inner-target)
-  ("m" embark-org-copy-link-as-markdown))
+  ("m" embark-org-copy-as-markdown))
 
-(fset 'embark-org-copy-map embark-org-copy-map)
+(fset 'embark-org-link-copy-map embark-org-link-copy-map)
 
 (embark-define-keymap embark-org-link-map
   "Keymap for actions on Org links"
   ("RET" org-open-at-point)
   ("'" org-insert-link)
-  ("w" 'embark-org-copy-map))
+  ("w" 'embark-org-link-copy-map))
 
 ;; The reason for this is left as an exercise to the reader.
 ;; Solution: Na ryvfc gnetrg znl cebzcg gur hfre sbe fbzrguvat!
