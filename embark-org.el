@@ -328,5 +328,18 @@ also the whole target.")
 
 (add-to-list 'embark-keymap-alist '(org-src-block . embark-org-src-block-map))
 
+;;; "Encode" region using Org export in place
+
+(embark-define-keymap embark-org-export-in-place-map
+  "Keymap for actions which replace the region by an exported version."
+  ("m" org-md-convert-region-to-md)
+  ("h" org-html-convert-region-to-html)
+  ("a" org-ascii-convert-region-to-ascii)
+  ("l" org-latex-convert-region-to-latex))
+
+(fset 'embark-org-export-in-place-map embark-org-export-in-place-map)
+
+(define-key embark-encode-map "o" 'embark-org-export-in-place-map)
+
 (provide 'embark-org)
 ;;; embark-org.el ends here
