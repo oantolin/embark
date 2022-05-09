@@ -265,85 +265,6 @@ Used by `embark-completing-read-prompter' and `embark-keymap-help'.")
 (defface embark-target '((t :inherit highlight))
   "Face used to highlight the target at point during `embark-act'.")
 
-(defcustom embark-indicators
-  '(embark-mixed-indicator
-    embark-highlight-indicator
-    embark-isearch-highlight-indicator)
-  "Indicator functions to use when acting or becoming.
-The indicator functions are called from both `embark-act' and
-from `embark-become' and should display information about this to
-the user, such as: which of those two commands is running; a
-description of the key bindings that are available for actions or
-commands to become; and, in the case of `embark-act', the type
-and value of the targets, and whether other targets are available
-via `embark-cycle'.  The indicator function is free to display as
-much or as little of this information as desired and can use any
-Emacs interface elements to do so.
-
-Embark comes with five such indicators:
-
-- `embark-minimal-indicator', which does not display any
-  information about keybindings, but does display types and
-  values of acton targets in the echo area or minibuffer prompt,
-
-- `embark-verbose-indicator', which pops up a buffer containing
-  detailed information including key bindings and the first line
-  of the docstring of the commands they run, and
-
-- `embark-mixed-indicator', which combines the minimal and the
-  verbose indicator: the minimal indicator is shown first and the
-  verbose popup is shown after `embark-mixed-indicator-delay'
-  seconds.
-
-- `embark-highlight-indicator', which highlights the target
-  at point.
-
-- `embark-isearch-highlight-indicator', which when the target at
-  point is an indentifier or symbol, lazily highlights all
-  occurrences of it.
-
-The protocol for indicator functions is as follows:
-
-When called from `embark-act', an indicator function is called
-without arguments.  The indicator function should then return a
-closure, which captures the indicator state.  The returned
-closure must accept up to three optional arguments, the action
-keymap, the targets (plists as returned by `embark--targets') and
-the prefix keys typed by the user so far.  The keymap, targets
-and prefix keys may be updated when cycling targets at point
-resulting in multiple calls to the closure.  When called from
-`embark-become', the indicator closure will be called with the
-keymap of commands to become, a fake target list containing a
-single target of type `embark-become' and whose value is the
-minibuffer input, and the prefix set to nil.  Note, in
-particular, that if an indicator function wishes to distinguish
-between `embark-act' and `embark-become' it should check whether
-the `car' of the first target is `embark-become'.
-
-After the action has been performed the indicator closure is
-called without arguments, such that the indicator can perform the
-necessary cleanup work.  For example, if the indicator adds
-overlays, it should remove these overlays.  The indicator should
-be written in a way that it is safe to call it for cleanup more
-than once, in fact, it should be able to handle any sequence of
-update and cleanup calls ending in a call for cleanup.
-
-NOTE: Experience shows that the indicator calling convention may
-change again in order to support more action features.  The
-calling convention should currently be considered unstable.
-Please keep this in mind when writing a custom indicator
-function, or when using the `which-key' indicator function from
-the wiki."
-  :type '(repeat
-          (choice
-           (const :tag "Verbose indicator" embark-verbose-indicator)
-           (const :tag "Minimal indicator" embark-minimal-indicator)
-           (const :tag "Mixed indicator" embark-mixed-indicator)
-           (const :tag "Highlight target" embark-highlight-indicator)
-           (const :tag "Highlight all occurrences"
-                  embark-isearch-highlight-indicator)
-           (function :tag "Other"))))
-
 (defcustom embark-quit-after-action t
   "Should `embark-act' quit the minibuffer?
 This controls whether calling `embark-act' without a prefix
@@ -1103,6 +1024,8 @@ the minibuffer is open, the message is added to the prompt."
       (when timer
         (cancel-timer timer)))))
 
+(defvar embark-indicators) ; forward declaration
+
 (defun embark-keymap-prompter (keymap update)
   "Let the user choose an action using the bindings in KEYMAP.
 Besides the bindings in KEYMAP, the user is free to use all their
@@ -1348,6 +1271,89 @@ UPDATE function is passed to it."
       ('nil (intern-soft choice)))))
 
 ;;; Verbose action indicator
+
+(defgroup embark-indicators nil
+  "Indicators display information about actions and targets."
+  :group 'embark)
+
+(defcustom embark-indicators
+  '(embark-mixed-indicator
+    embark-highlight-indicator
+    embark-isearch-highlight-indicator)
+  "Indicator functions to use when acting or becoming.
+The indicator functions are called from both `embark-act' and
+from `embark-become' and should display information about this to
+the user, such as: which of those two commands is running; a
+description of the key bindings that are available for actions or
+commands to become; and, in the case of `embark-act', the type
+and value of the targets, and whether other targets are available
+via `embark-cycle'.  The indicator function is free to display as
+much or as little of this information as desired and can use any
+Emacs interface elements to do so.
+
+Embark comes with five such indicators:
+
+- `embark-minimal-indicator', which does not display any
+  information about keybindings, but does display types and
+  values of acton targets in the echo area or minibuffer prompt,
+
+- `embark-verbose-indicator', which pops up a buffer containing
+  detailed information including key bindings and the first line
+  of the docstring of the commands they run, and
+
+- `embark-mixed-indicator', which combines the minimal and the
+  verbose indicator: the minimal indicator is shown first and the
+  verbose popup is shown after `embark-mixed-indicator-delay'
+  seconds.
+
+- `embark-highlight-indicator', which highlights the target
+  at point.
+
+- `embark-isearch-highlight-indicator', which when the target at
+  point is an indentifier or symbol, lazily highlights all
+  occurrences of it.
+
+The protocol for indicator functions is as follows:
+
+When called from `embark-act', an indicator function is called
+without arguments.  The indicator function should then return a
+closure, which captures the indicator state.  The returned
+closure must accept up to three optional arguments, the action
+keymap, the targets (plists as returned by `embark--targets') and
+the prefix keys typed by the user so far.  The keymap, targets
+and prefix keys may be updated when cycling targets at point
+resulting in multiple calls to the closure.  When called from
+`embark-become', the indicator closure will be called with the
+keymap of commands to become, a fake target list containing a
+single target of type `embark-become' and whose value is the
+minibuffer input, and the prefix set to nil.  Note, in
+particular, that if an indicator function wishes to distinguish
+between `embark-act' and `embark-become' it should check whether
+the `car' of the first target is `embark-become'.
+
+After the action has been performed the indicator closure is
+called without arguments, such that the indicator can perform the
+necessary cleanup work.  For example, if the indicator adds
+overlays, it should remove these overlays.  The indicator should
+be written in a way that it is safe to call it for cleanup more
+than once, in fact, it should be able to handle any sequence of
+update and cleanup calls ending in a call for cleanup.
+
+NOTE: Experience shows that the indicator calling convention may
+change again in order to support more action features.  The
+calling convention should currently be considered unstable.
+Please keep this in mind when writing a custom indicator
+function, or when using the `which-key' indicator function from
+the wiki."
+  :type '(repeat
+          (choice
+           (const :tag "Verbose indicator" embark-verbose-indicator)
+           (const :tag "Minimal indicator" embark-minimal-indicator)
+           (const :tag "Mixed indicator" embark-mixed-indicator)
+           (const :tag "Highlight target" embark-highlight-indicator)
+           (const :tag "Highlight all occurrences"
+                  embark-isearch-highlight-indicator)
+           (function :tag "Other"))))
 
 (defface embark-verbose-indicator-documentation
   '((t :inherit completions-annotations))
