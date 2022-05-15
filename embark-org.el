@@ -99,6 +99,8 @@
     )
   "Supported Org object and element types")
 
+(declare-function org-element-property "org-element" (property element))
+
 (defun embark-org-target-element-context ()
   "Target the smallest Org element or object around point."
   (when-let (((derived-mode-p 'org-mode))
@@ -121,9 +123,12 @@
 
 ;;; Custom Org actions
 
+(defvar org-export-with-toc)
+
 (defun embark-org-copy-as-markdown (start end)
   "Export the region from START to END to markdown and save on the kill-ring."
   (interactive "r")
+  (require 'ox)
   (kill-new
    (let (org-export-with-toc)
      (string-trim
@@ -273,6 +278,7 @@ what part or in what format the link is copied."
 (embark-org-define-link-copier description description "'s description")
 (embark-org-define-link-copier target target "'s target")
 
+(declare-function embark-org-copy-link-inner-target "embark-org")
 (fset 'embark-org-copy-link-inner-target 'kill-new)
 (put 'embark-org-copy-link-inner-target 'function-documentation
       "Copy 'inner part' of the Org link at point's target.
