@@ -103,7 +103,7 @@
 
 (defun embark-org-target-element-context ()
   "Target the smallest Org element or object around point."
-  (when-let (((derived-mode-p 'org-mode))
+  (when-let (((derived-mode-p 'org-mode 'org-agenda-mode))
              (element (org-element-context))
              ((memq (car element) embark-org--types))
              (begin (org-element-property :begin element))
