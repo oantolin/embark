@@ -180,6 +180,9 @@
   ("i" org-table-iterate)
   ("e" org-table-export))
 
+(push 'embark--ignore-target            ; prompts for file name
+      (alist-get 'org-table-export embark-target-injection-hooks))
+
 (push 'embark-org-target-table
       (cdr (memq 'embark-org-target-element-context embark-target-finders)))
 
