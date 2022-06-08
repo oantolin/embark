@@ -1071,7 +1071,8 @@ UPDATE is the indicator update function."
         update))
       ((or 'minibuffer-keyboard-quit 'abort-recursive-edit 'abort-minibuffers)
        nil)
-      ((guard (lookup-key keymap keys))  ; if directly bound, then obey
+      ((guard (let ((def (lookup-key keymap keys))) ; if directly bound, then obey
+                (and def (not (numberp def))))) ; number means "invalid prefix"
        cmd)
       ('self-insert-command
        (minibuffer-message "Not an action")
