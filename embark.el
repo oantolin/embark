@@ -148,7 +148,7 @@
     (heading embark-heading-map)
     (t embark-general-map))
   "Alist of action types and corresponding keymaps.
-The special key `t' is associated with the default keymap to use.
+The special key t is associated with the default keymap to use.
 Each value can be either a single symbol whose value is a keymap,
 or a list of such symbols."
   :type '(alist :key-type (symbol :tag "Target type")
@@ -2660,7 +2660,7 @@ This takes into account `embark-transformer-alist'."
   "Turn an ACTION into a command to perform the action.
 Returns the name of the command."
   (let ((name (intern (format "embark-action--%s"
-                              (embark--command-name action))))) 
+                              (embark--command-name action)))))
     (fset name (lambda (arg)
                  (interactive "P")
                  (when-let (target (embark-collect--target))
