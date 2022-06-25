@@ -3475,8 +3475,10 @@ Sorting and history are disabled. PROMPT is the prompt message."
   "Remove FILE from the list of recent files."
   (interactive (list (embark--read-from-history
                       "Remove recent file: " recentf-list 'file)))
-  (embark-history-remove file)
-  (setq recentf-list (delete (expand-file-name file) recentf-list)))
+  (embark-history-remove (expand-file-name file))
+  (embark-history-remove (abbreviate-file-name file))
+  (when (and (boundp 'recentf-list) (fboundp 'recentf-expand-file-name))
+    (setq recentf-list (delete (recentf-expand-file-name file) recentf-list))))
 
 (defun embark-history-remove (str)
   "Remove STR from `minibuffer-history-variable'.
