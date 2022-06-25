@@ -78,16 +78,6 @@
 
 (add-hook 'consult--completion-candidate-hook #'embark-consult--collect-candidate)
 
-(define-obsolete-function-alias
-  'embark-consult-preview-minor-mode
-  'consult-preview-at-point-mode
-  "0.11")
-
-(define-obsolete-function-alias
-  'embark-consult-preview-at-point
-  'consult-preview-at-point
-  "0.11")
-
 ;;; Support for consult-location
 
 (defun embark-consult--strip (string)
