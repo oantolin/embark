@@ -2660,7 +2660,7 @@ This takes into account `embark-transformer-alist'."
   "Turn an ACTION into a command to perform the action.
 Returns the name of the command."
   (let ((name (intern (format "embark-action--%s"
-                              (embark--command-name action))))) 
+                              (embark--command-name action)))))
     (fset name (lambda (arg)
                  (interactive "P")
                  (when-let (target (embark-collect--target))
@@ -2791,7 +2791,8 @@ just restarts the completion session, that is, the command that
 opened the minibuffer is run again and the minibuffer contents
 restored.  You can then interact normally with the command,
 perhaps editing the minibuffer contents, and, if you wish, you
-can rerun `embark-collect' to get an updated buffer.")
+can rerun `embark-collect' to get an updated buffer."
+    :interactive nil :abbrev-table nil :syntax-table nil)
 
 (defun embark-collect--remove-zebra-stripes ()
   "Remove highlighting of alternate rows."
