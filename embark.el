@@ -148,7 +148,7 @@
     (heading embark-heading-map)
     (t embark-general-map))
   "Alist of action types and corresponding keymaps.
-The special key `t' is associated with the default keymap to use.
+The special key t is associated with the default keymap to use.
 Each value can be either a single symbol whose value is a keymap,
 or a list of such symbols."
   :type '(alist :key-type (symbol :tag "Target type")
@@ -3476,8 +3476,10 @@ Sorting and history are disabled. PROMPT is the prompt message."
   "Remove FILE from the list of recent files."
   (interactive (list (embark--read-from-history
                       "Remove recent file: " recentf-list 'file)))
-  (embark-history-remove file)
-  (setq recentf-list (delete (expand-file-name file) recentf-list)))
+  (embark-history-remove (expand-file-name file))
+  (embark-history-remove (abbreviate-file-name file))
+  (when (and (boundp 'recentf-list) (fboundp 'recentf-expand-file-name))
+    (setq recentf-list (delete (recentf-expand-file-name file) recentf-list))))
 
 (defun embark-history-remove (str)
   "Remove STR from `minibuffer-history-variable'.
