@@ -3223,6 +3223,7 @@ PRED is a predicate function used to filter the items."
                      (mapcar (lambda (file) (string-remove-prefix dir file))
                              files)))))
     (with-current-buffer buf
+      (setq-local dired-directory nil)
       (rename-buffer (format "*Embark Export Dired %s*" default-directory)))
     (pop-to-buffer buf)))
 
