@@ -652,8 +652,10 @@ This function is meant to be added to `minibuffer-setup-hook'."
   "Target file at point.
 This function mostly relies on `ffap-file-at-point', with one exception:
 In `dired-mode', it uses `dired-get-filename' instead."
-  (if-let (file (and (derived-mode-p 'dired-mode)
-                     (dired-get-filename t 'no-error-if-not-filep)))
+  (if-let (file (or (and (derived-mode-p 'dired-mode)
+                         (dired-get-filename t 'no-error-if-not-filep))
+                    (and (derived-mode-p 'image-dired-thumbnail-mode)
+                         (image-dired-original-file-name))))
       (save-excursion
         (end-of-line)
         `(file ,(abbreviate-file-name (expand-file-name file))
