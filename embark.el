@@ -650,8 +650,13 @@ This function is meant to be added to `minibuffer-setup-hook'."
 
 (defun embark-target-file-at-point ()
   "Target file at point.
-This function mostly relies on `ffap-file-at-point', with one exception:
-In `dired-mode', it uses `dired-get-filename' instead."
+This function mostly relies on `ffap-file-at-point', with the
+following exceptions:
+
+- In `dired-mode', it uses `dired-get-filename' instead.
+
+- In `imaged-dired-thumbnail-mode', it uses
+  `image-dired-original-file-name' instead."
   (if-let (file (or (and (derived-mode-p 'dired-mode)
                          (dired-get-filename t 'no-error-if-not-filep))
                     (and (derived-mode-p 'image-dired-thumbnail-mode)
