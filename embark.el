@@ -2405,6 +2405,17 @@ the command that opened the minibuffer in the first place."
          ,(if parent `(make-composed-keymap ,map ,parent) map))
        ,doc)))
 
+;;; Alternative input
+
+(defcustom embark-alternative-input-alist nil
+  "Alist of functions and keymaps for alternative input.
+Each car is the symbol of a function. Each cdr is the symbol of a
+keymap, containing bindings to functions which must each return a
+string. See also `embark-alternative-input'."
+  :group 'embark
+  :type '(alist :key-type (symbol :tag "Target type")
+                :value-type (variable :tag "Keymap")))
+
 ;;; Embark collect
 
 (defgroup embark-collect nil
