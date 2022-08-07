@@ -114,6 +114,8 @@
 (eval-when-compile (require 'subr-x))
 
 (require 'ffap) ; used to recognize file and url targets
+(require 'cl-lib)
+(require 'backtrace)
 
 ;;; User facing options
 
@@ -952,6 +954,8 @@ a repeating sequence of actions."
     (cond
      ((eq (plist-get target :type) 'embark-become)
       (propertize "Become" 'face 'highlight))
+     ((eq (plist-get target :type) 'embark-alternative-input)
+      (propertize "Use alternative input" 'face 'highlight))
      ((and (minibufferp)
            (not (eq 'embark-keybinding
                     (completion-metadata-get
@@ -1796,7 +1800,8 @@ minibuffer before executing the action."
                      embark-collect      ; the current buffer, not the
                      embark-live         ; target buffer
                      embark-export
-                     embark-act-all))
+                     embark-act-all
+		     embark-alternative-input))
       (progn
         (embark--run-action-hooks embark-pre-action-hooks action target quit)
         (unwind-protect (command-execute action)
@@ -2415,6 +2420,53 @@ string. See also `embark-alternative-input'."
   :group 'embark
   :type '(alist :key-type (symbol :tag "Target type")
                 :value-type (variable :tag "Keymap")))
+
+(defun embark-alternative-input (&optional auto-accept)
+  "Use alternative function for input to current prompt.
+Run a function to get a string which is then inserted into the
+current minibuffer. This function can itself use the minibuffer.
+It can be run using \\[execute-extended-command]. Alternatively,
+the current backtrace is searched, and the first function found
+which is a key in `embark-alternative-input-alist' will have its
+keymap activated to provide convenient access to the other
+commands in it.
+
+The function must return a string. In particular, there is no
+defined behaviour for a return value of nil.
+
+If the returned string has a text property
+`embark-replace-input-accept' (at position 0) then: - if the
+property is set to nil, the minibuffer will not be exited. - if
+the property is non-nil, the minibuffer will exited, accepting
+the returned string as input.
+
+If there is no such property, then the input is only accepted if
+AUTO-ACCEPT is non-nil. Otherwise the minibuffer will remain
+open."
+  (interactive "P")
+  (if (minibufferp)
+      (let* ((target
+	      (cl-find-if
+	       (lambda (func) (assoc func embark-alternative-input-alist))
+	       (mapcar #'backtrace-frame-fun (backtrace-get-frames))))
+	     (keymap (eval (cdr (assoc target embark-alternative-input-alist))))
+	     (targets `((:type embark-alternative-input :target ,target)))
+	     (indicators (mapcar #'funcall embark-indicators))
+	     (become (unwind-protect
+			 (embark--prompt indicators keymap targets)
+		       (mapc #'funcall indicators)))
+	     (_ (unless become (user-error "Cancelled")))
+	     (enable-recursive-minibuffers t) ;; Necessary for next step
+	     (new-input (funcall become))
+	     (accept (if (member 'embark-replace-input-accept
+				 (text-properties-at 0 new-input))
+			 (get-text-property 0 'embark-replace-input-accept new-input)
+		       auto-accept)))
+	(delete-minibuffer-contents)
+	(insert new-input)
+	(when accept
+	  (exit-minibuffer)))
+    (user-error "Not in a minibuffer")))
 
 ;;; Embark collect
 
