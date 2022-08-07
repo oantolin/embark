@@ -3952,6 +3952,7 @@ library, which have an obvious notion of associated directory."
   ("B" embark-become)
   ("A" embark-act-all)
   ("C-s" embark-isearch)
+  ("C-r" embark-alternative-input)
   ("SPC" mark)
   ("DEL" delete-region))
 
