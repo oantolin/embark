@@ -602,8 +602,9 @@ Meant to be be added to `completion-setup-hook'."
   ;; available in the variable standard-output
   (embark--cache-info standard-output)
   (when (minibufferp completion-reference-buffer)
-    (setf (buffer-local-value 'embark--type standard-output)
-          (completion-metadata-get (embark--metadata) 'category))))
+    (with-current-buffer standard-output
+      (setq embark--type
+            (completion-metadata-get (embark--metadata) 'category)))))
 
 ;; We have to add this *after* completion-setup-function because that's
 ;; when the buffer is put in completion-list-mode and turning the mode
