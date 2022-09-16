@@ -297,9 +297,15 @@ or 'https:' prefix.  For any other type of link the inner part is
 also the whole target.")
 
 (embark-define-keymap embark-org-link-copy-map
-  "Keymap for different ways to copy Org links to the kill-ring."
+  "Keymap for different ways to copy Org links to the kill-ring.
+
+You should bind w in this map to your most frequently used link
+copying function.  The default is for w to copy the \"inner
+target\" (see `embark-org-copy-link-inner-target'); which is also
+bound to i."
   :parent nil
-  ("w" embark-org-copy-link-in-full)
+  ("w" embark-org-copy-link-inner-target)
+  ("f" embark-org-copy-link-in-full)
   ("d" embark-org-copy-link-description)
   ("t" embark-org-copy-link-target)
   ("i" embark-org-copy-link-inner-target)
