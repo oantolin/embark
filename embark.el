@@ -842,7 +842,7 @@ completion UI highly compatible with it, like Icomplete.
 Many completion UIs can still work with Embark but will need
 their own target finder.  See for example
 `embark--vertico-selected' or `embark--selectrum-selected'."
-  (when (minibufferp)
+  (when (and (minibufferp) minibuffer-completion-table)
     (pcase-let* ((`(,category . ,candidates) (embark-minibuffer-candidates))
                  (contents (minibuffer-contents))
                  (top (if (test-completion contents
@@ -1971,7 +1971,7 @@ plist concerns one target, and has keys `:type', `:target',
      'embark-target-finders
      (lambda (fun)
        (when-let (found (funcall fun))
-         (let* ((type (car found))
+         (let* ((type (or (car found) 'general))
                 (target+bounds (cdr found))
                 (target (if (consp target+bounds)
                             (car target+bounds)
