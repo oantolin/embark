@@ -856,7 +856,8 @@ their own target finder.  See for example
                              (substring contents
                                         0 (or (cdr (last completions)) 0))
                              (car completions)))))))
-      (cons category (or (car (member top candidates)) top)))))
+      (when category
+        (cons category (or (car (member top candidates)) top))))))
 
 (defun embark-target-collect-candidate ()
   "Target the collect candidate at point."
