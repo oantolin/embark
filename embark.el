@@ -3251,6 +3251,11 @@ PRED is a predicate function used to filter the items."
 
 ;;; Integration with external completion UIs
 
+;; Ensure that the Marginalia cache is reset, such that
+;; `embark-toggle-variable-value' updates the display (See #540).
+(with-eval-after-load 'marginalia
+  (push 'marginalia--cache-reset (alist-get :always embark-post-action-hooks)))
+
 ;; vertico
 
 (declare-function vertico--candidate "ext:vertico")
