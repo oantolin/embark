@@ -3441,11 +3441,11 @@ its own."
                 (maybe-whitespace ()
                   (if multiline (maybe-newline) (maybe-space)))
                 (ins-string ()
-                  (save-excursion
+                  (let ((start (point)))
                     (insert (string-join strings separator))
+                    (save-excursion (goto-char start) (maybe-whitespace))
                     (when (looking-back "\n" 1) (delete-char -1))
-                    (maybe-whitespace))
-                  (maybe-whitespace)))
+                    (save-excursion (maybe-whitespace)))))
       (if buffer-read-only
           (with-selected-window (other-window-for-scrolling)
             (ins-string))
