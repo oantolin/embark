@@ -174,6 +174,8 @@ This function is meant to be added to `embark-collect-mode-hook'."
       (dolist (line lines) (insert line "\n"))
       (goto-char (point-min))
       (grep-mode)
+      ;; Make this buffer current for next/previous-error
+      (setq next-error-last-buffer buf)
       ;; Set up keymap before possible wgrep-setup, so that wgrep
       ;; restores our binding too when the user finishes editing.
       (use-local-map (make-composed-keymap
