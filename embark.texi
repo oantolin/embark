@@ -447,8 +447,8 @@ The suggested @samp{C-.} binding is used by default in (at least some
 installations of) GNOME to input emojis, and Emacs doesn't even get
 a chance to respond to the binding. You can select a different key
 binding for @samp{embark-act} or use @samp{ibus-setup} to change the shortcut for
-emoji insertion (Emacs uses @samp{C-x 8 e e}, in case you want to set the
-same one system-wide).
+emoji insertion (Emacs 29 will likely use @samp{C-x 8 e e}, in case you
+want to set the same one system-wide).
 @item
 The suggested alternative of @samp{M-.} for @samp{embark-dwim} is bound by default
 to @samp{xref-find-definitions}. That is a very useful command but
