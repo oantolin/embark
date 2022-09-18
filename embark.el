@@ -3562,13 +3562,16 @@ Returns the new name actually used."
   (interactive "SVariable: ")
   (insert (string-trim (pp-to-string (symbol-value var)))))
 
-(defun embark-toggle-variable-value (var)
-  "Toggle value of boolean variable VAR."
-  (interactive "SVariable: ")
+(defun embark-toggle-variable (var &optional local)
+  "Toggle value of boolean variable VAR.
+If prefix LOCAL is non-nil make variable local."
+  (interactive "SVariable: \nP")
   (let ((val (symbol-value var)))
     (unless (memq val '(nil t))
       (user-error "Not a boolean variable"))
-    (funcall (or (get var 'custom-set) #'set-default) var (not val))))
+    (when local
+      (make-local-variable var))
+    (funcall (or (get var 'custom-set) 'set) var (not val))))
 
 (defun embark-insert-relative-path (file)
   "Insert relative path to FILE.
@@ -4162,7 +4165,7 @@ library, which have an obvious notion of associated directory."
   ("u" customize-variable)
   ("v" embark-save-variable-value)
   ("<" embark-insert-variable-value)
-  ("t" embark-toggle-variable-value))
+  ("t" embark-toggle-variable))
 
 (embark-define-keymap embark-function-map
   "Keymap for Embark function actions."
