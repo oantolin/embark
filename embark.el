@@ -647,6 +647,7 @@ This function is meant to be added to `minibuffer-setup-hook'."
       `(region ,(buffer-substring start end) . (,start . ,end)))))
 
 (autoload 'dired-get-filename "dired")
+(declare-function image-dired-original-file-name "image-dired")
 
 (defun embark-target-file-at-point ()
   "Target file at point.
