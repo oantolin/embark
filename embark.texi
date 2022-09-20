@@ -975,8 +975,8 @@ included in the list @samp{embark-indicators}).
       (save-match-data
         (when (string-match "wikipedia:\\([[:alnum:]_]+\\)" str)
           `(url 
-            (format "https://en.wikipedia.org/wiki/%s"
-                    (match-string 1 str))
+            ,(format "https://en.wikipedia.org/wiki/%s"
+                     (match-string 1 str))
             ,beg . ,end))))))
 
 (add-to-list 'embark-target-finders 'my-short-wikipedia-link)
