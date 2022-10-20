@@ -24,12 +24,8 @@
 
 ;;; Commentary:
 
-;; This package provides integration between Embark and Consult. To
-;; use it, arrange for it to be loaded once both of those are loaded:
-
-;; (with-eval-after-load 'consult
-;;   (with-eval-after-load 'embark
-;;     (require 'embark-consult)))
+;; This package provides integration between Embark and Consult. The package
+;; will be loaded automatically by Embark.
 
 ;; Some of the functionality here was previously contained in Embark
 ;; itself:
