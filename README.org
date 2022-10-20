@@ -189,10 +189,10 @@ sets:
   package menu mode.
 
   If you use the grepping commands from the [[https://github.com/minad/consult/][Consult]] package,
-  =consult-grep=, =consult-git-grep= or =consult-ripgrep=, then you'll
-  probably want to install and load the =embark-consult= package, which
-  adds support for exporting a list of grep results to an honest
-  grep-mode buffer, on which you can even use [[https://github.com/mhayashi1120/Emacs-wgrep][wgrep]] if you wish.
+  =consult-grep=, =consult-git-grep= or =consult-ripgrep=, then you should
+  install the =embark-consult= package, which adds support for exporting a
+  list of grep results to an honest grep-mode buffer, on which you can
+  even use [[https://github.com/mhayashi1120/Emacs-wgrep][wgrep]] if you wish.
 
 When in doubt choosing between exporting and collecting, a good rule
 of thumb is to always prefer =embark-export= since when an exporter to a
