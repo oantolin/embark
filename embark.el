@@ -316,17 +316,6 @@ indicate that for files at the prompt of the `delete-file' command,
                                         (symbol :tag "Command")))
                 :value-type (function :tag "Default action")))
 
-(make-obsolete-variable
-   'embark-allow-edit-actions
-   "To allow editing for an action add `embark--allow-edit' to the
-entry of `embark-target-injection-hooks' whose key is the action."
-   "0.14")
-
-(define-obsolete-variable-alias
-  'embark-setup-action-hooks
-  'embark-target-injection-hooks
-  "0.14")
-
 (defcustom embark-target-injection-hooks
   '((async-shell-command embark--allow-edit embark--shell-prep)
     (shell-command embark--allow-edit embark--shell-prep)
@@ -2433,12 +2422,6 @@ a list whose first element is a symbol indicating the type of
 candidates and whose `cdr' is the list of candidates, each of
 which should be a string."
   :type 'hook)
-
-(make-obsolete-variable
-   'embark-collect-initial-view-alist
-   "Support for different collect views has been removed.
-The zebra mode can be configured per completion type via `embark-collect-zebra-types'."
-   "0.16")
 
 (defcustom embark-collect-zebra-types
   '(kill-ring)
