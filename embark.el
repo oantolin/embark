@@ -3241,7 +3241,7 @@ PRED is a predicate function used to filter the items."
             bookmark-alist)))
       (bookmark-bmenu-list))))
 
-;;; Integration with external completion UIs
+;;; Integration with external packages, mostly completion UIs
 
 ;; consult
 

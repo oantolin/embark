@@ -427,11 +427,7 @@ starting configuration:
 
 ;; Consult users will also want the embark-consult package.
 (use-package embark-consult
-  :ensure t
-  :after (embark consult)
-  :demand t ; only necessary if you have the hook below
-  ;; if you want to have consult previews as you move around an
-  ;; auto-updating embark collect buffer
+  :ensure t ; only need to install it, embark loads it after consult if found
   :hook
   (embark-collect-mode . consult-preview-at-point-mode))
 @end lisp
@@ -1165,12 +1161,13 @@ enhancement provided in all commands for which it makes sense is
 preview functionality, for example @samp{consult-buffer} will show you a
 quick preview of a buffer before you actually switch to it.
 
-If you use both Consult and Embark you should absolutely install the
+If you use both Consult and Embark you should install the
 @samp{embark-consult} package which provides integration between the two. It
 provides exporters for several Consult commands and also tweaks the
 behavior of many Consult commands when used as actions with @samp{embark-act}
 in subtle ways that you may not even notice, but make for a smoother
-experience.
+experience. You need only install it to get these benefits: Embark
+will automatically load it after Consult if found.
 
 The @samp{embark-consult} package provides the following exporters:
 
