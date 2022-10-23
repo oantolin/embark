@@ -316,17 +316,6 @@ indicate that for files at the prompt of the `delete-file' command,
                                         (symbol :tag "Command")))
                 :value-type (function :tag "Default action")))
 
-(make-obsolete-variable
-   'embark-allow-edit-actions
-   "To allow editing for an action add `embark--allow-edit' to the
-entry of `embark-target-injection-hooks' whose key is the action."
-   "0.14")
-
-(define-obsolete-variable-alias
-  'embark-setup-action-hooks
-  'embark-target-injection-hooks
-  "0.14")
-
 (defcustom embark-target-injection-hooks
   '((async-shell-command embark--allow-edit embark--shell-prep)
     (shell-command embark--allow-edit embark--shell-prep)
@@ -2434,12 +2423,6 @@ candidates and whose `cdr' is the list of candidates, each of
 which should be a string."
   :type 'hook)
 
-(make-obsolete-variable
-   'embark-collect-initial-view-alist
-   "Support for different collect views has been removed.
-The zebra mode can be configured per completion type via `embark-collect-zebra-types'."
-   "0.16")
-
 (defcustom embark-collect-zebra-types
   '(kill-ring)
   "List of completion types for which zebra stripes should be activated.
@@ -3258,6 +3241,14 @@ PRED is a predicate function used to filter the items."
       (bookmark-bmenu-list))))
 
 ;;; Integration with external completion UIs
+
+;; consult
+
+(with-eval-after-load 'consult
+  (unless (require 'embark-consult nil 'noerror)
+    (warn "The package embark-consult should be installed if you use both Embark and Consult")))
+
+;; marginalia
 
 ;; Ensure that the Marginalia cache is reset, such that
 ;; `embark-toggle-variable-value' updates the display (See #540).
