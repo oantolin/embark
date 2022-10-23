@@ -3258,7 +3258,7 @@ PRED is a predicate function used to filter the items."
 ;; vertico
 
 (declare-function vertico--candidate "ext:vertico")
-(declare-function vertico--exhibit "ext:vertico")
+(declare-function vertico--update "ext:vertico")
 (defvar vertico--input)
 (defvar vertico--candidates)
 
@@ -3267,8 +3267,7 @@ PRED is a predicate function used to filter the items."
 Return the category metadatum as the type of the target."
   (when vertico--input
     ;; Force candidate computation, if candidates are not yet available.
-    (when (eq vertico--input t)
-      (vertico--exhibit))
+    (vertico--update)
     (cons (completion-metadata-get (embark--metadata) 'category)
           (vertico--candidate))))
 
@@ -3277,8 +3276,7 @@ Return the category metadatum as the type of the target."
 Return the category metadatum as the type of the candidates."
   (when vertico--input
     ;; Force candidate computation, if candidates are not yet available.
-    (when (eq vertico--input t)
-      (vertico--exhibit))
+    (vertico--update)
     (cons (completion-metadata-get (embark--metadata) 'category)
           vertico--candidates)))
 
