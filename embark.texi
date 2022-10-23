@@ -292,10 +292,10 @@ Ibuffer buffer; and if they are packages you get a buffer in
 package menu mode.
 
 If you use the grepping commands from the @uref{https://github.com/minad/consult/, Consult} package,
-@samp{consult-grep}, @samp{consult-git-grep} or @samp{consult-ripgrep}, then you'll
-probably want to install and load the @samp{embark-consult} package, which
-adds support for exporting a list of grep results to an honest
-grep-mode buffer, on which you can even use @uref{https://github.com/mhayashi1120/Emacs-wgrep, wgrep} if you wish.
+@samp{consult-grep}, @samp{consult-git-grep} or @samp{consult-ripgrep}, then you should
+install the @samp{embark-consult} package, which adds support for exporting a
+list of grep results to an honest grep-mode buffer, on which you can
+even use @uref{https://github.com/mhayashi1120/Emacs-wgrep, wgrep} if you wish.
 @end itemize
 
 When in doubt choosing between exporting and collecting, a good rule
