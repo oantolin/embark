@@ -3243,12 +3243,6 @@ PRED is a predicate function used to filter the items."
 
 ;;; Integration with external completion UIs
 
-;; consult
-
-(with-eval-after-load 'consult
-  (unless (require 'embark-consult nil 'noerror)
-    (warn "The package embark-consult should be installed if you use both Embark and Consult")))
-
 ;; marginalia
 
 ;; Ensure that the Marginalia cache is reset, such that
@@ -4293,4 +4287,14 @@ library, which have an obvious notion of associated directory."
   ("c" count-matches))
 
 (provide 'embark)
+
+;; Check that embark-consult is installed. If Embark is used in
+;; combination with Consult, you should install the integration package,
+;; such that features like embark-export from consult-grep work as
+;; expected.
+
+(with-eval-after-load 'consult
+  (unless (require 'embark-consult nil 'noerror)
+    (warn "The package embark-consult should be installed if you use both Embark and Consult")))
+
 ;;; embark.el ends here
