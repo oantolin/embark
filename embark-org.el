@@ -247,6 +247,12 @@
         (cons 'org-file-link
               (replace-regexp-in-string
                "::.*" "" (string-remove-prefix "file:" target))))
+       ((string-prefix-p "attachment:" target)
+        (cons 'org-file-link
+              (expand-file-name
+               (replace-regexp-in-string
+                "::.*" "" (string-remove-prefix "attachment:" target))
+               (org-attach-dir))))
        ((string-match-p "^[./]" target)
         (cons 'org-file-link (abbreviate-file-name (expand-file-name target))))
        ((string-prefix-p "elisp:(" target)
