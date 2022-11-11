@@ -97,7 +97,7 @@
     ;; verbatim
     ;; verse-block
     )
-  "Supported Org object and element types")
+  "Supported Org object and element types.")
 
 (declare-function org-element-property "org-element" (property element))
 
@@ -126,7 +126,7 @@
 (defvar org-export-with-toc)
 
 (defun embark-org-copy-as-markdown (start end)
-  "Export the region from START to END to markdown and save on the kill-ring."
+  "Export the region from START to END to markdown and save on the `kill-ring'."
   (interactive "r")
   (require 'ox)
   (kill-new
@@ -236,7 +236,7 @@
 (autoload 'org-attach-dir "org-attach")
 
 (defun embark-org--refine-link-type (_type target)
-  "Refine link type if we have more specific actions available."
+  "Refine type of link TARGET if we have more specific actions available."
   (when (string-match org-link-any-re target)
     (let ((target (or (match-string-no-properties 2 target)
                       (match-string-no-properties 0 target))))
