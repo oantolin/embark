@@ -3745,10 +3745,9 @@ ALGORITHM is the hash algorithm symbol understood by `secure-hash'."
   (let ((dir eww-download-directory))
     (when (functionp dir) (setq dir (funcall dir)))
     (access-file dir "Download failed")
-    (url-retrieve url #'eww-download-callback
-                  (if (= (car (func-arity #'eww-download-callback)) 3)
-                      (list url dir)
-                    (list url)))))
+    (url-retrieve
+     url #'eww-download-callback
+     (if (>= emacs-major-version 28) (list url dir) (list url)))))
 
 ;;; Setup and pre-action hooks
 
