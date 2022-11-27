@@ -4299,4 +4299,7 @@ library, which have an obvious notion of associated directory."
   (unless (require 'embark-consult nil 'noerror)
     (warn "The package embark-consult should be installed if you use both Embark and Consult")))
 
+(with-eval-after-load 'org
+  (require 'embark-org))
+
 ;;; embark.el ends here
