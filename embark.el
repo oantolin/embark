@@ -3165,9 +3165,11 @@ PRED is a predicate function used to filter the items."
   "Create apropos buffer listing SYMBOLS."
   (embark--export-rename "*Apropos*" "Apropos"
     (apropos-parse-pattern "") ;; Initialize apropos pattern
-    (apropos-symbols-internal
-     (delq nil (mapcar #'intern-soft symbols))
-     (bound-and-true-p apropos-do-all))))
+    ;; HACK: Ensure that order of exported symbols is kept.
+    (cl-letf (((symbol-function #'sort) (lambda (list _pred) (nreverse list))))
+      (apropos-symbols-internal
+       (delq nil (mapcar #'intern-soft symbols))
+       (bound-and-true-p apropos-do-all)))))
 
 (defun embark-export-customize-face (faces)
   "Create a customization buffer listing FACES."
