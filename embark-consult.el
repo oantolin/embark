@@ -145,8 +145,9 @@ The elements of LINES are assumed to be values of category `consult-line'."
   "Upgrade consult-location cheap markers to real markers.
 This function is meant to be added to `embark-collect-mode-hook'."
   (when (eq embark--type 'consult-location)
-    (mapc (lambda (entry) (consult--get-location (car entry)))
-          tabulated-list-entries)))
+    (dolist (entry tabulated-list-entries)
+      (when (car entry)
+        (consult--get-location (car entry))))))
 
 (setf (alist-get 'consult-location embark-exporters-alist)
       #'embark-consult-export-occur)
