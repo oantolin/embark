@@ -4187,6 +4187,7 @@ library, which have an obvious notion of associated directory."
 
 (embark-define-keymap embark-package-map
   "Keymap for Embark package actions."
+  ("RET" describe-package)
   ("h" describe-package)
   ("i" package-install)
   ("I" embark-insert)
