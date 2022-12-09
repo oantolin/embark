@@ -359,7 +359,7 @@ for any action that is a Consult async command."
 
 (map-keymap
  (lambda (_key cmd)
-   (cl-pushnew #'embark--cd (alist-get cmd embark-pre-action-hooks))
+   (cl-pushnew #'embark--cd (alist-get cmd embark-around-action-hooks))
    (cl-pushnew #'embark-consult--prep-async
                (alist-get cmd embark-target-injection-hooks)))
  embark-consult-async-search-map)
