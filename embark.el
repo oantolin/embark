@@ -2500,6 +2500,9 @@ This is only used for annotation that are not already fontified.")
   "Hook run after an Embark Collect buffer is updated."
   :type 'hook)
 
+(defvar-local embark--rerun-function nil
+  "Function to rerun the collect or export that made the current buffer.")
+
 (defun embark-collect--post-revert (&rest _)
   "Run `embark-collect-post-revert-hook'.
 This function is used as :after advice for `tabulated-list-revert'."
@@ -2981,7 +2984,7 @@ example)."
 The function `generate-new-buffer-name' is used to ensure the
 buffer has a unique name."
   (let ((buffer (generate-new-buffer buffer-name))
-        (revert (embark--revert-function #'embark-collect)))
+        (rerun (embark--rerun-function #'embark-collect)))
     (with-current-buffer buffer
       ;; we'll run the mode hooks once the buffer is displayed, so
       ;; the hooks can make use of the window
@@ -2995,7 +2998,8 @@ buffer has a unique name."
       (setq tabulated-list-use-header-line nil ; default to no header
             header-line-format nil
             tabulated-list--header-string nil)
-      (setq revert-buffer-function revert)
+      (setq embark--rerun-function rerun)
+      (local-set-key [remap revert-buffer] #'embark-rerun-collect-or-export)
       (when (memq embark--type embark-collect-zebra-types)
         (embark-collect-zebra-minor-mode)))
 
@@ -3074,12 +3078,12 @@ with key \"Embark Live\"."
     (when (minibufferp)
       (add-hook 'change-major-mode-hook stop-collect nil t))))
 
-(defun embark--revert-function (kind)
-  "Return a revert function for an export or collect buffer in this context.
+(defun embark--rerun-function (kind)
+  "Return a rerun function for an export or collect buffer in this context.
 The parameter KIND should be either `embark-export' or `embark-collect'."
   (let ((buffer (or embark--target-buffer (embark--target-buffer)))
         (command embark--command))
-    (cl-flet ((reverter (action)
+    (cl-flet ((rerunner (action)
                 (lambda (&rest _)
                   (quit-window 'kill-buffer)
                   (with-current-buffer
@@ -3087,7 +3091,7 @@ The parameter KIND should be either `embark-export' or `embark-collect'."
                     (let ((embark--command command))
                       (funcall action))))))
         (if (minibufferp)
-          (reverter
+          (rerunner
            (let ((input (minibuffer-contents-no-properties)))
              (lambda ()
                (minibuffer-with-setup-hook
@@ -3096,7 +3100,14 @@ The parameter KIND should be either `embark-export' or `embark-collect'."
                      (insert input))
                  (setq this-command embark--command)
                  (command-execute embark--command)))))
-          (reverter kind)))))
+          (rerunner kind)))))
+
+(defun embark-rerun-collect-or-export ()
+  "Rerun the `embark-collect' or `embark-export' that created this buffer."
+  (interactive)
+  (if embark--rerun-function
+      (funcall embark--rerun-function)
+    (user-error "No function to rerun collect or export found.")))
 
 ;;;###autoload
 (defun embark-export ()
@@ -3124,7 +3135,7 @@ the minibuffer contents, and, if you wish, you can rerun
         (let ((after embark-after-export-hook)
               (cmd embark--command)
               (name (embark--descriptive-buffer-name 'export))
-              (revert (embark--revert-function #'embark-export))
+              (rerun (embark--rerun-function #'embark-export))
               (buffer (save-excursion
                         (funcall exporter candidates)
                         (current-buffer))))
@@ -3132,7 +3143,9 @@ the minibuffer contents, and, if you wish, you can rerun
            (lambda ()
              (pop-to-buffer buffer)
              (rename-buffer name t)
-             (setq-local revert-buffer-function revert)
+             (setq embark--rerun-function rerun)
+             (local-set-key [remap revert-buffer]
+                            #'embark-rerun-collect-or-export)
              (let ((embark-after-export-hook after)
                    (embark--command cmd))
                (run-hooks 'embark-after-export-hook)))))))))
