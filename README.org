@@ -208,14 +208,14 @@ and are bound to =A=, =S= (for "snapshot"), and =E=, respectively, in
 key bindings for these (although you can, of course!), just a key
 binding for =embark-act=.
 
-Reverting an Embark Collect or Embark Export buffer has slightly
-unusual behavior if the buffer was obtained by running =embark-collect=
-or =embark-export= from within a minibuffer completion session. In that
-case reverting just restarts the completion session, that is, the
-command that opened the minibuffer is run again and the minibuffer
-contents restored. You can then interact normally with the command,
-perhaps editing the minibuffer contents, and, if you wish, you can
-rerun =embark-collect= or =embark-export= to get an updated buffer.
+In Embark Collect or Embark Export buffers that were obtained by
+running =embark-collect= or =embark-export= from within a minibuffer
+completion session, =g= is bound to a command that restarts the
+completion session, that is, the command that opened the minibuffer is
+run again and the minibuffer contents restored. You can then interact
+normally with the command, perhaps editing the minibuffer contents,
+and, if you wish, you can rerun =embark-collect= or =embark-export= to get
+an updated buffer.
 
 *** =embark-live= a live-updating variant of =embark-collect=
 
@@ -990,11 +990,12 @@ The =embark-consult= package provides the following exporters:
   to navigate among matches, and, if you install the [[http://github.com/mhayashi1120/Emacs-wgrep/raw/master/wgrep.el ][wgrep]] package,
   you can use it to edit the matches in place.
 
-In both cases, pressing =g= to revert the exported buffer will rerun the
-Consult command you had exported from and re-enter the input you had
-typed. You can then proceed to re-export if that's what you want, but
-you can also edit the input changing the search terms or simply cancel
-if you see you are done with that search.
+In both cases, pressing =g= will rerun the Consult command you had
+exported from and re-enter the input you had typed (which is similar
+to reverting but a little more flexible). You can then proceed to
+re-export if that's what you want, but you can also edit the input
+changing the search terms or simply cancel if you see you are done
+with that search.
 
 The =embark-consult= also contains some candidates collectors that allow
 you to run =embark-live= to get a live-updating table of contents for
