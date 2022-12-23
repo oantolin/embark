@@ -2461,11 +2461,6 @@ default is `embark-collect'"
   "Hook run after `embark-export' in the newly created buffer."
   :type 'hook)
 
-(defvar embark-separator-history nil
-  "Input history for the separators used by some embark commands.
-The commands that prompt for a string separator are
-`embark-insert' and `embark-copy-as-kill'.")
-
 (defface embark-collect-candidate '((t :inherit default))
   "Face for candidates in Embark Collect buffers.")
 
@@ -3379,6 +3374,11 @@ Return the category metadatum as the type of the target."
   (add-hook 'embark-candidate-collectors #'embark--ivy-candidates))
 
 ;;; Custom actions
+
+(defvar embark-separator-history nil
+  "Input history for the separators used by some embark commands.
+The commands that prompt for a string separator are
+`embark-insert' and `embark-copy-as-kill'.")
 
 (defun embark-keymap-help ()
   "Prompt for an action to perform or command to become and run it."
