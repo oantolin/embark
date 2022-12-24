@@ -545,21 +545,22 @@ for region targets, and it prompts you for a shell command; you
 typically do /not/ want the target, that is the contents of the region,
 to be entered at that prompt!
 
-** Running hooks before or after an action
+** Running hooks before, after or around an action
 
-Embark has two variables, =embark-pre-action-hooks= and
-=embark-post-action-hooks=, which are alists associating commands to
-hooks that should run before or after the command is used as an
-action. As with, =embark-target-injection-hooks=, there are two special keys
-for the alists: =t= designates the default hook to run when no specific
-hook is specified for a command; and the hook associated to =:always=
-runs regardless.
+Embark has three variables, =embark-pre-action-hooks=,
+=embark-post-action-hooks= and =embark-around-action-hooks=, which are
+alists associating commands to hooks that should run before or after
+or as around advice for the command when used as an action. As with
+=embark-target-injection-hooks=, there are two special keys for the
+alists: =t= designates the default hook to run when no specific hook is
+specified for a command; and the hook associated to =:always= runs
+regardless.
 
 The default values of those variables are fairly extensive, adding
 creature comforts to make running actions a smooth experience. Embark
 comes with several functions intended to be added to these hooks, and
-used in the default values of =embark-pre-action-hooks= and
-=embark-post-action-hooks=.
+used in the default values of =embark-pre-action-hooks=,
+=embark-post-action-hooks= and =embark-around-action-hooks=.
 
 For pre-action hooks:
 
@@ -567,16 +568,6 @@ For pre-action hooks:
   the action. This is used be default for commands deemed "dangerous",
   or, more accurately, hard to undo, such as =delete-file= and
   =kill-buffer=.
-
-- =embark--mark-target= :: Mark the target as an active region. Most
-  targets at point outside the minibuffer report which region of the
-  buffer they correspond to (this is the information used by
-  =embark-highlight-indicator= to know what portion of the buffer to
-  highlight); this function marks that region. It is useful as a pre
-  action hook for commands that expect a region to be marked, for
-  example, it is used by default for =indent-region= so that it works on
-  s-expression targets, or for =fill-region= so that it works on
-  paragraph targets.
 
 - =embark--unmark-target= :: Unmark the active region. Use this for
   commands you want to act on the region contents but without the
@@ -600,20 +591,10 @@ For pre-action hooks:
   on an s-expression from anywhere inside it and still use
   =eval-last-sexp= as an action.
 
-- =embark--narrow-to-target= :: Narrow buffer to current target. Use
-  this as a pre-action hook to localize the effect of actions that
-  don't already work on just the region. In the default configuration
-  it is used for =repunctuate-sentences=.
-
 - =embark--xref-push-markers= :: Push the current location on the xref
   marker stack. Use this for commands that take you somewhere and for
   which you'd like to be able to come back to where you were using
   =xref-pop-marker-stack=. This is used by default for =find-library=.
-
-- =embark--cd= :: Run the action with =default-directory= set to the
-  directory associated to the current target. The target should be of
-  type =file=, =buffer=, =bookmark= or =library=, and the associated directory
-  is what you'd expect in each case.
 
 For post-action hooks:
 
@@ -623,6 +604,32 @@ For post-action hooks:
   rename a completion candidate; for example the default value of
   =embark-post-action-hooks= uses it for =delete-file=, =kill-buffer=,
   =rename-file=, =rename-buffer=, etc.
+
+For around-action hooks:
+
+- =embark--mark-target= :: Save existing mark and point location, mark
+  the target and run the action. Most targets at point outside the
+  minibuffer report which region of the buffer they correspond to
+  (this is the information used by =embark-highlight-indicator= to
+  know what portion of the buffer to highlight); this function marks
+  that region. It is useful as an around action hook for commands that
+  expect a region to be marked, for example, it is used by default for
+  =indent-region= so that it works on s-expression targets, or for
+  =fill-region= so that it works on paragraph targets.
+
+- =embark--cd= :: Run the action with =default-directory= set to the
+  directory associated to the current target. The target should be of
+  type =file=, =buffer=, =bookmark= or =library=, and the associated directory
+  is what you'd expect in each case.
+
+- =embark--narrow-to-target= :: Run the action with buffer narrowed to
+  current target. Use this as an around hook to localize the effect of
+  actions that don't already work on just the region. In the default
+  configuration it is used for =repunctuate-sentences=.
+
+- =embark--save-excursion= :: Run the action restoring point at the end.
+  The current default configuration doesn't use this but it is
+  available for users.
 
 ** Creating your own keymaps
 
