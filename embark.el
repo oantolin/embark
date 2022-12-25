@@ -416,7 +416,9 @@ arguments and more details."
     (embark-rename-buffer embark--restart)
     (,'tab-bar-rename-tab-by-name embark--restart) ;; Avoid package-lint warning
     (,'tab-bar-close-tab-by-name embark--restart)
-    (package-delete embark--restart))
+    (package-delete embark--restart)
+    (embark-next-symbol embark--unfold)
+    (embark-previous-symbol embark--unfold))
   "Alist associating commands with post-action hooks.
 The hooks are run after an embarked upon action concludes.  See
 `embark-target-injection-hooks' for information about the hook
@@ -3827,6 +3829,18 @@ ALGORITHM is the hash algorithm symbol understood by `secure-hash'."
      (if (>= emacs-major-version 28) (list url dir) (list url)))))
 
 ;;; Setup and pre-action hooks
+
+(defun embark--unfold (&rest _)
+  "Unfold overlays which hide the current line.
+This function is equivalent to `consult--invisible-open-permanently'."
+  (if (and (derived-mode-p #'org-mode) (fboundp 'org-fold-show-set-visibility))
+      ;; New Org 9.6 fold-core API
+      (org-fold-show-set-visibility 'canonical)
+    (dolist (ov (let ((inhibit-field-text-motion t))
+                  (overlays-in (line-beginning-position) (line-end-position))))
+      (when-let (fun (overlay-get ov 'isearch-open-invisible))
+        (when (invisible-p (overlay-get ov 'invisible))
+          (funcall fun ov))))))
 
 (defun embark--restart (&rest _)
   "Restart current command with current input.
