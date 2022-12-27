@@ -315,7 +315,7 @@ bound to i."
 (fset 'embark-org-link-copy-map embark-org-link-copy-map)
 
 (embark-define-keymap embark-org-link-map
-  "Keymap for actions on Org links"
+  "Keymap for actions on Org links."
   ("RET" org-open-at-point)
   ("'" org-insert-link)
   ("w" 'embark-org-link-copy-map))
@@ -342,7 +342,7 @@ bound to i."
 ;;; Source blocks and babel calls
 
 (embark-define-keymap embark-org-src-block-map
-  "Keymap for actions on Org source blocks"
+  "Keymap for actions on Org source blocks."
   ("RET" org-babel-execute-src-block)
   ("c" org-babel-check-src-block)
   ("k" org-babel-remove-result-one-or-many)
@@ -357,6 +357,50 @@ bound to i."
   (add-to-list 'embark-repeat-actions motion))
 
 (add-to-list 'embark-keymap-alist '(org-src-block . embark-org-src-block-map))
+
+;;; List items
+
+(embark-define-keymap embark-org-item-map
+  "Keymap for actions on Org list items."
+  ("RET" org-toggle-checkbox)
+  ("c" org-toggle-checkbox)
+  ("t" org-toggle-item)
+  ("n" org-next-item)
+  ("p" org-previous-item)
+  ("<left>" org-outdent-item)
+  ("<right>" org-indent-item)
+  ("<up>" org-move-item-up)
+  ("<down>" org-move-item-down)
+  (">" org-indent-item-tree)
+  ("<" org-outdent-item-tree))
+
+(dolist (cmd '(org-toggle-checkbox
+               org-toggle-item
+               org-next-item
+               org-previous-item
+               org-outdent-item
+               org-indent-item
+               org-move-item-up
+               org-move-item-down
+               org-indent-item-tree
+               org-outdent-item-tree))
+  (add-to-list 'embark-repeat-actions cmd))
+
+(add-to-list 'embark-keymap-alist '(org-item . embark-org-item-map))
+
+;;; Org plain lists
+
+(embark-define-keymap embark-org-plain-list-map
+  "Keymap for actions on plain Org lists."
+  ("RET" org-list-repair)
+  ("r" org-list-repair)
+  ("s" org-sort-list)
+  ("b" org-cycle-list-bullet)
+  ("t" org-list-make-subtree))
+
+(add-to-list 'embark-repeat-actions 'org-cycle-list-bullet)
+
+(add-to-list 'embark-keymap-alist '(org-plain-list . embark-org-plain-list-map))
 
 ;;; "Encode" region using Org export in place
 
