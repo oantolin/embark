@@ -175,11 +175,16 @@ or a list of such symbols."
     embark-target-defun-at-point
     embark-target-prog-heading-at-point)
   "List of functions to determine the target in current context.
-Each function should take no arguments and return either nil to
-indicate that no target has been found, a cons (type . target)
-where type is a symbol and target is a string, or a triple of the
-form (type target . bounds), where bounds is the (beg . end)
-bounds pair of the target at point for highlighting."
+Each function should take no arguments and return either:
+
+1. a cons (type . target) where type is a symbol and target is a
+   string,
+
+2. a triple of the form (type target . bounds), where bounds is
+   the (beg . end) bounds pair of the target at point for
+   highlighting, or
+
+3. a possibly empty list of targets, each of type 1 or 2."
   :type 'hook)
 
 (defcustom embark-transformer-alist
@@ -2007,11 +2012,12 @@ return a `cons' of the transformed type and transformed target.
 The return value of `embark--targets' is a list of plists.  Each
 plist concerns one target, and has keys `:type', `:target',
 `:orig-type', `:orig-target' and `:bounds'."
-  (let ((targets))
+  (let (targets)
     (run-hook-wrapped
      'embark-target-finders
      (lambda (fun)
-       (when-let (found (funcall fun))
+       (dolist (found (when-let (result (funcall fun))
+                        (if (consp (car result)) result (list result))))
          (let* ((type (or (car found) 'general))
                 (target+bounds (cdr found))
                 (target (if (consp target+bounds)
@@ -2025,8 +2031,8 @@ plist concerns one target, and has keys `:type', `:target',
                       (let ((trans (funcall transform type target)))
                         (list :type (car trans) :target (cdr trans)))
                     (list :type type :target target)))))
-           (push full-target targets)
-           (minibufferp)))))
+           (push full-target targets)))
+       (and targets (minibufferp))))
     (cl-delete-duplicates
      (nreverse targets)
      :test (lambda (t1 t2)
