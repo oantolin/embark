@@ -1112,7 +1112,8 @@ UPDATE is the indicator update function."
         update))
       ((or 'minibuffer-keyboard-quit 'abort-recursive-edit 'abort-minibuffers)
        nil)
-      ((guard (let ((def (lookup-key keymap keys))) ; if directly bound, then obey
+      ((guard (let ((def (lookup-key keymap keys))) ; if directly
+                                                    ; bound, then obey
                 (and def (not (numberp def))))) ; number means "invalid prefix"
        cmd)
       ('self-insert-command
@@ -3234,8 +3235,9 @@ PRED is a predicate function used to filter the items."
 
 (defun embark-export-customize-variable (variables)
   "Create a customization buffer listing VARIABLES."
-  ;; The widget library serializes/deserializes the values.
-  ;; We advise the serialization in order to avoid errors for nonserializable variables.
+  ;; The widget library serializes/deserializes the values. We advise
+  ;; the serialization in order to avoid errors for nonserializable
+  ;; variables.
   (cl-letf* ((ht (make-hash-table :test #'equal))
              (orig-read (symbol-function #'read))
              (orig-write (symbol-function 'widget-sexp-value-to-internal))
@@ -3849,7 +3851,7 @@ and leaves the point to the left of it."
   (minibuffer-force-complete))
 
 (cl-defun embark--eval-prep (&key type &allow-other-keys)
-  "If target is: a variable, skip edit; a function, wrap in parens."
+  "If target's TYPE is: variable, skip edit; function, wrap in parens."
   (when (memq type '(command function))
     (embark--allow-edit)
     (goto-char (minibuffer-prompt-end))
@@ -3886,7 +3888,8 @@ After marking the target, this calls RUN with the REST of its arguments."
   "Deactivate the region target."
   (deactivate-mark t))
 
-(cl-defun embark--narrow-to-target (&rest rest &key run bounds &allow-other-keys)
+(cl-defun embark--narrow-to-target
+    (&rest rest &key run bounds &allow-other-keys)
   "Narrow buffer to target if its BOUNDS are known.
 Intended for use as an Embark around-action hook.  This function
 runs RUN with the buffer narrowed to given BOUNDS passing along
