@@ -396,11 +396,21 @@ bound to i."
   ("r" org-list-repair)
   ("s" org-sort-list)
   ("b" org-cycle-list-bullet)
-  ("t" org-list-make-subtree))
+  ("t" org-list-make-subtree)
+  ("c" org-toggle-checkbox))
 
 (add-to-list 'embark-repeat-actions 'org-cycle-list-bullet)
 
 (add-to-list 'embark-keymap-alist '(org-plain-list . embark-org-plain-list-map))
+
+(cl-defun embark-org--toggle-checkboxes
+    (&rest rest &key run type &allow-other-keys)
+  (apply (if (eq type 'org-plain-list) #'embark--mark-target run)
+         :type type
+         rest))
+
+(cl-pushnew #'embark-org--toggle-checkboxes
+            (alist-get 'org-toggle-checkbox embark-around-action-hooks))
 
 ;;; "Encode" region using Org export in place
 
