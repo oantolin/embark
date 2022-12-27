@@ -93,7 +93,7 @@
     ;; strike-through
     ;; subscript
     ;; superscript
-    ;; table ; supported via a specific target finder
+    table ; supported via a specific target finder
     table-cell
     ;; table-row ; we'll put row & column actions in the cell map
     ;; target ; I think there are no useful actions for radio targets
@@ -105,22 +105,24 @@
   "Supported Org object and element types.")
 
 (defun embark-org-target-element-context ()
-  "Target the smallest Org element or object around point."
-  (when-let (((derived-mode-p 'org-mode 'org-agenda-mode))
-             (element (org-element-context))
-             ((memq (car element) embark-org--types))
-             (begin (org-element-property :begin element))
-             (end (org-element-property :end element))
-             (target (buffer-substring begin end)))
-    ;; Adjust table-cell to exclude final |. (Why is that there?)
-    ;; Note: We are not doing this is an embark transformer because we
-    ;; want to adjust the bounds too.
-    ;; TODO? If more adjustments like this become necessary, add a
-    ;; nice mechanism for doing them.
-    (when (and (eq (car element) 'table-cell) (string-suffix-p "|" target))
-      (setq target (string-trim (string-remove-suffix "|" target))
-            end (1- end)))
-    `(,(intern (format "org-%s" (car element))) ,target ,begin . ,end)))
+  "Target all Org elements or objects around point."
+  (when (derived-mode-p 'org-mode 'org-agenda-mode)
+    (cl-loop
+     for elt = (org-element-lineage (org-element-context) embark-org--types t)
+     then (org-element-lineage elt embark-org--types)
+     while elt
+     for begin = (org-element-property :begin elt)
+     for end = (org-element-property :end elt)
+     for target = (buffer-substring begin end)
+      ;; Adjust table-cell to exclude final |. (Why is that there?)
+      ;; Note: We are not doing this is an embark transformer because we
+      ;; want to adjust the bounds too.
+      ;; TODO? If more adjustments like this become necessary, add a
+      ;; nice mechanism for doing them.
+      when (and (eq (car elt) 'table-cell) (string-suffix-p "|" target))
+      do (setq target (string-trim (string-remove-suffix "|" target))
+               end (1- end))
+      collect `(,(intern (format "org-%s" (car elt))) ,target ,begin . ,end))))
 
 (add-to-list 'embark-target-finders 'embark-org-target-element-context)
 
@@ -144,13 +146,6 @@
 (define-key embark-region-map "M" #'embark-org-copy-as-markdown) ; good idea?
 
 ;;; Tables
-
-(defun embark-org-target-table ()
-  "Target entire Org table at point."
-  (when (and (derived-mode-p 'org-mode) (org-at-table-p))
-    `(org-table
-      ,(buffer-substring (org-table-begin) (org-table-end))
-      . (,(org-table-begin) . ,(org-table-end)))))
 
 (dolist (motion '(org-table-move-cell-up org-table-move-cell-down
                   org-table-move-cell-left org-table-move-cell-right))
@@ -185,9 +180,6 @@
 
 (push 'embark--ignore-target            ; prompts for file name
       (alist-get 'org-table-export embark-target-injection-hooks))
-
-(push 'embark-org-target-table
-      (cdr (memq 'embark-org-target-element-context embark-target-finders)))
 
 (add-to-list 'embark-keymap-alist '(org-table . embark-org-table-map))
 
