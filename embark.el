@@ -189,7 +189,6 @@ Each function should take no arguments and return either:
 
 (defcustom embark-transformer-alist
   '((minor-mode . embark--lookup-lighter-minor-mode)
-    (symbol . embark--refine-symbol-type)
     (embark-keybinding . embark--keybinding-command)
     (project-file . embark--project-file-full-path)
     (package . embark--remove-package-version)
@@ -802,6 +801,31 @@ in one of those major modes."
 (embark-define-thingatpt-target paragraph
   text-mode help-mode Info-mode man-common)
 
+(defun embark--identifier-types (identifier)
+  "Return list of target types appropriate for IDENTIFIER."
+  (let ((symbol (intern-soft identifier)))
+    (if (not
+         (or (derived-mode-p 'emacs-lisp-mode 'inferior-emacs-lisp-mode)
+             (and (not (derived-mode-p 'prog-mode))
+                  symbol
+                  (or (boundp symbol) (fboundp symbol) (symbol-plist symbol)))))
+        '(identifier)
+      (let* ((library (ffap-el-mode identifier))
+             (types
+              (append
+               (and (commandp symbol) '(command))
+               (and symbol (boundp symbol) (not (keywordp symbol)) '(variable))
+               (and (fboundp symbol) (not (commandp symbol)) '(function))
+               (and (facep symbol) '(face))
+               (and library '(library))
+               (and (featurep 'package) (embark--package-desc symbol)
+                    '(package)))))
+        (when (and library
+                   (looking-back "\\(?:require\\|use-package\\).*"
+                                 (line-beginning-position)))
+          (setq types (embark--rotate types (cl-position 'library types))))
+        (or types '(symbol))))))
+
 (defun embark-target-identifier-at-point ()
   "Target identifier at point.
 
@@ -824,15 +848,8 @@ As a convenience, in Org Mode an initial ' or surrounding == or
                (setq name (substring name 1 -1))
                (cl-incf (car bounds))
                (cl-decf (cdr bounds)))))
-      `(,(if (or (derived-mode-p 'emacs-lisp-mode 'inferior-emacs-lisp-mode)
-                 (and
-                  (not (derived-mode-p 'prog-mode))
-                  (when-let ((sym (intern-soft name)))
-                    (or (boundp sym) (fboundp sym) (symbol-plist sym)))))
-             'symbol
-           'identifier)
-        ,name
-        . ,bounds))))
+      (mapcar (lambda (type) `(,type ,name . ,bounds))
+              (embark--identifier-types name)))))
 
 (defun embark-target-heading-at-point ()
   "Target the outline heading at point."
@@ -1923,29 +1940,6 @@ minibuffer before executing the action."
   "Refine `multi-category' TARGET to its actual type."
   (or (get-text-property 0 'multi-category target)
       (cons 'general target)))
-
-(defun embark--refine-symbol-type (_type target)
-  "Refine symbol TARGET to more specific type if possible."
-  (cons (let ((symbol (intern-soft target))
-              (library (ffap-el-mode target)))
-          (cond
-           ((and library
-                 (looking-back "\\(?:require\\|use-package\\).*"
-                               (line-beginning-position)))
-            'library)
-           ((keywordp symbol) 'symbol) ; keywords are bound to themselves!
-           ((commandp symbol) 'command)
-           ((and symbol (boundp symbol)) 'variable)
-           ;; Prefer variables over functions for backward compatibility.
-           ;; Command > variable > function > face > library > package > symbol
-           ;; seems like a reasonable order with decreasing usefulness
-           ;; of the actions.
-           ((fboundp symbol) 'function)
-           ((facep symbol) 'face)
-           (library 'library)
-           ((and (featurep 'package) (embark--package-desc symbol)) 'package)
-           (t 'symbol)))
-        target))
 
 (defun embark--simplify-path (_type target)
   "Simplify and '//' or '~/' in the TARGET file path."
@@ -3854,9 +3848,9 @@ and leaves the point to the left of it."
   "Select first minibuffer completion candidate matching target."
   (minibuffer-force-complete))
 
-(defun embark--eval-prep (&rest _)
+(cl-defun embark--eval-prep (&key type &allow-other-keys)
   "If target is: a variable, skip edit; a function, wrap in parens."
-  (when (fboundp (intern-soft (minibuffer-contents)))
+  (when (memq type '(command function))
     (embark--allow-edit)
     (goto-char (minibuffer-prompt-end))
     (insert "(")
