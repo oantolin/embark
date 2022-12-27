@@ -324,6 +324,7 @@ indicate that for files at the prompt of the `delete-file' command,
   '((async-shell-command embark--allow-edit embark--shell-prep)
     (shell-command embark--allow-edit embark--shell-prep)
     (pp-eval-expression embark--eval-prep)
+    (eval-expression embark--eval-prep)
     (package-delete embark--force-complete)
     ;; commands evaluating code found in the buffer, which may in turn prompt
     (embark-pp-eval-defun embark--ignore-target)
