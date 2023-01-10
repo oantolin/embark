@@ -283,9 +283,13 @@ In addition to t or nil this variable can also be set to an
 alist to specify the minibuffer quitting behavior per command.
 In the alist case one can additionally use the key t to
 prescribe a default for commands not used as alist keys."
-  :type '(choice boolean
-                 (alist :key-type (choice function (const t))
-                        :value-type boolean)))
+  :type '(choice (const :tag "Always quit" t)
+                 (const :tag "Never quit" nil)
+                 (alist :tag "Configure per action"
+                        :key-type (choice (function :tag "Action")
+                                          (const :tag "All other actions" t))
+                        :value-type (choice (const :tag "Quit")
+                                            (const :tag "Do not quit")))))
 
 (defcustom embark-confirm-act-all t
   "Should `embark-act-all' prompt the user for confirmation?
