@@ -281,6 +281,8 @@ This function is meant to be added to `embark-collect-mode-hook'."
 (setf (alist-get 'consult-man embark-default-action-overrides)
       #'embark-consult-man)
 
+(declare-function consult-info--action "ext:consult-info")
+
 (defun embark-consult-info (cand)
   (consult-info--action cand)
   (pulse-momentary-highlight-one-line (point)))
