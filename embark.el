@@ -3196,8 +3196,12 @@ buffer."
              (pop-to-buffer buffer)
              (rename-buffer name t)
              (setq embark--rerun-function rerun)
-             (local-set-key [remap revert-buffer]
-                            #'embark-rerun-collect-or-export)
+             (use-local-map
+              (make-composed-keymap
+               '(keymap
+                 (remap keymap
+                        (revert-buffer . embark-rerun-collect-or-export)))
+               (current-local-map)))
              (let ((embark-after-export-hook after)
                    (embark--command cmd))
                (run-hooks 'embark-after-export-hook)))))))))
