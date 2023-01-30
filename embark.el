@@ -121,7 +121,11 @@
 
 (defgroup embark nil
   "Emacs Mini-Buffer Actions Rooted in Keymaps."
-  :group 'minibuffer)
+  :link '(info-link :tag "Info Manual" "(embark)")
+  :link '(url-link :tag "Homepage" "https://github.com/oantolin/embark")
+  :link '(emacs-library-link :tag "Library Source" "embark.el")
+  :group 'minibuffer
+  :prefix "embark-")
 
 (defcustom embark-keymap-alist
   '((file embark-file-map)
