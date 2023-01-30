@@ -7,7 +7,7 @@
 ;; Keywords: convenience
 ;; Version: 0.20
 ;; Homepage: https://github.com/oantolin/embark
-;; Package-Requires: ((emacs "26.1") (compat "29.1.3.0"))
+;; Package-Requires: ((emacs "27.1") (compat "29.1.3.0"))
 
 ;; This file is part of GNU Emacs.
 
@@ -1273,7 +1273,7 @@ UPDATE function is passed to it."
             (minibuffer-with-setup-hook
                 (lambda ()
                   (let ((map (make-sparse-keymap)))
-                    (define-key map (kbd "M-q")
+                    (define-key map "\M-q"
                                 (lambda ()
                                   (interactive)
                                   (with-current-buffer buf
@@ -1917,7 +1917,7 @@ minibuffer before executing the action."
                                 (set--this-command-keys
                                  (if (characterp last-command-event)
                                      (string last-command-event)
-                                   (kbd "RET"))))
+                                  "\r")))
                               (setq this-command action)
                               (embark--run-around-action-hooks
                                action target quit)))
@@ -2058,7 +2058,7 @@ keymap for the given type."
       (alist-get type embark-default-action-overrides)
       (alist-get t embark-default-action-overrides)
       embark--command
-      (lookup-key (embark--raw-action-keymap type) (kbd "RET"))))
+      (lookup-key (embark--raw-action-keymap type) "\r")))
 
 (defun embark--rotate (list k)
   "Rotate LIST by K elements and return the rotated list."
@@ -2778,13 +2778,9 @@ If NESTED is non-nil subkeymaps are not flattened."
   "n" #'forward-button
   "p" #'backward-button
   "}" 'outline-next-heading
-  "{" 'outline-previous-heading)
-
-(define-key embark-collect-mode-map
-  [remap forward-paragraph] 'outline-next-heading)
-
-(define-key embark-collect-mode-map
-    [remap backward-paragraph] 'outline-previous-heading)
+  "{" 'outline-previous-heading
+  "<remap> <forward-paragraph>" 'outline-next-heading
+  "<remap> <backward-paragraph>" 'outline-previous-heading)
 
 (defconst embark-collect--outline-string (string #x210000)
   "Special string used for outine headings in Embark Collect buffers.
@@ -4347,12 +4343,12 @@ This simply calls RUN with the REST of its arguments inside
   :doc "Embark become keymap for files and buffers."
   :parent embark-meta-map
   "f" #'find-file
-  "4f" #'find-file-other-window
+  "4 f" #'find-file-other-window
   "." #'find-file-at-point
   "p" #'project-find-file
   "r" #'recentf-open-files
   "b" #'switch-to-buffer
-  "4b" #'switch-to-buffer-other-window
+  "4 b" #'switch-to-buffer-other-window
   "l" #'locate
   "L" #'find-library
   "v" #'vc-dir)
