@@ -7,7 +7,7 @@
 ;; Keywords: convenience
 ;; Version: 0.6
 ;; Homepage: https://github.com/oantolin/embark
-;; Package-Requires: ((emacs "27.1") (embark "0.17") (consult "0.17"))
+;; Package-Requires: ((emacs "27.1") (embark "0.20") (consult "0.17"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
 
 ;;; Commentary:
 
-;; This package provides integration between Embark and Consult. The package
+;; This package provides integration between Embark and Consult.  The package
 ;; will be loaded automatically by Embark.
 
 ;; Some of the functionality here was previously contained in Embark
@@ -45,7 +45,7 @@
 ;; Additionally this package contains some functionality that has
 ;; never been in Embark: access to Consult preview from auto-updating
 ;; Embark Collect buffer that is associated to an active minibuffer
-;; for a Consult command. For information on Consult preview, see
+;; for a Consult command.  For information on Consult preview, see
 ;; Consult's info manual or its readme on GitHub.
 
 ;; If you always want the minor mode enabled whenever it possible use:
@@ -55,7 +55,7 @@
 ;; If you don't want the minor mode automatically on and prefer to
 ;; trigger the consult previews manually use this instead:
 
-;; (define-key embark-collect-mode-map (kbd "C-j")
+;; (keymap-set embark-collect-mode-map "C-j"
 ;;   #'consult-preview-at-point)
 
 ;;; Code:
@@ -160,10 +160,10 @@ This function is meant to be added to `embark-collect-mode-hook'."
 (defvar wgrep-header/footer-parser)
 (declare-function wgrep-setup "ext:wgrep")
 
-(embark-define-keymap embark-consult-revert-map
-  "A keymap with a binding for revert-buffer."
+(defvar-keymap embark-consult-revert-map
+  :doc "A keymap with a binding for revert-buffer."
   :parent nil
-  ("g" revert-buffer))
+  "g" #'revert-buffer)
 
 (defun embark-consult-export-grep (lines)
   "Create a grep mode buffer listing LINES."
@@ -276,6 +276,7 @@ This function is meant to be added to `embark-collect-mode-hook'."
 ;;; Support for consult-man and consult-info
 
 (defun embark-consult-man (cand)
+  "Default action override for `consult-man', open CAND man page."
   (man (get-text-property 0 'consult-man cand)))
 
 (setf (alist-get 'consult-man embark-default-action-overrides)
@@ -284,6 +285,7 @@ This function is meant to be added to `embark-collect-mode-hook'."
 (declare-function consult-info--action "ext:consult-info")
 
 (defun embark-consult-info (cand)
+  "Default action override for `consult-info', open CAND info manual."
   (consult-info--action cand)
   (pulse-momentary-highlight-one-line (point)))
 
@@ -295,28 +297,28 @@ This function is meant to be added to `embark-collect-mode-hook'."
 
 ;;; Bindings for consult commands in embark keymaps
 
-(define-key embark-become-file+buffer-map "Cb" #'consult-buffer)
-(define-key embark-become-file+buffer-map "C4b" #'consult-buffer-other-window)
+(keymap-set embark-become-file+buffer-map "C b" #'consult-buffer)
+(keymap-set embark-become-file+buffer-map "C 4 b" #'consult-buffer-other-window)
 
 ;;; Support for Consult search commands
 
-(embark-define-keymap embark-consult-sync-search-map
-  "Keymap for Consult sync search commands"
+(defvar-keymap embark-consult-sync-search-map
+  :doc "Keymap for Consult sync search commands"
   :parent nil
-  ("o" consult-outline)
-  ("i" 'consult-imenu)
-  ("I" 'consult-imenu-multi)
-  ("l" consult-line)
-  ("L" consult-line-multi))
+  "o" #'consult-outline
+  "i" 'consult-imenu
+  "I" 'consult-imenu-multi
+  "l" #'consult-line
+  "L" #'consult-line-multi)
 
-(embark-define-keymap embark-consult-async-search-map
-  "Keymap for Consult async search commands"
+(defvar-keymap embark-consult-async-search-map
+  :doc "Keymap for Consult async search commands"
   :parent nil
-  ("g" consult-grep)
-  ("r" consult-ripgrep)
-  ("G" consult-git-grep)
-  ("f" consult-find)
-  ("F" consult-locate))
+  "g" #'consult-grep
+  "r" #'consult-ripgrep
+  "G" #'consult-git-grep
+  "f" #'consult-find
+  "F" #'consult-locate)
 
 (defvar embark-consult-search-map
   (keymap-canonicalize
@@ -325,12 +327,12 @@ This function is meant to be added to `embark-collect-mode-hook'."
   "Keymap for all Consult search commands.")
 
 (fset 'embark-consult-sync-search-map embark-consult-sync-search-map)
-(define-key embark-become-match-map "C" 'embark-consult-sync-search-map)
+(keymap-set embark-become-match-map "C" 'embark-consult-sync-search-map)
 
 (cl-pushnew 'embark-consult-async-search-map embark-become-keymaps)
 
 (fset 'embark-consult-search-map embark-consult-search-map)
-(define-key embark-general-map "C" 'embark-consult-search-map)
+(keymap-set embark-general-map "C" 'embark-consult-search-map)
 
 (map-keymap
  (lambda (_key cmd)
