@@ -227,27 +227,27 @@ prompts for an action with completion."
 (defcustom embark-keymap-prompter-key "@"
   "Key to switch to the keymap prompter from `embark-completing-read-prompter'.
 
-The key must be either a string or a vector.
-This is the key representation accepted by `define-key'."
-  :type '(choice key-sequence (const :tag "None" nil)))
+The key must be either nil or a string.  The
+string must be accepted by `key-valid-p'."
+  :type '(choice string (const :tag "None" nil)))
 
 (defcustom embark-cycle-key nil
   "Key used for `embark-cycle'.
 
 If the key is set to nil it defaults to the global binding of
-`embark-act'.  The key must be either a string or a vector.  This
-is the key representation accepted by `define-key'."
-  :type '(choice key-sequence (const :tag "Use embark-act key" nil)))
+`embark-act'.  The key must be a string which is accepted by
+`key-valid-p'."
+  :type '(choice string (const :tag "Use embark-act key" nil)))
 
-(defcustom embark-help-key "\C-h"
+(defcustom embark-help-key "C-h"
   "Key used for help.
 
-The key must be either nil, a string or a vector.  This
-is the key representation accepted by `define-key'."
-  :type '(choice (const :tag "Use 'C-h'" "\C-h")
-                 (const :tag "Use '?'" "?")
+The key must be either nil or a string.  The
+string must be accepted by `key-valid-p'."
+  :type '(choice (const "C-h")
+                 (const "?")
                  (const :tag "None" nil)
-                 key-sequence))
+                 string))
 
 (defcustom embark-keybinding-repeat
   (propertize "*" 'face 'embark-keybinding-repeat)
@@ -949,7 +949,11 @@ their own target finder.  See for example
 
 (defun embark--cycle-key ()
   "Return the key to use for `embark-cycle'."
-  (or embark-cycle-key (car (where-is-internal #'embark-act))))
+  (if embark-cycle-key
+      (if (key-valid-p embark-cycle-key)
+          (key-parse embark-cycle-key)
+        (error "`embark-cycle-key' is invalid"))
+    (car (where-is-internal #'embark-act))))
 
 (defun embark--raw-action-keymap (type)
   "Return raw action map for targets of given TYPE.
@@ -972,7 +976,7 @@ If CYCLE is non-nil bind `embark-cycle'."
      (when-let ((cycle-key (and cycle (embark--cycle-key))))
        (define-key map cycle-key #'embark-cycle))
      (when embark-help-key
-       (define-key map embark-help-key #'embark-keymap-help))
+       (keymap-set map embark-help-key #'embark-keymap-help))
      map)
    (embark--raw-action-keymap type)))
 
@@ -1299,7 +1303,7 @@ UPDATE function is passed to it."
                              (key-description cycle))
                             (define-key map cycle #'embark-act))))))
                     (when embark-keymap-prompter-key
-                      (define-key map embark-keymap-prompter-key
+                      (keymap-set map embark-keymap-prompter-key
                         (lambda ()
                           (interactive)
                           (message "Press key binding")
@@ -2365,7 +2369,7 @@ See `embark-act' for the meaning of the prefix ARG."
                        when (where-is-internal embark--command (list keymap))
                        collect keymap))))
     (when embark-help-key
-      (define-key map embark-help-key #'embark-keymap-help))
+      (keymap-set map embark-help-key #'embark-keymap-help))
     map))
 
 ;;;###autoload
