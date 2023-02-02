@@ -2528,14 +2528,6 @@ This is only used for annotation that are not already fontified.")
 (defvar-local embark--rerun-function nil
   "Function to rerun the collect or export that made the current buffer.")
 
-(defun embark-collect--post-revert (&rest _)
-  "Run `embark-collect-post-revert-hook'.
-This function is used as :after advice for `tabulated-list-revert'."
-  (when (derived-mode-p 'embark-collect-mode)
-    (run-hooks 'embark-collect-post-revert-hook)))
-
-(advice-add 'tabulated-list-revert :after #'embark-collect--post-revert)
-
 (autoload 'package-delete "package")
 (declare-function package--from-builtin "package")
 (declare-function package-desc-extras "package")
@@ -2812,6 +2804,11 @@ perhaps editing the minibuffer contents, and, if you wish, you
 can rerun `embark-collect' to get an updated buffer."
     :interactive nil :abbrev-table nil :syntax-table nil)
 
+(defun embark-collect--revert (&rest _)
+  "Revert function of `embark-collect-mode' buffers."
+  (tabulated-list-revert)
+  (run-hooks 'embark-collect-post-revert-hook))
+
 (defun embark-collect--remove-zebra-stripes ()
   "Remove highlighting of alternate rows."
   (remove-overlays nil nil 'face 'embark-collect-zebra-highlight))
@@ -3022,7 +3019,8 @@ buffer has a unique name."
     (with-current-buffer buffer
       (setq tabulated-list-use-header-line nil ; default to no header
             header-line-format nil
-            tabulated-list--header-string nil)
+            tabulated-list--header-string nil
+            revert-buffer-function #'embark-collect--revert)
       (setq embark--rerun-function rerun)
       (local-set-key [remap revert-buffer] #'embark-rerun-collect-or-export)
       (when (memq embark--type embark-collect-zebra-types)
@@ -3031,7 +3029,7 @@ buffer has a unique name."
     (let ((window (display-buffer buffer)))
       (with-selected-window window
         (run-mode-hooks)
-        (tabulated-list-revert))
+        (embark-collect--revert))
       (set-window-dedicated-p window t)
       buffer)))
 
