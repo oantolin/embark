@@ -179,7 +179,8 @@ or a list of such symbols."
     embark-target-sentence-at-point
     embark-target-paragraph-at-point
     embark-target-defun-at-point
-    embark-target-prog-heading-at-point)
+    embark-target-prog-heading-at-point
+    embark-target-help-symbol)
   "List of functions to determine the target in current context.
 Each function should take no arguments and return either:
 
