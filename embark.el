@@ -3242,6 +3242,8 @@ PRED is a predicate function used to filter the items."
            `((predicate . (member (buffer-name) ',buffers)))))
 
 (autoload 'dired-check-switches "dired")
+(declare-function dired-unadvertise "dired")
+(defvar dired-directory)
 
 (defun embark-export-dired (files)
   "Create a Dired buffer listing FILES."
@@ -3258,8 +3260,9 @@ PRED is a predicate function used to filter the items."
                (cons (expand-file-name dir)
                      (mapcar (lambda (file) (string-remove-prefix dir file))
                              files)))))
+    ;; unadvertise this buffer to avoid reuse
     (with-current-buffer buf
-      (setq-local dired-directory nil)
+      (dired-unadvertise (car dired-directory)) ; avoid reuse of this buffer
       (rename-buffer (format "*Embark Export Dired %s*" default-directory)))
     (pop-to-buffer buf)))
 
