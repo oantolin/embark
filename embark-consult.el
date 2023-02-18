@@ -157,13 +157,20 @@ This function is meant to be added to `embark-collect-mode-hook'."
 
 (defvar grep-mode-line-matches)
 (defvar grep-num-matches-found)
-(defvar wgrep-header/footer-parser)
+(defvar wgrep-header&footer-parser)
 (declare-function wgrep-setup "ext:wgrep")
 
 (defvar-keymap embark-consult-revert-map
   :doc "A keymap with a binding for revert-buffer."
   :parent nil
   "g" #'revert-buffer)
+
+(defun embark-consult--wgrep-prepare ()
+  "Mark header as read-only."
+  (goto-char (point-min))
+  (forward-line 2)
+  (add-text-properties (point-min) (point)
+                       '(read-only t wgrep-header t front-sticky t)))
 
 (defun embark-consult-export-grep (lines)
   "Create a grep mode buffer listing LINES."
@@ -193,7 +200,7 @@ This function is meant to be added to `embark-collect-mode-hook'."
       (use-local-map (make-composed-keymap
                       embark-consult-revert-map
                       (current-local-map)))
-      (setq-local wgrep-header/footer-parser #'ignore)
+      (setq-local wgrep-header&footer-parser #'embark-consult--wgrep-prepare)
       (when (fboundp 'wgrep-setup) (wgrep-setup)))
     (pop-to-buffer buf)))
 
