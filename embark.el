@@ -992,14 +992,27 @@ If CYCLE is non-nil bind `embark-cycle'."
       (concat (car (split-string target "\n" 'omit-nulls "\\s-*")) "…")
     target))
 
-(defun embark-eldoc-function (report &rest _)
-  "Eldoc function reporting the target at point via the REPORT callback.
-This function can be added to `eldoc-documentation-functions'."
+(defun embark-eldoc-first-target (report &rest _)
+  "Eldoc function reporting the first Embark target at point.
+This function uses the eldoc REPORT callback and is meant to be
+added to `eldoc-documentation-functions'."
   (when-let ((target (car (embark--targets))))
     (funcall report
              (format "Embark on %s ‘%s’"
                      (plist-get target :type)
                      (embark--truncate-target (plist-get target :target))))))
+
+(defun embark-eldoc-target-types (report &rest _)
+  "Eldoc function reporting the types of all Embark targets at point.
+This function uses the eldoc REPORT callback and is meant to be
+added to `eldoc-documentation-functions'."
+  (when-let ((targets (embark--targets)))
+    (funcall report
+             (format "Embark target types: %s"
+                     (mapconcat
+                      (lambda (target) (symbol-name (plist-get target :type)))
+                      targets
+                      ", ")))))
 
 (defun embark--format-targets (target shadowed-targets rep)
   "Return a formatted string indicating the TARGET of an action.
