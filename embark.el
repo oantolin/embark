@@ -7,7 +7,7 @@
 ;; Keywords: convenience
 ;; Version: 0.21.1
 ;; Homepage: https://github.com/oantolin/embark
-;; Package-Requires: ((emacs "27.1") (compat "29.1.3.0"))
+;; Package-Requires: ((emacs "27.1") (compat "29.1.3.4"))
 
 ;; This file is part of GNU Emacs.
 
@@ -968,7 +968,7 @@ cycling bindings, just what's registered in
    (mapcar #'symbol-value
            (let ((actions (or (alist-get type embark-keymap-alist)
                               (alist-get t embark-keymap-alist))))
-             (if (consp actions) actions (list actions))))))
+             (ensure-list actions)))))
 
 (defun embark--action-keymap (type cycle)
   "Return action keymap for targets of given TYPE.
@@ -992,6 +992,7 @@ If CYCLE is non-nil bind `embark-cycle'."
       (concat (car (split-string target "\n" 'omit-nulls "\\s-*")) "…")
     target))
 
+;;;###autoload
 (defun embark-eldoc-first-target (report &rest _)
   "Eldoc function reporting the first Embark target at point.
 This function uses the eldoc REPORT callback and is meant to be
@@ -1002,6 +1003,7 @@ added to `eldoc-documentation-functions'."
                      (plist-get target :type)
                      (embark--truncate-target (plist-get target :target))))))
 
+;;;###autoload
 (defun embark-eldoc-target-types (report &rest _)
   "Eldoc function reporting the types of all Embark targets at point.
 This function uses the eldoc REPORT callback and is meant to be
@@ -1049,10 +1051,9 @@ a repeating sequence of actions."
          (plist-get target :type)
          (if shadowed-targets
              (format (propertize "(%s)" 'face 'shadow)
-                     (string-join
-                      (mapcar (lambda (x)
-                                (symbol-name (plist-get x :type)))
-                              shadowed-targets)
+                     (mapconcat
+                      (lambda (target) (symbol-name (plist-get target :type)))
+                      shadowed-targets
                       ", "))
            "")
          (embark--truncate-target (plist-get target :target)))))))
