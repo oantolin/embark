@@ -893,7 +893,7 @@ This target finder is meant for the default completion UI and
 completion UI highly compatible with it, like Icomplete.
 Many completion UIs can still work with Embark but will need
 their own target finder.  See for example
-`embark--vertico-selected' or `embark--selectrum-selected'."
+`embark--vertico-selected'."
   (when (and (minibufferp) minibuffer-completion-table)
     (pcase-let* ((`(,category . ,candidates) (embark-minibuffer-candidates))
                  (contents (minibuffer-contents))
@@ -3337,52 +3337,6 @@ Return the category metadatum as the type of the candidates."
   (add-hook 'embark-indicators #'embark--vertico-indicator)
   (add-hook 'embark-target-finders #'embark--vertico-selected)
   (add-hook 'embark-candidate-collectors #'embark--vertico-candidates))
-
-;; selectrum
-
-(declare-function selectrum--get-meta "ext:selectrum")
-(declare-function selectrum-get-current-candidate "ext:selectrum")
-(declare-function selectrum-get-current-candidates "ext:selectrum")
-(declare-function selectrum-exhibit "ext:selectrum")
-(defvar selectrum-is-active)
-(defvar selectrum--previous-input-string)
-
-(defun embark--selectrum-selected ()
-  "Target the currently selected item in Selectrum.
-Return the category metadatum as the type of the target."
-  (when selectrum-is-active
-    ;; Force candidate computation, if candidates are not yet available.
-    (unless selectrum--previous-input-string
-      (selectrum-exhibit))
-    (cons (selectrum--get-meta 'category)
-          (selectrum-get-current-candidate))))
-
-(defun embark--selectrum-candidates ()
-  "Collect the current Selectrum candidates.
-Return the category metadatum as the type of the candidates."
-  (when selectrum-is-active
-    ;; Force candidate computation, if candidates are not yet available.
-    (unless selectrum--previous-input-string
-      (selectrum-exhibit))
-    (cons (selectrum--get-meta 'category)
-          (selectrum-get-current-candidates
-           ;; Pass relative file names for dired.
-           minibuffer-completing-file-name))))
-
-(defun embark--selectrum-indicator ()
-  "Embark indicator highlighting the current Selectrum candidate."
-  (let ((fr face-remapping-alist))
-    (lambda (&optional keymap _targets _prefix)
-      (when selectrum-is-active
-        (setq-local face-remapping-alist
-                    (if keymap
-                        (cons '(selectrum-current-candidate . embark-target) fr)
-                      fr))))))
-
-(with-eval-after-load 'selectrum
-  (add-hook 'embark-indicators #'embark--selectrum-indicator)
-  (add-hook 'embark-target-finders #'embark--selectrum-selected)
-  (add-hook 'embark-candidate-collectors #'embark--selectrum-candidates))
 
 ;; ivy
 
