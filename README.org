@@ -790,17 +790,20 @@ to do is teach Embark that =wikipedia:Garry_Kasparov= stands for the URL
 You can be as fancy as you want with the recognized syntax. Here, to
 keep the example simple, I'll assume the link matches the regexp
 =wikipedia:[[:alnum:]_]+=. We will write a function that looks for a
-match surrounding point, and returns an improper list of the form
-='(url actual-url-of-the-page beg . end)= where =beg= and =end= are the
-buffer positions where the target starts and ends, and are used by
-Embark to highlight the target (if you have =embark-highlight-indicator=
-included in the list =embark-indicators=).
+match surrounding point, and returns a dotted list of the form ='(url
+actual-url-of-the-page start . end)= where =start= and =end= are the buffer
+positions bounding the target, and are used by Embark to highlight it
+if you have =embark-highlight-indicator= included in the list
+=embark-indicators=. (There are a couple of other options for the return
+value of a target finder: the bounding positions are optional and a
+single target finder is allowed to return multiple targets; see the
+documentation for =embark-target-finders= for details.)
 
 #+begin_src emacs-lisp
   (defun my-short-wikipedia-link ()
     "Target a link at point of the form wikipedia:Page_Name."
     (save-excursion
-      (let* ((beg (progn (skip-chars-backward "[:alnum:]_:") (point)))
+      (let* ((start (progn (skip-chars-backward "[:alnum:]_:") (point)))
              (end (progn (skip-chars-forward "[:alnum:]_:") (point)))
              (str (buffer-substring-no-properties beg end)))
         (save-match-data
@@ -808,7 +811,7 @@ included in the list =embark-indicators=).
             `(url
               ,(format "https://en.wikipedia.org/wiki/%s"
                        (match-string 1 str))
-              ,beg . ,end))))))
+              ,start . ,end))))))
 
   (add-to-list 'embark-target-finders 'my-short-wikipedia-link)
 #+end_src

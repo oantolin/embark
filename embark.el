@@ -183,12 +183,13 @@ or a list of such symbols."
   "List of functions to determine the target in current context.
 Each function should take no arguments and return either:
 
-1. a cons (type . target) where type is a symbol and target is a
-   string,
+1. a cons (TYPE . TARGET) where TARGET is a string and TYPE is a
+   symbol (which is looked up in `embark-keymap-alist' to
+   determine which additional keybindings for actions to setup);
 
-2. a triple of the form (type target . bounds), where bounds is
-   the (beg . end) bounds pair of the target at point for
-   highlighting, or
+2. a dotted list of the form (TYPE TARGET START . END), where
+   START and END are the buffer positions bounding TARGET, used
+   for highlighting; or
 
 3. a possibly empty list of targets, each of type 1 or 2."
   :type 'hook)
