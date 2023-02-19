@@ -966,7 +966,7 @@ You can be as fancy as you want with the recognized syntax. Here, to
 keep the example simple, I'll assume the link matches the regexp
 @samp{wikipedia:[[:alnum:]_]+}. We will write a function that looks for a
 match surrounding point, and returns a dotted list of the form @samp{'(url
-actual-url-of-the-page start . end)} where @samp{start} and @samp{end} are the buffer
+URL-OF-THE-PAGE START . END)} where @samp{START} and @samp{END} are the buffer
 positions bounding the target, and are used by Embark to highlight it
 if you have @samp{embark-highlight-indicator} included in the list
 @samp{embark-indicators}. (There are a couple of other options for the return

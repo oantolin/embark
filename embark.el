@@ -181,7 +181,7 @@ or a list of such symbols."
     embark-target-defun-at-point
     embark-target-prog-heading-at-point)
   "List of functions to determine the target in current context.
-Each function should take no arguments and return either:
+Each function should take no arguments and return one of:
 
 1. a cons (TYPE . TARGET) where TARGET is a string and TYPE is a
    symbol (which is looked up in `embark-keymap-alist' to
@@ -191,7 +191,9 @@ Each function should take no arguments and return either:
    START and END are the buffer positions bounding TARGET, used
    for highlighting; or
 
-3. a possibly empty list of targets, each of type 1 or 2."
+3. a possibly empty list of targets, each of type 1 or 2 (in
+   particular if a target finder does not find any targets, it
+   should return nil)."
   :type 'hook)
 
 (defcustom embark-transformer-alist

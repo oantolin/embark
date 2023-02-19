@@ -791,7 +791,7 @@ You can be as fancy as you want with the recognized syntax. Here, to
 keep the example simple, I'll assume the link matches the regexp
 =wikipedia:[[:alnum:]_]+=. We will write a function that looks for a
 match surrounding point, and returns a dotted list of the form ='(url
-actual-url-of-the-page start . end)= where =start= and =end= are the buffer
+URL-OF-THE-PAGE START . END)= where =START= and =END= are the buffer
 positions bounding the target, and are used by Embark to highlight it
 if you have =embark-highlight-indicator= included in the list
 =embark-indicators=. (There are a couple of other options for the return
