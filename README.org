@@ -306,6 +306,10 @@ starting configuration:
     ;; Optionally replace the key help with a completing-read interface
     (setq prefix-help-command #'embark-prefix-help-command)
 
+    ;; Show the Embark target at point via Eldoc
+    (setq eldoc-documentation-strategy #'eldoc-documentation-compose-eagerly)
+    (add-hook 'eldoc-documentation-functions #'embark-eldoc-first-target)
+
     :config
 
     ;; Hide the mode line of the Embark live/completions buffers
