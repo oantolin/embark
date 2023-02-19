@@ -223,7 +223,7 @@ Finally, there is also an =embark-live= variant of the =embark-collect=
 command which automatically updates the collection after each change
 in the source buffer. Users of a completion UI that automatically
 updates and displays the candidate list (such as Vertico, Icomplete,
-Selectrum, Fido-mode, or MCT) will probably not want to use
+Fido-mode, or MCT) will probably not want to use
 =embark-live= from the minibuffer as they will then have two live
 updating displays of the completion candidates!
 
@@ -358,7 +358,7 @@ Embark needs to know what your minibuffer completion system considers
 to be the list of candidates and which one is the current candidate.
 Embark works out of the box if you use Emacs's default tab completion,
 the built-in =icomplete-mode= or =fido-mode=, or the third-party packages
-[[https://github.com/minad/vertico][Vertico]], [[https://github.com/raxod502/selectrum/][Selectrum]] or [[https://github.com/abo-abo/swiper][Ivy]].
+[[https://github.com/minad/vertico][Vertico]] or [[https://github.com/abo-abo/swiper][Ivy]].
 
 If you are a [[https://emacs-helm.github.io/helm/][Helm]] or [[https://github.com/abo-abo/swiper][Ivy]] user you are unlikely to want Embark since
 those packages include comprehensive functionality for acting on
