@@ -1000,7 +1000,8 @@ If CYCLE is non-nil bind `embark-cycle'."
   "Eldoc function reporting the first Embark target at point.
 This function uses the eldoc REPORT callback and is meant to be
 added to `eldoc-documentation-functions'."
-  (when-let ((target (car (embark--targets))))
+  (when-let (((not (minibufferp)))
+             (target (car (embark--targets))))
     (funcall report
              (format "Embark on %s ‘%s’"
                      (plist-get target :type)
@@ -1011,7 +1012,8 @@ added to `eldoc-documentation-functions'."
   "Eldoc function reporting the types of all Embark targets at point.
 This function uses the eldoc REPORT callback and is meant to be
 added to `eldoc-documentation-functions'."
-  (when-let ((targets (embark--targets)))
+  (when-let (((not (minibufferp)))
+             (targets (embark--targets)))
     (funcall report
              (format "Embark target types: %s"
                      (mapconcat
