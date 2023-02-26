@@ -2808,7 +2808,8 @@ If NESTED is non-nil subkeymaps are not flattened."
   "}" 'outline-next-heading
   "{" 'outline-previous-heading
   "<remap> <forward-paragraph>" 'outline-next-heading
-  "<remap> <backward-paragraph>" 'outline-previous-heading)
+  "<remap> <backward-paragraph>" 'outline-previous-heading
+  "<remap> <revert-buffer>" #'embark-rerun-collect-or-export)
 
 (defconst embark-collect--outline-string (string #x210000)
   "Special string used for outine headings in Embark Collect buffers.
@@ -3051,7 +3052,6 @@ buffer has a unique name."
             tabulated-list--header-string nil
             revert-buffer-function #'embark-collect--revert)
       (setq embark--rerun-function rerun)
-      (local-set-key [remap revert-buffer] #'embark-rerun-collect-or-export)
       (when (memq embark--type embark-collect-zebra-types)
         (embark-collect-zebra-minor-mode)))
 
@@ -3160,7 +3160,7 @@ The parameter KIND should be either `embark-export' or `embark-collect'."
   (interactive)
   (if embark--rerun-function
       (funcall embark--rerun-function)
-    (user-error "No function to rerun collect or export found.?")))
+    (user-error "No function to rerun collect or export found")))
 
 ;;;###autoload
 (defun embark-export ()
