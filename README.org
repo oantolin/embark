@@ -1024,13 +1024,7 @@ default.
 
 Besides those exporters and candidate collectors, the =embark-consult=
 package provides many subtle tweaks and small integrations between
-Embark and Consult. For example, if you run =embark-collect= from any of
-the the =consult-yank= family of commands, you'll see the Embark Collect
-buffers has full multi-line kill-ring entries with zebra stripes, so
-you can easily tell where they start and end.
-
-Some examples of little tweaks provided by =embark-consult= to the
-behavior of Consult commands when used as Embark actions are:
+Embark and Consult. Some examples are:
 
 - The asynchronous search commands will start in the directory
   associated to the Embark target if that target is a file, buffer,
