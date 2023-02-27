@@ -1186,6 +1186,7 @@ first line of the documentation string; otherwise use the word
   (concat ; fresh copy, so we can freely add text properties
    (cond
     ((stringp (car-safe cmd)) (car cmd))
+    ((eq (car-safe cmd) 'menu-item) (cadr cmd))
     ((keymapp cmd)
      (propertize (if (symbolp cmd) (format "+%s" cmd) "<keymap>")
                  'face 'embark-keymap))
@@ -1249,7 +1250,8 @@ If NESTED is non-nil subkeymaps are not flattened."
                            (and (not (keymapp cmd))
                                 (not (functionp cmd))
                                 (consp cmd)
-                                (not (stringp (car cmd))))
+                                (not (or (eq (car cmd) 'menu-item)
+                                         (stringp (car cmd)))))
                            (memq cmd '(embark-keymap-help
                                        negative-argument digit-argument)))
                    collect (list name
@@ -1258,9 +1260,15 @@ If NESTED is non-nil subkeymaps are not flattened."
                                    'keymap)
                                   ((and (consp cmd) (stringp (car cmd)))
                                    (cdr cmd))
+                                  ((and (consp cmd) (eq (car cmd) 'menu-item))
+                                   (caddr cmd))
                                   (t cmd))
                                  key
-                                 (concat (key-description key)))))
+                                 (concat
+                                  (if (and (consp cmd)
+                                           (eq (car cmd) 'menu-item))
+                                      "menu-item"
+                                    (key-description key))))))
          (width (cl-loop for (_name _cmd _key desc) in commands
                          maximize (length desc)))
          (def)
