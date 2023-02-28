@@ -350,7 +350,7 @@ bound to i."
   "l" #'org-babel-load-in-session
   "'" #'org-edit-special)
 
-(dolist (motion '(org-babel-next-src-blockorg-babel-previous-src-block))
+(dolist (motion '(org-babel-next-src-block org-babel-previous-src-block))
   (add-to-list 'embark-repeat-actions motion))
 
 (add-to-list 'embark-keymap-alist '(org-src-block . embark-org-src-block-map))
