@@ -7,7 +7,7 @@
 ;; Keywords: convenience
 ;; Version: 0.21.1
 ;; Homepage: https://github.com/oantolin/embark
-;; Package-Requires: ((emacs "27.1") (compat "29.1.3.4"))
+;; Package-Requires: ((emacs "27.1") (compat "29.1.4.0"))
 
 ;; This file is part of GNU Emacs.
 
@@ -236,7 +236,7 @@ prompts for an action with completion."
 
 The key must be either nil or a string.  The
 string must be accepted by `key-valid-p'."
-  :type '(choice string (const :tag "None" nil)))
+  :type '(choice key (const :tag "None" nil)))
 
 (defcustom embark-cycle-key nil
   "Key used for `embark-cycle'.
@@ -244,7 +244,7 @@ string must be accepted by `key-valid-p'."
 If the key is set to nil it defaults to the global binding of
 `embark-act'.  The key must be a string which is accepted by
 `key-valid-p'."
-  :type '(choice string (const :tag "Use embark-act key" nil)))
+  :type '(choice key (const :tag "Use embark-act key" nil)))
 
 (defcustom embark-help-key "C-h"
   "Key used for help.
@@ -254,7 +254,7 @@ string must be accepted by `key-valid-p'."
   :type '(choice (const "C-h")
                  (const "?")
                  (const :tag "None" nil)
-                 string))
+                 key))
 
 (defcustom embark-keybinding-repeat
   (propertize "*" 'face 'embark-keybinding-repeat)
