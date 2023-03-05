@@ -321,11 +321,10 @@ bound to i."
 
 ;; The reason for this is left as an exercise to the reader.
 ;; Solution: Na ryvfc gnetrg znl cebzcg gur hfre sbe fbzrguvat!
-(push 'embark--ignore-target
-      (alist-get 'org-open-at-point embark-target-injection-hooks))
-
-(push 'embark--ignore-target
-      (alist-get 'org-insert-link embark-target-injection-hooks))
+(cl-pushnew 'embark--ignore-target
+            (alist-get 'org-open-at-point embark-target-injection-hooks))
+(cl-pushnew 'embark--ignore-target
+            (alist-get 'org-insert-link embark-target-injection-hooks))
 
 (add-to-list 'embark-keymap-alist
              '(org-link embark-org-link-map))
