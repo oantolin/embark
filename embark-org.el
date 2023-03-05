@@ -351,7 +351,8 @@ bound to i."
   "t" #'org-babel-tangle
   "s" #'org-babel-switch-to-session
   "l" #'org-babel-load-in-session
-  "'" #'org-edit-special)
+  "'" #'org-edit-special
+  "N" #'org-narrow-to-block)
 
 (dolist (motion '(org-babel-next-src-block org-babel-previous-src-block))
   (add-to-list 'embark-repeat-actions motion))
