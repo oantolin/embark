@@ -2473,13 +2473,6 @@ candidates and whose `cdr' is the list of candidates, each of
 which should be a string."
   :type 'hook)
 
-(defcustom embark-collect-zebra-types
-  '(kill-ring)
-  "List of completion types for which zebra stripes should be activated.
-The candidates of the given types are displayed with zebra stripes
-in Embark Collect buffers."
-  :type '(repeat symbol))
-
 (defcustom embark-exporters-alist
   '((buffer . embark-export-ibuffer)
     (file . embark-export-dired)
@@ -2527,24 +2520,12 @@ default is `embark-collect'"
   "Format string used for the group title in Embark Collect buffers."
   :type 'string)
 
-(defface embark-collect-zebra-highlight
-  '((default :extend t)
-    (((class color) (min-colors 88) (background light))
-     :background "#efefef")
-    (((class color) (min-colors 88) (background dark))
-     :background "#242424"))
-  "Face to highlight alternate rows in Embark Collect zebra minor mode.")
-
 (defface embark-collect-annotation '((t :inherit completions-annotations))
   "Face for annotations in Embark Collect.
 This is only used for annotation that are not already fontified.")
 
 (defface embark-collect-marked '((t (:inherit warning)))
   "Face for marked candidates in an Embark Collect buffer.")
-
-(defcustom embark-collect-post-revert-hook nil
-  "Hook run after an Embark Collect buffer is updated."
-  :type 'hook)
 
 (defvar-local embark--rerun-function nil
   "Function to rerun the collect or export that made the current buffer.")
@@ -2788,7 +2769,6 @@ If NESTED is non-nil subkeymaps are not flattened."
   "a" #'embark-act
   "A" #'embark-act-all
   "M-a" #'embark-collect-direct-action-minor-mode
-  "z" #'embark-collect-zebra-minor-mode
   "E" #'embark-export
   "t" #'embark-collect-toggle-marks
   "m" #'embark-collect-mark
@@ -2825,47 +2805,6 @@ restored.  You can then interact normally with the command,
 perhaps editing the minibuffer contents, and, if you wish, you
 can rerun `embark-collect' to get an updated buffer."
     :interactive nil :abbrev-table nil :syntax-table nil)
-
-(defun embark-collect--revert (&rest _)
-  "Revert function of `embark-collect-mode' buffers."
-  (tabulated-list-revert)
-  (run-hooks 'embark-collect-post-revert-hook))
-
-(defun embark-collect--remove-zebra-stripes ()
-  "Remove highlighting of alternate rows."
-  (remove-overlays nil nil 'face 'embark-collect-zebra-highlight))
-
-(defun embark-collect--add-zebra-stripes ()
-  "Highlight alternate rows with the `embark-collect-zebra-highlight' face."
-  (embark-collect--remove-zebra-stripes)
-  (save-excursion
-    (goto-char (point-min))
-    (when (overlays-at (point)) (forward-line))
-    (while (not (eobp))
-      (condition-case nil
-          (forward-button 1)
-        (user-error (goto-char (point-max))))
-      (unless (eobp)
-        (let ((pt (point)))
-          (condition-case nil
-              (forward-button 1)
-            (user-error (goto-char (point-max))))
-          (let ((stripe (make-overlay pt (point))))
-            (overlay-put stripe 'priority -100) ; below hl-line-mode's -50
-            (overlay-put stripe 'face 'embark-collect-zebra-highlight)))))))
-
-(define-minor-mode embark-collect-zebra-minor-mode
-  "Minor mode to highlight alternate rows in an Embark Collect buffer.
-This is specially useful to tell where multi-line entries begin and end."
-  :init-value nil
-  (if embark-collect-zebra-minor-mode
-      (progn
-        (add-hook 'embark-collect-post-revert-hook
-                  #'embark-collect--add-zebra-stripes nil t)
-        (embark-collect--add-zebra-stripes))
-    (remove-hook 'embark-collect-post-revert-hook
-                 #'embark-collect--add-zebra-stripes t)
-    (embark-collect--remove-zebra-stripes)))
 
 (defun embark-collect--metadatum (type metadatum)
   "Get METADATUM for current buffer's candidates.
@@ -3041,16 +2980,13 @@ buffer has a unique name."
     (with-current-buffer buffer
       (setq tabulated-list-use-header-line nil ; default to no header
             header-line-format nil
-            tabulated-list--header-string nil
-            revert-buffer-function #'embark-collect--revert)
-      (setq embark--rerun-function rerun)
-      (when (memq embark--type embark-collect-zebra-types)
-        (embark-collect-zebra-minor-mode)))
+            tabulated-list--header-string nil)
+      (setq embark--rerun-function rerun))
 
     (let ((window (display-buffer buffer)))
       (with-selected-window window
         (run-mode-hooks)
-        (embark-collect--revert))
+        (tabulated-list-revert))
       (set-window-dedicated-p window t)
       buffer)))
 
