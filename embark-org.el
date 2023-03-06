@@ -360,7 +360,8 @@ bound to i."
   "R" #'org-refile
   "a" #'org-archive-subtree-default-with-confirmation
   "h" #'org-insert-heading-respect-content
-  "H" #'org-insert-todo-heading-respect-content)
+  "H" #'org-insert-todo-heading-respect-content
+  "L" #'org-store-link)
 
 (dolist (cmd '(org-todo org-metaright org-metaleft org-metaup org-metadown
                org-shiftmetaleft org-shiftmetaright org-cycle org-shifttab))
