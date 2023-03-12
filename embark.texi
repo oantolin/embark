@@ -942,7 +942,6 @@ Embark ask you for confirmation:
 @item
 You can write your own command that prompts for confirmation and
 use that instead of @samp{tab-bar-close-tab-by-name} in the above keymap:
-@end enumerate
 @lisp
 (defun my-confirm-close-tab-by-name (tab)
   (interactive "sTab to close: ")
@@ -954,6 +953,7 @@ Notice that this is a command you can also use directly from @samp{M-x}
 independently of Embark. Using it from @samp{M-x} leaves something to be
 desired, though, since you don't get completion for the tab names.
 You can fix this if you wish as described in the previous section.
+@end enumerate
 @end enumerate
 
 @node New target example in regular buffers - short Wikipedia links
@@ -985,7 +985,7 @@ documentation for @samp{embark-target-finders} for details.)
   (save-excursion
     (let* ((start (progn (skip-chars-backward "[:alnum:]_:") (point)))
            (end (progn (skip-chars-forward "[:alnum:]_:") (point)))
-           (str (buffer-substring-no-properties beg end)))
+           (str (buffer-substring-no-properties start end)))
       (save-match-data
         (when (string-match "wikipedia:\\([[:alnum:]_]+\\)" str)
           `(url
