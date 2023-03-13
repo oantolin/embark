@@ -206,17 +206,8 @@ This function is meant to be added to `embark-collect-mode-hook'."
 
 (defun embark-consult-goto-grep (location)
   "Go to LOCATION, which should be a string with a grep match."
-  ;; Actions are run in the target window, so in this case whatever
-  ;; window was selected when the command that produced the
-  ;; xref-location candidates ran.  In particular, we inherit the
-  ;; default-directory of the buffer in that window, but we really
-  ;; want the default-directory of the minibuffer or collect window we
-  ;; call the action from, which is the previous window, since the
-  ;; location is given relative to that directory.
-  (let ((default-directory (with-selected-window (previous-window)
-                             default-directory)))
-    (consult--jump (consult--grep-position location))
-    (pulse-momentary-highlight-one-line (point))))
+  (consult--jump (consult--grep-position location))
+  (pulse-momentary-highlight-one-line (point)))
 
 (setf (alist-get 'consult-grep embark-default-action-overrides)
       #'embark-consult-goto-grep)
