@@ -387,6 +387,7 @@ the key :always are executed always."
     (forward-sentence embark--end-of-target)
     (backward-sentence embark--beginning-of-target)
     (backward-paragraph embark--beginning-of-target)
+    (embark-insert embark--end-of-target)
     ;; commands we want to be able to jump back from
     ;; (embark-find-definition achieves this by calling
     ;; xref-find-definitions which pushes the markers itself)
