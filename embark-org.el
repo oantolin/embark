@@ -371,11 +371,24 @@ bound to i."
 
 ;;; Source blocks and babel calls
 
+(defun embark-org-copy-block-contents ()
+  "Save contents of source block at point to the `kill-ring'."
+  (interactive)
+  (when (org-in-src-block-p)
+    (let ((contents (nth 2 (org-src--contents-area (org-element-at-point)))))
+    (with-temp-buffer
+      (insert contents)
+      (org-do-remove-indentation)
+      (kill-new (buffer-substring (point-min) (point-max)))))))
+
 (defvar-keymap embark-org-src-block-map
   :doc "Keymap for actions on Org source blocks."
   :parent embark-general-map
   "RET" #'org-babel-execute-src-block
-  "c" #'org-babel-check-src-block
+  "SPC" #'org-babel-mark-block
+  "TAB" #'org-indent-block
+  "c" #'embark-org-copy-block-contents
+  "h" #'org-babel-check-src-block
   "k" #'org-babel-remove-result-one-or-many
   "p" #'org-babel-previous-src-block
   "n" #'org-babel-next-src-block
@@ -383,7 +396,18 @@ bound to i."
   "s" #'org-babel-switch-to-session
   "l" #'org-babel-load-in-session
   "'" #'org-edit-special
+  "/" #'org-babel-demarcate-block
   "N" #'org-narrow-to-block)
+
+(cl-defun embark-org--at-block-head (&rest rest &key run &allow-other-keys)
+  "Save excursion and RUN the action at the head of the current block.
+Applies RUN to the REST of the arguments."
+  (save-excursion
+    (org-babel-goto-src-block-head)
+    (apply run rest)))
+
+(cl-pushnew #'embark-org--at-block-head
+            (alist-get 'org-indent-block embark-around-action-hooks))
 
 (dolist (motion '(org-babel-next-src-block org-babel-previous-src-block))
   (add-to-list 'embark-repeat-actions motion))
