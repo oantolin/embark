@@ -367,6 +367,9 @@ bound to i."
                org-shiftmetaleft org-shiftmetaright org-cycle org-shifttab))
   (cl-pushnew cmd embark-repeat-actions))
 
+(cl-pushnew 'embark--ignore-target
+            (alist-get 'org-set-tags-command embark-target-injection-hooks))
+
 (cl-pushnew '(org-heading . embark-org-heading-map) embark-keymap-alist)
 
 ;;; Source blocks and babel calls
