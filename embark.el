@@ -1904,6 +1904,7 @@ minibuffer before executing the action."
     (let* ((command embark--command)
            (prefix prefix-arg)
            (action-window (embark--target-window t))
+           (directory default-directory)
            (inject
             (lambda ()
               (let ((contents (minibuffer-contents)))
@@ -1937,7 +1938,8 @@ minibuffer before executing the action."
                                 (prefix-arg prefix)
                                 ;; the next two avoid mouse dialogs
                                 (use-dialog-box nil)
-                                (last-nonmenu-event 13))
+                                (last-nonmenu-event 13)
+                                (default-directory directory))
                             (embark--run-action-hooks embark-pre-action-hooks
                                                       action target quit)
                             (minibuffer-with-setup-hook inject
