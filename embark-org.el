@@ -104,8 +104,9 @@
      for elt = (org-element-lineage (org-element-context) embark-org--types t)
      then (org-element-lineage elt embark-org--types)
      while elt
-     for begin = (org-element-property :begin elt)
-     for end = (org-element-property :end elt)
+     ;; clip bounds to narrowed portion of buffer
+     for begin = (max (org-element-property :begin elt) (point-min))
+     for end = (min (org-element-property :end elt) (point-max))
      for target = (buffer-substring begin end)
       ;; Adjust table-cell to exclude final |. (Why is that there?)
       ;; Note: We are not doing this is an embark transformer because we
