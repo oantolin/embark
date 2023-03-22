@@ -3118,17 +3118,17 @@ buffer."
                         (alist-get t embark-exporters-alist))))
       (if (eq exporter 'embark-collect)
           (embark-collect)
-        (let ((after embark-after-export-hook)
-              (cmd embark--command)
-              (name (embark--descriptive-buffer-name 'export))
-              (rerun (embark--rerun-function #'embark-export))
-              (buffer (save-excursion
-                        (funcall exporter candidates)
-                        (current-buffer))))
+        (let* ((after embark-after-export-hook)
+               (cmd embark--command)
+               (name (embark--descriptive-buffer-name 'export))
+               (rerun (embark--rerun-function #'embark-export))
+               (buffer (save-excursion
+                         (funcall exporter candidates)
+                         (rename-buffer name t)
+                         (current-buffer))))
           (embark--quit-and-run
            (lambda ()
              (pop-to-buffer buffer)
-             (rename-buffer name t)
              (setq embark--rerun-function rerun)
              (use-local-map
               (make-composed-keymap
