@@ -1958,6 +1958,7 @@ minibuffer before executing the action."
                       (when dedicate (set-window-dedicated-p dedicate nil)))
                     (unless (eq final-window action-window)
                       (select-window final-window))))
+              ;; TODO uniformize the command and non-interactive cases?
               (let ((argument
                      (if multi
                          (or (plist-get target :candidates) ; embark-act-all
@@ -1968,7 +1969,8 @@ minibuffer before executing the action."
                     (embark--run-action-hooks embark-pre-action-hooks
                                               action target quit)
                     (unwind-protect
-                        (let ((current-prefix-arg prefix))
+                        (let ((current-prefix-arg prefix)
+                              (default-directory directory))
                           (funcall action argument))
                       (embark--run-action-hooks embark-post-action-hooks
                                                 action target quit))))))))
