@@ -317,7 +317,7 @@ an entry in this list.
 For example, if you run `delete-file' the default action for its
 completion candidates is `delete-file' itself.  You may prefer to
 make `find-file' the default action for all files, even if they
-wre obtained from a `delete-file' prompt.  In that case you can
+were obtained from a `delete-file' prompt.  In that case you can
 configure that by adding an entry to this variable pairing `file'
 with `find-file'.
 
@@ -473,11 +473,11 @@ arguments and more details."
     (embark-eval-replace embark--mark-target))
   "Alist associating commands with post-action hooks.
 The hooks are run instead of the embarked upon action.  The hook
-can decide whethether or not to run the action or it can run it
+can decide whether or not to run the action or it can run it
 in some special environment, like inside a let-binding or inside
 `save-excursion'.  Each hook is called with keyword argument :run
 providing a function encapsulating the following around hooks and
-the action; the hook additionally recieves the keyword arguments
+the action; the hook additionally receives the keyword arguments
 used for other types of action hooks, for more details see
 `embark-target-injection-hooks'."
   :type '(alist :key-type
@@ -488,7 +488,7 @@ used for other types of action hooks, for more details see
 
 (defcustom embark-multitarget-actions '(embark-insert embark-copy-as-kill)
   "Commands for which `embark-act-all' should pass a list of targets.
-Normally `embark-act-all' runs the same action on each candiate
+Normally `embark-act-all' runs the same action on each candidate
 separately, but when a command included in this variable's value
 is used as an action, `embark-act-all' will instead call it
 non-interactively with a single argument: the list of all
@@ -529,7 +529,7 @@ looks for targets again, it will start the target cycle at the
 same type as the previously acted upon target; that is, you
 \"don't loose your place in the target cycle\".
 
-Sometimes, however, you'll want to prioritze a different type of
+Sometimes, however, you'll want to prioritize a different type of
 target to continue acting on.  The main example of this that if
 you use a marking command as an action, you almost always want to
 act on the region next.  For those cases, in addition to
@@ -1235,7 +1235,7 @@ first line of the documentation string; otherwise use the word
 When the return value is non-nil it will be the desired starting
 point of the next target cycle or t to indicate the default,
 namely that the target cycle for the next action should begin at
-the tye of the current target."
+the type of the current target."
   (or (cdr (assq action embark-repeat-actions))
       (and (memq action embark-repeat-actions) t)))
 
@@ -1374,7 +1374,7 @@ Embark comes with five such indicators:
 
 - `embark-minimal-indicator', which does not display any
   information about keybindings, but does display types and
-  values of acton targets in the echo area or minibuffer prompt,
+  values of action targets in the echo area or minibuffer prompt,
 
 - `embark-verbose-indicator', which pops up a buffer containing
   detailed information including key bindings and the first line
@@ -1389,7 +1389,7 @@ Embark comes with five such indicators:
   at point.
 
 - `embark-isearch-highlight-indicator', which when the target at
-  point is an indentifier or symbol, lazily highlights all
+  point is an identifier or symbol, lazily highlights all
   occurrences of it.
 
 The protocol for indicator functions is as follows:
@@ -1607,7 +1607,7 @@ The arguments are the new KEYMAP and TARGETS."
 
 (defun embark-verbose-indicator ()
   "Indicator that displays a table of key bindings in a buffer.
-The default display includes the type and vaue of the current
+The default display includes the type and value of the current
 target, the list of other target types, and a table of key
 bindings, actions and the first line of their docstrings.
 
@@ -1673,7 +1673,7 @@ further user intervention."
       ;; Always cancel the timer.
       ;; 1. When updating, cancel timer, since the user has pressed
       ;;    a key before the timer elapsed.
-      ;; 2. For cleanup, the timer must also be cancelled.
+      ;; 2. For cleanup, the timer must also be canceled.
       (when vtimer
         (cancel-timer vtimer)
         (setq vtimer nil))
@@ -2330,7 +2330,7 @@ identifiers or symbols.  For those it uses `isearch''s lazy
 highlighting feature to highlight all occurrences of the target in
 the buffer.  This indicator is best used in conjunction with
 `embark-highlight-indicator': by using them both you get the
-target and the other occurrences of it higlighted in different
+target and the other occurrences of it highlighted in different
 colors."
   (lambda (&optional _keymap targets _prefix)
     (if (and (not (minibufferp))
@@ -2358,7 +2358,7 @@ The target of the action is chosen by `embark-target-finders'.
 
 If the target comes from minibuffer completion, then the default
 action is the command that opened the minibuffer in the first
-place, unless overidden by `embark-default-action-overrides'.
+place, unless overridden by `embark-default-action-overrides'.
 
 For targets that do not come from minibuffer completion
 \(typically some thing at point in a regular buffer) and whose
@@ -2789,7 +2789,7 @@ If NESTED is non-nil subkeymaps are not flattened."
   "<remap> <revert-buffer>" #'embark-rerun-collect-or-export)
 
 (defconst embark-collect--outline-string (string #x210000)
-  "Special string used for outine headings in Embark Collect buffers.
+  "Special string used for outline headings in Embark Collect buffers.
 Chosen to be extremely unlikely to appear in a candidate.")
 
 (define-derived-mode embark-collect-mode tabulated-list-mode "Embark Collect"
@@ -3418,7 +3418,7 @@ its own."
 (autoload 'dired-jump "dired-x" nil t)
 
 (defun embark-dired-jump (file &optional other-window)
-  "Open Dired buffer in directory containg FILE and move to its line.
+  "Open Dired buffer in directory containing FILE and move to its line.
 When called with a prefix argument OTHER-WINDOW, open Dired in other window."
   (interactive "fJump to Dired file: \nP")
   (dired-jump other-window file))
@@ -3549,7 +3549,7 @@ The insert path is relative to `default-directory'."
 (defun embark-shell-command-on-buffer (buffer command &optional replace)
   "Run shell COMMAND on contents of BUFFER.
 Called with \\[universal-argument], replace contents of buffer
-with command output.  For replacement behaviour see
+with command output.  For replacement behavior see
 `shell-command-dont-erase-buffer' setting."
   (interactive
    (list
@@ -3592,7 +3592,7 @@ with command output.  For replacement behaviour see
       (kill-buffer buf))))
 
 (defun embark-save-unicode-character (char)
-  "Save unicode character CHAR to kill ring."
+  "Save Unicode character CHAR to kill ring."
   (interactive
    (list (read-char-by-name "Insert character  (Unicode name or hex): ")))
   (kill-new (format "%c" char)))
@@ -3826,7 +3826,7 @@ the REST of the arguments."
 (cl-defun embark--confirm (&key action target &allow-other-keys)
   "Ask for confirmation before running the ACTION on the TARGET."
   (unless (y-or-n-p (format "Run %s on %s? " action target))
-    (user-error "Cancelled")))
+    (user-error "Canceled")))
 
 (defun embark--associated-directory (target type)
   "Return directory associated to TARGET of given TYPE.
@@ -4108,7 +4108,7 @@ This simply calls RUN with the REST of its arguments inside
   "o" #'checkdoc-defun
   "N" #'narrow-to-defun)
 
-;; Use quoted symbols to avoid bytecompiler warnings.
+;; Use quoted symbols to avoid byte-compiler warnings.
 (defvar-keymap embark-heading-map
   :doc "Keymap for Embark heading actions."
   :parent embark-general-map
@@ -4216,7 +4216,7 @@ This simply calls RUN with the REST of its arguments inside
   "$" #'eshell)
 
 (defvar-keymap embark-unicode-name-map
-  :doc "Keymap for Embark unicode name actions."
+  :doc "Keymap for Embark Unicode name actions."
   :parent embark-general-map
   "RET" #'insert-char
   "I" #'insert-char
