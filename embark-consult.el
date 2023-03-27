@@ -334,6 +334,8 @@ This function is meant to be added to `embark-collect-mode-hook'."
 
 (map-keymap
  (lambda (_key cmd)
+   (cl-pushnew 'embark--unmark-target
+               (alist-get cmd embark-pre-action-hooks))
    (cl-pushnew 'embark--allow-edit
                (alist-get cmd embark-target-injection-hooks)))
  embark-consult-search-map)
