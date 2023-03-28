@@ -340,9 +340,11 @@ bound to i."
 
 ;;; Org headings
 
-(defun embark-org--refine-heading (_type target)
-  "Refine type of heading TARGET in Org buffers."
-  (cons 'org-heading target))
+(defun embark-org--refine-heading (type target)
+  "Refine TYPE of heading TARGET in Org buffers."
+  (cons
+   (if (derived-mode-p 'org-mode) 'org-heading type)
+   target))
 
 (add-to-list 'embark-transformer-alist '(heading . embark-org--refine-heading))
 
