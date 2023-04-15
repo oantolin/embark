@@ -2268,7 +2268,7 @@ ARG is the prefix argument."
           (or (cl-mapcar
                (lambda (cand orig-cand)
                  (list :type type :target cand
-                       :bounds (get-text-property 0 'embark-bounds orig-cand)
+                       :bounds (embark--selected-target-bounds orig-cand)
                        :orig-type orig-type :orig-target orig-cand))
                (plist-get transformed :candidates)
                (plist-get transformed :orig-candidates))
@@ -3196,13 +3196,19 @@ PRED is a predicate function used to filter the items."
 
 ;;; Multiple target selection
 
-(defface embark-selected '((t (:inherit dired-marked)))
+(defface embark-selected '((t (:inherit match)))
   "Face for selected candidates.")
 
 (defvar-local embark--selection nil)
 
 (defun embark--report-selection ()
+  "Report how many targets are currently selected in the echo area."
   (message "%d targets selected." (length embark--selection)))
+
+(defun embark--selected-target-bounds (target)
+  "Return the bounds of the selected TARGET."
+  (when-let ((overlay (get-text-property 0 'embark-selection target)))
+    (cons (overlay-start overlay) (overlay-end overlay))))
 
 (cl-defun embark--toggle-select (&key target type bounds &allow-other-keys)
   "Add or remove TARGET of given TYPE to the selection.
@@ -3212,25 +3218,21 @@ If BOUNDS are given, also highlight the target when selecting it."
              (lambda (cand)
                (and (equal cand target)
                     (eq (car (get-text-property 0 'multi-category cand)) type)
-                    (equal (get-text-property 0 'embark-bounds cand) bounds)
+                    (equal (embark--selected-target-bounds cand) bounds)
                     cand))
              embark--selection)))
       (progn
         (setq embark--selection (delq existing embark--selection))
-        (when-let ((overlay (get-text-property 0 'embark-overlay existing)))
+        (when-let ((overlay (get-text-property 0 'embark-selection existing)))
           (delete-overlay overlay)))
     (let ((full-target (concat target)) overlay)
       (when bounds
         (setq overlay (make-overlay (car bounds) (cdr bounds)))
         (overlay-put overlay 'face 'embark-selected)
-        (overlay-put overlay 'priority 1001)
-        (add-text-properties 0 (length target)
-                             `(embark-bounds ,bounds)
-                             full-target))
+        (overlay-put overlay 'priority 1001))
       (add-text-properties 0 (length target)
                            `(multi-category ,(cons type target)
-                             embark-bounds ,bounds
-                             embark-overlay ,overlay)
+                             embark-selection ,overlay)
                            full-target)
       (push full-target embark--selection)))
   (embark--report-selection))
@@ -3243,7 +3245,7 @@ You can act on all selected targets at once with `embark-act-all'.")
   "Deselect all selected targets in the buffer."
   (interactive)
   (dolist (target embark--selection)
-    (when-let ((overlay (get-text-property 0 'embark-overlay target)))
+    (when-let ((overlay (get-text-property 0 'embark-selection target)))
       (delete-overlay overlay)))
   (setq embark--selection nil)
   (embark--report-selection))
