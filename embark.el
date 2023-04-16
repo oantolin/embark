@@ -2215,36 +2215,40 @@ target."
                                0)))))))))
       (mapc #'funcall indicators))))
 
-(defun embark--maybe-transform-candidates ()
+(defun embark--maybe-transform-candidates (&optional type candidates)
   "Collect candidates and see if they all transform to the same type.
 Return a plist with keys `:type', `:orig-type', `:candidates', and
-`:orig-candidates'."
-  (pcase-let ((`(,type . ,candidates)
-               (run-hook-with-args-until-success 'embark-candidate-collectors)))
-    (when (eq type 'file)
-      (let ((dir (embark--default-directory)))
-        (setq candidates
-              (mapcar (lambda (cand)
-                        (abbreviate-file-name (expand-file-name cand dir)))
-                      candidates))))
-    (append
-     (list :orig-type type :orig-candidates candidates)
-     (or (when candidates
-           (when-let ((transformer (alist-get type embark-transformer-alist)))
-             (pcase-let* ((`(,new-type . ,first-cand)
-                           (funcall transformer type (car candidates))))
-               (let ((new-candidates (list first-cand)))
-                 (when (cl-every
-                        (lambda (cand)
-                          (pcase-let ((`(,t-type . ,t-cand)
-                                       (funcall transformer type cand)))
-                            (when (eq t-type new-type)
-                              (push t-cand new-candidates)
-                              t)))
-                        (cdr candidates))
-                   (list :type new-type
-                         :candidates (nreverse new-candidates)))))))
-         (list :type type :candidates candidates)))))
+`:orig-candidates'.
+
+If neither TYPE nor CANDIDATES are given, get them by running the
+`embark-candidate-collectors'."
+  (unless (or type candidates)
+    (let ((t+c (run-hook-with-args-until-success 'embark-candidate-collectors)))
+      (setq type (car t+c) candidates (cdr t+c))))
+  (when (eq type 'file)
+    (let ((dir (embark--default-directory)))
+      (setq candidates
+            (mapcar (lambda (cand)
+                      (abbreviate-file-name (expand-file-name cand dir)))
+                    candidates))))
+  (append
+   (list :orig-type type :orig-candidates candidates)
+   (or (when candidates
+         (when-let ((transformer (alist-get type embark-transformer-alist)))
+           (pcase-let* ((`(,new-type . ,first-cand)
+                         (funcall transformer type (car candidates))))
+             (let ((new-candidates (list first-cand)))
+               (when (cl-every
+                      (lambda (cand)
+                        (pcase-let ((`(,t-type . ,t-cand)
+                                     (funcall transformer type cand)))
+                          (when (eq t-type new-type)
+                            (push t-cand new-candidates)
+                            t)))
+                      (cdr candidates))
+                 (list :type new-type
+                       :candidates (nreverse new-candidates)))))))
+       (list :type type :candidates candidates))))
 
 ;;;###autoload
 (defun embark-act-all (&optional arg)
@@ -3263,10 +3267,10 @@ You can act on all selected targets at once with `embark-act-all'.")
 (defun embark-selected-candidates ()
   "Return currently selected candidates in the buffer."
   (when embark--selection
-    (cons (if (minibufferp)
-              (completion-metadata-get (embark--metadata) 'category)
-            'multi-category)
-          (reverse embark--selection))))
+    (let ((transformed (embark--maybe-transform-candidates
+                        'multi-category (reverse embark--selection))))
+      (cons (plist-get transformed :type)
+            (plist-get transformed :candidates)))))
 
 ;;; Integration with external packages, mostly completion UIs
 
