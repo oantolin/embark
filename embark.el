@@ -632,10 +632,13 @@ Meant to be be added to `completion-setup-hook'."
   ;; when completion-setup-hook hook runs, the *Completions* buffer is
   ;; available in the variable standard-output
   (embark--cache-info standard-output)
-  (when (minibufferp completion-reference-buffer)
-    (with-current-buffer standard-output
+  (with-current-buffer standard-output
+    (when (minibufferp completion-reference-buffer)
       (setq embark--type
-            (completion-metadata-get (embark--metadata) 'category)))))
+            (completion-metadata-get
+             (with-current-buffer completion-reference-buffer
+               (embark--metadata))
+             'category)))))
 
 ;; We have to add this *after* completion-setup-function because that's
 ;; when the buffer is put in completion-list-mode and turning the mode
