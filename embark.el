@@ -1901,7 +1901,6 @@ minibuffer before executing the action."
                      embark-live         ; target buffer
                      embark-export
                      embark-toggle-select
-                     embark-deselect-all
                      embark-act-all))
       (progn
         (embark--run-action-hooks embark-pre-action-hooks action target quit)
@@ -2774,7 +2773,6 @@ If NESTED is non-nil subkeymaps are not flattened."
   "A" #'embark-act-all
   "M-a" #'embark-collect-direct-action-minor-mode
   "E" #'embark-export
-  ;; marks t m u U
   "s" #'isearch-forward
   "n" #'forward-button
   "p" #'backward-button
@@ -3206,7 +3204,10 @@ PRED is a predicate function used to filter the items."
 (defface embark-selected '((t (:inherit match)))
   "Face for selected candidates.")
 
-(defvar-local embark--selection nil)
+(defvar-local embark--selection nil
+  "Buffer local list of selected targets.
+Add or remove elements to this list using the
+`embark-toggle-select' action.")
 
 (defun embark--report-selection ()
   "Report how many targets are currently selected in the echo area."
@@ -3256,11 +3257,6 @@ If BOUNDS are given, also highlight the target when selecting it."
   "Add or remove the target from the current buffer's selection.
 If called with a prefix argument instead deselect all targets.
 You can act on all selected targets at once with `embark-act-all'.")
-
-(defun embark-collect-toggle-selection ()
-  "Toggle selection: selected candidates become deselected, and vice versa."
-  (interactive)
-  (error "Not implemented yet"))
 
 (defun embark-selected-candidates ()
   "Return currently selected candidates in the buffer."
