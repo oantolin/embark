@@ -217,6 +217,30 @@ normally with the command, perhaps editing the minibuffer contents,
 and, if you wish, you can rerun =embark-collect= or =embark-export= to get
 an updated buffer.
 
+*** Selecting some targets to make an ad hoc candidate set
+
+The commands for working with sets of candidates just described,
+namely =embark-act-all=, =embark-export= and =embark-collect= by default
+wokr with all candidates defined in the current context. For example,
+in the minibuffer they operate on all currently completion candidates,
+or in a dired buffer they work on all marked files (or all files if
+none are marked). Embark also has a notion of /selection/, where you can
+accumulate an ad hoc list of targets for these commands to work on.
+
+The selection is controlled by using the =embark-toggle-select= action
+(which must be run as an action through =embark-act=), bound to =SPC= in
+=embark-general-map= so that it is always available. Calling this action
+on a target toggles its membership in the current buffer's Embark
+selection; that is, it adds it to selection if not selected and
+removes it from the selection if it was selected. Whenever the
+selection for a buffer is non-empty, the commands =embark-act-all=,
+=embark-export= and =embark-collect= will act on the selection.
+
+If you call =embark-toggle-select= with a prefix argument, instead of
+toggling the current target's selection status, it will empty the
+selection. So, for example, if you bind =embark-act= to =C-.=, then =C-.
+C-u SPC= clears the selection.
+
 *** =embark-live= a live-updating variant of =embark-collect=
 
 Finally, there is also an =embark-live= variant of the =embark-collect=
