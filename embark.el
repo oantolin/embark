@@ -3218,7 +3218,7 @@ PRED is a predicate function used to filter the items."
 
 (defun embark--selected-target-bounds (target)
   "Return the bounds of the selected TARGET."
-  (when-let ((overlay (get-text-property 0 'embark-selection target)))
+  (when-let ((overlay (get-text-property 0 'embark--selection target)))
     (cons (overlay-start overlay) (overlay-end overlay))))
 
 (cl-defun embark--toggle-select
@@ -3230,7 +3230,7 @@ function looks for ORIG-TARGET in the selection."
   (if prefix-arg
       (progn
         (dolist (target embark--selection)
-          (when-let ((overlay (get-text-property 0 'embark-selection target)))
+          (when-let ((overlay (get-text-property 0 'embark--selection target)))
             (delete-overlay overlay)))
         (setq embark--selection nil))
     (if-let ((existing
@@ -3243,7 +3243,7 @@ function looks for ORIG-TARGET in the selection."
                embark--selection)))
         (progn
           (setq embark--selection (delq existing embark--selection))
-          (when-let ((overlay (get-text-property 0 'embark-selection existing)))
+          (when-let ((overlay (get-text-property 0 'embark--selection existing)))
             (delete-overlay overlay)))
       (let ((full-target (copy-sequence orig-target)) overlay)
         (when bounds
@@ -3252,7 +3252,7 @@ function looks for ORIG-TARGET in the selection."
           (overlay-put overlay 'priority 1001))
         (add-text-properties 0 (length target)
                              `(multi-category ,(cons type target)
-                                              embark-selection ,overlay)
+                                              embark--selection ,overlay)
                              full-target)
         (push full-target embark--selection))))
   (embark--report-selection))
