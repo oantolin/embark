@@ -3217,43 +3217,43 @@ PRED is a predicate function used to filter the items."
 (cl-defun embark--toggle-select
     (&key target orig-target type bounds &allow-other-keys)
   "Add or remove TARGET of given TYPE to the selection.
-If BOUNDS are given, also highlight the target when selecting it."
-  (if-let ((existing
-            (seq-some
-             (lambda (cand)
-               (and (equal cand orig-target)
-                    (eq (car (get-text-property 0 'multi-category cand)) type)
-                    (equal (embark--selected-target-bounds cand) bounds)
-                    cand))
-             embark--selection)))
+If BOUNDS are given, also highlight the target when selecting it.
+To decide whether a target has already been selected or not this
+function looks for ORIG-TARGET in the selection."
+  (if prefix-arg
       (progn
-        (setq embark--selection (delq existing embark--selection))
-        (when-let ((overlay (get-text-property 0 'embark-selection existing)))
-          (delete-overlay overlay)))
-    (let ((full-target (copy-sequence orig-target)) overlay)
-      (when bounds
-        (setq overlay (make-overlay (car bounds) (cdr bounds)))
-        (overlay-put overlay 'face 'embark-selected)
-        (overlay-put overlay 'priority 1001))
-      (add-text-properties 0 (length target)
-                           `(multi-category ,(cons type target)
-                             embark-selection ,overlay)
-                           full-target)
-      (push full-target embark--selection)))
+        (dolist (target embark--selection)
+          (when-let ((overlay (get-text-property 0 'embark-selection target)))
+            (delete-overlay overlay)))
+        (setq embark--selection nil))
+    (if-let ((existing
+              (seq-some
+               (lambda (cand)
+                 (and (equal cand orig-target)
+                      (eq (car (get-text-property 0 'multi-category cand)) type)
+                      (equal (embark--selected-target-bounds cand) bounds)
+                      cand))
+               embark--selection)))
+        (progn
+          (setq embark--selection (delq existing embark--selection))
+          (when-let ((overlay (get-text-property 0 'embark-selection existing)))
+            (delete-overlay overlay)))
+      (let ((full-target (copy-sequence orig-target)) overlay)
+        (when bounds
+          (setq overlay (make-overlay (car bounds) (cdr bounds)))
+          (overlay-put overlay 'face 'embark-selected)
+          (overlay-put overlay 'priority 1001))
+        (add-text-properties 0 (length target)
+                             `(multi-category ,(cons type target)
+                                              embark-selection ,overlay)
+                             full-target)
+        (push full-target embark--selection))))
   (embark--report-selection))
 
 (defalias 'embark-toggle-select #'ignore
   "Add or remove the target from the current buffer's selection.
+If called with a prefix argument instead deselect all targets.
 You can act on all selected targets at once with `embark-act-all'.")
-
-(defun embark-deselect-all ()
-  "Deselect all selected targets in the buffer."
-  (interactive)
-  (dolist (target embark--selection)
-    (when-let ((overlay (get-text-property 0 'embark-selection target)))
-      (delete-overlay overlay)))
-  (setq embark--selection nil)
-  (embark--report-selection))
 
 (defun embark-collect-toggle-selection ()
   "Toggle selection: selected candidates become deselected, and vice versa."
@@ -3922,10 +3922,9 @@ This simply calls RUN with the REST of its arguments inside
   "B" #'embark-become
   "A" #'embark-act-all
   "C-s" #'embark-isearch
-  "SPC" #'mark
+  "C-SPC" #'mark
   "DEL" #'delete-region
-  "y" #'embark-toggle-select
-  "Y" #'embark-deselect-all)
+  "SPC" #'embark-toggle-select)
 
 (defvar-keymap embark-encode-map
   :doc "Keymap for Embark region encoding actions."
@@ -3988,7 +3987,7 @@ This simply calls RUN with the REST of its arguments inside
   "p" #'fill-region-as-paragraph
   "$" #'ispell-region
   "=" #'count-words-region
-  "SPC" #'whitespace-cleanup-region
+  "F" #'whitespace-cleanup-region
   "t" #'transpose-regions
   "o" #'org-table-convert-region
   ";" #'comment-or-uncomment-region
@@ -4148,7 +4147,7 @@ This simply calls RUN with the REST of its arguments inside
   :parent embark-general-map
   "RET" 'outline-show-subtree
   "TAB" 'outline-cycle ;; New in Emacs 28!
-  "SPC" 'outline-mark-subtree
+  "C-SPC" 'outline-mark-subtree
   "n" 'outline-next-visible-heading
   "p" 'outline-previous-visible-heading
   "f" 'outline-forward-same-level
