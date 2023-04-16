@@ -3239,8 +3239,8 @@ function looks for ORIG-TARGET in the selection."
                embark--selection)))
         (progn
           (setq embark--selection (delq existing embark--selection))
-          (when-let ((overlay (get-text-property 0 'embark--selection existing)))
-            (delete-overlay overlay)))
+          (when-let ((ov (get-text-property 0 'embark--selection existing)))
+            (delete-overlay ov)))
       (let ((full-target (copy-sequence orig-target)) overlay)
         (when bounds
           (setq overlay (make-overlay (car bounds) (cdr bounds)))
