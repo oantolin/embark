@@ -2270,7 +2270,6 @@ ARG is the prefix argument."
           (or (cl-mapcar
                (lambda (cand orig-cand)
                  (list :type type :target cand
-                       :bounds (embark--selected-target-bounds orig-cand)
                        :orig-type orig-type :orig-target orig-cand))
                (plist-get transformed :candidates)
                (plist-get transformed :orig-candidates))
@@ -2285,6 +2284,9 @@ ARG is the prefix argument."
                     (user-error "Canceled")))
                (prefix prefix-arg)
                (act (lambda (candidate)
+                      (plist-put candidate :bounds
+                                 (embark--selected-target-bounds
+                                  (plist-get candidate :orig-target)))
                       (cl-letf (((symbol-function 'embark--restart) #'ignore)
                                 ((symbol-function 'embark--confirm) #'ignore))
                         (let ((prefix-arg prefix))
