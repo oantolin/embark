@@ -3309,7 +3309,10 @@ Return the category metadatum as the type of the candidates."
 (with-eval-after-load 'vertico
   (add-hook 'embark-indicators #'embark--vertico-indicator)
   (add-hook 'embark-target-finders #'embark--vertico-selected)
-  (add-hook 'embark-candidate-collectors #'embark--vertico-candidates))
+  (add-hook 'embark-candidate-collectors #'embark--vertico-candidates)
+  (setq embark-candidate-collectors
+        (cons 'embark-selected-candidates ; ensure highest priority
+              (delq 'embark-selected-candidates embark-candidate-collectors))))
 
 ;; ivy
 
@@ -3346,7 +3349,10 @@ Return the category metadatum as the type of the target."
 
 (with-eval-after-load 'ivy
   (add-hook 'embark-target-finders #'embark--ivy-selected)
-  (add-hook 'embark-candidate-collectors #'embark--ivy-candidates))
+  (add-hook 'embark-candidate-collectors #'embark--ivy-candidates)
+  (setq embark-candidate-collectors
+        (cons 'embark-selected-candidates ; ensure highest priority
+              (delq 'embark-selected-candidates embark-candidate-collectors))))
 
 ;;; Custom actions
 
