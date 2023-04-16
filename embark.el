@@ -1897,6 +1897,8 @@ minibuffer before executing the action."
                      embark-collect      ; the current buffer, not the
                      embark-live         ; target buffer
                      embark-export
+                     embark-toggle-select
+                     embark-deselect-all
                      embark-act-all))
       (progn
         (embark--run-action-hooks embark-pre-action-hooks action target quit)
