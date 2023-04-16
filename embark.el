@@ -3218,11 +3218,9 @@ PRED is a predicate function used to filter the items."
     (cons (overlay-start overlay) (overlay-end overlay))))
 
 (cl-defun embark--toggle-select
-    (&key target orig-target type bounds &allow-other-keys)
-  "Add or remove TARGET of given TYPE to the selection.
-If BOUNDS are given, also highlight the target when selecting it.
-To decide whether a target has already been selected or not this
-function looks for ORIG-TARGET in the selection."
+    (&key orig-target orig-type bounds &allow-other-keys)
+  "Add or remove ORIG-TARGET of given ORIG-TYPE to the selection.
+If BOUNDS are given, also highlight the target when selecting it."
   (if prefix-arg
       (progn
         (dolist (target embark--selection)
@@ -3233,7 +3231,8 @@ function looks for ORIG-TARGET in the selection."
               (seq-some
                (lambda (cand)
                  (and (equal cand orig-target)
-                      (eq (car (get-text-property 0 'multi-category cand)) type)
+                      (eq (car (get-text-property 0 'multi-category cand))
+                          orig-type)
                       (equal (embark--selected-target-bounds cand) bounds)
                       cand))
                embark--selection)))
@@ -3246,8 +3245,8 @@ function looks for ORIG-TARGET in the selection."
           (setq overlay (make-overlay (car bounds) (cdr bounds)))
           (overlay-put overlay 'face 'embark-selected)
           (overlay-put overlay 'priority 1001))
-        (add-text-properties 0 (length target)
-                             `(multi-category ,(cons type target)
+        (add-text-properties 0 (length orig-target)
+                             `(multi-category ,(cons orig-type orig-target)
                                               embark--selection ,overlay)
                              full-target)
         (push full-target embark--selection))))
@@ -3266,10 +3265,17 @@ You can act on all selected targets at once with `embark-act-all'.")
 (defun embark-selected-candidates ()
   "Return currently selected candidates in the buffer."
   (when embark--selection
-    (cons (if (minibufferp)
-              (completion-metadata-get (embark--metadata) 'category)
-            'multi-category)
-          (reverse embark--selection))))
+    (cl-flet ((type (cand) (car (get-text-property 0 'multi-category cand))))
+      (let ((first-type (type (car embark--selection))))
+        (if (cl-every (lambda (cand) (eq first-type (type cand)))
+                      embark--selection)
+            (cons
+             first-type
+             (let (cands)
+               (dolist (cand embark--selection)
+                 (push (cdr (get-text-property 0 'multi-category cand)) cands))
+               cands))
+          (cons 'multi-category (reverse embark--selection)))))))
 
 ;;; Integration with external packages, mostly completion UIs
 
