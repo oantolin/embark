@@ -3263,7 +3263,10 @@ You can act on all selected targets at once with `embark-act-all'.")
 (defun embark-selected-candidates ()
   "Return currently selected candidates in the buffer."
   (when embark--selection
-    (cons 'multi-category (reverse embark--selection))))
+    (cons (if (minibufferp)
+              (completion-metadata-get (embark--metadata) 'category)
+            'multi-category)
+          (reverse embark--selection))))
 
 ;;; Integration with external packages, mostly completion UIs
 
