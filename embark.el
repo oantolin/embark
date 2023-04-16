@@ -3275,8 +3275,10 @@ You can act on all selected targets at once with `embark-act-all'.")
 
 (declare-function vertico--candidate "ext:vertico")
 (declare-function vertico--update "ext:vertico")
+(declare-function vertico--remove-face "ext:vertico")
 (defvar vertico--input)
 (defvar vertico--candidates)
+(defvar vertico--base)
 
 (defun embark--vertico-selected ()
   "Target the currently selected item in Vertico.
@@ -3306,13 +3308,22 @@ Return the category metadatum as the type of the candidates."
                         (cons '(vertico-current . embark-target) fr)
                       fr))))))
 
+(defun embark--vertico-highlight-selected (cand _prefix _suffix _index _start)
+  "Highlight Vertico itmes in the current Embark selection.
+This is meant to be used as advice for `vertico--format-candidate'."
+  (if (member (concat vertico--base cand) embark--selection)
+      (add-face-text-property 0 (length cand) 'embark-selected nil cand)
+    (vertico--remove-face 0 (length cand) 'embark-selected cand)))
+
 (with-eval-after-load 'vertico
   (add-hook 'embark-indicators #'embark--vertico-indicator)
   (add-hook 'embark-target-finders #'embark--vertico-selected)
   (add-hook 'embark-candidate-collectors #'embark--vertico-candidates)
   (setq embark-candidate-collectors
         (cons 'embark-selected-candidates ; ensure highest priority
-              (delq 'embark-selected-candidates embark-candidate-collectors))))
+              (delq 'embark-selected-candidates embark-candidate-collectors)))
+  (advice-add 'vertico--format-candidate
+              :before 'embark--vertico-highlight-selected))
 
 ;; ivy
 
