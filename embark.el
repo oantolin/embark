@@ -3259,15 +3259,20 @@ You can act on all selected targets at once with `embark-act-all'.")
   (when embark--selection
     (cl-flet ((type (cand) (car (get-text-property 0 'multi-category cand))))
       (let ((first-type (type (car embark--selection))))
-        (if (cl-every (lambda (cand) (eq first-type (type cand)))
-                      embark--selection)
-            (cons
-             first-type
-             (let (cands)
-               (dolist (cand embark--selection)
-                 (push (cdr (get-text-property 0 'multi-category cand)) cands))
-               cands))
-          (cons 'multi-category (reverse embark--selection)))))))
+        (if (not (cl-every (lambda (cand) (eq first-type (type cand)))
+                           embark--selection))
+            (cons 'multi-category (reverse embark--selection))
+          (cons
+           first-type
+           (let (cands)
+             (dolist (cand embark--selection)
+               (let ((orig (cdr (get-text-property 0 'multi-category cand))))
+                 (when-let ((ov (get-text-property 0 'embark--selection cand)))
+                   (add-text-properties 0 (length orig)
+                                        (list 'embark--selection ov)
+                                        orig))
+                 (push orig cands)))
+             cands)))))))
 
 ;;; Integration with external packages, mostly completion UIs
 
