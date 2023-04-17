@@ -3209,10 +3209,6 @@ PRED is a predicate function used to filter the items."
 Add or remove elements to this list using the
 `embark-toggle-select' action.")
 
-(defun embark--report-selection ()
-  "Report how many targets are currently selected in the echo area."
-  (message "%d targets selected." (length embark--selection)))
-
 (defun embark--selected-target-bounds (target)
   "Return the bounds of the selected TARGET."
   (when-let ((overlay (get-text-property 0 'embark--selection target)))
@@ -3251,7 +3247,7 @@ If BOUNDS are given, also highlight the target when selecting it."
                                               embark--selection ,overlay)
                              full-target)
         (push full-target embark--selection))))
-  (embark--report-selection))
+  (message "%d targets selected." (length embark--selection)))
 
 (defalias 'embark-toggle-select #'ignore
   "Add or remove the target from the current buffer's selection.
