@@ -221,7 +221,7 @@ an updated buffer.
 
 The commands for working with sets of candidates just described,
 namely =embark-act-all=, =embark-export= and =embark-collect= by default
-wokr with all candidates defined in the current context. For example,
+work with all candidates defined in the current context. For example,
 in the minibuffer they operate on all currently completion candidates,
 or in a dired buffer they work on all marked files (or all files if
 none are marked). Embark also has a notion of /selection/, where you can
@@ -236,10 +236,12 @@ removes it from the selection if it was selected. Whenever the
 selection for a buffer is non-empty, the commands =embark-act-all=,
 =embark-export= and =embark-collect= will act on the selection.
 
-If you call =embark-toggle-select= with a prefix argument, instead of
-toggling the current target's selection status, it will empty the
-selection. So, for example, if you bind =embark-act= to =C-.=, then =C-.
-C-u SPC= clears the selection.
+To deselect all selected targets, you can use the =embark-toggle-select=
+action through =embark-act-all=, since this will run
+=embark-toggle-select= on each member of the current selection.
+Similarly if no targets are selected and you are in a minibuffer
+completion session, running =embark-toggle-select= from =embark-act-all=
+will select all the current completion candidates.
 
 *** =embark-live= a live-updating variant of =embark-collect=
 

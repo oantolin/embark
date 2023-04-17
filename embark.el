@@ -3218,40 +3218,33 @@ Add or remove elements to this list using the
     (&key orig-target orig-type bounds &allow-other-keys)
   "Add or remove ORIG-TARGET of given ORIG-TYPE to the selection.
 If BOUNDS are given, also highlight the target when selecting it."
-  (if prefix-arg
+  (if-let ((existing
+            (seq-some
+             (lambda (cand)
+               (and (equal cand orig-target)
+                    (eq (car (get-text-property 0 'multi-category cand))
+                        orig-type)
+                    (equal (embark--selected-target-bounds cand) bounds)
+                    cand))
+             embark--selection)))
       (progn
-        (dolist (target embark--selection)
-          (when-let ((overlay (get-text-property 0 'embark--selection target)))
-            (delete-overlay overlay)))
-        (setq embark--selection nil))
-    (if-let ((existing
-              (seq-some
-               (lambda (cand)
-                 (and (equal cand orig-target)
-                      (eq (car (get-text-property 0 'multi-category cand))
-                          orig-type)
-                      (equal (embark--selected-target-bounds cand) bounds)
-                      cand))
-               embark--selection)))
-        (progn
-          (setq embark--selection (delq existing embark--selection))
-          (when-let ((ov (get-text-property 0 'embark--selection existing)))
-            (delete-overlay ov)))
-      (let ((full-target (copy-sequence orig-target)) overlay)
-        (when bounds
-          (setq overlay (make-overlay (car bounds) (cdr bounds)))
-          (overlay-put overlay 'face 'embark-selected)
-          (overlay-put overlay 'priority 1001))
-        (add-text-properties 0 (length orig-target)
-                             `(multi-category ,(cons orig-type orig-target)
-                                              embark--selection ,overlay)
-                             full-target)
-        (push full-target embark--selection))))
+        (setq embark--selection (delq existing embark--selection))
+        (when-let ((ov (get-text-property 0 'embark--selection existing)))
+          (delete-overlay ov)))
+    (let ((full-target (copy-sequence orig-target)) overlay)
+      (when bounds
+        (setq overlay (make-overlay (car bounds) (cdr bounds)))
+        (overlay-put overlay 'face 'embark-selected)
+        (overlay-put overlay 'priority 1001))
+      (add-text-properties 0 (length orig-target)
+                           `(multi-category ,(cons orig-type orig-target)
+                                            embark--selection ,overlay)
+                           full-target)
+      (push full-target embark--selection)))
   (message "%d targets selected." (length embark--selection)))
 
 (defalias 'embark-toggle-select #'ignore
   "Add or remove the target from the current buffer's selection.
-If called with a prefix argument instead deselect all targets.
 You can act on all selected targets at once with `embark-act-all'.")
 
 (defun embark-selected-candidates ()

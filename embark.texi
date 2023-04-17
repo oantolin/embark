@@ -332,7 +332,7 @@ an updated buffer.
 
 The commands for working with sets of candidates just described,
 namely @samp{embark-act-all}, @samp{embark-export} and @samp{embark-collect} by default
-wokr with all candidates defined in the current context. For example,
+work with all candidates defined in the current context. For example,
 in the minibuffer they operate on all currently completion candidates,
 or in a dired buffer they work on all marked files (or all files if
 none are marked). Embark also has a notion of @emph{selection}, where you can
@@ -347,10 +347,12 @@ removes it from the selection if it was selected. Whenever the
 selection for a buffer is non-empty, the commands @samp{embark-act-all},
 @samp{embark-export} and @samp{embark-collect} will act on the selection.
 
-If you call @samp{embark-toggle-select} with a prefix argument, instead of
-toggling the current target's selection status, it will empty the
-selection. So, for example, if you bind @samp{embark-act} to @samp{C-.}, then @samp{C-.
-C-u SPC} clears the selection.
+To deselect all selected targets, you can use the @samp{embark-toggle-select}
+action through @samp{embark-act-all}, since this will run
+@samp{embark-toggle-select} on each member of the current selection.
+Similarly if no targets are selected and you are in a minibuffer
+completion session, running @samp{embark-toggle-select} from @samp{embark-act-all}
+will select all the current completion candidates.
 
 @node @samp{embark-live} a live-updating variant of @samp{embark-collect}
 @subsection @samp{embark-live} a live-updating variant of @samp{embark-collect}
