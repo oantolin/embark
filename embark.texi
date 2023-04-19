@@ -278,12 +278,15 @@ The @samp{embark-collect} command produces a buffer listing all the current
 candidates, for you to peruse and run actions on at your leisure.
 The candidates are displayed as a list showing additional annotations.
 
-The Embark Collect buffer is ``dired-like'': you can mark and unmark
-candidates with @samp{m} and @samp{u}, you can unmark all marked candidates with @samp{U}
-or toggle the marks with @samp{t}. In an Embark Collect buffer
-@samp{embark-act-all} is bound to @samp{A} and will act on all currently marked
-candidates if there any, and will act on all candidates if none are
-marked.
+The Embark Collect buffer is somewhat ``dired-like'': you can select
+and deselect candidates through the @samp{embark-toggle-select} action
+(bound to @samp{SPC}). In an Embark Collect buffer @samp{embark-act} is bound to @samp{a}
+and @samp{embark-act-all} is bound to @samp{A}; @samp{embark-act-all} will act on all
+currently marked candidates if there any, and will act on all
+candidates if none are marked. In particular, this means that @samp{a SPC}
+will toggle whether the candidate at point is selected, and @samp{A SPC}
+will select all candidates if none are selected, or deselect all
+selected candidates if there are some.
 
 @item
 The @samp{embark-export} command tries to open a buffer in an appropriate
