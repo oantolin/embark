@@ -409,7 +409,9 @@ the key :always are executed always."
     (mark embark--mark-target)
     ;; shells in new buffers
     (shell embark--universal-argument)
-    (eshell embark--universal-argument))
+    (eshell embark--universal-argument)
+    ;; do the actual work of selecting & deselecting targets
+    (embark-toggle-select embark--toggle-select))
   "Alist associating commands with pre-action hooks.
 The hooks are run right before an action is embarked upon.  See
 `embark-target-injection-hooks' for information about the hook
@@ -447,9 +449,7 @@ arguments and more details."
                 :value-type hook))
 
 (defcustom embark-around-action-hooks
-  '(;; do the actual work of selecting & deselecting targets
-    (embark-toggle-select embark--toggle-select)
-    ;; use directory of target as default-directory
+  '(;; use directory of target as default-directory
     (shell embark--cd)
     (eshell embark--cd)
     ;; narrow to target for duration of action
