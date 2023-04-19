@@ -246,6 +246,29 @@ Similarly if no targets are selected and you are in a minibuffer
 completion session, running =embark-toggle-select= from =embark-act-all=
 will select all the current completion candidates.
 
+This functionality is supported everywhere:
+
+- In the minibuffer this gives a convenient way to act on several
+  completion candidates that don't follow any simple pattern: just go
+  through the completions selecting the ones you want, then use
+  =embark-act-all=. For example, you could attach several files at once
+  to an email.
+- For Embark Collect buffers this functionality enables a dired-like
+  workflow, in which you mark various candidates and apply an action
+  to all at once. (It supersedes a previous ad hoc dired-like
+  interface that was implemented only in Embark Collect buffers, with
+  a slightly different interface.)
+- In a eww buffer you could use this to select various links you wish
+  to follow up on, and then collect them into a buffer. Similarly,
+  while reading Emacs's info manual you could select some symbols you
+  want to read more about and export them to an =apropos-mode= buffer.
+- You can use selections in regular text or programming buffers to do
+  complex editing operations. For example, if you have three
+  paragraphs scattered over a file and you want to bring them
+  together, you can select each one, insert them all somewhere and
+  finally delete all of them (from their original locations).
+  
+
 *** =embark-live= a live-updating variant of =embark-collect=
 
 Finally, there is also an =embark-live= variant of the =embark-collect=
