@@ -2221,8 +2221,11 @@ target."
   "Collect candidates and see if they all transform to the same type.
 Return a plist with keys `:type', `:orig-type', `:candidates', and
 `:orig-candidates'."
-  (pcase-let ((`(,type . ,candidates)
-               (run-hook-with-args-until-success 'embark-candidate-collectors)))
+  (pcase-let* ((`(,type . ,candidates)
+                (run-hook-with-args-until-success 'embark-candidate-collectors))
+               (bounds (mapcar #'cdr-safe candidates)))
+    (setq candidates
+          (mapcar (lambda (x) (if (consp x) (car x) x)) candidates))
     (when (eq type 'file)
       (let ((dir (embark--default-directory)))
         (setq candidates
@@ -2230,7 +2233,7 @@ Return a plist with keys `:type', `:orig-type', `:candidates', and
                         (abbreviate-file-name (expand-file-name cand dir)))
                       candidates))))
     (append
-     (list :orig-type type :orig-candidates candidates)
+     (list :orig-type type :orig-candidates candidates :bounds bounds)
      (or (when candidates
            (when-let ((transformer (alist-get type embark-transformer-alist)))
              (pcase-let* ((`(,new-type . ,first-cand)
@@ -2270,11 +2273,15 @@ ARG is the prefix argument."
          (orig-type (plist-get transformed :orig-type))
          (candidates
           (or (cl-mapcar
-               (lambda (cand orig-cand)
+               (lambda (cand orig-cand bounds)
                  (list :type type :target cand
+                       :bounds (when bounds
+                                 (cons (copy-marker (car bounds))
+                                       (copy-marker (cdr bounds))))
                        :orig-type orig-type :orig-target orig-cand))
                (plist-get transformed :candidates)
-               (plist-get transformed :orig-candidates))
+               (plist-get transformed :orig-candidates)
+               (plist-get transformed :bounds))
               (user-error "No candidates to act on")))
          (indicators (mapcar #'funcall embark-indicators)))
     (when arg (embark-toggle-quit))
@@ -2286,9 +2293,6 @@ ARG is the prefix argument."
                     (user-error "Canceled")))
                (prefix prefix-arg)
                (act (lambda (candidate)
-                      (plist-put candidate :bounds
-                                 (embark--selected-target-bounds
-                                  (plist-get candidate :orig-target)))
                       (cl-letf (((symbol-function 'embark--restart) #'ignore)
                                 ((symbol-function 'embark--confirm) #'ignore))
                         (let ((prefix-arg prefix))
@@ -2311,6 +2315,10 @@ ARG is the prefix argument."
                 (when (memq 'embark--restart
                             (alist-get action embark-post-action-hooks))
                   (embark--restart))))))
+      (dolist (cand candidates)
+        (when-let ((bounds (plist-get cand :bounds)))
+          (set-marker (car bounds) nil) ; yay, manual memory management!
+          (set-marker (cdr bounds) nil)))
       (setq prefix-arg nil)
       (mapc #'funcall indicators))))
 
@@ -2485,7 +2493,9 @@ These are used to fill an Embark Collect buffer.  Each function
 should return either nil (to indicate it found no candidates) or
 a list whose first element is a symbol indicating the type of
 candidates and whose `cdr' is the list of candidates, each of
-which should be a string."
+which should be either a string or a dotted list of the
+form (TARGET START . END), where START and END are the buffer
+positions bounding the TARGET string."
   :type 'hook)
 
 (defcustom embark-exporters-alist
@@ -2585,6 +2595,8 @@ list `embark-candidate-collectors'."
      (nconc (cl-copy-list (completion-all-sorted-completions)) nil))))
 
 (declare-function dired-get-marked-files "dired")
+(declare-function dired-move-to-filename "dired")
+(declare-function dired-move-to-end-of-filename "dired")
 
 (defun embark-dired-candidates ()
   "Return marked or all files shown in Dired buffer.
@@ -2606,7 +2618,10 @@ all buffers."
              (let (files)
                (while (not (eobp))
                  (when-let (file (dired-get-filename t t))
-                   (push file files))
+                   (push `(,file
+                           ,(progn (dired-move-to-filename) (point))
+                           . ,(progn (dired-move-to-end-of-filename t) (point)))
+                         files))
                  (forward-line))
                (nreverse files)))))))
 
@@ -2631,7 +2646,13 @@ all buffers."
 This makes `embark-export' work in Embark Collect buffers."
   (when (derived-mode-p 'embark-collect-mode)
     (cons embark--type
-          (delq nil (mapcar #'car tabulated-list-entries)))))
+          (save-excursion
+            (goto-char (point-min))
+            (let (all)
+              (push (cdr (embark-target-collect-candidate)) all)
+              (while (forward-button 1 nil nil t)
+                (push (cdr (embark-target-collect-candidate)) all))
+              (nreverse all))))))
 
 (defun embark-completions-buffer-candidates ()
   "Return all candidates in a completions buffer."
@@ -2643,7 +2664,7 @@ This makes `embark-export' work in Embark Collect buffers."
        (next-completion 1)
        (let (all)
          (while (not (eobp))
-           (push (cadr (embark-target-completion-at-point)) all)
+           (push (cdr (embark-target-completion-at-point)) all)
            (next-completion 1))
          (nreverse all))))))
 
@@ -2658,8 +2679,13 @@ This makes `embark-export' work in Embark Collect buffers."
                 (when-let (widget (widget-at (point)))
                   (when (eq (car widget) 'custom-visibility)
                     (push
-                     (symbol-name
-                      (plist-get (cdr (plist-get (cdr widget) :parent)) :value))
+                     `(,(symbol-name
+                         (plist-get (cdr (plist-get (cdr widget) :parent))
+                                    :value))
+                       ,(point)
+                       . ,(progn
+                            (re-search-forward ":" (line-end-position) 'noerror)
+                            (point)))
                      symbols)))
                 (forward-line))
               (nreverse symbols))))))
@@ -3209,39 +3235,34 @@ PRED is a predicate function used to filter the items."
 Add or remove elements to this list using the
 `embark-toggle-select' action.")
 
-(defun embark--selected-target-bounds (target)
-  "Return the bounds of the selected TARGET."
-  (when-let ((overlay (get-text-property 0 'embark--selection target)))
-    (cons (overlay-start overlay) (overlay-end overlay))))
-
 (cl-defun embark--toggle-select
     (&key orig-target orig-type bounds &allow-other-keys)
   "Add or remove ORIG-TARGET of given ORIG-TYPE to the selection.
 If BOUNDS are given, also highlight the target when selecting it."
-  (if-let ((existing
-            (seq-some
-             (lambda (cand)
-               (and (equal cand orig-target)
-                    (eq (car (get-text-property 0 'multi-category cand))
-                        orig-type)
-                    (equal (embark--selected-target-bounds cand) bounds)
-                    cand))
-             embark--selection)))
-      (progn
-        (setq embark--selection (delq existing embark--selection))
-        (when-let ((ov (get-text-property 0 'embark--selection existing)))
-          (delete-overlay ov)))
-    (let ((full-target (copy-sequence orig-target)) overlay)
-      (when bounds
-        (setq overlay (make-overlay (car bounds) (cdr bounds)))
-        (overlay-put overlay 'face 'embark-selected)
-        (overlay-put overlay 'priority 1001))
-      (add-text-properties 0 (length orig-target)
-                           `(multi-category ,(cons orig-type orig-target)
-                                            embark--selection ,overlay)
-                           full-target)
-      (push full-target embark--selection)))
-  (message "%d targets selected." (length embark--selection)))
+  (cl-flet ((multi-type (x) (car (get-text-property 0 'multi-category x))))
+    (if-let* ((existing (seq-find
+                         (pcase-lambda (`(,cand . ,ov))
+                           (and
+                            (equal cand orig-target)
+                            (if (and bounds ov)
+                                (and (= (car bounds) (overlay-start ov))
+                                     (= (cdr bounds) (overlay-end ov)))
+                              (let ((cand-type (multi-type cand)))
+                                (or (eq cand-type orig-type)
+                                    (eq cand-type (multi-type orig-target)))))))
+                         embark--selection)))
+        (progn
+          (when (cdr existing) (delete-overlay (cdr existing)))
+          (setq embark--selection (delq existing embark--selection)))
+      (let ((target (copy-sequence orig-target)) overlay)
+        (when bounds
+          (setq overlay (make-overlay (car bounds) (cdr bounds)))
+          (overlay-put overlay 'face 'embark-selected)
+          (overlay-put overlay 'priority 1001))
+        (add-text-properties 0 (length orig-target)
+                             `(multi-category ,(cons orig-type orig-target))
+                             target)
+        (push (cons target overlay) embark--selection)))))
 
 (defalias 'embark-toggle-select #'ignore
   "Add or remove the target from the current buffer's selection.
@@ -3250,22 +3271,23 @@ You can act on all selected targets at once with `embark-act-all'.")
 (defun embark-selected-candidates ()
   "Return currently selected candidates in the buffer."
   (when embark--selection
-    (cl-flet ((type (cand) (car (get-text-property 0 'multi-category cand))))
-      (let ((first-type (type (car embark--selection))))
-        (if (not (cl-every (lambda (cand) (eq first-type (type cand)))
-                           embark--selection))
-            (cons 'multi-category (reverse embark--selection))
-          (cons
-           first-type
-           (let (cands)
-             (dolist (cand embark--selection)
-               (let ((orig (cdr (get-text-property 0 'multi-category cand))))
-                 (when-let ((ov (get-text-property 0 'embark--selection cand)))
-                   (add-text-properties 0 (length orig)
-                                        (list 'embark--selection ov)
-                                        orig))
-                 (push orig cands)))
-             cands)))))))
+    (cl-flet ((unwrap (x) (get-text-property 0 'multi-category x)))
+      (let* ((first-type (car (unwrap (caar embark--selection))))
+             (same (cl-every (lambda (item)
+                               (eq (car (unwrap (car item))) first-type))
+                             embark--selection))
+             (extract (if same
+                          (pcase-lambda (`(,cand . ,overlay))
+                            (cons (cdr (unwrap cand)) overlay))
+                        #'identity)))
+        (cons
+         (if same first-type 'multi-category)
+         (nreverse
+          (mapcar
+           (lambda (item)
+             (pcase-let ((`(,cand . ,ov) (funcall extract item)))
+               (if ov `(,cand ,(overlay-start ov) . ,(overlay-end ov)) cand)))
+           embark--selection)))))))
 
 ;;; Integration with external packages, mostly completion UIs
 
@@ -3316,8 +3338,9 @@ Return the category metadatum as the type of the candidates."
 (with-eval-after-load 'vertico
   (cl-defmethod vertico--format-candidate
     :around (cand prefix suffix index start &context (embark--selection cons))
-    (when (member (concat vertico--base (nth index vertico--candidates))
-                  embark--selection)
+    (when (cl-find (concat vertico--base (nth index vertico--candidates))
+                   embark--selection
+                   :test #'equal :key #'car)
       (setq cand (copy-sequence cand))
       (add-face-text-property 0 (length cand) 'embark-selected t cand))
     (cl-call-next-method cand prefix suffix index start))
@@ -3794,12 +3817,12 @@ and leaves the point to the left of it."
 
 (cl-defun embark--beginning-of-target (&key bounds &allow-other-keys)
   "Go to beginning of the target BOUNDS."
-  (when bounds
+  (when (number-or-marker-p bounds)
     (goto-char (car bounds))))
 
 (cl-defun embark--end-of-target (&key bounds &allow-other-keys)
   "Go to end of the target BOUNDS."
-  (when bounds
+  (when (number-or-marker-p bounds)
     (goto-char (cdr bounds))))
 
 (cl-defun embark--mark-target (&rest rest &key run bounds &allow-other-keys)
