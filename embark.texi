@@ -279,9 +279,9 @@ candidates, for you to peruse and run actions on at your leisure.
 The candidates are displayed as a list showing additional annotations.
 
 The Embark Collect buffer is somewhat ``dired-like'': you can select
-and deselect candidates through the @samp{embark-toggle-select} action
-(bound to @samp{SPC}). In an Embark Collect buffer @samp{embark-act} is bound to @samp{a}
-and @samp{embark-act-all} is bound to @samp{A}; @samp{embark-act-all} will act on all
+and deselect candidates through the @samp{embark-select} action (bound to
+@samp{SPC}). In an Embark Collect buffer @samp{embark-act} is bound to @samp{a} and
+@samp{embark-act-all} is bound to @samp{A}; @samp{embark-act-all} will act on all
 currently marked candidates if there any, and will act on all
 candidates if none are marked. In particular, this means that @samp{a SPC}
 will toggle whether the candidate at point is selected, and @samp{A SPC}
@@ -341,8 +341,8 @@ or in a dired buffer they work on all marked files (or all files if
 none are marked). Embark also has a notion of @emph{selection}, where you can
 accumulate an ad hoc list of targets for these commands to work on.
 
-The selection is controlled by using the @samp{embark-toggle-select} action
-(which must be run as an action through @samp{embark-act}), bound to @samp{SPC} in
+The selection is controlled by using the @samp{embark-select} action (which
+must be run as an action through @samp{embark-act}), bound to @samp{SPC} in
 @samp{embark-general-map} so that it is always available. Calling this action
 on a target toggles its membership in the current buffer's Embark
 selection; that is, it adds it to selection if not selected and
@@ -350,12 +350,11 @@ removes it from the selection if it was selected. Whenever the
 selection for a buffer is non-empty, the commands @samp{embark-act-all},
 @samp{embark-export} and @samp{embark-collect} will act on the selection.
 
-To deselect all selected targets, you can use the @samp{embark-toggle-select}
-action through @samp{embark-act-all}, since this will run
-@samp{embark-toggle-select} on each member of the current selection.
-Similarly if no targets are selected and you are in a minibuffer
-completion session, running @samp{embark-toggle-select} from @samp{embark-act-all}
-will select all the current completion candidates.
+To deselect all selected targets, you can use the @samp{embark-select} action
+through @samp{embark-act-all}, since this will run @samp{embark-select} on each
+member of the current selection. Similarly if no targets are selected
+and you are in a minibuffer completion session, running @samp{embark-select}
+from @samp{embark-act-all} will select all the current completion candidates.
 
 This functionality is supported everywhere:
 

@@ -5,7 +5,7 @@
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Keywords: convenience
-;; Version: 0.22
+;; Version: 0.22.1
 ;; Homepage: https://github.com/oantolin/embark
 ;; Package-Requires: ((emacs "27.1") (compat "29.1.4.0"))
 
@@ -411,7 +411,7 @@ the key :always are executed always."
     (shell embark--universal-argument)
     (eshell embark--universal-argument)
     ;; do the actual work of selecting & deselecting targets
-    (embark-toggle-select embark--toggle-select))
+    (embark-select embark--select))
   "Alist associating commands with pre-action hooks.
 The hooks are run right before an action is embarked upon.  See
 `embark-target-injection-hooks' for information about the hook
@@ -1900,7 +1900,7 @@ minibuffer before executing the action."
                      embark-collect      ; the current buffer, not the
                      embark-live         ; target buffer
                      embark-export
-                     embark-toggle-select
+                     embark-select
                      embark-act-all))
       (progn
         (embark--run-action-hooks embark-pre-action-hooks action target quit)
@@ -3232,10 +3232,10 @@ PRED is a predicate function used to filter the items."
 
 (defvar-local embark--selection nil
   "Buffer local list of selected targets.
-Add or remove elements to this list using the
-`embark-toggle-select' action.")
+Add or remove elements to this list using the `embark-select'
+action.")
 
-(cl-defun embark--toggle-select
+(cl-defun embark--select
     (&key orig-target orig-type bounds &allow-other-keys)
   "Add or remove ORIG-TARGET of given ORIG-TYPE to the selection.
 If BOUNDS are given, also highlight the target when selecting it."
@@ -3264,7 +3264,7 @@ If BOUNDS are given, also highlight the target when selecting it."
                              target)
         (push (cons target overlay) embark--selection)))))
 
-(defalias 'embark-toggle-select #'ignore
+(defalias 'embark-select #'ignore
   "Add or remove the target from the current buffer's selection.
 You can act on all selected targets at once with `embark-act-all'.")
 
@@ -3944,7 +3944,7 @@ This simply calls RUN with the REST of its arguments inside
   "C-s" #'embark-isearch
   "C-SPC" #'mark
   "DEL" #'delete-region
-  "SPC" #'embark-toggle-select)
+  "SPC" #'embark-select)
 
 (defvar-keymap embark-encode-map
   :doc "Keymap for Embark region encoding actions."
