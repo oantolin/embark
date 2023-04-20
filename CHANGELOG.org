@@ -1,0 +1,37 @@
+#+title: Embark changelog
+* Version 0.22 (2020-04-20)
+** New feature: selections
+Now users can select several targets to make an ad hoc collection. The
+commands =embark-act-all=, =embark-export= and =embark-collect= will act on
+the selection if it is non-empty. To select or deselect a target use
+the =embark-toggle-select= action (bound to =SPC= in =embark-general-map=).
+If you have some targets selected, then using =embark-toggle-select=
+through =embark-act-all= will deselect them.
+
+Before this change the Embark Collect buffers had their own
+implementation of selections which has been removed. This is how to
+translate the old bindings to the new feature (which is available in
+all buffers, not just Embark Collect buffers!):
+
+| Task               | Old binding | New binding   |
+|--------------------+-------------+---------------|
+| Mark a candidate   | m           | a SPC         |
+| Unmark a candidate | u           | a SPC         |
+| Unmark all         | U           | A SPC         |
+| Mark all [1]       | t           | A SPC         |
+| Toggle all marks   | t           | not available |
+
+[1] Marking all candidates (with either the old =t= or the new =A SPC=)
+requires that there are no marked candidates to begin with.
+
+In order to make room for the binding of =embark-toggle-select= to
+=SPC=, some other key bindings were moved:
+
+- =mark= in =embark-general-map= was moved to =C-SPC=.
+- =outline-mark-subtree= in =embark-heading-map= was moved to =C-SPC=.
+- =whitespace-cleanup-region= in =embark-region-map= was moved to =F=.
+
+* Version 0.21.1 (2020-01-30)
+- Finally started this changelog on 2023-04-20. Known issues with the
+  changelog: it started very late, the first entry is not very
+  informative.
