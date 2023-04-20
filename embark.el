@@ -4283,7 +4283,7 @@ This simply calls RUN with the REST of its arguments inside
   "u" #'upcase-region
   "l" #'downcase-region
   "c" #'capitalize-region
-  "s" #'whitespace-cleanup-region
+  "F" #'whitespace-cleanup-region
   "=" #'count-words-region)
 
 (defvar-keymap embark-sentence-map
