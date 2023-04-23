@@ -372,6 +372,7 @@ the key :always are executed always."
 (defcustom embark-pre-action-hooks
   `(;; commands that need to position point at the beginning or end
     (eval-last-sexp embark--end-of-target)
+    (embark-pp-eval-defun embark--end-of-target)
     (indent-pp-sexp embark--beginning-of-target)
     (backward-up-list embark--beginning-of-target)
     (backward-list embark--beginning-of-target)
@@ -3695,7 +3696,7 @@ The search respects symbol boundaries."
 (defun embark-compose-mail (address)
   "Compose email to ADDRESS."
   ;; The only reason we cannot use compose-mail directly is its
-  ;; interactive specification, which just supllies nil for the
+  ;; interactive specification, which just supplies nil for the
   ;; address (and several other arguments).
   (interactive "sTo: ")
   (compose-mail address))
@@ -3806,7 +3807,7 @@ and leaves the point to the left of it."
   (minibuffer-force-complete))
 
 (cl-defun embark--eval-prep (&key type &allow-other-keys)
-  "If target's TYPE is: variable, skip edit; function, wrap in parens."
+  "If target's TYPE is variable, skip edit; if function, wrap in ()."
   (when (memq type '(command function))
     (embark--allow-edit)
     (goto-char (minibuffer-prompt-end))
@@ -3827,7 +3828,7 @@ and leaves the point to the left of it."
 
 (cl-defun embark--mark-target (&rest rest &key run bounds &allow-other-keys)
   "Mark the target if its BOUNDS are known.
-After marking the target, this calls RUN with the REST of its arguments."
+After marking the target, call RUN with the REST of its arguments."
   (cond
    ((and bounds run)
     (save-mark-and-excursion
