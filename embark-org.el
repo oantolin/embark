@@ -62,7 +62,7 @@
     ;; headline ; the bounds include the entire subtree!
     ;; horizontal-rule
     ;; inline-babel-call
-    ;; inline-src-block
+    inline-src-block
     ;; inlinetask
     ;; italic
     item
@@ -419,6 +419,18 @@ Applies RUN to the REST of the arguments."
   (add-to-list 'embark-repeat-actions motion))
 
 (add-to-list 'embark-keymap-alist '(org-src-block . embark-org-src-block-map))
+
+;;; Inline source blocks
+
+(defvar-keymap embark-org-inline-src-block-map
+  :doc "Keymap for actions on Org inline source blocks."
+  :parent embark-general-map
+  "RET" #'org-babel-execute-src-block
+  "'" #'org-edit-inline-src-code
+  "k" #'org-babel-remove-inline-result)
+
+(add-to-list 'embark-keymap-alist
+             '(org-inline-src-block . embark-org-inline-src-block-map))
 
 ;;; List items
 
