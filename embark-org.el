@@ -391,7 +391,7 @@ bound to i."
   :doc "Keymap for actions on Org source blocks."
   :parent embark-general-map
   "RET" #'org-babel-execute-src-block
-  "SPC" #'org-babel-mark-block
+  "C-SPC" #'org-babel-mark-block
   "TAB" #'org-indent-block
   "c" #'embark-org-copy-block-contents
   "h" #'org-babel-check-src-block
