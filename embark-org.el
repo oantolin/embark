@@ -405,15 +405,23 @@ bound to i."
   "/" #'org-babel-demarcate-block
   "N" #'org-narrow-to-block)
 
-(cl-defun embark-org--at-block-head (&rest rest &key run &allow-other-keys)
+(cl-defun embark-org--at-block-head
+    (&rest rest &key run bounds &allow-other-keys)
   "Save excursion and RUN the action at the head of the current block.
-Applies RUN to the REST of the arguments."
+If BOUNDS are given, use them to locate the block (useful for
+when acting on a selection of blocks).  Applies RUN to the REST
+of the arguments."
   (save-excursion
+    (when bounds (goto-char (car bounds)))
     (org-babel-goto-src-block-head)
     (apply run rest)))
 
-(cl-pushnew #'embark-org--at-block-head
-            (alist-get 'org-indent-block embark-around-action-hooks))
+(dolist (cmd '(org-babel-execute-src-block
+               org-babel-remove-result-one-or-many
+               org-babel-remove-result
+               org-indent-block))
+  (cl-pushnew #'embark-org--at-block-head
+              (alist-get cmd embark-around-action-hooks)))
 
 (dolist (motion '(org-babel-next-src-block org-babel-previous-src-block))
   (add-to-list 'embark-repeat-actions motion))
