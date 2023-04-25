@@ -3818,12 +3818,12 @@ and leaves the point to the left of it."
 
 (cl-defun embark--beginning-of-target (&key bounds &allow-other-keys)
   "Go to beginning of the target BOUNDS."
-  (when (number-or-marker-p bounds)
+  (when (number-or-marker-p (car bounds))
     (goto-char (car bounds))))
 
 (cl-defun embark--end-of-target (&key bounds &allow-other-keys)
   "Go to end of the target BOUNDS."
-  (when (number-or-marker-p bounds)
+  (when (number-or-marker-p (cdr bounds))
     (goto-char (cdr bounds))))
 
 (cl-defun embark--mark-target (&rest rest &key run bounds &allow-other-keys)
