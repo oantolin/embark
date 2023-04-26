@@ -2469,12 +2469,6 @@ point."
          (setq this-command command)
          (command-execute command))))))
 
-(defmacro embark-define-keymap (&rest _)
-  "Obsolete macro, use `defvar-keymap' instead."
-  (error "`embark-define-keymap' has been deprecated in Embark 0.21.
-Use standard methods for defining keymaps, such as `defvar-keymap'.
-Remember to make `embark-general-map' the parent if appropriate"))
-
 ;;; Embark collect
 
 (defgroup embark-collect nil
