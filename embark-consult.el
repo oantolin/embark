@@ -266,7 +266,7 @@ This function is meant to be added to `embark-collect-mode-hook'."
 (setf (alist-get '(file . consult-locate) embark-default-action-overrides)
       #'find-file)
 
-;;; Support for consult-isearch
+;;; Support for consult-isearch-history
 
 (setf (alist-get 'consult-isearch embark-transformer-alist)
       #'embark-consult--target-strip)

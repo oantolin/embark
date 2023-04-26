@@ -3303,7 +3303,6 @@ You can act on all selected targets at once with `embark-act-all'.")
 
 (declare-function vertico--candidate "ext:vertico")
 (declare-function vertico--update "ext:vertico")
-(declare-function vertico--remove-face "ext:vertico")
 (defvar vertico--input)
 (defvar vertico--candidates)
 (defvar vertico--base)
