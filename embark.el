@@ -543,6 +543,15 @@ action."
                          (cons function
                                (symbol :tag "Next target type")))))
 
+;;; Overlay properties
+
+;; high priority to override both bug reference and the lazy
+;; isearch highlights in embark-isearch-highlight-indicator
+(put 'embark-target 'face 'embark-target)
+(put 'embark-target 'priority 1001)
+(put 'embark-selected 'face 'embark-selected)
+(put 'embark-selected 'priority 1001)
+
 ;;; Stashing information for actions in buffer local variables
 
 (defvar-local embark--type nil
@@ -2334,12 +2343,9 @@ ARG is the prefix argument."
         (when bounds
           (if overlay
               (move-overlay overlay (car bounds) (cdr bounds))
-            (setq overlay (make-overlay (car bounds) (cdr bounds))))
-          (overlay-put overlay 'face 'embark-target)
-          (overlay-put overlay 'window (selected-window))
-          ;; high priority to override both bug reference and the lazy
-          ;; isearch highlights in embark-isearch-highlight-indicator
-          (overlay-put overlay 'priority 1001))))))
+            (setq overlay (make-overlay (car bounds) (cdr bounds)))
+            (overlay-put overlay 'category 'embark-target))
+          (overlay-put overlay 'window (selected-window)))))))
 
 (defun embark-isearch-highlight-indicator ()
   "Action indicator highlighting all occurrences of the identifier at point.
@@ -3252,8 +3258,7 @@ If BOUNDS are given, also highlight the target when selecting it."
       (let ((target (copy-sequence orig-target)) overlay)
         (when bounds
           (setq overlay (make-overlay (car bounds) (cdr bounds)))
-          (overlay-put overlay 'face 'embark-selected)
-          (overlay-put overlay 'priority 1001))
+          (overlay-put overlay 'category 'embark-selected))
         (add-text-properties 0 (length orig-target)
                              `(multi-category ,(cons orig-type orig-target))
                              target)
