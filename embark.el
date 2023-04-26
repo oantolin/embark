@@ -4150,7 +4150,6 @@ This simply calls RUN with the REST of its arguments inside
   "RET" #'embark-pp-eval-defun
   "e" #'embark-pp-eval-defun
   "c" #'compile-defun
-  "l" #'elint-defun
   "D" #'edebug-defun
   "o" #'checkdoc-defun
   "N" #'narrow-to-defun)
