@@ -268,7 +268,7 @@ This function is meant to be added to `embark-collect-mode-hook'."
 
 ;;; Support for consult-isearch-history
 
-(setf (alist-get 'consult-isearch embark-transformer-alist)
+(setf (alist-get 'consult-isearch-history embark-transformer-alist)
       #'embark-consult--target-strip)
 
 ;;; Support for consult-man and consult-info
