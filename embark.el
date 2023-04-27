@@ -1752,7 +1752,7 @@ text properties `keymap' or `local-map', from either buffer text
 or an overlay.  These are not widely used in Emacs, and when they
 are used can be somewhat hard to discover.  Examples of locations
 that have such a keymap are links and images in `eww' buffers,
-attachment links in `gnus' article buffers, and the 'Stash' line
+attachment links in `gnus' article buffers, and the `Stash' line
 in a `vc-dir' buffer."
   (interactive)
   (let ((keymaps (delq nil (list (get-char-property (point) 'keymap)
