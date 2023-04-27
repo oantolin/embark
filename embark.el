@@ -152,6 +152,7 @@
     (paragraph embark-paragraph-map)
     (kill-ring embark-kill-ring-map)
     (heading embark-heading-map)
+    (flymake embark-flymake-map)
     (t embark-general-map))
   "Alist of action types and corresponding keymaps.
 The special key t is associated with the default keymap to use.
@@ -168,6 +169,7 @@ or a list of such symbols."
     embark-target-collect-candidate
     embark-target-completion-at-point
     embark-target-bug-reference-at-point
+    embark-target-flymake-at-point
     embark-target-package-at-point
     embark-target-email-at-point
     embark-target-url-at-point
@@ -518,6 +520,7 @@ argument: a one element list containing the target."
     ;; transpose commands
     transpose-sexps transpose-sentences transpose-paragraphs
     ;; movement
+    flymake-goto-next-error flymake-goto-prev-error
     embark-next-symbol embark-previous-symbol
     backward-up-list backward-list forward-list forward-sexp
     backward-sexp forward-sentence backward-sentence
@@ -738,6 +741,14 @@ different priorities in `embark-target-finders'."
                            (overlays-at (point)))))
     `(url ,(overlay-get ov 'bug-reference-url)
           ,(overlay-start ov) . ,(overlay-end ov))))
+
+(defun embark-target-flymake-at-point ()
+  "Target a Flymake diagnostic at point."
+  (when-let ((ov (seq-find (lambda (ov) (overlay-get ov 'flymake-diagnostic))
+                           (overlays-at (point)))))
+    `(flymake ,(buffer-substring-no-properties
+                (overlay-start ov) (overlay-end ov))
+              ,(overlay-start ov) . ,(overlay-end ov))))
 
 (defun embark-target-package-at-point ()
   "Target the package on the current line in a packages buffer."
@@ -4298,6 +4309,13 @@ This simply calls RUN with the REST of its arguments inside
   "n" #'forward-paragraph
   "p" #'backward-paragraph
   "R" #'repunctuate-sentences)
+
+(defvar-keymap embark-flymake-map
+  :doc "Keymap for Embark actions on Flymake diagnostics."
+  :parent embark-general-map
+  "RET" 'flymake-show-buffer-diagnostics
+  "n" 'flymake-goto-next-error
+  "p" 'flymake-goto-prev-error)
 
 (defvar-keymap embark-become-help-map
   :doc "Keymap for Embark help actions."
