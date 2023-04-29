@@ -374,7 +374,6 @@ the key :always are executed always."
 (defcustom embark-pre-action-hooks
   `(;; commands that need to position point at the beginning or end
     (eval-last-sexp embark--end-of-target)
-    (embark-pp-eval-defun embark--end-of-target)
     (indent-pp-sexp embark--beginning-of-target)
     (backward-up-list embark--beginning-of-target)
     (backward-list embark--beginning-of-target)
@@ -2317,7 +2316,9 @@ ARG is the prefix argument."
                       (cl-letf (((symbol-function 'embark--restart) #'ignore)
                                 ((symbol-function 'embark--confirm) #'ignore))
                         (let ((prefix-arg prefix))
-                          (embark--act action candidate)))))
+                          (when-let ((bounds (plist-get candidate :bounds)))
+                            (goto-char (car bounds))
+                            (embark--act action candidate))))))
                (quit (embark--quit-p action)))
           (when (and (eq action (embark--default-action type))
                      (eq action embark--command))
@@ -2330,12 +2331,13 @@ ARG is the prefix argument."
             (if (memq action embark-multitarget-actions)
                 (let ((prefix-arg prefix))
                   (embark--act action transformed quit))
-              (if quit
-                  (embark--quit-and-run #'mapc act candidates)
-                (mapc act candidates)
-                (when (memq 'embark--restart
-                            (alist-get action embark-post-action-hooks))
-                  (embark--restart))))))
+              (save-excursion
+                (if quit
+                    (embark--quit-and-run #'mapc act candidates)
+                  (mapc act candidates)
+                  (when (memq 'embark--restart
+                              (alist-get action embark-post-action-hooks))
+                    (embark--restart)))))))
       (dolist (cand candidates)
         (when-let ((bounds (plist-get cand :bounds)))
           (set-marker (car bounds) nil) ; yay, manual memory management!

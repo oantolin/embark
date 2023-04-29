@@ -416,12 +416,8 @@ of the arguments."
     (org-babel-goto-src-block-head)
     (apply run rest)))
 
-(dolist (cmd '(org-babel-execute-src-block
-               org-babel-remove-result-one-or-many
-               org-babel-remove-result
-               org-indent-block))
-  (cl-pushnew #'embark-org--at-block-head
-              (alist-get cmd embark-around-action-hooks)))
+(cl-pushnew #'embark-org--at-block-head
+            (alist-get 'org-indent-block embark-around-action-hooks))
 
 (dolist (motion '(org-babel-next-src-block org-babel-previous-src-block))
   (add-to-list 'embark-repeat-actions motion))
