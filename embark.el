@@ -734,21 +734,6 @@ different priorities in `embark-target-finders'."
               (lib (ffap-el-mode name)))
     `(file ,lib . ,(bounds-of-thing-at-point 'filename))))
 
-(defun embark-target-bug-reference-at-point ()
-  "Target a bug reference at point."
-  (when-let ((ov (seq-find (lambda (ov) (overlay-get ov 'bug-reference-url))
-                           (overlays-at (point)))))
-    `(url ,(overlay-get ov 'bug-reference-url)
-          ,(overlay-start ov) . ,(overlay-end ov))))
-
-(defun embark-target-flymake-at-point ()
-  "Target a Flymake diagnostic at point."
-  (when-let ((ov (seq-find (lambda (ov) (overlay-get ov 'flymake-diagnostic))
-                           (overlays-at (point)))))
-    `(flymake ,(buffer-substring-no-properties
-                (overlay-start ov) (overlay-end ov))
-              ,(overlay-start ov) . ,(overlay-end ov))))
-
 (defun embark-target-package-at-point ()
   "Target the package on the current line in a packages buffer."
   (when (derived-mode-p 'package-menu-mode)
@@ -821,6 +806,33 @@ different priorities in `embark-target-finders'."
          (end (ignore-errors (scan-sexps start 1))))
       (unless (eq start (car (bounds-of-thing-at-point 'defun)))
       `(expression ,(buffer-substring start end) ,start . ,end)))))
+
+(defmacro embark-define-overlay-target (name prop &optional pred type target)
+  "Define a target finder for NAME based on overlays with property PROP.
+The overlay is let-bound to the variable NAME and the overlay
+property is bound to the variable PROP.  PRED is an optional
+predicate expression.  TYPE is an optional type and defaults to
+the symbol NAME.  TARGET is an expression evaluating to the
+target string and defaults to the buffer substring."
+  `(defun ,(intern (format "embark-target-%s-at-point" name)) ()
+     ,(format "Target %s at point." name)
+     (when-let ((,name (seq-find
+                        (lambda (,name)
+                          (when-let ((,prop (overlay-get ,name ',prop)))
+                            (ignore ,prop)
+                            ,(or pred t)))
+                        (overlays-in (max (point-min) (1- (point)))
+                                     (min (point-max) (1+ (point))))))
+                (,prop (overlay-get ,name ',prop)))
+       (ignore ,prop)
+       (cons ',(or type name)
+             (cons ,(or target `(buffer-substring-no-properties
+                                 (overlay-start ,name) (overlay-end ,name)))
+                   (cons (overlay-start ,name) (overlay-end ,name)))))))
+
+(embark-define-overlay-target flymake flymake-diagnostic)
+(embark-define-overlay-target bug-reference bug-reference-url nil
+                              url bug-reference-url)
 
 (defmacro embark-define-thingatpt-target (thing &rest modes)
   "Define a target finder for THING using the thingatpt library.
