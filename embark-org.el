@@ -180,9 +180,9 @@
 (push 'embark--ignore-target            ; prompts for file name
       (alist-get 'org-table-export embark-target-injection-hooks))
 
-(add-to-list 'embark-keymap-alist '(org-table . embark-org-table-map))
+(add-to-list 'embark-keymap-alist '(org-table embark-org-table-map))
 
-(add-to-list 'embark-keymap-alist '(org-table-cell . embark-org-table-cell-map))
+(add-to-list 'embark-keymap-alist '(org-table-cell embark-org-table-cell-map))
 
 ;;; Links
 
@@ -373,7 +373,7 @@ bound to i."
 (cl-pushnew 'embark--ignore-target
             (alist-get 'org-set-tags-command embark-target-injection-hooks))
 
-(cl-pushnew '(org-heading . embark-org-heading-map) embark-keymap-alist)
+(add-to-list 'embark-keymap-alist '(org-heading embark-org-heading-map))
 
 ;;; Source blocks and babel calls
 
@@ -422,7 +422,7 @@ of the arguments."
 (dolist (motion '(org-babel-next-src-block org-babel-previous-src-block))
   (add-to-list 'embark-repeat-actions motion))
 
-(add-to-list 'embark-keymap-alist '(org-src-block . embark-org-src-block-map))
+(add-to-list 'embark-keymap-alist '(org-src-block embark-org-src-block-map))
 
 ;;; Inline source blocks
 
@@ -434,7 +434,7 @@ of the arguments."
   "k" #'org-babel-remove-inline-result)
 
 (add-to-list 'embark-keymap-alist
-             '(org-inline-src-block . embark-org-inline-src-block-map))
+             '(org-inline-src-block embark-org-inline-src-block-map))
 
 ;;; List items
 
@@ -465,7 +465,7 @@ of the arguments."
                org-outdent-item-tree))
   (add-to-list 'embark-repeat-actions cmd))
 
-(add-to-list 'embark-keymap-alist '(org-item . embark-org-item-map))
+(add-to-list 'embark-keymap-alist '(org-item embark-org-item-map))
 
 ;;; Org plain lists
 
@@ -481,7 +481,7 @@ of the arguments."
 
 (add-to-list 'embark-repeat-actions 'org-cycle-list-bullet)
 
-(add-to-list 'embark-keymap-alist '(org-plain-list . embark-org-plain-list-map))
+(add-to-list 'embark-keymap-alist '(org-plain-list embark-org-plain-list-map))
 
 (cl-defun embark-org--toggle-checkboxes
     (&rest rest &key run type &allow-other-keys)
