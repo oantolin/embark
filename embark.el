@@ -153,7 +153,7 @@
     (kill-ring embark-kill-ring-map)
     (heading embark-heading-map)
     (flymake embark-flymake-map)
-    (smerge smerge-basic-map)
+    (smerge smerge-basic-map embark-general-map)
     (t embark-general-map))
   "Alist of action types and corresponding keymaps.
 The special key t is associated with the default keymap to use.
