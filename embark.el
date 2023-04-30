@@ -153,6 +153,7 @@
     (kill-ring embark-kill-ring-map)
     (heading embark-heading-map)
     (flymake embark-flymake-map)
+    (smerge smerge-basic-map)
     (t embark-general-map))
   "Alist of action types and corresponding keymaps.
 The special key t is associated with the default keymap to use.
@@ -170,6 +171,7 @@ or a list of such symbols."
     embark-target-completion-at-point
     embark-target-bug-reference-at-point
     embark-target-flymake-at-point
+    embark-target-smerge-at-point
     embark-target-package-at-point
     embark-target-email-at-point
     embark-target-url-at-point
@@ -518,12 +520,16 @@ argument: a one element list containing the target."
     org-move-subtree-up org-move-subtree-down
     ;; transpose commands
     transpose-sexps transpose-sentences transpose-paragraphs
-    ;; movement
+    ;; navigation commands
     flymake-goto-next-error flymake-goto-prev-error
     embark-next-symbol embark-previous-symbol
     backward-up-list backward-list forward-list forward-sexp
     backward-sexp forward-sentence backward-sentence
-    forward-paragraph backward-paragraph)
+    forward-paragraph backward-paragraph
+    ;; smerge commands
+    smerge-refine smerge-combine-with-next smerge-keep-current
+    smerge-keep-upper smerge-keep-lower smerge-keep-base
+    smerge-keep-all smerge-resolve smerge-prev smerge-next)
   "List of repeatable actions.
 When you use a command on this list as an Embark action from
 outside the minibuffer, `embark-act' does not exit but instead
@@ -835,6 +841,7 @@ respectively."
 
 (embark-define-overlay-target flymake flymake-diagnostic)
 (embark-define-overlay-target bug-reference bug-reference-url nil url %p)
+(embark-define-overlay-target smerge smerge (eq %p 'conflict))
 
 (defmacro embark-define-thingatpt-target (thing &rest modes)
   "Define a target finder for THING using the thingatpt library.
