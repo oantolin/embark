@@ -816,8 +816,8 @@ different priorities in `embark-target-finders'."
 (defmacro embark-define-overlay-target (name prop &optional pred type target)
   "Define a target finder for NAME that targets overlays with property PROP.
 The function defined is named embark-target-NAME-at-point and it
-returns Embark targets based on the overlays around point. An overlay
-provides a target if it has a non-nil property named PROP.
+returns Embark targets based on the overlays around point.  An
+overlay provides a target if its property named PROP is non-nil.
 
 If the optional PRED argument is given, it should be an
 expression and it further restricts the targets to only those
@@ -855,6 +855,9 @@ property respectively."
 
 (defmacro embark-define-thingatpt-target (thing &rest modes)
   "Define a target finder for THING using the thingatpt library.
+The function defined is named embark-target-NAME-at-point and it
+uses (thing-at-point 'THING) to find its targets.
+
 If any MODES are given, the target finder only applies to buffers
 in one of those major modes."
   (declare (indent 1))
@@ -871,6 +874,36 @@ in one of those major modes."
   text-mode help-mode Info-mode man-common)
 (embark-define-thingatpt-target paragraph
   text-mode help-mode Info-mode man-common)
+
+(defmacro embark-define-regexp-target (name regexp &optional type target limit)
+  "Define a target finder for matches of REGEXP around point.
+The function defined is named embark-target-NAME-at-point and it
+uses (thing-at-point-looking-at REGEXP) to find its targets.
+
+The target finder returns target type NAME or optional symbol
+TYPE if given.
+
+The target finder returns the substring of the buffer matched by
+REGEXP as the target string or the result of evaluating the
+optional TARGET expression if given.  In the expression TARGET
+you can use `match-string' to recover the match of the REGEXP or
+of any sub-expressions it has.
+
+The optional LIMIT is the number of characters before and after
+point to limit the search to.  If LIMIT is nil, search a little
+more than the current line (more precisely, the smallest interval
+centered at point that includes the current line)."
+  `(defun ,(intern (format "embark-target-%s-at-point" name)) ()
+     ,(format "Target %s at point." name)
+     (save-match-data
+       (when (thing-at-point-looking-at
+              ,regexp
+              ,(or limit
+                   '(max (- (line-end-position) (point))
+                         (- (point) (line-beginning-position)))))
+         (cons ',(or type name)
+               (cons ,(or target '(match-string 0))
+                     (cons (match-beginning 0) (match-end 0))))))))
 
 (defun embark--identifier-types (identifier)
   "Return list of target types appropriate for IDENTIFIER."
