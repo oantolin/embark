@@ -814,15 +814,25 @@ different priorities in `embark-target-finders'."
       `(expression ,(buffer-substring start end) ,start . ,end)))))
 
 (defmacro embark-define-overlay-target (name prop &optional pred type target)
-  "Define a target finder for NAME based on overlays with property PROP.
-PRED is an optional expression that must hold when a target is
-found and defaults to only requiring the overlay property be
-non-nil.  TYPE is an optional target type and defaults to the
-symbol NAME.  TARGET is an optional expression evaluating to the
-target string and defaults to the substring of the buffer covered
-by the overlay.  In the PRED and TARGET expressions, the symbols
-%o and %p will be bound to the overlay and the overlay's property
-respectively."
+  "Define a target finder for NAME that targets overlays with property PROP.
+The function defined is named embark-target-NAME-at-point and it
+returns Embark targets based on the overlays around point. An overlay
+provides a target if it has a non-nil property named PROP.
+
+If the optional PRED argument is given, it should be an
+expression and it further restricts the targets to only those
+overlays for which PRED evaluates to non-nil.
+
+The target finder returns target type NAME or optional symbol
+TYPE if given.
+
+The target finder returns the substring of the buffer covered by
+the overlay as the target string or the result of evaluating the
+optional TARGET expression if given.
+
+PRED and TARGET are expressions (not functions) and when evaluated the
+symbols `%o' and `%p' are bound to the overlay and the overlay's
+property respectively."
   `(defun ,(intern (format "embark-target-%s-at-point" name)) ()
      ,(format "Target %s at point." name)
      (when-let ((%o (seq-find
