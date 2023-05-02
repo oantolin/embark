@@ -875,7 +875,8 @@ in one of those major modes."
 (embark-define-thingatpt-target paragraph
   text-mode help-mode Info-mode man-common)
 
-(defmacro embark-define-regexp-target (name regexp &optional type target limit)
+(defmacro embark-define-regexp-target
+    (name regexp &optional type target bounds limit)
   "Define a target finder for matches of REGEXP around point.
 The function defined is named embark-target-NAME-at-point and it
 uses (thing-at-point-looking-at REGEXP) to find its targets.
@@ -889,6 +890,9 @@ optional TARGET expression if given.  In the expression TARGET
 you can use `match-string' to recover the match of the REGEXP or
 of any sub-expressions it has.
 
+BOUNDS is an optional expression to compute the bounds of the
+target and defaults to (cons (match-beginning 0) (match-end 0)).
+
 The optional LIMIT is the number of characters before and after
 point to limit the search to.  If LIMIT is nil, search a little
 more than the current line (more precisely, the smallest interval
@@ -898,12 +902,11 @@ centered at point that includes the current line)."
      (save-match-data
        (when (thing-at-point-looking-at
               ,regexp
-              ,(or limit
-                   '(max (- (line-end-position) (point))
-                         (- (point) (line-beginning-position)))))
+              ,(or limit '(max (- (pos-eol) (point)) (- (point) (pos-bol)))))
          (cons ',(or type name)
                (cons ,(or target '(match-string 0))
-                     (cons (match-beginning 0) (match-end 0))))))))
+                     ,(or bounds
+                          '(cons (match-beginning 0) (match-end 0)))))))))
 
 (defun embark--identifier-types (identifier)
   "Return list of target types appropriate for IDENTIFIER."
