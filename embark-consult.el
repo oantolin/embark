@@ -260,10 +260,12 @@ This function is meant to be added to `embark-collect-mode-hook'."
 
 ;;; Support for consult-find and consult-locate
 
-(setf (alist-get '(file . consult-find) embark-default-action-overrides)
+(setf (alist-get '(file . consult-find) embark-default-action-overrides
+                 nil nil #'equal)
       #'find-file)
 
-(setf (alist-get '(file . consult-locate) embark-default-action-overrides)
+(setf (alist-get '(file . consult-locate) embark-default-action-overrides
+                 nil nil #'equal)
       #'find-file)
 
 ;;; Support for consult-isearch-history
