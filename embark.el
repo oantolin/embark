@@ -1841,11 +1841,10 @@ that have such a keymap are links and images in `eww' buffers,
 attachment links in `gnus' article buffers, and the stash line
 in a `vc-dir' buffer."
   (interactive)
-  (let ((keymaps (delq nil (list (get-char-property (point) 'keymap)
-                                 (get-char-property (point) 'local-map)))))
-    (unless keymaps
-      (user-error "No key bindings found at point"))
-    (embark-bindings-in-keymap (make-composed-keymap keymaps))))
+  (if-let ((keymaps (delq nil (list (get-char-property (point) 'keymap)
+                                    (get-char-property (point) 'local-map)))))
+      (embark-bindings-in-keymap (make-composed-keymap keymaps))
+    (user-error "No key bindings found at point")))
 
 ;;;###autoload
 (defun embark-prefix-help-command ()
