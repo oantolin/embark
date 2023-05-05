@@ -1,5 +1,5 @@
 #+title: Embark changelog
-* Version 0.22.1 (2020-04-20)
+* Version 0.22.1 (2023-04-20)
 ** New feature: selections
 Now users can select several targets to make an ad hoc collection. The
 commands =embark-act-all=, =embark-export= and =embark-collect= will act on
