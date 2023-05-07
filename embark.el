@@ -2935,7 +2935,8 @@ For non-minibuffers, assume candidates are of given TYPE."
                     (if-let (a (funcall annotator c)) (list c "" a) c))
                   candidates)))))
 
-(defun embark--display-string (str) ;; Note: Keep in sync with vertico--display-string
+(defun embark--display-string (str)
+  ;; Note: Keep in sync with vertico--display-string
   "Return display STR without display and invisible properties."
   (let ((end (length str)) (pos 0) chunks)
     (while (< pos end)
@@ -2944,13 +2945,15 @@ For non-minibuffers, assume candidates are of given TYPE."
         (if (stringp disp)
             (let ((face (get-text-property pos 'face str)))
               (when face
-                (add-face-text-property 0 (length disp) face t (setq disp (concat disp))))
+                (add-face-text-property
+                 0 (length disp) face t (setq disp (concat disp))))
               (setq pos nextd chunks (cons disp chunks)))
           (while (< pos nextd)
-            (let ((nexti (next-single-property-change pos 'invisible str nextd)))
+            (let ((nexti
+                   (next-single-property-change pos 'invisible str nextd)))
               (unless (or (get-text-property pos 'invisible str)
-                          (and (= pos 0) (= nexti end))) ;; full string -> no allocation
-                  (push (substring str pos nexti) chunks))
+                          (and (= pos 0) (= nexti end))) ;; full=>no allocation
+                (push (substring str pos nexti) chunks))
               (setq pos nexti))))))
     (if chunks (apply #'concat (nreverse chunks)) str)))
 
