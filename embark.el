@@ -409,6 +409,8 @@ the key :always are executed always."
     (occur embark--unmark-target)
     (query-replace embark--beginning-of-target embark--unmark-target)
     (query-replace-regexp embark--beginning-of-target embark--unmark-target)
+    (replace-string embark--beginning-of-target embark--unmark-target)
+    (replace-regexp embark--beginning-of-target embark--unmark-target)
     ;; mark pseudo-action
     (mark embark--mark-target)
     ;; shells in new buffers
