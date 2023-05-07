@@ -2935,22 +2935,24 @@ For non-minibuffers, assume candidates are of given TYPE."
                     (if-let (a (funcall annotator c)) (list c "" a) c))
                   candidates)))))
 
-(defun embark--for-display (string)
-  "Return visibly equivalent STRING without display and invisible properties."
-  (let ((len (length string)) (pos 0) chunks)
-    (while (/= pos len)
-      (let ((dis (next-single-property-change pos 'display string len))
-            (display (get-text-property pos 'display string)))
-        (if (stringp display)
-            (progn (push display chunks) (setq pos dis))
-          (while (/= pos dis)
-            (let ((inv (next-single-property-change pos 'invisible string dis)))
-              (unless (get-text-property pos 'invisible string)
-                (unless (and (= pos 0) (= inv len))
-                  ;; avoid allocation for full string
-                  (push (substring string pos inv) chunks)))
-              (setq pos inv))))))
-    (if chunks (apply #'concat (nreverse chunks)) string)))
+(defun embark--display-string (str) ;; Note: Keep in sync with vertico--display-string
+  "Return display STR without display and invisible properties."
+  (let ((end (length str)) (pos 0) chunks)
+    (while (< pos end)
+      (let ((nextd (next-single-property-change pos 'display str end))
+            (disp (get-text-property pos 'display str)))
+        (if (stringp disp)
+            (let ((face (get-text-property pos 'face str)))
+              (when face
+                (add-face-text-property 0 (length disp) face t (setq disp (concat disp))))
+              (setq pos nextd chunks (cons disp chunks)))
+          (while (< pos nextd)
+            (let ((nexti (next-single-property-change pos 'invisible str nextd)))
+              (unless (or (get-text-property pos 'invisible str)
+                          (and (= pos 0) (= nexti end))) ;; full string -> no allocation
+                  (push (substring str pos nexti) chunks))
+              (setq pos nexti))))))
+    (if chunks (apply #'concat (nreverse chunks)) str)))
 
 (defun embark-collect--format-entries (candidates grouper)
   "Format CANDIDATES for `tabulated-list-mode' grouped by GROUPER.
@@ -2975,7 +2977,7 @@ example)."
                      ("" skip t)])
               (mapcar
                (pcase-lambda (`(,cand ,prefix ,annotation))
-                 (let* ((display (embark--for-display (funcall transform cand)))
+                 (let* ((display (embark--display-string (funcall transform cand)))
                         (length (length annotation))
                         (faces (text-property-not-all
                                 0 length 'face nil annotation)))
