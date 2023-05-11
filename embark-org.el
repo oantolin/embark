@@ -355,6 +355,8 @@ bound to i."
   "t" #'org-todo
   "," #'org-priority
   ":" #'org-set-tags-command
+  "P" #'org-set-property
+  "D" #'org-delete-property
   "k" #'org-cut-subtree
   "N" #'org-narrow-to-subtree
   "l" #'org-metaleft
@@ -370,8 +372,9 @@ bound to i."
                org-shiftmetaleft org-shiftmetaright org-cycle org-shifttab))
   (cl-pushnew cmd embark-repeat-actions))
 
-(cl-pushnew 'embark--ignore-target
-            (alist-get 'org-set-tags-command embark-target-injection-hooks))
+(dolist (cmd '(org-set-tags-command org-set-property org-delete-property))
+  (cl-pushnew 'embark--ignore-target
+              (alist-get cmd embark-target-injection-hooks)))
 
 (add-to-list 'embark-keymap-alist '(org-heading embark-org-heading-map))
 
