@@ -529,9 +529,7 @@ argument: a one element list containing the target."
     backward-sexp forward-sentence backward-sentence
     forward-paragraph backward-paragraph
     ;; smerge commands
-    smerge-refine smerge-combine-with-next smerge-keep-current
-    smerge-keep-upper smerge-keep-lower smerge-keep-base
-    smerge-keep-all smerge-resolve smerge-prev smerge-next)
+    smerge-refine smerge-combine-with-next smerge-prev smerge-next)
   "List of repeatable actions.
 When you use a command on this list as an Embark action from
 outside the minibuffer, `embark-act' does not exit but instead
