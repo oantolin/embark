@@ -245,7 +245,12 @@ member of the current selection. Similarly if no targets are selected
 and you are in a minibuffer completion session, running =embark-select=
 from =embark-act-all= will select all the current completion candidates.
 
-This functionality is supported everywhere:
+By default, whenever some targets are selected in the current buffer,
+a count of selected targets appears in the mode line. This can be
+turned off or customized through the =embark-selection-indicator= user
+option.
+
+The selection functionality is supported in every buffer:
 
 - In the minibuffer this gives a convenient way to act on several
   completion candidates that don't follow any simple pattern: just go

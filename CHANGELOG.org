@@ -1,4 +1,8 @@
 #+title: Embark changelog
+
+* Development version
+- Added a mode line indicator showing the number of selected targets in
+  the current buffer (contributed by @minad, thanks!)
 * Version 0.22.1 (2023-04-20)
 ** New feature: selections
 Now users can select several targets to make an ad hoc collection. The
