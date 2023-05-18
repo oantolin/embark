@@ -356,7 +356,12 @@ member of the current selection. Similarly if no targets are selected
 and you are in a minibuffer completion session, running @samp{embark-select}
 from @samp{embark-act-all} will select all the current completion candidates.
 
-This functionality is supported everywhere:
+By default, whenever some targets are selected in the current buffer,
+a count of selected targets appears in the mode line. This can be
+turned off or customized through the @samp{embark-selection-indicator} user
+option.
+
+The selection functionality is supported in every buffer:
 
 @itemize
 @item
@@ -992,15 +997,18 @@ without confirmation is dangerous? You have a couple of options:
 @item
 You can keep using the @samp{tab-bar-close-tab-by-name} command, but have
 Embark ask you for confirmation:
+@end enumerate
 @lisp
 (push #'embark--confirm
       (alist-get 'tab-bar-close-tab-by-name
                  embark-pre-action-hooks))
 @end lisp
 
+@enumerate
 @item
 You can write your own command that prompts for confirmation and
 use that instead of @samp{tab-bar-close-tab-by-name} in the above keymap:
+@end enumerate
 @lisp
 (defun my-confirm-close-tab-by-name (tab)
   (interactive "sTab to close: ")
@@ -1012,7 +1020,6 @@ Notice that this is a command you can also use directly from @samp{M-x}
 independently of Embark. Using it from @samp{M-x} leaves something to be
 desired, though, since you don't get completion for the tab names.
 You can fix this if you wish as described in the previous section.
-@end enumerate
 @end enumerate
 
 @node New target example in regular buffers - short Wikipedia links
