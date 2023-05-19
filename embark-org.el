@@ -145,7 +145,10 @@
 ;;; Tables
 
 (dolist (motion '(org-table-move-cell-up org-table-move-cell-down
-                  org-table-move-cell-left org-table-move-cell-right))
+                  org-table-move-cell-left org-table-move-cell-right
+                  org-table-move-row org-table-move-column
+                  org-table-move-row-up org-table-move-row-down
+                  org-table-move-column-left org-table-move-column-right))
   (add-to-list 'embark-repeat-actions motion))
 
 (push 'embark--ignore-target
@@ -154,11 +157,20 @@
 (defvar-keymap embark-org-table-cell-map
   :doc "Keymap for actions the current cells, column or row of an Org table."
   :parent embark-general-map
-  ;; TODO: default action?
+  "RET" #'org-table-align ; harmless default
   "<up>"    #'org-table-move-cell-up
   "<down>"  #'org-table-move-cell-down
   "<left>"  #'org-table-move-cell-left
   "<right>" #'org-table-move-cell-right
+  "d" #'org-table-kill-row
+  "D" #'org-table-delete-column ; capital = column
+  "^" #'org-table-move-row-up
+  "v" #'org-table-move-row-down
+  "<" #'org-table-move-column-left
+  ">" #'org-table-move-column-right
+  "i" #'org-table-insert-row
+  "I" #'org-table-insert-column ; capital = column
+  "h" #'org-table-insert-hline
   "=" #'org-table-eval-formula
   "e" #'org-table-edit-field
   "g" #'org-table-recalculate)
@@ -166,7 +178,7 @@
 (defvar-keymap embark-org-table-map
   :doc "Keymap for actions on entire Org table."
   :parent embark-general-map
-  ;; TODO: default action?
+  "RET" #'org-table-align ; harmless default
   "=" #'org-table-edit-formulas
   "s" #'org-table-sort-lines
   "t" #'org-table-transpose-table-at-point
@@ -174,6 +186,7 @@
   "f" #'org-table-follow-field-mode
   "y" #'org-table-paste-rectangle
   "d" #'org-table-toggle-formula-debugger
+  "o" #'org-table-toggle-coordinate-overlays
   "i" #'org-table-iterate
   "e" #'org-table-export)
 
