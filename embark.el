@@ -478,7 +478,8 @@ arguments and more details."
     (write-region embark--mark-target)
     (append-to-file embark--mark-target)
     (shell-command-on-region embark--mark-target)
-    (embark-eval-replace embark--mark-target))
+    (embark-eval-replace embark--mark-target)
+    (delete-indentation embark--mark-target))
   "Alist associating commands with post-action hooks.
 The hooks are run instead of the embarked upon action.  The hook
 can decide whether or not to run the action or it can run it
