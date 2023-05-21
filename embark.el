@@ -478,7 +478,8 @@ arguments and more details."
     (write-region embark--mark-target)
     (append-to-file embark--mark-target)
     (shell-command-on-region embark--mark-target)
-    (embark-eval-replace embark--mark-target))
+    (embark-eval-replace embark--mark-target)
+    (delete-indentation embark--mark-target))
   "Alist associating commands with post-action hooks.
 The hooks are run instead of the embarked upon action.  The hook
 can decide whether or not to run the action or it can run it
@@ -529,9 +530,7 @@ argument: a one element list containing the target."
     backward-sexp forward-sentence backward-sentence
     forward-paragraph backward-paragraph
     ;; smerge commands
-    smerge-refine smerge-combine-with-next smerge-keep-current
-    smerge-keep-upper smerge-keep-lower smerge-keep-base
-    smerge-keep-all smerge-resolve smerge-prev smerge-next)
+    smerge-refine smerge-combine-with-next smerge-prev smerge-next)
   "List of repeatable actions.
 When you use a command on this list as an Embark action from
 outside the minibuffer, `embark-act' does not exit but instead
@@ -2385,8 +2384,8 @@ ARG is the prefix argument."
                                 ((symbol-function 'embark--confirm) #'ignore))
                         (let ((prefix-arg prefix))
                           (when-let ((bounds (plist-get candidate :bounds)))
-                            (goto-char (car bounds))
-                            (embark--act action candidate))))))
+                            (goto-char (car bounds)))
+                          (embark--act action candidate)))))
                (quit (embark--quit-p action)))
           (when (and (eq action (embark--default-action type))
                      (eq action embark--command))
@@ -3317,10 +3316,25 @@ PRED is a predicate function used to filter the items."
 (defface embark-selected '((t (:inherit match)))
   "Face for selected candidates.")
 
+(defcustom embark-selection-indicator
+  #("  Embark:%s " 1 12 (face (embark-selected bold)))
+  "Mode line indicator used for selected candidates."
+  :type '(choice string nil))
+
 (defvar-local embark--selection nil
   "Buffer local list of selected targets.
 Add or remove elements to this list using the `embark-select'
 action.")
+
+(defun embark--selection-indicator ()
+  "Mode line indicator showing number of selected items."
+  (when-let ((sel
+              (buffer-local-value
+               'embark--selection
+               (or (when-let ((win (active-minibuffer-window)))
+                     (window-buffer win))
+                   (current-buffer)))))
+    (format embark-selection-indicator (length sel))))
 
 (cl-defun embark--select
     (&key orig-target orig-type bounds &allow-other-keys)
@@ -3348,7 +3362,10 @@ If BOUNDS are given, also highlight the target when selecting it."
         (add-text-properties 0 (length orig-target)
                              `(multi-category ,(cons orig-type orig-target))
                              target)
-        (push (cons target overlay) embark--selection)))))
+        (push (cons target overlay) embark--selection))))
+  (when embark-selection-indicator
+    (add-to-list 'mode-line-misc-info '(:eval (embark--selection-indicator)))
+    (force-mode-line-update t)))
 
 (defalias 'embark-select #'ignore
   "Add or remove the target from the current buffer's selection.
