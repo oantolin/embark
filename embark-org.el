@@ -372,7 +372,8 @@ bound to i."
                org-shiftmetaleft org-shiftmetaright org-cycle org-shifttab))
   (cl-pushnew cmd embark-repeat-actions))
 
-(dolist (cmd '(org-set-tags-command org-set-property org-delete-property))
+(dolist (cmd '(org-set-tags-command org-set-property
+               org-delete-property org-refile))
   (cl-pushnew 'embark--ignore-target
               (alist-get cmd embark-target-injection-hooks)))
 
