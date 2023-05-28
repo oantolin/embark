@@ -406,6 +406,7 @@ the key :always are executed always."
     (,'tab-bar-close-tab-by-name embark--confirm) ;; Avoid package-lint warning
     ;; search for region contents outside said region
     (embark-isearch embark--unmark-target)
+    (embark-isearch-backward embark--unmark-target)
     (occur embark--unmark-target)
     (query-replace embark--beginning-of-target embark--unmark-target)
     (query-replace-regexp embark--beginning-of-target embark--unmark-target)
@@ -1572,7 +1573,7 @@ matching an element of this list."
           (const :tag "Exclude Embark general actions"
                  (embark-collect embark-live embark-export
                   embark-cycle embark-act-all embark-keymap-help
-                  embark-become embark-isearch))
+                  embark-become embark-isearch embark-isearch-backward))
           (repeat :tag "Other" (choice regexp symbol))))
 
 (defcustom embark-verbose-indicator-buffer-sections
@@ -3759,6 +3760,14 @@ minibuffer, which means it can be used as an Embark action."
   (isearch-mode t)
   (isearch-edit-string))
 
+(defun embark-isearch-backward ()
+  "Prompt for string in the minibuffer and start `isearch-backward'.
+Unlike isearch, this command reads the string from the
+minibuffer, which means it can be used as an Embark action."
+  (interactive)
+  (isearch-mode nil)
+  (isearch-edit-string))
+
 (defun embark-toggle-highlight ()
   "Toggle symbol highlighting using `highlight-symbol-at-point'."
   (interactive)
@@ -4044,6 +4053,7 @@ This simply calls RUN with the REST of its arguments inside
   "B" #'embark-become
   "A" #'embark-act-all
   "C-s" #'embark-isearch
+  "C-r" #'embark-isearch-backward
   "C-SPC" #'mark
   "DEL" #'delete-region
   "SPC" #'embark-select)
