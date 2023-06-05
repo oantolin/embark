@@ -34,9 +34,10 @@
 
 ;; There are very many org element and objects types, we'll only
 ;; recognize those for which there are specific actions we can put in
-;; a keymap, or for even if there aren't any specific actions, if it's
-;; import to be able to kill, delete or duplicate (embark-insert) them
-;; conveniently.  I'll start conservatively and we can add more later
+;; a keymap, or even if there aren't any specific actions, if it's
+;; important to be able to kill, delete or duplicate (embark-insert)
+;; them conveniently.  I'll start conservatively and we can add more
+;; later
 
 (defconst embark-org--types
   '(
