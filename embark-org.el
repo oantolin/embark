@@ -152,8 +152,8 @@
                   org-table-move-column-left org-table-move-column-right))
   (add-to-list 'embark-repeat-actions motion))
 
-(push 'embark--ignore-target
-      (alist-get 'org-table-edit-field embark-target-injection-hooks))
+(dolist (cmd '(org-table-eval-formula org-table-edit-field))
+  (push 'embark--ignore-target (alist-get cmd embark-target-injection-hooks)))
 
 (defvar-keymap embark-org-table-cell-map
   :doc "Keymap for actions the current cells, column or row of an Org table."
