@@ -527,5 +527,45 @@ REST are the remaining arguments."
 
 (keymap-set embark-encode-map "o" 'embark-org-export-in-place-map)
 
+;;; Org agenda items
+
+(defun embark-org-target-agenda-item ()
+  "Target Org agenda item at point."
+  (when (and (derived-mode-p 'org-agenda-mode)
+             (get-text-property (line-beginning-position) 'org-marker))
+    (let ((start (+ (line-beginning-position) (current-indentation)))
+          (end (line-end-position)))
+      `(org-agenda-item ,(buffer-substring start end) ,start . ,end))))
+
+(let ((tail (memq 'embark-org-target-element-context embark-target-finders)))
+  (cl-pushnew 'embark-org-target-agenda-item (cdr tail)))
+
+(defvar-keymap embark-org-agenda-item-map
+  :doc "Keymap for actions on Org agenda items"
+  :parent embark-general-map
+  "RET" #'org-agenda-goto
+  "n" #'org-agenda-next-item
+  "p" #'org-agenda-previous-item
+  "t" #'org-agenda-todo
+  "k" #'org-agenda-kill
+  "u" #'org-agenda-undo
+  "d" #'org-agenda-toggle-deadlines
+  "a" #'org-agenda-archive
+  "i" #'org-agenda-clock-in
+  "o" #'org-agenda-clock-out
+  ":" #'org-agenda-set-tags
+  "," #'org-agenda-priority
+  "s" #'org-agenda-schedule
+  "P" #'org-agenda-set-property
+  "e" #'org-agenda-set-effort
+  "R" #'org-agenda-refile
+  "N" #'org-agenda-add-note
+  "b" #'org-agenda-tree-to-indirect-buffer)
+
+(add-to-list 'embark-keymap-alist '(org-agenda-item embark-org-agenda-item-map))
+
+(dolist (cmd '(org-agenda-todo org-agenda-next-item org-agenda-previous-item))
+  (cl-pushnew cmd embark-repeat-actions))
+
 (provide 'embark-org)
 ;;; embark-org.el ends here
