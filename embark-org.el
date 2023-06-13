@@ -567,5 +567,11 @@ REST are the remaining arguments."
 (dolist (cmd '(org-agenda-todo org-agenda-next-item org-agenda-previous-item))
   (cl-pushnew cmd embark-repeat-actions))
 
+(dolist (cmd '(org-agenda-set-tags org-agenda-priority
+               org-agenda-schedule org-agenda-set-property
+               org-agenda-set-effort org-agenda-refile))
+  (cl-pushnew 'embark--ignore-target
+              (alist-get cmd embark-target-injection-hooks)))
+
 (provide 'embark-org)
 ;;; embark-org.el ends here
