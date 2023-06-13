@@ -366,7 +366,9 @@ bound to i."
   :doc "Keymap for actions on Org headings."
   :parent embark-heading-map
   "RET" #'org-todo
+  "TAB" #'org-cycle
   "t" #'org-todo
+  "s" #'org-schedule
   "," #'org-priority
   ":" #'org-set-tags-command
   "P" #'org-set-property
@@ -387,7 +389,7 @@ bound to i."
   (cl-pushnew cmd embark-repeat-actions))
 
 (dolist (cmd '(org-set-tags-command org-set-property
-               org-delete-property org-refile))
+               org-delete-property org-refile org-schedule))
   (cl-pushnew 'embark--ignore-target
               (alist-get cmd embark-target-injection-hooks)))
 
