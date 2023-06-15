@@ -375,10 +375,13 @@ bound to i."
   "D" #'org-delete-property
   "k" #'org-cut-subtree
   "N" #'org-narrow-to-subtree
-  "l" #'org-metaleft
-  "r" #'org-metaright
+  "<left>" #'org-do-demote
+  "<right>" #'org-do-promote
   "S" #'org-sort
-  "R" #'org-refile
+  "r" #'org-refile
+  "i" #'org-clock-in
+  "o" #'org-clock-out
+  "I" #'embark-insert                   ; keep it available
   "a" #'org-archive-subtree-default-with-confirmation
   "h" #'org-insert-heading-respect-content
   "H" #'org-insert-todo-heading-respect-content
@@ -545,7 +548,8 @@ REST are the remaining arguments."
 (defvar-keymap embark-org-agenda-item-map
   :doc "Keymap for actions on Org agenda items"
   :parent embark-general-map
-  "RET" #'org-agenda-goto
+  "RET" #'org-agenda-todo
+  "j" #'org-agenda-goto
   "n" #'org-agenda-next-item
   "p" #'org-agenda-previous-item
   "t" #'org-agenda-todo
@@ -560,7 +564,7 @@ REST are the remaining arguments."
   "s" #'org-agenda-schedule
   "P" #'org-agenda-set-property
   "e" #'org-agenda-set-effort
-  "R" #'org-agenda-refile
+  "r" #'org-agenda-refile
   "N" #'org-agenda-add-note
   "b" #'org-agenda-tree-to-indirect-buffer)
 
