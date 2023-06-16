@@ -387,9 +387,10 @@ for any action that is a Consult async command."
 The values of TYPE which are considered to have an associated
 directory are: file, buffer, bookmark and library.  The REST of
 the arguments are also passed to RUN."
-  (when (embark--associated-directory target type)
-    (let (consult-project-function)
-      (apply run :target target :type type rest))))
+  (if (embark--associated-directory target type)
+      (let (consult-project-function)
+        (apply run :target target :type type rest))
+    (apply run :target target :type type rest)))
 
 (map-keymap
  (lambda (_key cmd)

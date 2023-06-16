@@ -3996,15 +3996,19 @@ the REST of the arguments."
   "Return directory associated to TARGET of given TYPE.
 The supported values of TYPE are file, buffer, bookmark and
 library, which have an obvious notion of associated directory."
-  (pcase type
-    ('file
-     (file-name-directory target))
-    ('buffer
-     (buffer-local-value 'default-directory (get-buffer target)))
-    ('bookmark
-     (file-name-directory (bookmark-location target)))
-    ('library
-     (file-name-directory (locate-library target)))))
+  (setq target (pcase type
+                 ('file
+                  target)
+                 ('buffer
+                  (buffer-local-value 'default-directory (get-buffer target)))
+                 ('bookmark
+                  (bookmark-location target))
+                 ('library
+                  (locate-library target))))
+  (when target
+    (if (file-directory-p target)
+        (file-name-as-directory target)
+      (file-name-directory target))))
 
 (autoload 'bookmark-location "bookmark")
 (cl-defun embark--cd (&rest rest &key run target type &allow-other-keys)
