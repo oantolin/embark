@@ -369,6 +369,7 @@ bound to i."
   "TAB" #'org-cycle
   "t" #'org-todo
   "s" #'org-schedule
+  "d" #'org-deadline
   "," #'org-priority
   ":" #'org-set-tags-command
   "P" #'org-set-property
@@ -555,13 +556,14 @@ REST are the remaining arguments."
   "t" #'org-agenda-todo
   "k" #'org-agenda-kill
   "u" #'org-agenda-undo
-  "d" #'org-agenda-toggle-deadlines
+  "D" #'org-agenda-toggle-deadlines
   "a" #'org-agenda-archive
   "i" #'org-agenda-clock-in
   "o" #'org-agenda-clock-out
   ":" #'org-agenda-set-tags
   "," #'org-agenda-priority
   "s" #'org-agenda-schedule
+  "d" #'org-agenda-deadline
   "P" #'org-agenda-set-property
   "e" #'org-agenda-set-effort
   "r" #'org-agenda-refile

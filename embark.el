@@ -4291,8 +4291,8 @@ This simply calls RUN with the REST of its arguments inside
   "^" 'outline-move-subtree-up
   "v" 'outline-move-subtree-down
   "u" 'outline-up-heading
-  "s" 'outline-show-subtree
-  "d" 'outline-hide-subtree
+  "+" 'outline-show-subtree
+  "-" 'outline-hide-subtree
   ">" 'outline-demote
   "<" 'outline-promote)
 
