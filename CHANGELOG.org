@@ -5,6 +5,9 @@
   the current buffer (contributed by @minad, thanks!)
 - Renamed =embark-isearch= to =embark-isearch-forward= and added
   =embark-isearch-backward=.
+- Added key bindings for org agenda items consist with those of org
+  headings where possible. Also improved bindings for org targets in
+  general.
 * Version 0.22.1 (2023-04-20)
 ** New feature: selections
 Now users can select several targets to make an ad hoc collection. The
