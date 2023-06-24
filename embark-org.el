@@ -475,7 +475,6 @@ of the arguments."
   :doc "Keymap for actions on Org babel calls."
   :parent embark-general-map
   "RET" #'org-babel-lob-execute-maybe
-  "'" #'org-edit-inline-src-code
   "k" #'org-babel-remove-result)
 
 (add-to-list 'embark-keymap-alist
