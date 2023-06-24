@@ -399,7 +399,7 @@ bound to i."
 
 (add-to-list 'embark-keymap-alist '(org-heading embark-org-heading-map))
 
-;;; Source blocks and babel calls
+;;; Source blocks
 
 (defun embark-org-copy-block-contents ()
   "Save contents of source block at point to the `kill-ring'."
@@ -446,6 +446,15 @@ of the arguments."
 (dolist (motion '(org-babel-next-src-block org-babel-previous-src-block))
   (add-to-list 'embark-repeat-actions motion))
 
+(dolist (cmd '(org-babel-execute-maybe
+               org-babel-lob-execute-maybe
+               org-babel-execute-src-block
+               org-babel-execute-src-block-maybe
+               org-babel-execute-buffer
+               org-babel-execute-subtree))
+  (cl-pushnew #'embark--ignore-target
+              (alist-get cmd embark-target-injection-hooks)))
+
 (add-to-list 'embark-keymap-alist '(org-src-block embark-org-src-block-map))
 
 ;;; Inline source blocks
@@ -459,6 +468,18 @@ of the arguments."
 
 (add-to-list 'embark-keymap-alist
              '(org-inline-src-block embark-org-inline-src-block-map))
+
+;;; Babel calls
+
+(defvar-keymap embark-org-babel-call-map
+  :doc "Keymap for actions on Org babel calls."
+  :parent embark-general-map
+  "RET" #'org-babel-lob-execute-maybe
+  "'" #'org-edit-inline-src-code
+  "k" #'org-babel-remove-result)
+
+(add-to-list 'embark-keymap-alist
+             '(org-babel-call embark-org-babel-call-map))
 
 ;;; List items
 
