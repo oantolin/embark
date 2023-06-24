@@ -570,26 +570,26 @@ REST are the remaining arguments."
 (defvar-keymap embark-org-agenda-item-map
   :doc "Keymap for actions on Org agenda items"
   :parent embark-general-map
-  "RET" #'org-agenda-todo
-  "j" #'org-agenda-goto
-  "n" #'org-agenda-next-item
-  "p" #'org-agenda-previous-item
-  "t" #'org-agenda-todo
-  "k" #'org-agenda-kill
-  "u" #'org-agenda-undo
-  "D" #'org-agenda-toggle-deadlines
-  "a" #'org-agenda-archive
-  "i" #'org-agenda-clock-in
-  "o" #'org-agenda-clock-out
-  ":" #'org-agenda-set-tags
-  "," #'org-agenda-priority
-  "s" #'org-agenda-schedule
-  "d" #'org-agenda-deadline
-  "P" #'org-agenda-set-property
-  "e" #'org-agenda-set-effort
-  "r" #'org-agenda-refile
-  "N" #'org-agenda-add-note
-  "b" #'org-agenda-tree-to-indirect-buffer)
+  "RET" 'org-agenda-todo
+  "j" 'org-agenda-goto
+  "n" 'org-agenda-next-item
+  "p" 'org-agenda-previous-item
+  "t" 'org-agenda-todo
+  "k" 'org-agenda-kill
+  "u" 'org-agenda-undo
+  "D" 'org-agenda-toggle-deadlines
+  "a" 'org-agenda-archive
+  "i" 'org-agenda-clock-in
+  "o" 'org-agenda-clock-out
+  ":" 'org-agenda-set-tags
+  "," 'org-agenda-priority
+  "s" 'org-agenda-schedule
+  "d" 'org-agenda-deadline
+  "P" 'org-agenda-set-property
+  "e" 'org-agenda-set-effort
+  "r" 'org-agenda-refile
+  "N" 'org-agenda-add-note
+  "b" 'org-agenda-tree-to-indirect-buffer)
 
 (add-to-list 'embark-keymap-alist '(org-agenda-item embark-org-agenda-item-map))
 
