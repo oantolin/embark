@@ -169,8 +169,8 @@
   "v" #'org-table-move-row-down
   "<" #'org-table-move-column-left
   ">" #'org-table-move-column-right
-  "i" #'org-table-insert-row
-  "I" #'org-table-insert-column ; capital = column
+  "o" #'org-table-insert-row
+  "O" #'org-table-insert-column ; capital = column
   "h" #'org-table-insert-hline
   "=" #'org-table-eval-formula
   "e" #'org-table-edit-field
@@ -188,7 +188,7 @@
   "y" #'org-table-paste-rectangle
   "d" #'org-table-toggle-formula-debugger
   "o" #'org-table-toggle-coordinate-overlays
-  "i" #'org-table-iterate
+  "g" #'org-table-iterate
   "e" #'org-table-export)
 
 (push 'embark--ignore-target            ; prompts for file name

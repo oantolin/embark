@@ -4117,8 +4117,8 @@ This simply calls RUN with the REST of its arguments inside
   "<" #'embark-eval-replace
   "a" #'align
   "A" #'align-regexp
-  "i" #'indent-rigidly
-  "I" #'embark-insert
+  "<left>" #'indent-rigidly
+  "<right>" #'indent-rigidly
   "TAB" #'indent-region
   "f" #'fill-region
   "p" #'fill-region-as-paragraph
