@@ -2732,9 +2732,11 @@ This makes `embark-export' work in Embark Collect buffers."
           (save-excursion
             (goto-char (point-min))
             (let (all)
-              (push (cdr (embark-target-collect-candidate)) all)
+              (when-let ((cand (embark-target-collect-candidate)))
+                (push (cdr cand) all))
               (while (forward-button 1 nil nil t)
-                (push (cdr (embark-target-collect-candidate)) all))
+                (when-let ((cand (embark-target-collect-candidate)))
+                  (push (cdr cand) all)))
               (nreverse all))))))
 
 (defun embark-completions-buffer-candidates ()
