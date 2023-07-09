@@ -2529,11 +2529,12 @@ point."
   (interactive "P")
   (unless (minibufferp)
     (user-error "Not in a minibuffer"))
-  (let* ((target (if full
-                     (minibuffer-contents)
-                   (pcase-let ((`(,beg . ,end) (embark--boundaries)))
-                     (substring (minibuffer-contents) beg
-                                (+ end (embark--minibuffer-point))))))
+  (let* ((target (embark--display-string ; remove invisible portions
+                  (if full
+                      (minibuffer-contents)
+                    (pcase-let ((`(,beg . ,end) (embark--boundaries)))
+                      (substring (minibuffer-contents) beg
+                                 (+ end (embark--minibuffer-point)))))))
          (keymap (embark--become-keymap))
          (targets `((:type embark-become :target ,target)))
          (indicators (mapcar #'funcall embark-indicators))

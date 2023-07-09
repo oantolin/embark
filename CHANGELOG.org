@@ -8,6 +8,9 @@
 - Added key bindings for org agenda items consistent with those of org
   headings where possible. Also improved bindings for org targets in
   general.
+- =embark-become= now removes any invisible text from the minibuffer
+  input on the grounds that users probably expect the target command
+  to receive exactly the input they can see.
 * Version 0.22.1 (2023-04-20)
 ** New feature: selections
 Now users can select several targets to make an ad hoc collection. The
