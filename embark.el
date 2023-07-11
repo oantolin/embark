@@ -3372,6 +3372,7 @@ If BOUNDS are given, also highlight the target when selecting it."
     (add-to-list 'mode-line-misc-info '(:eval (embark--selection-indicator)))
     (force-mode-line-update t)))
 
+;;;###autoload
 (defun embark-select ()
   "Add or remove the target from the current buffer's selection.
 You can act on all selected targets at once with `embark-act-all'.
