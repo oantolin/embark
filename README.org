@@ -176,10 +176,11 @@ sets:
   The candidates are displayed as a list showing additional annotations.
 
   The Embark Collect buffer is somewhat "dired-like": you can select
-  and deselect candidates through the =embark-select= action (bound to
-  =SPC=). In an Embark Collect buffer =embark-act= is bound to =a= and
-  =embark-act-all= is bound to =A=; =embark-act-all= will act on all
-  currently marked candidates if there any, and will act on all
+  and deselect candidates through =embark-select= (available as an
+  action in =embark-act=, bound to =SPC=; but you could also give it a
+  global key binding). In an Embark Collect buffer =embark-act= is bound
+  to =a= and =embark-act-all= is bound to =A=; =embark-act-all= will act on
+  all currently marked candidates if there any, and will act on all
   candidates if none are marked. In particular, this means that =a SPC=
   will toggle whether the candidate at point is selected, and =A SPC=
   will select all candidates if none are selected, or deselect all
@@ -230,14 +231,16 @@ or in a dired buffer they work on all marked files (or all files if
 none are marked). Embark also has a notion of /selection/, where you can
 accumulate an ad hoc list of targets for these commands to work on.
 
-The selection is controlled by using the =embark-select= action (which
-must be run as an action through =embark-act=), bound to =SPC= in
-=embark-general-map= so that it is always available. Calling this action
-on a target toggles its membership in the current buffer's Embark
-selection; that is, it adds it to selection if not selected and
-removes it from the selection if it was selected. Whenever the
-selection for a buffer is non-empty, the commands =embark-act-all=,
-=embark-export= and =embark-collect= will act on the selection.
+The selection is controlled by using the =embark-select= action, bound
+to =SPC= in =embark-general-map= so that it is always available (you can
+also give =embark-select= a global key binding if you wish; when called
+directly, not as an action for =embark-act=, it will select the first
+target at point). Calling this action on a target toggles its
+membership in the current buffer's Embark selection; that is, it adds
+it to selection if not selected and removes it from the selection if
+it was selected. Whenever the selection for a buffer is non-empty, the
+commands =embark-act-all=, =embark-export= and =embark-collect= will act on
+the selection.
 
 To deselect all selected targets, you can use the =embark-select= action
 through =embark-act-all=, since this will run =embark-select= on each

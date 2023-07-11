@@ -3,6 +3,9 @@
 * Development version
 - Added a mode line indicator showing the number of selected targets in
   the current buffer (contributed by @minad, thanks!)
+- Now =embark-select= can also be called as a top-level command, from
+  outside =embark-act=. When called that way, it will select the first
+  target at point.
 - Renamed =embark-isearch= to =embark-isearch-forward= and added
   =embark-isearch-backward=.
 - Added key bindings for org agenda items consistent with those of org

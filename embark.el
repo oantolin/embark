@@ -416,9 +416,7 @@ the key :always are executed always."
     (mark embark--mark-target)
     ;; shells in new buffers
     (shell embark--universal-argument)
-    (eshell embark--universal-argument)
-    ;; do the actual work of selecting & deselecting targets
-    (embark-select embark--select))
+    (eshell embark--universal-argument))
   "Alist associating commands with pre-action hooks.
 The hooks are run right before an action is embarked upon.  See
 `embark-target-injection-hooks' for information about the hook
@@ -480,7 +478,9 @@ arguments and more details."
     (append-to-file embark--mark-target)
     (shell-command-on-region embark--mark-target)
     (embark-eval-replace embark--mark-target)
-    (delete-indentation embark--mark-target))
+    (delete-indentation embark--mark-target)
+    ;; do the actual work of selecting & deselecting targets
+    (embark-select embark--select))
   "Alist associating commands with post-action hooks.
 The hooks are run instead of the embarked upon action.  The hook
 can decide whether or not to run the action or it can run it
@@ -3372,9 +3372,15 @@ If BOUNDS are given, also highlight the target when selecting it."
     (add-to-list 'mode-line-misc-info '(:eval (embark--selection-indicator)))
     (force-mode-line-update t)))
 
-(defalias 'embark-select #'ignore
+(defun embark-select ()
   "Add or remove the target from the current buffer's selection.
-You can act on all selected targets at once with `embark-act-all'.")
+You can act on all selected targets at once with `embark-act-all'.
+When called from outside `embark-act' this command will select
+the first target at point."
+  (interactive)
+  (if-let ((target (car (embark--targets))))
+      (apply #'embark--select target)
+    (user-error "No target to select")))
 
 (defun embark-selected-candidates ()
   "Return currently selected candidates in the buffer."
