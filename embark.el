@@ -2343,9 +2343,12 @@ Return a plist with keys `:type', `:orig-type', `:candidates', and
 ;;;###autoload
 (defun embark-act-all (&optional arg)
   "Prompt the user for an action and perform it on each candidate.
-The candidates are chosen by `embark-candidate-collectors'.
-By default, if called from a minibuffer the candidates are the
-completion candidates.
+The candidates are chosen by `embark-candidate-collectors'.  By
+default, if `embark-select' has been used to select some
+candidates, then `embark-act-all' will act on those candidates;
+otherwise, if the selection is empty and `embark-act-all' is
+called from a minibuffer, then the candidates are the completion
+candidates.
 
 This command uses `embark-prompter' to ask the user to specify an
 action, and calls it injecting the target at the first minibuffer
