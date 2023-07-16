@@ -2400,16 +2400,15 @@ ARG is the prefix argument."
                                    (alist-get action embark-pre-action-hooks))))
                     (y-or-n-p (format "Run %s on %d %ss? "
                                       action (length candidates) type)))
-            (if (memq action embark-multitarget-actions)
-                (let ((prefix-arg prefix))
-                  (embark--act action transformed quit))
-              (save-excursion
-                (if quit
-                    (embark--quit-and-run #'mapc act candidates)
-                  (mapc act candidates)
-                  (when (memq 'embark--restart
-                              (alist-get action embark-post-action-hooks))
-                    (embark--restart)))))))
+            (if quit
+                (embark--quit-and-run #'mapc act candidates)
+              (if (memq action embark-multitarget-actions)
+                  (let ((prefix-arg prefix))
+                    (embark--act action transformed quit))
+                (save-excursion (mapc act candidates)))
+              (when (memq 'embark--restart
+                          (alist-get action embark-post-action-hooks))
+                (embark--restart)))))
       (dolist (cand candidates)
         (when-let ((bounds (plist-get cand :bounds)))
           (set-marker (car bounds) nil) ; yay, manual memory management!
