@@ -2132,7 +2132,7 @@ target bounds.
 
 In the minibuffer only the first target finder returning non-nil
 is taken into account.  When finding targets at point in other
-buffers, all target finder function is executed.
+buffers, all target finder functions are executed.
 
 For each target, the type is then looked up as a key in the
 variable `embark-transformer-alist'.  If there is a transformer
@@ -2319,8 +2319,10 @@ Return a plist with keys `:type', `:orig-type', `:candidates', and
       (let ((dir (embark--default-directory)))
         (setq candidates
               (mapcar (lambda (cand)
-                        (abbreviate-file-name (expand-file-name cand dir)))
+                        (abbreviate-file-name
+                         (expand-file-name (substitute-in-file-name cand) dir)))
                       candidates))))
+    ;; TODO more systematic approach to applying substitute-in-file-name
     (append
      (list :orig-type type :orig-candidates candidates :bounds bounds)
      (or (when candidates
