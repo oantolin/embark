@@ -470,6 +470,7 @@ arguments and more details."
     (capitalize-region embark--mark-target)
     (count-words-region embark--mark-target)
     (count-words embark--mark-target)
+    (delete-duplicate-lines embark--mark-target)
     (shell-command-on-region embark--mark-target)
     (delete-region embark--mark-target)
     (format-encode-region embark--mark-target)
