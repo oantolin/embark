@@ -1816,21 +1816,22 @@ user for a KEYMAP variable."
     (call-interactively command)))
 
 ;;;###autoload
-(defun embark-bindings (no-global)
-  "Explore all current command key bindings with `completing-read'.
+(defun embark-bindings (global)
+  "Explore current command key bindings with `completing-read'.
 The selected command will be executed.
 
-If NO-GLOBAL is non-nil (interactively, if called with a prefix
-argument) omit global key bindings; this leaves key bindings from
-minor mode maps and the local map (usually set by the major
-mode), but also less common keymaps such as those from a text
-property or overlay, or the overriding maps:
-`overriding-terminal-local-map' and `overriding-local-map'."
+This shows key bindings from minor mode maps and the local
+map (usually set by the major mode), but also less common keymaps
+such as those from a text property or overlay, or the overriding
+maps: `overriding-terminal-local-map' and `overriding-local-map'.
+
+Additionally, if GLOBAL is non-nil (interactively, if called with
+a prefix argument), this command includes global key bindings."
   (interactive "P")
   (embark-bindings-in-keymap
    (make-composed-keymap
     (let ((all-maps (current-active-maps t)))
-      (if no-global (remq global-map all-maps) all-maps)))))
+      (if global all-maps (remq global-map all-maps))))))
 
 ;;;###autoload
 (defun embark-bindings-at-point ()
