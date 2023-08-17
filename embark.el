@@ -3165,6 +3165,9 @@ The parameter KIND should be either `embark-export' or `embark-collect'."
       (funcall embark--rerun-function)
     (user-error "No function to rerun collect or export found")))
 
+(defvar embark--buffer-display #'pop-to-buffer
+  "Buffer display function.")
+
 ;;;###autoload
 (defun embark-export ()
   "Create a type-specific buffer to manage current candidates.
@@ -3194,13 +3197,13 @@ buffer."
                (cmd embark--command)
                (name (embark--descriptive-buffer-name 'export))
                (rerun (embark--rerun-function #'embark-export))
-               (buffer (save-excursion
-                         (funcall exporter candidates)
+               (buffer-display embark--buffer-display)
+               (buffer (with-current-buffer (funcall exporter candidates)
                          (rename-buffer name t)
                          (current-buffer))))
           (embark--quit-and-run
            (lambda ()
-             (pop-to-buffer buffer)
+             (funcall buffer-display buffer)
              (setq embark--rerun-function rerun)
              (use-local-map
               (make-composed-keymap
@@ -3211,6 +3214,13 @@ buffer."
              (let ((embark-after-export-hook after)
                    (embark--command cmd))
                (run-hooks 'embark-after-export-hook)))))))))
+
+;;;###autoload
+(defun embark-export-current-window ()
+  "Variant of `embark-export' which exports to current window."
+  (interactive)
+  (let ((embark--buffer-display #'switch-to-buffer))
+    (embark-export)))
 
 (defmacro embark--export-rename (buffer title &rest body)
   "Run BODY and rename BUFFER to Embark export buffer with TITLE."
@@ -3296,7 +3306,7 @@ PRED is a predicate function used to filter the items."
     (with-current-buffer buf
       (dired-unadvertise (car dired-directory)) ; avoid reuse of this buffer
       (rename-buffer (format "*Embark Export Dired %s*" default-directory)))
-    (pop-to-buffer buf)))
+     buf))
 
 (autoload 'package-menu-mode "package")
 (autoload 'package-menu--generate "package")
@@ -3307,7 +3317,7 @@ PRED is a predicate function used to filter the items."
     (with-current-buffer buf
       (package-menu-mode)
       (package-menu--generate nil (mapcar #'intern packages)))
-    (pop-to-buffer buf)))
+    buf))
 
 (defvar bookmark-alist)
 

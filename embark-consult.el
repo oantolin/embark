@@ -139,7 +139,7 @@ The elements of LINES are assumed to be values of category `consult-line'."
           (insert (concat lineno contents nl))))
       (goto-char (point-min))
       (occur-mode))
-    (pop-to-buffer buf)))
+    buf))
 
 (defun embark-consult--upgrade-markers ()
   "Upgrade consult-location cheap markers to real markers.
@@ -202,7 +202,7 @@ This function is meant to be added to `embark-collect-mode-hook'."
                       (current-local-map)))
       (setq-local wgrep-header&footer-parser #'embark-consult--wgrep-prepare)
       (when (fboundp 'wgrep-setup) (wgrep-setup)))
-    (pop-to-buffer buf)))
+    buf))
 
 (defun embark-consult-goto-grep (location)
   "Go to LOCATION, which should be a string with a grep match."
