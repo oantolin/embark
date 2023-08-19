@@ -4180,6 +4180,7 @@ This simply calls RUN with the REST of its arguments inside
   "D" #'delete-directory
   "r" #'rename-file
   "c" #'copy-file
+  "s" #'make-symbolic-link
   "j" #'embark-dired-jump
   "!" #'shell-command
   "&" #'async-shell-command
