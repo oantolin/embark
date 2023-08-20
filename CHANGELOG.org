@@ -14,6 +14,9 @@
 - =embark-become= now removes any invisible text from the minibuffer
   input on the grounds that users probably expect the target command
   to receive exactly the input they can see.
+- The meaning of the prefix argument in =embark-bindings= has flipped:
+  now by default global key bindings are excluded and you =C-u= to
+  include them.
 * Version 0.22.1 (2023-04-20)
 ** New feature: selections
 Now users can select several targets to make an ad hoc collection. The
