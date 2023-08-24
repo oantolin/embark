@@ -611,7 +611,7 @@ the variable `embark--target-buffer'.")
 (defun embark--target-buffer ()
   "Return buffer that should be targeted by Embark actions."
   (cond
-   ((and (minibufferp) (minibuffer-selected-window))
+   ((and (minibufferp) minibuffer-completion-table (minibuffer-selected-window))
     (window-buffer (minibuffer-selected-window)))
    ((and embark--target-buffer (buffer-live-p embark--target-buffer))
     embark--target-buffer)
@@ -622,7 +622,7 @@ the variable `embark--target-buffer'.")
 If DISPLAY is non-nil, call `display-buffer' to produce the
 window if necessary."
   (cond
-   ((and (minibufferp) (minibuffer-selected-window))
+   ((and (minibufferp) minibuffer-completion-table (minibuffer-selected-window))
     (minibuffer-selected-window))
    ((and embark--target-window
          (window-live-p embark--target-window)
