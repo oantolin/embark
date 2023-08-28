@@ -30,6 +30,7 @@
 * Advanced configuration::
 * How does Embark call the actions?::
 * Embark, Marginalia and Consult: Embark Marginalia and Consult. 
+* Related Packages::
 * Resources::
 * Contributions::
 * Acknowledgments::
@@ -279,10 +280,11 @@ candidates, for you to peruse and run actions on at your leisure.
 The candidates are displayed as a list showing additional annotations.
 
 The Embark Collect buffer is somewhat ``dired-like'': you can select
-and deselect candidates through the @samp{embark-select} action (bound to
-@samp{SPC}). In an Embark Collect buffer @samp{embark-act} is bound to @samp{a} and
-@samp{embark-act-all} is bound to @samp{A}; @samp{embark-act-all} will act on all
-currently marked candidates if there any, and will act on all
+and deselect candidates through @samp{embark-select} (available as an
+action in @samp{embark-act}, bound to @samp{SPC}; but you could also give it a
+global key binding). In an Embark Collect buffer @samp{embark-act} is bound
+to @samp{a} and @samp{embark-act-all} is bound to @samp{A}; @samp{embark-act-all} will act on
+all currently marked candidates if there any, and will act on all
 candidates if none are marked. In particular, this means that @samp{a SPC}
 will toggle whether the candidate at point is selected, and @samp{A SPC}
 will select all candidates if none are selected, or deselect all
@@ -341,14 +343,16 @@ or in a dired buffer they work on all marked files (or all files if
 none are marked). Embark also has a notion of @emph{selection}, where you can
 accumulate an ad hoc list of targets for these commands to work on.
 
-The selection is controlled by using the @samp{embark-select} action (which
-must be run as an action through @samp{embark-act}), bound to @samp{SPC} in
-@samp{embark-general-map} so that it is always available. Calling this action
-on a target toggles its membership in the current buffer's Embark
-selection; that is, it adds it to selection if not selected and
-removes it from the selection if it was selected. Whenever the
-selection for a buffer is non-empty, the commands @samp{embark-act-all},
-@samp{embark-export} and @samp{embark-collect} will act on the selection.
+The selection is controlled by using the @samp{embark-select} action, bound
+to @samp{SPC} in @samp{embark-general-map} so that it is always available (you can
+also give @samp{embark-select} a global key binding if you wish; when called
+directly, not as an action for @samp{embark-act}, it will select the first
+target at point). Calling this action on a target toggles its
+membership in the current buffer's Embark selection; that is, it adds
+it to selection if not selected and removes it from the selection if
+it was selected. Whenever the selection for a buffer is non-empty, the
+commands @samp{embark-act-all}, @samp{embark-export} and @samp{embark-collect} will act on
+the selection.
 
 To deselect all selected targets, you can use the @samp{embark-select} action
 through @samp{embark-act-all}, since this will run @samp{embark-select} on each
@@ -997,18 +1001,15 @@ without confirmation is dangerous? You have a couple of options:
 @item
 You can keep using the @samp{tab-bar-close-tab-by-name} command, but have
 Embark ask you for confirmation:
-@end enumerate
 @lisp
 (push #'embark--confirm
       (alist-get 'tab-bar-close-tab-by-name
                  embark-pre-action-hooks))
 @end lisp
 
-@enumerate
 @item
 You can write your own command that prompts for confirmation and
 use that instead of @samp{tab-bar-close-tab-by-name} in the above keymap:
-@end enumerate
 @lisp
 (defun my-confirm-close-tab-by-name (tab)
   (interactive "sTab to close: ")
@@ -1020,6 +1021,7 @@ Notice that this is a command you can also use directly from @samp{M-x}
 independently of Embark. Using it from @samp{M-x} leaves something to be
 desired, though, since you don't get completion for the tab names.
 You can fix this if you wish as described in the previous section.
+@end enumerate
 @end enumerate
 
 @node New target example in regular buffers - short Wikipedia links
@@ -1324,6 +1326,32 @@ minibuffer open so you can interact with the Consult command.
 the location if it matches a unique imenu entry, otherwise it will
 leave the minibuffer open so you can navigate among the matches.
 @end itemize
+
+@node Related Packages
+@chapter Related Packages
+
+There are several packages that offer functionality similar
+to Embark's. 
+
+@table @asis
+@item Acting on minibuffer completion candidates
+The popular Ivy and
+Helm packages have support for acting on the completion candidates
+of commands written using their APIs, and there is an extensive
+ecosystem of packages meant for Helm and for Ivy (the Ivy ones
+usually have ``counsel'' in the name) providing commands and
+appropriate actions.
+@item Acting on things at point
+The built-in @samp{context-menu-mode} provides
+a mouse-driven context-sensitive configurable menu. The @samp{do-at-point}
+package by Phil Kaluderic (available on GNU ELPA), on the other hand
+is keyboard-driven.
+@item Collecting completion candidates into a buffer
+The Ivy package
+has the command @samp{ivy-occur} which is similar to @samp{embark-collect}. As
+with Ivy actions, @samp{ivy-occur} only works for commands written using
+the Ivy API@.
+@end table
 
 @node Resources
 @chapter Resources
