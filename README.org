@@ -1117,8 +1117,8 @@ to Embark's.
   appropriate actions.
 - Acting on things at point :: The built-in =context-menu-mode= provides
   a mouse-driven context-sensitive configurable menu. The =do-at-point=
-  package by Phil Kaluderic (available on GNU ELPA), on the other hand
-  is keyboard-driven.
+  package by Philip Kaludercic (available on GNU ELPA), on the other
+  hand is keyboard-driven.
 - Collecting completion candidates into a buffer :: The Ivy package
   has the command =ivy-occur= which is similar to =embark-collect=. As
   with Ivy actions, =ivy-occur= only works for commands written using

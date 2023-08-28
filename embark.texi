@@ -1344,8 +1344,8 @@ appropriate actions.
 @item Acting on things at point
 The built-in @samp{context-menu-mode} provides
 a mouse-driven context-sensitive configurable menu. The @samp{do-at-point}
-package by Phil Kaluderic (available on GNU ELPA), on the other hand
-is keyboard-driven.
+package by Philip Kaludercic (available on GNU ELPA), on the other
+hand is keyboard-driven.
 @item Collecting completion candidates into a buffer
 The Ivy package
 has the command @samp{ivy-occur} which is similar to @samp{embark-collect}. As
