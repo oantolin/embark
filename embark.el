@@ -2969,6 +2969,14 @@ For non-minibuffers, assume candidates are of given TYPE."
               (setq pos nexti))))))
     (if chunks (apply #'concat (nreverse chunks)) str)))
 
+(defconst embark--hline
+  (propertize
+   (concat "\n" (propertize
+                 " " 'display '(space :align-to right)
+                 'face '(:inherit completions-group-separator :height 0.01)
+                 'cursor-intangible t 'intangible t)))
+  "Horizontal line used to separate multiline collect entries.")
+
 (defun embark-collect--format-entries (candidates grouper)
   "Format CANDIDATES for `tabulated-list-mode' grouped by GROUPER.
 The GROUPER is either nil or a function like the `group-function'
@@ -2981,43 +2989,48 @@ example)."
   (let ((max-width 0)
         (transform
          (if grouper (lambda (cand) (funcall grouper cand t)) #'identity)))
-    (setq tabulated-list-entries
-          (mapcan
-           (lambda (group)
-             (cons
-              `(nil [(,(concat (propertize embark-collect--outline-string
-                                           'invisible t)
-                               (format embark-collect-group-format (car group)))
-                      type embark-collect-group)
-                     ("" skip t)])
-              (mapcar
-               (pcase-lambda (`(,cand ,prefix ,annotation))
-                 (let* ((display (embark--display-string (funcall transform cand)))
-                        (length (length annotation))
-                        (faces (text-property-not-all
-                                0 length 'face nil annotation)))
-                   (setq max-width (max max-width (+ (string-width prefix)
-                                                     (string-width display))))
-                   (when faces
-                     (add-face-text-property 0 length 'default t annotation))
-                   `(,cand
-                     [(,(propertize display 'line-prefix prefix)
-                       type embark-collect-entry)
-                      (,annotation
-                       skip t
-                       ,@(unless faces
-                           '(face embark-collect-annotation)))])))
-               (cdr group))))
-           (if grouper
-               (seq-group-by (lambda (item) (funcall grouper (car item) nil))
-                             candidates)
-             (list (cons "" candidates)))))
-    (if (null grouper)
-        (pop tabulated-list-entries)
-      (setq-local outline-regexp embark-collect--outline-string)
-      (outline-minor-mode))
-    (setq tabulated-list-format
-          `[("Candidate" ,max-width t) ("Annotation" 0 t)])))
+    (setq
+     tabulated-list-entries
+     (mapcan
+      (lambda (group)
+        (let ((multiline (seq-some (lambda (x) (string-match-p "\n" (car x)))
+                                   candidates)))
+          (cons
+           `(nil [(,(concat (propertize embark-collect--outline-string
+                                        'invisible t)
+                            (format embark-collect-group-format (car group)))
+                   type embark-collect-group)
+                  ("" skip t)])
+           (mapcar
+            (pcase-lambda (`(,cand ,prefix ,annotation))
+              (let* ((display (embark--display-string (funcall transform cand)))
+                     (length (length annotation))
+                     (faces (text-property-not-all
+                             0 length 'face nil annotation)))
+                (setq max-width (max max-width (+ (string-width prefix)
+                                                  (string-width display))))
+                (when faces
+                  (add-face-text-property 0 length 'default t annotation))
+                `(,cand
+                  [(,(propertize
+                      (if multiline (concat display embark--hline) display)
+                      'line-prefix prefix)
+                    type embark-collect-entry)
+                   (,annotation
+                    skip t
+                    ,@(unless faces
+                        '(face embark-collect-annotation)))])))
+            (cdr group)))))
+     (if grouper
+         (seq-group-by (lambda (item) (funcall grouper (car item) nil))
+                       candidates)
+       (list (cons "" candidates)))))
+  (if (null grouper)
+      (pop tabulated-list-entries)
+    (setq-local outline-regexp embark-collect--outline-string)
+    (outline-minor-mode))
+  (setq tabulated-list-format
+        `[("Candidate" ,max-width t) ("Annotation" 0 t)])))
 
 (defun embark-collect--update-candidates (buffer)
   "Update candidates for Embark Collect BUFFER."
