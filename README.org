@@ -173,7 +173,9 @@ sets:
 
 - The =embark-collect= command produces a buffer listing all the current
   candidates, for you to peruse and run actions on at your leisure.
-  The candidates are displayed as a list showing additional annotations.
+  The candidates are displayed as a list showing additional
+  annotations. If any of the candidates contain newlines, then
+  horizontal lines are used to separate candidates.
 
   The Embark Collect buffer is somewhat "dired-like": you can select
   and deselect candidates through =embark-select= (available as an
