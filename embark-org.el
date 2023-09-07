@@ -553,7 +553,7 @@ REST are the remaining arguments."
 
 (keymap-set embark-encode-map "o" 'embark-org-export-in-place-map)
 
-;;; Org agenda items
+;;; Org remote headings, such as agenda items
 
 (defun embark-org-target-agenda-item ()
   "Target Org agenda item at point."
@@ -561,45 +561,31 @@ REST are the remaining arguments."
              (get-text-property (line-beginning-position) 'org-marker))
     (let ((start (+ (line-beginning-position) (current-indentation)))
           (end (line-end-position)))
-      `(org-agenda-item ,(buffer-substring start end) ,start . ,end))))
+      `(org-remote-heading ,(buffer-substring start end) ,start . ,end))))
 
 (let ((tail (memq 'embark-org-target-element-context embark-target-finders)))
   (cl-pushnew 'embark-org-target-agenda-item (cdr tail)))
 
-(defvar-keymap embark-org-agenda-item-map
-  :doc "Keymap for actions on Org agenda items"
-  :parent embark-general-map
-  "RET" 'org-agenda-todo
-  "j" 'org-agenda-goto
-  "n" 'org-agenda-next-item
-  "p" 'org-agenda-previous-item
-  "t" 'org-agenda-todo
-  "k" 'org-agenda-kill
-  "u" 'org-agenda-undo
-  "D" 'org-agenda-toggle-deadlines
-  "a" 'org-agenda-archive
-  "i" 'org-agenda-clock-in
-  "o" 'org-agenda-clock-out
-  ":" 'org-agenda-set-tags
-  "," 'org-agenda-priority
-  "s" 'org-agenda-schedule
-  "d" 'org-agenda-deadline
-  "P" 'org-agenda-set-property
-  "e" 'org-agenda-set-effort
-  "r" 'org-agenda-refile
-  "N" 'org-agenda-add-note
-  "b" 'org-agenda-tree-to-indirect-buffer)
+(add-to-list 'embark-keymap-alist '(org-remote-heading embark-org-heading-map))
 
-(add-to-list 'embark-keymap-alist '(org-agenda-item embark-org-agenda-item-map))
+(cl-defun embark-org--at-remote-heading
+    (&rest rest &key run target type &allow-other-keys)
+  "RUN the action at the location of the remote heading.
+The location is given by the `org-marker' text property of
+target.  Applies RUN to the REST of the arguments."
+  (if-let ((marker (get-text-property 0 'org-marker target)))
+    (with-current-buffer (marker-buffer marker)
+      (save-excursion
+        (goto-char marker)
+        (apply run :target target rest)))
+    (apply run :target target rest)))
 
-(dolist (cmd '(org-agenda-todo org-agenda-next-item org-agenda-previous-item))
-  (cl-pushnew cmd embark-repeat-actions))
-
-(dolist (cmd '(org-agenda-set-tags org-agenda-priority
-               org-agenda-schedule org-agenda-set-property
-               org-agenda-set-effort org-agenda-refile))
-  (cl-pushnew 'embark--ignore-target
-              (alist-get cmd embark-target-injection-hooks)))
+(map-keymap
+ (lambda (key cmd)
+   (unless (where-is-internal cmd (list embark-general-map))
+     (cl-pushnew 'embark-org--at-remote-heading
+                 (alist-get cmd embark-around-action-hooks))))
+ embark-org-heading-map)
 
 (provide 'embark-org)
 ;;; embark-org.el ends here
