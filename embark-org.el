@@ -569,7 +569,7 @@ REST are the remaining arguments."
 (add-to-list 'embark-keymap-alist '(org-remote-heading embark-org-heading-map))
 
 (cl-defun embark-org--at-remote-heading
-    (&rest rest &key run target type &allow-other-keys)
+    (&rest rest &key run target &allow-other-keys)
   "RUN the action at the location of the remote heading.
 The location is given by the `org-marker' text property of
 target.  Applies RUN to the REST of the arguments."
@@ -589,7 +589,7 @@ target.  Applies RUN to the REST of the arguments."
     (pulse-momentary-highlight-one-line)))
 
 (map-keymap
- (lambda (key cmd)
+ (lambda (_key cmd)
    (unless (where-is-internal cmd (list embark-general-map))
      (cl-pushnew 'embark-org-goto-remote-heading
                  (alist-get cmd embark-pre-action-hooks))))
