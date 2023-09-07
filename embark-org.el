@@ -580,12 +580,22 @@ target.  Applies RUN to the REST of the arguments."
         (apply run :target target rest)))
     (apply run :target target rest)))
 
+(defun embark-org-goto-remote-heading (target)
+  "Jump to org remote heading TARGET."
+  (let ((marker (get-text-property 0 'org-marker target)))
+    (pop-to-buffer (marker-buffer marker))
+    (goto-char marker)
+    (pulse-momentary-highlight-one-line)))
+
 (map-keymap
  (lambda (key cmd)
    (unless (where-is-internal cmd (list embark-general-map))
      (cl-pushnew 'embark-org--at-remote-heading
                  (alist-get cmd embark-around-action-hooks))))
  embark-org-heading-map)
+
+(setf (alist-get 'org-remote-heading embark-default-action-overrides)
+      #'embark-org-goto-remote-heading)
 
 (provide 'embark-org)
 ;;; embark-org.el ends here
