@@ -56,7 +56,7 @@
 ;; variable associates target types with variable containing keymaps,
 ;; and those keymaps containing binds for the actions.  For example,
 ;; in the default configuration the type `file' is associated with the
-;; symbol `embark-file-keymap'.  That symbol names a keymap with
+;; symbol `embark-file-map'.  That symbol names a keymap with
 ;; single-letter key bindings for common Emacs file commands, for
 ;; instance `c' is bound to `copy-file'.  This means that if while you
 ;; are in the minibuffer after running a command that prompts for a
