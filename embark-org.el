@@ -376,6 +376,7 @@ bound to i."
   "D" #'org-delete-property
   "k" #'org-cut-subtree
   "N" #'org-narrow-to-subtree
+  "T" #'org-tree-to-indirect-buffer
   "<left>" #'org-do-demote
   "<right>" #'org-do-promote
   "S" #'org-sort
