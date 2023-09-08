@@ -377,8 +377,8 @@ bound to i."
   "k" #'org-cut-subtree
   "N" #'org-narrow-to-subtree
   "T" #'org-tree-to-indirect-buffer
-  "<left>" #'org-do-demote
-  "<right>" #'org-do-promote
+  "<left>" #'org-do-promote
+  "<right>" #'org-do-demote
   "S" #'org-sort
   "r" #'org-refile
   "i" #'org-clock-in
@@ -589,15 +589,29 @@ target.  Applies RUN to the REST of the arguments."
     (goto-char marker)
     (pulse-momentary-highlight-one-line)))
 
+(defconst embark-org--invisible-jump-to-remote-heading
+  '(org-tree-to-indirect-buffer
+    org-refile
+    org-clock-in
+    org-clock-out
+    org-archive-subtree-default-with-confirmation
+    org-store-link)
+  "Org remote heading actions for which we don't display the heading's buffer.")
+
+(setf (alist-get 'org-remote-heading embark-default-action-overrides)
+      #'embark-org-goto-remote-heading)
+
 (map-keymap
  (lambda (_key cmd)
-   (unless (where-is-internal cmd (list embark-general-map))
+   (unless (or (where-is-internal cmd (list embark-general-map))
+               (memq cmd embark-org--invisible-jump-to-remote-heading))
      (cl-pushnew 'embark-org-goto-remote-heading
                  (alist-get cmd embark-pre-action-hooks))))
  embark-org-heading-map)
 
-(setf (alist-get 'org-remote-heading embark-default-action-overrides)
-      #'embark-org-goto-remote-heading)
+(dolist (cmd embark-org--invisible-jump-to-remote-heading)
+  (cl-pushnew 'embark-org--at-remote-heading
+              (alist-get cmd embark-around-action-hooks)))
 
 (provide 'embark-org)
 ;;; embark-org.el ends here
