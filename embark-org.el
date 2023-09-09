@@ -575,10 +575,8 @@ REST are the remaining arguments."
 The location is given by the `org-marker' text property of
 target.  Applies RUN to the REST of the arguments."
   (if-let ((marker (get-text-property 0 'org-marker target)))
-      (with-current-buffer (marker-buffer marker)
-        (save-excursion
-          (goto-char marker)
-          (apply run :target target rest)))
+      (org-with-point-at marker
+        (apply run :target target rest))
     (apply run :target target rest)))
 
 (defun embark-org-goto-remote-heading (&rest args)
