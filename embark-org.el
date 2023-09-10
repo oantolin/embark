@@ -379,15 +379,14 @@ bound to i."
   "T" #'org-tree-to-indirect-buffer
   "<left>" #'org-do-promote
   "<right>" #'org-do-demote
-  "S" #'org-sort
+  "^" #'org-sort
   "r" #'org-refile
-  "i" #'org-clock-in
-  "o" #'org-clock-out
-  "I" #'embark-insert                   ; keep it available
+  "I" #'org-clock-in
+  "O" #'org-clock-out
   "a" #'org-archive-subtree-default-with-confirmation
   "h" #'org-insert-heading-respect-content
   "H" #'org-insert-todo-heading-respect-content
-  "L" #'org-store-link)
+  "l" #'org-store-link)
 
 (dolist (cmd '(org-todo org-metaright org-metaleft org-metaup org-metadown
                org-shiftmetaleft org-shiftmetaright org-cycle org-shifttab))
