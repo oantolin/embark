@@ -583,7 +583,9 @@ target.  Applies RUN to the REST of the arguments."
   (when-let ((target (if (cdr args) (plist-get args :target) (car args)))
              (marker (get-text-property 0 'org-marker target)))
     (pop-to-buffer (marker-buffer marker))
+    (widen)
     (goto-char marker)
+    (org-fold-reveal)
     (pulse-momentary-highlight-one-line)))
 
 (defconst embark-org--invisible-jump-to-remote-heading
