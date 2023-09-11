@@ -164,6 +164,7 @@
   "<left>"  #'org-table-move-cell-left
   "<right>" #'org-table-move-cell-right
   "d" #'org-table-kill-row
+  "c" #'org-table-copy-down
   "D" #'org-table-delete-column ; capital = column
   "^" #'org-table-move-row-up
   "v" #'org-table-move-row-down
