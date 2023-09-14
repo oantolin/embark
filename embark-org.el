@@ -571,7 +571,7 @@ REST are the remaining arguments."
 (let ((tail (memq 'embark-org-target-element-context embark-target-finders)))
   (cl-pushnew 'embark-org-target-agenda-item (cdr tail)))
 
-(cl-defun embark-org--at-org-heading
+(cl-defun embark-org--at-heading
     (&rest rest &key run target &allow-other-keys)
   "RUN the action at the location of the heading TARGET refers to.
 The location is given by the `org-marker' text property of
