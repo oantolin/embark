@@ -382,6 +382,7 @@ bound to i."
   "<right>" #'org-do-demote
   "^" #'org-sort
   "r" #'org-refile
+  "R" #'embark-org-refile-here
   "I" #'org-clock-in
   "O" #'org-clock-out
   "a" #'org-archive-subtree-default-with-confirmation
@@ -626,6 +627,29 @@ at point, the default action is whatever is bound to RET in
 (dolist (cmd embark-org--invisible-jump-to-heading)
   (cl-pushnew 'embark-org--at-heading
               (alist-get cmd embark-around-action-hooks)))
+
+(defun embark-org-refile-here (target)
+  "Refile the heading at point to TARGET."
+  (if-let ((marker (get-text-property 0 'org-marker target)))
+      (with-selected-window
+          (or (and (derived-mode-p 'org-agenda-mode)
+                   (let ((window (ignore-errors (other-window-for-scrolling))))
+                     (with-current-buffer (window-buffer window)
+                       (when (derived-mode-p 'org-mode) window))))
+              (selected-window))
+        (org-refile nil nil
+                    ;; The RFLOC argument:
+                    (list
+                     ;; Name
+                     (org-with-point-at marker
+                       (nth 4 (org-heading-components)))
+                     ;; File
+                     (buffer-file-name (marker-buffer marker))
+                     ;; nil
+                     nil
+                     ;; Position
+                     marker)))
+    (user-error "The target is an org heading rather than a reference to one")))
 
 (provide 'embark-org)
 ;;; embark-org.el ends here
