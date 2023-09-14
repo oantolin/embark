@@ -480,6 +480,10 @@ arguments and more details."
     (shell-command-on-region embark--mark-target)
     (embark-eval-replace embark--mark-target)
     (delete-indentation embark--mark-target)
+    (comment-dwim embark--mark-target)
+    (insert-parentheses embark--mark-target)
+    (insert-pair embark--mark-target)
+    (org-emphasize embark--mark-target))
     ;; do the actual work of selecting & deselecting targets
     (embark-select embark--select))
   "Alist associating commands with post-action hooks.
