@@ -483,7 +483,7 @@ arguments and more details."
     (comment-dwim embark--mark-target)
     (insert-parentheses embark--mark-target)
     (insert-pair embark--mark-target)
-    (org-emphasize embark--mark-target))
+    (org-emphasize embark--mark-target)
     ;; do the actual work of selecting & deselecting targets
     (embark-select embark--select))
   "Alist associating commands with post-action hooks.
