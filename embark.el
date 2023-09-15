@@ -3582,13 +3582,19 @@ constituent character next to an existing word constituent.
 2. For a multiline inserted string, newlines may be added before
 or after as needed to ensure the inserted string is on lines of
 its own."
-  (let ((multiline (seq-some (lambda (s) (string-match-p "\n" s)) strings))
-        (separator (embark--separator strings)))
+  (let* ((separator (embark--separator strings))
+         (multiline
+          (or (and (cdr strings) (string-match-p "\n" separator))
+              (and (null (cdr strings))
+                   (equal (buffer-substring (line-beginning-position)
+                                            (line-end-position))
+                          (car strings)))
+              (seq-some (lambda (s) (string-match-p "\n" s)) strings))))
     (cl-labels ((maybe-space ()
                   (and (looking-at "\\w") (looking-back "\\w" 1)
                        (insert " ")))
                 (maybe-newline ()
-                  (or (looking-back "^[ \t]*" 40) (looking-at "\n\n")
+                  (or (looking-back "^[ \t]*" 40) (looking-at "\n")
                       (newline-and-indent)))
                 (maybe-whitespace ()
                   (if multiline (maybe-newline) (maybe-space)))
@@ -3712,7 +3718,7 @@ Returns the new name actually used."
 (defun embark-insert-variable-value (var)
   "Insert value of VAR."
   (interactive "SVariable: ")
-  (insert (string-trim (pp-to-string (symbol-value var)))))
+  (embark-insert (list (string-trim (pp-to-string (symbol-value var))))))
 
 (defun embark-toggle-variable (var &optional local)
   "Toggle value of boolean variable VAR.
@@ -3729,7 +3735,7 @@ If prefix LOCAL is non-nil make variable local."
   "Insert relative path to FILE.
 The insert path is relative to `default-directory'."
   (interactive "FFile: ")
-  (insert (file-relative-name (substitute-in-file-name file))))
+  (embark-insert (list (file-relative-name (substitute-in-file-name file)))))
 
 (defun embark-save-relative-path (file)
   "Save the relative path to FILE in the kill ring.
