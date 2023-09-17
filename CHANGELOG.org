@@ -21,6 +21,13 @@
   then candidates will be separated by horizontal lines. This is handy
   for the kill-ring, which you can browse by calling =embark-collect=
   from =yank-pop=.
+- =embark-org= now has support for acting on references to org headings
+  in other buffers, by jumping to the heading first and then running
+  the action. One source of references to org headings in other
+  buffers are agenda views: each agenda item is such a reference. But
+  this feature also supports some great third party commands which
+  produce references to org headings, such as =org-ql-find= from the
+  =org-ql= package or =consult-org-heading= from =consult=.
 * Version 0.22.1 (2023-04-20)
 ** New feature: selections
 Now users can select several targets to make an ad hoc collection. The
