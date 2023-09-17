@@ -388,7 +388,8 @@ bound to i."
   "a" #'org-archive-subtree-default-with-confirmation
   "h" #'org-insert-heading-respect-content
   "H" #'org-insert-todo-heading-respect-content
-  "l" #'org-store-link)
+  "l" #'org-store-link
+  "j" #'embark-org-insert-link-to)
 
 (dolist (cmd '(org-todo org-metaright org-metaleft org-metaup org-metadown
                org-shiftmetaleft org-shiftmetaright org-cycle org-shifttab))
@@ -593,12 +594,12 @@ target.  Applies RUN to the REST of the arguments."
 
 (defun embark-org-heading-default-action (target)
   "Default action for Org headings.
-There are two types of heading targets: the heading at point in a
+There are two types of heading TARGETs: the heading at point in a
 normal org buffer, and references to org headings in some other
-buffer (for example, org agenda items). For references the
+buffer (for example, org agenda items).  For references the
 default action is to jump to the reference, and for the heading
 at point, the default action is whatever is bound to RET in
-`embark-org-heading-map' or `org-todo' if RET is unbound."
+`embark-org-heading-map', or `org-todo' if RET is unbound."
   (if (get-text-property 0 'org-marker target)
       (embark-org-goto-heading :target target)
     (command-execute
@@ -628,8 +629,15 @@ at point, the default action is whatever is bound to RET in
   (cl-pushnew 'embark-org--at-heading
               (alist-get cmd embark-around-action-hooks)))
 
-(defun embark-org-refile-here (target)
-  "Refile the heading at point to TARGET."
+(defun embark-org--in-source-window (target function)
+  "Call FUNCTION, in the source window, on TARGET's `org-marker'.
+
+If TARGET does not have an `org-marker' property a `user-error'
+is signaled.  In case the TARGET comes from an org agenda buffer
+and the `other-window-for-scrolling' is an org mode buffer, then
+the FUNCTION is called with that other window temporarily
+selected; otherwise the FUNCTION is called in the selected
+window."
   (if-let ((marker (get-text-property 0 'org-marker target)))
       (with-selected-window
           (or (and (derived-mode-p 'org-agenda-mode)
@@ -637,19 +645,44 @@ at point, the default action is whatever is bound to RET in
                      (with-current-buffer (window-buffer window)
                        (when (derived-mode-p 'org-mode) window))))
               (selected-window))
-        (org-refile nil nil
-                    ;; The RFLOC argument:
-                    (list
-                     ;; Name
-                     (org-with-point-at marker
-                       (nth 4 (org-heading-components)))
-                     ;; File
-                     (buffer-file-name (marker-buffer marker))
-                     ;; nil
-                     nil
-                     ;; Position
-                     marker)))
+        (funcall function marker))
     (user-error "The target is an org heading rather than a reference to one")))
+
+(defun embark-org-refile-here (target)
+  "Refile the heading at point in the source window to TARGET.
+
+If TARGET is an agenda item and `other-window-for-scrolling' is
+displaying an org mode buffer, then that is the source window.
+If TARGET is a minibuffer completion candidate, then the source
+window is the window selected before the command that opened the
+minibuffer ran."
+  (embark-org--in-source-window target
+    (lambda (marker)
+      (org-refile nil nil
+                  ;; The RFLOC argument:
+                  (list
+                   ;; Name
+                   (org-with-point-at marker
+                     (nth 4 (org-heading-components)))
+                   ;; File
+                   (buffer-file-name (marker-buffer marker))
+                   ;; nil
+                   nil
+                   ;; Position
+                   marker)))))
+
+(defun embark-org-insert-link-to (target)
+  "Insert a link to the TARGET in the source window.
+
+If TARGET is an agenda item and `other-window-for-scrolling' is
+displaying an org mode buffer, then that is the source window.
+If TARGET is a minibuffer completion candidate, then the source
+window is the window selected before the command that opened the
+minibuffer ran."
+  (embark-org--in-source-window target
+    (lambda (marker)
+      (org-with-point-at marker (org-store-link nil t))
+      (org-insert-all-links 1 "" ""))))
 
 (provide 'embark-org)
 ;;; embark-org.el ends here
