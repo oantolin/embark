@@ -351,6 +351,7 @@ indicate that for files at the prompt of the `delete-file' command,
     ;; commands which prompt for something that is *not* the target
     (write-region embark--ignore-target)
     (append-to-file embark--ignore-target)
+    (append-to-buffer embark--ignore-target)
     (shell-command-on-region embark--ignore-target)
     (format-encode-region embark--ignore-target)
     (format-decode-region embark--ignore-target)
@@ -477,6 +478,7 @@ arguments and more details."
     (format-decode-region embark--mark-target)
     (write-region embark--mark-target)
     (append-to-file embark--mark-target)
+    (append-to-buffer embark--mark-target)
     (shell-command-on-region embark--mark-target)
     (embark-eval-replace embark--mark-target)
     (delete-indentation embark--mark-target)
