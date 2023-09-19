@@ -1,26 +1,11 @@
 #+title: Embark changelog
 
-* Development version
+* Version 0.23 (2023-09-19)
 - Added a mode line indicator showing the number of selected targets in
   the current buffer (contributed by @minad, thanks!)
 - Now =embark-select= can also be called as a top-level command, from
   outside =embark-act=. When called that way, it will select the first
   target at point.
-- Renamed =embark-isearch= to =embark-isearch-forward= and added
-  =embark-isearch-backward=.
-- Added key bindings for org agenda items consistent with those of org
-  headings where possible. Also improved bindings for org targets in
-  general.
-- =embark-become= now removes any invisible text from the minibuffer
-  input on the grounds that users probably expect the target command
-  to receive exactly the input they can see.
-- The meaning of the prefix argument in =embark-bindings= has flipped:
-  now by default global key bindings are excluded and you =C-u= to
-  include them.
-- If any candidate in an embark-collect buffer contains a newline,
-  then candidates will be separated by horizontal lines. This is handy
-  for the kill-ring, which you can browse by calling =embark-collect=
-  from =yank-pop=.
 - =embark-org= now has support for acting on references to org headings
   in other buffers, by jumping to the heading first and then running
   the action. One source of references to org headings in other
@@ -28,6 +13,18 @@
   this feature also supports some great third party commands which
   produce references to org headings, such as =org-ql-find= from the
   =org-ql= package or =consult-org-heading= from =consult=.
+- Renamed =embark-isearch= to =embark-isearch-forward= and added
+  =embark-isearch-backward=.
+- =embark-become= now removes any invisible text from the minibuffer
+  input on the grounds that users probably expect the target command
+  to receive exactly the input they can see.
+- The meaning of the prefix argument in =embark-bindings= has flipped:
+  now by default global key bindings are excluded and you can use =C-u=
+  to include them.
+- If any candidate in an embark-collect buffer contains a newline,
+  then candidates will be separated by horizontal lines. This is handy
+  for the kill-ring, which you can browse by calling =embark-collect=
+  from =yank-pop=.
 * Version 0.22.1 (2023-04-20)
 ** New feature: selections
 Now users can select several targets to make an ad hoc collection. The
