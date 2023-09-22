@@ -1283,10 +1283,11 @@ UPDATE is the indicator update function."
 (defun embark--command-name (cmd)
   "Return an appropriate name for CMD.
 If CMD is a symbol, use its symbol name; for lambdas, use the
-first line of the documentation string; otherwise use the word
-\"unnamed\"."
+first line of the documentation string; for keyboard macros use
+`key-description'; otherwise use the word \"unnamed\"."
   (concat ; fresh copy, so we can freely add text properties
    (cond
+    ((or (stringp cmd) (vectorp cmd)) (key-description cmd))
     ((stringp (car-safe cmd)) (car cmd))
     ((eq (car-safe cmd) 'menu-item) (eval (cadr cmd)))
     ((keymapp cmd)
