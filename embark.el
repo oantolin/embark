@@ -301,8 +301,8 @@ prescribe a default for commands not used as alist keys."
                  (alist :tag "Configure per action"
                         :key-type (choice (function :tag "Action")
                                           (const :tag "All other actions" t))
-                        :value-type (choice (const :tag "Quit")
-                                            (const :tag "Do not quit")))))
+                        :value-type (choice (const :tag "Quit" t)
+                                            (const :tag "Do not quit" nil)))))
 
 (defcustom embark-confirm-act-all t
   "Should `embark-act-all' prompt the user for confirmation?
@@ -3352,7 +3352,7 @@ PRED is a predicate function used to filter the items."
 (defcustom embark-selection-indicator
   #("  Embark:%s " 1 12 (face (embark-selected bold)))
   "Mode line indicator used for selected candidates."
-  :type '(choice string nil))
+  :type '(choice string (const nil)))
 
 (defvar-local embark--selection nil
   "Buffer local list of selected targets.
