@@ -220,7 +220,7 @@
 ;;   also without the "file:" prefix nor the "::line-number or search"
 ;;   suffix.  That way, file actions will correctly apply to it.
 
-;; - The type will not be 'file, but 'org-file-link that way we can
+;; - The type will not be 'file, but 'org-file-link; that way we can
 ;;   register a keymap for 'org-file-link that inherits from both
 ;;   embark-org-link-map (with RET bound to org-open-at-point and a
 ;;   few other generic link actions) and embark-file-map.
@@ -241,6 +241,20 @@
 ;; you to cycle first.  This sounds very inconvenient, the above
 ;; slightly more complex design allows both whole-link and inner
 ;; target actions to work without cycling.
+
+(defun embark-org-target-link ()
+  "Target Org link at point."
+  (pcase (org-in-regexp org-link-any-re)
+    (`(,start . ,end)
+     ;; We won't recognize unadorned http(s) or mailto links, as those
+     ;; already have target finders (but if these links have either a
+     ;; description, double brackets or angle brackets, then we do
+     ;; recognize them as org links)
+     (unless (save-excursion (goto-char start) (looking-at "http\\|mailto"))
+       `(org-link ,(buffer-substring start end) ,start . ,end)))))
+
+(let ((tail (memq 'embark-target-active-region embark-target-finders)))
+  (cl-pushnew 'embark-org-target-link (cdr tail)))
 
 (autoload 'org-attach-dir "org-attach")
 
@@ -331,7 +345,7 @@ bound to i."
 (defvar-keymap embark-org-link-map
   :doc "Keymap for actions on Org links."
   :parent embark-general-map
-  "RET" #'org-open-at-point
+  "RET" #'org-open-at-point-global
   "'" #'org-insert-link
   "w" #'embark-org-link-copy-map)
 
