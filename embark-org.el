@@ -243,7 +243,11 @@
 ;; target actions to work without cycling.
 
 (defun embark-org-target-link ()
-  "Target Org link at point."
+  "Target Org link at point.
+This targets Org links in any buffer, not just buffers in
+`org-mode' or `org-agenda-mode'.  Org links in any buffer can be
+opened with `org-open-at-point-global', which is the default
+Embark action for Org links."
   (pcase (org-in-regexp org-link-any-re)
     (`(,start . ,end)
      ;; We won't recognize unadorned http(s) or mailto links, as those
