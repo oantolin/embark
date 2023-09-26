@@ -607,7 +607,7 @@ target.  Applies RUN to the REST of the arguments."
     (pop-to-buffer (marker-buffer marker))
     (widen)
     (goto-char marker)
-    (org-fold-reveal)
+    (org-reveal)
     (pulse-momentary-highlight-one-line)))
 
 (defun embark-org-heading-default-action (target)
