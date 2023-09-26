@@ -4,6 +4,9 @@
 - =embark-bindings= and similar commands now show definition of keyboard
   macros.
 - =embark-org= now recognizes Org links in non-org buffers.
+- Now pressing RET in an =embark-collect= on a selection made by
+  using =embark-select= in a normal buffer will take you to the location
+  each target was collected from.
 * Version 0.23 (2023-09-19)
 - Added a mode line indicator showing the number of selected targets in
   the current buffer (contributed by @minad, thanks!)

@@ -3044,6 +3044,7 @@ example)."
   (let* ((transformed (embark--maybe-transform-candidates))
          (type (plist-get transformed :orig-type)) ; we need the originals for
          (candidates (plist-get transformed :orig-candidates)) ; default action
+         (bounds (plist-get transformed :bounds))
          (affixator (embark-collect--affixator type))
          (grouper (embark-collect--metadatum type 'group-function)))
     (when (eq type 'file)
@@ -3053,11 +3054,31 @@ example)."
                         (let ((rel (file-relative-name cand dir)))
                           (if (string-prefix-p "../" rel) cand rel)))
                       candidates))))
+    (if (seq-some #'identity bounds)
+      (cl-loop for cand in candidates and (start . _end) in bounds
+               when start
+               do (add-text-properties
+                   0 1 `(embark--location ,(copy-marker start)) cand)))
     (setq candidates (funcall affixator candidates))
     (with-current-buffer buffer
       (setq embark--type type)
+      (unless embark--command
+        (setq embark--command #'embark--goto))
       (embark-collect--format-entries candidates grouper))
     candidates))
+
+(defun embark--goto (target)
+  "Jump to the original location of TARGET.
+This function is used as a default action in Embark Collect
+buffers when the candidates were a selection from a regular
+buffer."
+  ;; TODO: ensure the location jumped to is visible
+  ;; TODO: remove duplication with embark-org-goto-heading
+  (when-let ((marker (get-text-property 0 'embark--location target)))
+    (pop-to-buffer (marker-buffer marker))
+    (widen)
+    (goto-char marker)
+    (pulse-momentary-highlight-one-line)))
 
 (defun embark--collect (buffer-name)
   "Create an Embark Collect buffer named BUFFER-NAME.
