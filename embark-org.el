@@ -110,7 +110,7 @@
      for end = (min (org-element-property :end elt) (point-max))
      for target = (buffer-substring begin end)
       ;; Adjust table-cell to exclude final |. (Why is that there?)
-      ;; Note: We are not doing this is an embark transformer because we
+      ;; Note: We are not doing this as an embark transformer because we
       ;; want to adjust the bounds too.
       ;; TODO? If more adjustments like this become necessary, add a
       ;; nice mechanism for doing them.
