@@ -3192,9 +3192,9 @@ buffer."
                (name (embark--descriptive-buffer-name 'export))
                (rerun (embark--rerun-function #'embark-export))
                (buffer (save-excursion
-                         (funcall exporter candidates)
-                         (rename-buffer name t)
-                         (current-buffer))))
+                         (with-current-buffer (funcall exporter candidates)
+                           (rename-buffer name t)
+                           (current-buffer)))))
           (embark--quit-and-run
            (lambda ()
              (pop-to-buffer buffer)
