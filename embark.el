@@ -1261,7 +1261,7 @@ UPDATE is the indicator update function."
                                                     ; bound, then obey
                 (and def (not (numberp def))))) ; number means "invalid prefix"
        cmd)
-      ('self-insert-command
+      ((or 'self-insert-command 'org-self-insert-command)
        (minibuffer-message "Not an action")
        (embark-keymap-prompter keymap update))
       ((or 'scroll-other-window 'scroll-other-window-down)
