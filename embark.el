@@ -111,7 +111,6 @@
 
 ;;; Code:
 
-
 (require 'compat)
 (eval-when-compile (require 'subr-x))
 
@@ -720,24 +719,30 @@ following exceptions:
 
 - In `imaged-dired-thumbnail-mode', it uses
   `image-dired-original-file-name' instead."
-  (if-let (file (or (and (derived-mode-p 'dired-mode)
-                         (dired-get-filename t 'no-error-if-not-filep))
-                    (and (derived-mode-p 'image-dired-thumbnail-mode)
-                         (image-dired-original-file-name))))
-      (save-excursion
-        (end-of-line)
-        `(file ,(abbreviate-file-name (expand-file-name file))
-               ,(save-excursion
-                  (re-search-backward " " (line-beginning-position) 'noerror)
-                  (1+ (point)))
-               . ,(point)))
-    (when-let* ((ffap-file (ffap-file-at-point))
-                (tap-file (thing-at-point 'filename))
-                ((not (or (ffap-url-p tap-file) (ffap-el-mode tap-file)))))
-      `(file ,(abbreviate-file-name (expand-file-name ffap-file))
-             ;; TODO the boundaries may be wrong, this should be generalized.
-             ;; Unfortunately ffap does not make the bounds available.
-             . ,(bounds-of-thing-at-point 'filename)))))
+  (let (file bounds)
+    (or (and (derived-mode-p 'dired-mode)
+             (setq file (dired-get-filename t 'no-error-if-not-filep))
+             (setq bounds
+                   (cons
+                    (save-excursion (dired-move-to-filename) (point))
+                    (save-excursion (dired-move-to-end-of-filename) (point)))))
+        (and (derived-mode-p 'image-dired-thumbnail-mode)
+             (setq file (image-dired-original-file-name))
+             (setq bounds (cons (point) (1+ (point)))))
+        (when-let ((tap-file (thing-at-point 'filename)))
+          ;; no urls or elisp libraries, those have other target finders
+          (and (not (or (ffap-url-p tap-file) (ffap-el-mode tap-file)))
+               (setq file (ffap-file-at-point))
+               ;; ffap doesn't make bounds available, so we use
+               ;; thingatpt bounds, which might be a little off
+               (setq bounds (bounds-of-thing-at-point 'filename)))
+          ;; adjust bounds if thingatpt gobbled punctuation around file
+          (when (and bounds (string-match (regexp-quote file) tap-file))
+            (setq bounds (cons (+ (car bounds) (match-beginning 0))
+                               (- (cdr bounds) (- (length tap-file)
+                                                  (match-end 0))))))))
+    (when file
+      `(file ,(abbreviate-file-name (expand-file-name file)) ,@bounds))))
 
 (defun embark-target-library-file-at-point ()
   "Target the file of the Emacs Lisp library at point.
