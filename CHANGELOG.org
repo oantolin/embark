@@ -7,6 +7,11 @@
 - Now pressing RET in an =embark-collect= on a selection made by
   using =embark-select= in a normal buffer will take you to the location
   each target was collected from.
+- Some functions renamed for greater consistency (these functions are
+  unlikely to be referred to in user's configuration):
+  - =embark-target-completion-at-point= → =embark-target-completion-list-candidate=
+  - =embark-target-top-minibuffer-completion= → =embark-target-top-minibuffer-candidate=
+  - =embark-completions-buffer-candidates= → =embark-completion-list-candidates=
 * Version 0.23 (2023-09-19)
 - Added a mode line indicator showing the number of selected targets in
   the current buffer (contributed by @minad, thanks!)

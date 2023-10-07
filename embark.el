@@ -163,11 +163,11 @@ or a list of such symbols."
                              (repeat :tag "Keymaps" variable))))
 
 (defcustom embark-target-finders
-  '(embark-target-top-minibuffer-completion
+  '(embark-target-top-minibuffer-candidate
     embark-target-active-region
-    embark-target-text-heading-at-point
     embark-target-collect-candidate
-    embark-target-completion-at-point
+    embark-target-completion-list-candidate
+    embark-target-text-heading-at-point
     embark-target-bug-reference-at-point
     embark-target-flymake-at-point
     embark-target-smerge-at-point
@@ -995,7 +995,7 @@ As a convenience, in Org Mode an initial ' or surrounding == or
   (when (derived-mode-p 'prog-mode)
     (embark-target-heading-at-point)))
 
-(defun embark-target-top-minibuffer-completion ()
+(defun embark-target-top-minibuffer-candidate ()
   "Target the top completion candidate in the minibuffer.
 Return the category metadatum as the type of the target.
 
@@ -1036,7 +1036,7 @@ their own target finder.  See for example
            candidate)
         ,start . ,end))))
 
-(defun embark-target-completion-at-point ()
+(defun embark-target-completion-list-candidate ()
   "Return the completion candidate at point in a completions buffer."
   (when (derived-mode-p 'completion-list-mode)
     (if (not (get-text-property (point) 'mouse-face))
@@ -2588,7 +2588,7 @@ point."
 (defcustom embark-candidate-collectors
   '(embark-selected-candidates
     embark-minibuffer-candidates
-    embark-completions-buffer-candidates
+    embark-completion-list-candidates
     embark-dired-candidates
     embark-ibuffer-candidates
     embark-embark-collect-candidates
@@ -2761,7 +2761,7 @@ This makes `embark-export' work in Embark Collect buffers."
                   (push (cdr cand) all)))
               (nreverse all))))))
 
-(defun embark-completions-buffer-candidates ()
+(defun embark-completion-list-candidates ()
   "Return all candidates in a completions buffer."
   (when (derived-mode-p 'completion-list-mode)
     (cons
@@ -2771,7 +2771,7 @@ This makes `embark-export' work in Embark Collect buffers."
        (next-completion 1)
        (let (all)
          (while (not (eobp))
-           (push (cdr (embark-target-completion-at-point)) all)
+           (push (cdr (embark-target-completion-list-candidate)) all)
            (next-completion 1))
          (nreverse all))))))
 
