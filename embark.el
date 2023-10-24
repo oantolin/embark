@@ -457,8 +457,6 @@ arguments and more details."
   '(;; use directory of target as default-directory
     (shell embark--cd)
     (eshell embark--cd)
-    ;; narrow to target for duration of action
-    (repunctuate-sentences embark--narrow-to-target)
     ;; mark the target preserving point and previous mark
     (kill-region embark--mark-target)
     (kill-ring-save embark--mark-target)
@@ -501,6 +499,11 @@ used for other types of action hooks, for more details see
                         (const :tag "Default" t)
                         (const :tag "Always" :always))
                 :value-type hook))
+
+(when (version-list-< (version-to-list emacs-version) '(29 1))
+  ;; narrow to target for duration of action
+  (setf (alist-get 'repunctuate-sentences embark-around-action-hooks)
+        '(embark--narrow-to-target)))
 
 (defcustom embark-multitarget-actions '(embark-insert embark-copy-as-kill)
   "Commands for which `embark-act-all' should pass a list of targets.
