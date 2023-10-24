@@ -735,6 +735,11 @@ following exceptions:
         (when-let ((tap-file (thing-at-point 'filename)))
           ;; no urls or elisp libraries, those have other target finders
           (and (not (or (ffap-url-p tap-file) (ffap-el-mode tap-file)))
+               ;; for single identifiers, only match if importing a library
+               (or (not (derived-mode-p 'prog-mode))
+                   (not (string-match-p "\\`\\w+\\'" tap-file))
+                   (string-match-p "import\\|require\\|load"
+                                   (thing-at-point 'line)))
                (setq file (ffap-file-at-point))
                ;; ffap doesn't make bounds available, so we use
                ;; thingatpt bounds, which might be a little off
