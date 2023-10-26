@@ -177,7 +177,7 @@ or a list of such symbols."
     embark-target-file-at-point
     embark-target-custom-variable-at-point
     embark-target-identifier-at-point
-    embark-target-library-file-at-point
+    embark-target-guess-file-at-point
     embark-target-expression-at-point
     embark-target-sentence-at-point
     embark-target-paragraph-at-point
@@ -713,6 +713,22 @@ This function is meant to be added to `minibuffer-setup-hook'."
 (autoload 'dired-get-filename "dired")
 (declare-function image-dired-original-file-name "image-dired")
 
+(defun embark-target-guess-file-at-point ()
+  "Target the file `ffap' guesses at point."
+  (when-let ((tap-file (thing-at-point 'filename))
+             ((not (ffap-url-p tap-file))) ; no URLs, those have a target finder
+             (bounds (bounds-of-thing-at-point 'filename))
+             (file (ffap-file-at-point)))
+    ;; ffap doesn't make bounds available, so we use
+    ;; thingatpt bounds, which might be a little off
+    ;; adjust bounds if thingatpt gobbled punctuation around file
+    (when (or (string-match (regexp-quote file) tap-file)
+              (string-match (regexp-quote (file-name-base file)) tap-file))
+      (setq bounds (cons (+ (car bounds) (match-beginning 0))
+                         (- (cdr bounds) (- (length tap-file)
+                                            (match-end 0))))))
+    `(file ,(abbreviate-file-name (expand-file-name file)) ,@bounds)))
+
 (defun embark-target-file-at-point ()
   "Target file at point.
 This function mostly relies on `ffap-file-at-point', with the
@@ -732,30 +748,12 @@ following exceptions:
         (and (derived-mode-p 'image-dired-thumbnail-mode)
              (setq file (image-dired-original-file-name))
              (setq bounds (cons (point) (1+ (point)))))
-        (when-let ((tap-file (thing-at-point 'filename)))
-          ;; no urls or elisp libraries, those have other target finders
-          (and (not (or (ffap-url-p tap-file) (ffap-el-mode tap-file)))
-               (setq file (ffap-file-at-point))
-               ;; ffap doesn't make bounds available, so we use
-               ;; thingatpt bounds, which might be a little off
-               (setq bounds (bounds-of-thing-at-point 'filename)))
-          ;; adjust bounds if thingatpt gobbled punctuation around file
-          (when (and bounds (string-match (regexp-quote file) tap-file))
-            (setq bounds (cons (+ (car bounds) (match-beginning 0))
-                               (- (cdr bounds) (- (length tap-file)
-                                                  (match-end 0))))))))
+        (when-let ((tap-file (thing-at-point 'filename))
+                   ((not (equal (file-name-base tap-file) tap-file)))
+                   (guess (embark-target-guess-file-at-point)))
+          (setq file (cadr guess) bounds (cddr guess))))
     (when file
       `(file ,(abbreviate-file-name (expand-file-name file)) ,@bounds))))
-
-(defun embark-target-library-file-at-point ()
-  "Target the file of the Emacs Lisp library at point.
-The function `embark-target-file-at-point' could also easily
-target Emacs Lisp library files, the only reason it doesn't is so
-that library files and other types of file targets can be given
-different priorities in `embark-target-finders'."
-  (when-let* ((name (thing-at-point 'filename))
-              (lib (ffap-el-mode name)))
-    `(file ,lib . ,(bounds-of-thing-at-point 'filename))))
 
 (defun embark-target-package-at-point ()
   "Target the package on the current line in a packages buffer."
@@ -2181,11 +2179,12 @@ plist concerns one target, and has keys `:type', `:target',
                     (list :type type :target target)))))
            (push full-target targets)))
        (and targets (minibufferp))))
-    (cl-delete-duplicates
-     (nreverse targets)
-     :test (lambda (t1 t2)
-             (and (equal (plist-get t1 :target) (plist-get t2 :target))
-                  (eq (plist-get t1 :type) (plist-get t2 :type)))))))
+    (nreverse
+     (cl-delete-duplicates ; keeps last duplicate, but we reverse
+      targets
+      :test (lambda (t1 t2)
+              (and (equal (plist-get t1 :target) (plist-get t2 :target))
+                   (eq (plist-get t1 :type) (plist-get t2 :type))))))))
 
 (defun embark--default-action (type)
   "Return default action for the given TYPE of target.
