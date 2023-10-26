@@ -632,12 +632,17 @@ at point, the default action is whatever is bound to RET in
     org-store-link)
   "Org heading actions which won't display the heading's buffer.")
 
+(defconst embark-org--no-jump-to-heading
+  '(embark-org-insert-link-to embark-org-refile-here)
+  "Org heading actions which shouldn't be executed with point at the heading.")
+
 (setf (alist-get 'org-heading embark-default-action-overrides)
       #'embark-org-heading-default-action)
 
 (map-keymap
  (lambda (_key cmd)
    (unless (or (where-is-internal cmd (list embark-general-map))
+               (memq cmd embark-org--no-jump-to-heading)
                (memq cmd embark-org--invisible-jump-to-heading))
      (cl-pushnew 'embark-org-goto-heading
                  (alist-get cmd embark-pre-action-hooks))))
