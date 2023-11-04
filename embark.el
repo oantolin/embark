@@ -3339,14 +3339,16 @@ PRED is a predicate function used to filter the items."
                    (let ((file (file-name-nondirectory path)))
                      (or (string= file ".") (string= file ".."))))
                  files)))
-  (let* ((dir (or (file-name-directory (try-completion "" files)) ""))
-         (buf (dired-noselect
-               (cons (expand-file-name dir)
-                     (mapcar (lambda (file) (string-remove-prefix dir file))
-                             files)))))
-    ;; unadvertise this buffer to avoid reuse
+  (cl-letf* ((dir (or (file-name-directory (try-completion "" files)) ""))
+             ;; Prevent reusing existing Dired buffer.
+             ((symbol-function 'dired-find-buffer-nocreate) #'ignore)
+             (buf (dired-noselect
+                   (cons (expand-file-name dir)
+                         (mapcar (lambda (file) (string-remove-prefix dir file))
+                                 files)))))
     (with-current-buffer buf
-      (dired-unadvertise (car dired-directory)) ; avoid reuse of this buffer
+      ;; Unadvertise to prevent the new buffer from being reused.
+      (dired-unadvertise (car dired-directory))
       (rename-buffer (format "*Embark Export Dired %s*" default-directory)))
     (pop-to-buffer buf)))
 
