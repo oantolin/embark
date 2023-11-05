@@ -1878,7 +1878,12 @@ type @ and the key binding (without the prefix)."
   (when-let ((keys (this-command-keys-vector))
              (prefix (seq-take keys (1- (length keys))))
              (keymap (key-binding prefix 'accept-default)))
-    (embark-bindings-in-keymap keymap)))
+    (minibuffer-with-setup-hook
+        (lambda ()
+          (let ((pt (- (minibuffer-prompt-end) 2)))
+            (overlay-put (make-overlay pt pt) 'before-string
+                         (format " under %s" (key-description prefix)))))
+      (embark-bindings-in-keymap keymap))))
 
 (defun embark--prompt (indicators keymap targets)
   "Call the prompter with KEYMAP and INDICATORS.
