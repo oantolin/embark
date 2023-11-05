@@ -714,7 +714,7 @@ This function is meant to be added to `minibuffer-setup-hook'."
 (declare-function image-dired-original-file-name "image-dired")
 
 (defun embark-target-guess-file-at-point ()
-  "Target the file `ffap' guess at point."
+  "Target the file guessed by `ffap' at point."
   (when-let ((tap-file (thing-at-point 'filename))
              ((not (ffap-url-p tap-file))) ; no URLs, those have a target finder
              (bounds (bounds-of-thing-at-point 'filename))
