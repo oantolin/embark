@@ -4074,23 +4074,23 @@ the REST of the arguments."
   (unless (y-or-n-p (format "Run %s on %s? " action target))
     (user-error "Canceled")))
 
+(defconst embark--associated-file-fn-alist
+  `((file . identity)
+    (buffer . ,(lambda (target)
+                 (buffer-local-value 'default-directory (get-buffer target))))
+    (bookmark . bookmark-location)
+    (library . locate-library))
+  "Alist of functions that extract a file path from targets of a given type.")
+
 (defun embark--associated-directory (target type)
   "Return directory associated to TARGET of given TYPE.
 The supported values of TYPE are file, buffer, bookmark and
 library, which have an obvious notion of associated directory."
-  (setq target (pcase type
-                 ('file
-                  target)
-                 ('buffer
-                  (buffer-local-value 'default-directory (get-buffer target)))
-                 ('bookmark
-                  (bookmark-location target))
-                 ('library
-                  (locate-library target))))
-  (when target
-    (if (file-directory-p target)
-        (file-name-as-directory target)
-      (file-name-directory target))))
+  (when-let ((file-fn (alist-get type embark--associated-file-fn-alist))
+             (file (funcall file-fn target)))
+    (if (file-directory-p file)
+        (file-name-as-directory file)
+      (file-name-directory file))))
 
 (autoload 'bookmark-location "bookmark")
 (cl-defun embark--cd (&rest rest &key run target type &allow-other-keys)
