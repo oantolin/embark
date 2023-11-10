@@ -398,7 +398,7 @@ bound to i."
   "T" #'org-tree-to-indirect-buffer
   "<left>" #'org-do-promote
   "<right>" #'org-do-demote
-  "^" #'org-sort
+  "o" #'org-sort
   "r" #'org-refile
   "R" #'embark-org-refile-here
   "I" #'org-clock-in
