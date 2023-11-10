@@ -2087,7 +2087,8 @@ minibuffer before executing the action."
                     (unwind-protect
                         (let ((current-prefix-arg prefix)
                               (default-directory directory))
-                          (funcall action argument))
+                          (embark--run-around-action-hooks
+                           action target quit))
                       (embark--run-action-hooks embark-post-action-hooks
                                                 action target quit))))))))
       (setq prefix-arg nil)
