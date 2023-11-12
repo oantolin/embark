@@ -728,7 +728,7 @@ Embark used to have a dedicated variable @samp{embark-allow-edit-actions} to
 which you could add commands for which Embark should forgo pressing
 @samp{RET} for you after inserting the target. Since its effect can also be
 achieved via the general @samp{embark-target-injection-hooks} mechanism, that
-variable has been removed to simply Embark. Be sure to update your
+variable has been removed to simplify Embark. Be sure to update your
 configuration; if you had something like:
 
 @lisp
