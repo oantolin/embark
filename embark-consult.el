@@ -157,7 +157,6 @@ This function is meant to be added to `embark-collect-mode-hook'."
 
 (defvar grep-mode-line-matches)
 (defvar grep-num-matches-found)
-(defvar wgrep-header&footer-parser)
 (declare-function wgrep-setup "ext:wgrep")
 
 (defvar-keymap embark-consult-revert-map
@@ -200,7 +199,12 @@ This function is meant to be added to `embark-collect-mode-hook'."
       (use-local-map (make-composed-keymap
                       embark-consult-revert-map
                       (current-local-map)))
-      (setq-local wgrep-header&footer-parser #'embark-consult--wgrep-prepare)
+      ;; TODO Wgrep 3.0 and development versions use different names for the
+      ;; parser variable.
+      (defvar wgrep-header/footer-parser)
+      (defvar wgrep-header&footer-parser)
+      (setq-local wgrep-header/footer-parser #'embark-consult--wgrep-prepare
+                  wgrep-header&footer-parser #'embark-consult--wgrep-prepare)
       (when (fboundp 'wgrep-setup) (wgrep-setup)))
     (pop-to-buffer buf)))
 
