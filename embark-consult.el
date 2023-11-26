@@ -7,7 +7,7 @@
 ;; Keywords: convenience
 ;; Version: 0.8
 ;; Homepage: https://github.com/oantolin/embark
-;; Package-Requires: ((emacs "27.1") (embark "0.20") (consult "0.17"))
+;; Package-Requires: ((emacs "27.1") (compat "29.1.4.0") (embark "0.23") (consult "0.35"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
