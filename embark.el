@@ -3798,8 +3798,11 @@ with command output.  For replacement behavior see
                              (and replace (current-buffer)))))
 
 (defun embark-open-externally (file)
-  "Open FILE using system's default application."
-  (interactive "fOpen: ")
+  "Open FILE or url using system's default application."
+  (interactive "sOpen externally: ")
+  (unless (string-match-p "\\`[a-z]+://" file)
+    (setq file (expand-file-name file)))
+  (message "Opening `%s' externally..." file)
   (if (and (eq system-type 'windows-nt)
            (fboundp 'w32-shell-execute))
       (w32-shell-execute "open" file)
@@ -3807,8 +3810,18 @@ with command output.  For replacement behavior see
                     ('darwin "open")
                     ('cygwin "cygstart")
                     (_ "xdg-open"))
-                  nil 0 nil
-                  (expand-file-name file))))
+                  nil 0 nil file)))
+
+(declare-function bookmark-prop-get "bookmark")
+(declare-function bookmark-completing-read "bookmark")
+
+(defun embark-bookmark-open-externally (bookmark)
+  "Open BOOKMARK in external application."
+  (interactive (list (bookmark-completing-read "Open externally: ")))
+  (embark-open-externally
+   (or (bookmark-prop-get bookmark 'location)
+       (bookmark-prop-get bookmark 'filename)
+       (user-error "Bookmark `%s' does not have a location" bookmark))))
 
 (defun embark-bury-buffer (buf)
   "Bury buffer BUF."
@@ -4084,7 +4097,7 @@ library, which have an obvious notion of associated directory."
                  ('buffer
                   (buffer-local-value 'default-directory (get-buffer target)))
                  ('bookmark
-                  (bookmark-location target))
+                  (bookmark-prop-get target 'filename))
                  ('library
                   (locate-library target))))
   (when target
@@ -4092,7 +4105,6 @@ library, which have an obvious notion of associated directory."
         (file-name-as-directory target)
       (file-name-directory target))))
 
-(autoload 'bookmark-location "bookmark")
 (cl-defun embark--cd (&rest rest &key run target type &allow-other-keys)
   "Run action with `default-directory' set to the directory of TARGET.
 The supported values of TYPE are file, buffer, bookmark and
@@ -4276,6 +4288,7 @@ This simply calls RUN with the REST of its arguments inside
   "RET" #'browse-url
   "b" #'browse-url
   "d" #'embark-download-url
+  "x" #'embark-open-externally
   "e" #'eww)
 
 (defvar-keymap embark-email-map
@@ -4465,6 +4478,7 @@ This simply calls RUN with the REST of its arguments inside
   "f" #'bookmark-jump-other-frame
   "a" 'bookmark-show-annotation
   "e" 'bookmark-edit-annotation
+  "x" #'embark-bookmark-open-externally
   "$" #'eshell)
 
 (defvar-keymap embark-unicode-name-map
