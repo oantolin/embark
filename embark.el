@@ -1248,7 +1248,8 @@ UPDATE is the indicator update function."
                   keymap
                 (let ((overriding-terminal-local-map keymap))
                   (key-binding (seq-take keys (1- (length keys)))
-                               'accept-default)))))
+                               'accept-default))))
+             (prefix-arg prefix-arg)) ; preserve prefix arg
          (when-let ((win (get-buffer-window embark--verbose-indicator-buffer
                                             'visible)))
            (quit-window 'kill-buffer win))
@@ -1282,7 +1283,8 @@ UPDATE is the indicator update function."
        (funcall cmd last-command-event)
        (embark-keymap-prompter keymap update))
       ('execute-extended-command
-       (intern-soft (read-extended-command)))
+       (let ((prefix-arg prefix-arg)) ; preserve prefix arg
+         (intern-soft (read-extended-command))))
       ((or 'keyboard-quit 'keyboard-escape-quit)
        nil)
       (_ cmd))))
