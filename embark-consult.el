@@ -362,47 +362,26 @@ This is intended to be used in `embark-target-injection-hooks'."
   (cl-pushnew #'embark-consult--unique-match
               (alist-get cmd embark-target-injection-hooks)))
 
-(cl-defun embark-consult--prep-async (&key type target &allow-other-keys)
-  "Either add Consult's async separator or ignore the TARGET depending on TYPE.
-If the TARGET of the given TYPE has an associated notion of
-directory, we don't want to search for the text of target, but
-rather just start a search in the associated directory.
-
-This is intended to be used in `embark-target-injection-hooks'
-for any action that is a Consult async command."
-  (let* ((style (alist-get consult-async-split-style
-                           consult-async-split-styles-alist))
-         (initial (plist-get style :initial))
-         (separator (plist-get style :separator))
-         (directory (embark--associated-directory target type)))
-    (when directory
-      (delete-minibuffer-contents))
-    (when initial
-      (goto-char (minibuffer-prompt-end))
-      (insert initial)
-      (goto-char (point-max)))
-    (when (and separator (null directory))
-      (goto-char (point-max))
-      (insert separator))))
-
-(cl-defun embark-consult--projectless
-    (&rest rest &key run target type &allow-other-keys)
-  "Run action with nil `consult-project-function', if TARGET has an directory.
-The values of TYPE which are considered to have an associated
-directory are: file, buffer, bookmark and library.  The REST of
-the arguments are also passed to RUN."
-  (if (embark--associated-directory target type)
+(cl-defun embark-consult--async-search-dwim
+    (&key action type target candidates &allow-other-keys)
+  "DWIM when using a Consult async search command as an ACTION.
+If the TYPE of the target(s) has a notion of associated
+file (files, buffers, libraries and some bookmarks do), then run
+the ACTION with `consult-project-function' set to nil, and search
+only the files associated to the TARGET or CANDIDATES.  For other
+types, run the ACTION with TARGET or CANDIDATES as initial input."
+  (if-let ((file-fn (cdr (assq type embark--associated-file-fn-alist))))
       (let (consult-project-function)
-        (apply run :target target :type type rest))
-    (apply run :target target :type type rest)))
+        (funcall action
+                 (delq nil (mapcar file-fn (or candidates (list target))))))
+    (funcall action nil (or target (string-join candidates " ")))))
 
 (map-keymap
  (lambda (_key cmd)
-   (cl-pushnew #'embark--cd (alist-get cmd embark-around-action-hooks))
-   (cl-pushnew #'embark-consult--projectless
-               (alist-get cmd embark-around-action-hooks))
-   (cl-pushnew #'embark-consult--prep-async
-               (alist-get cmd embark-target-injection-hooks)))
+   (unless (eq cmd #'consult-locate)
+     (cl-pushnew cmd embark-multitarget-actions)
+     (cl-pushnew #'embark-consult--async-search-dwim
+                 (alist-get cmd embark-around-action-hooks))))
  embark-consult-async-search-map)
 
 ;;; Tables of contents for buffers: imenu and outline candidate collectors
