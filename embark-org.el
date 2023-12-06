@@ -351,7 +351,12 @@ bound to i."
   :parent embark-general-map
   "RET" #'org-open-at-point-global
   "'" #'org-insert-link
+  "n" #'org-next-link
+  "p" #'org-previous-link
   "w" #'embark-org-link-copy-map)
+
+(dolist (motion '(org-next-link org-previous-link))
+  (cl-pushnew motion embark-repeat-actions))
 
 ;; The reason for this is left as an exercise to the reader.
 ;; Solution: Na ryvfc gnetrg znl cebzcg gur hfre sbe fbzrguvat!
