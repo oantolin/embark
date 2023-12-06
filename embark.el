@@ -4078,7 +4078,9 @@ the REST of the arguments."
 (defconst embark--associated-file-fn-alist
   `((file . identity)
     (buffer . ,(lambda (target)
-                 (buffer-local-value 'default-directory (get-buffer target))))
+                 (let ((buffer (get-buffer target)))
+                   (or (buffer-file-name buffer)
+                       (buffer-local-value 'default-directory buffer)))))
     (bookmark . bookmark-location)
     (library . locate-library))
   "Alist of functions that extract a file path from targets of a given type.")
