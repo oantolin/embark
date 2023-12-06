@@ -1981,7 +1981,8 @@ arguments are passed to the hooks as keyword arguments."
   (mapc (lambda (h) (apply h :action action :quit quit target))
         (alist-get :always hooks)))
 
-(defun embark--run-around-action-hooks (action target quit)
+(defun embark--run-around-action-hooks
+    (action target quit &optional non-interactive)
   "Run the `embark-around-action-hooks' for ACTION.
 All the applicable around hooks are composed in the order they
 are present in `embark-around-action-hooks'.  The keys t and
@@ -1989,7 +1990,11 @@ are present in `embark-around-action-hooks'.  The keys t and
 The :always hooks are executed always (outermost) and the t hooks
 are the default hooks, for when there are no command-specific
 hooks for ACTION.  The QUIT, ACTION and TARGET arguments are
-passed to the hooks as keyword arguments."
+passed to the hooks as keyword arguments.
+
+The optional argument NON-INTERACTIVE controls whether the action
+is run with `command-execute' or with `funcall' passing the
+target as argument."
   (apply
    (seq-reduce
     (lambda (fn hook)
@@ -1998,8 +2003,12 @@ passed to the hooks as keyword arguments."
       (reverse
        (append (or (alist-get action hooks) (alist-get t hooks))
                (alist-get :always hooks))))
-    (lambda (&rest args)
-      (command-execute (plist-get args :action))))
+    (if non-interactive
+        (lambda (&rest args)
+          (funcall (plist-get args :action)
+                   (or (plist-get args :candidates) (plist-get args :target))))
+      (lambda (&rest args)
+        (command-execute (plist-get args :action)))))
    :action action :quit quit target))
 
 (defun embark--act (action target &optional quit)
@@ -2074,12 +2083,11 @@ minibuffer before executing the action."
                       (when dedicate (set-window-dedicated-p dedicate nil)))
                     (unless (eq final-window action-window)
                       (select-window final-window))))
-              ;; TODO uniformize the command and non-interactive cases?
-              (let ((argument
-                     (if multi
-                         (or (plist-get target :candidates) ; embark-act-all
-                             (list (plist-get target :target)))
-                       (plist-get target :target))))
+              (let ((target
+                     (if (and multi (null (plist-get target :candidates)))
+                         (plist-put
+                          target :candidates (list (plist-get target :target)))
+                       target)))
                 (lambda ()
                   (with-selected-window action-window
                     (embark--run-action-hooks embark-pre-action-hooks
@@ -2088,7 +2096,7 @@ minibuffer before executing the action."
                         (let ((current-prefix-arg prefix)
                               (default-directory directory))
                           (embark--run-around-action-hooks
-                           action target quit))
+                           action target quit :non-interactive))
                       (embark--run-action-hooks embark-post-action-hooks
                                                 action target quit))))))))
       (setq prefix-arg nil)
