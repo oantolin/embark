@@ -1,6 +1,6 @@
 #+title: Embark changelog
 
-* Development version
+* Version 1.0 (2023-12-08)
 - You can now use around action hooks with multitarget actions (that
   you couldn't previously was an oversight).
 - Users of the =embark-consult= package can now use consult async search
