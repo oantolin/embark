@@ -121,6 +121,7 @@ The elements of LINES are assumed to be values of category `consult-line'."
                                  ;; of the prefix (for Occur Edit mode).
                                  'front-sticky t
                                  'rear-nonsticky t
+                                 'read-only t
                                  'occur-target loc
                                  'follow-link t
                                  'help-echo mouse-msg))
@@ -134,7 +135,9 @@ The elements of LINES are assumed to be values of category `consult-line'."
           (unless (eq this-buf last-buf)
             (insert (propertize
                      (format "lines from buffer: %s\n" this-buf)
-                     'face list-matching-lines-buffer-name-face))
+                     'face list-matching-lines-buffer-name-face
+                     'read-only t
+                     'rear-nonsticky '(read-only)))
             (setq last-buf this-buf))
           (insert (concat lineno contents nl))))
       (goto-char (point-min))
