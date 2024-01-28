@@ -124,22 +124,25 @@ The elements of LINES are assumed to be values of category `consult-line'."
                                  'read-only t
                                  'occur-target loc
                                  'follow-link t
-                                 'help-echo mouse-msg))
+                                 'help-echo mouse-msg
+                                 'font-lock-face 'shadow
+                                 'mouse-face 'highlight))
              (contents (propertize (embark-consult--strip line)
                                    'occur-target loc
                                    'occur-match t
                                    'follow-link t
-                                   'help-echo mouse-msg))
+                                   'help-echo mouse-msg
+                                   'mouse-face 'highlight))
              (nl (propertize "\n" 'occur-target loc))
              (this-buf (marker-buffer loc)))
           (unless (eq this-buf last-buf)
             (insert (propertize
                      (format "lines from buffer: %s\n" this-buf)
                      'face list-matching-lines-buffer-name-face
-                     'read-only t
-                     'rear-nonsticky '(read-only)))
+                     'read-only t))
             (setq last-buf this-buf))
-          (insert (concat lineno contents nl))))
+          (let ((inhibit-read-only t))
+            (insert (concat lineno contents nl)))))
       (goto-char (point-min))
       (occur-mode))
     (pop-to-buffer buf)))
