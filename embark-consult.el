@@ -115,18 +115,19 @@ The elements of LINES are assumed to be values of category `consult-line'."
             ((`(,loc . ,num) (consult--get-location line))
              ;; the text properties added to the following strings are
              ;; taken from occur-engine
-             (lineno (propertize (format "%7d:" num)
-                                 'occur-prefix t
-                                 ;; Allow insertion of text at the end
-                                 ;; of the prefix (for Occur Edit mode).
-                                 'front-sticky t
-                                 'rear-nonsticky t
-                                 'read-only t
-                                 'occur-target loc
-                                 'follow-link t
-                                 'help-echo mouse-msg
-                                 'font-lock-face 'shadow
-                                 'mouse-face 'highlight))
+             (lineno (propertize
+                      (format "%7d:" num)
+                      'occur-prefix t
+                      ;; Allow insertion of text at the end
+                      ;; of the prefix (for Occur Edit mode).
+                      'front-sticky t
+                      'rear-nonsticky t
+                      'read-only t
+                      'occur-target loc
+                      'follow-link t
+                      'help-echo mouse-msg
+                      'font-lock-face list-matching-lines-prefix-face
+                      'mouse-face 'highlight))
              (contents (propertize (embark-consult--strip line)
                                    'occur-target loc
                                    'occur-match t
