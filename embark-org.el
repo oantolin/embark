@@ -100,7 +100,7 @@
 
 (defun embark-org-target-element-context ()
   "Target all Org elements or objects around point."
-  (when (derived-mode-p 'org-mode 'org-agenda-mode)
+  (when (derived-mode-p 'org-mode)
     (cl-loop
      for elt = (org-element-lineage (org-element-context) embark-org--types t)
      then (org-element-lineage elt embark-org--types)
