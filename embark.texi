@@ -487,9 +487,13 @@ starting configuration:
   ;; Optionally replace the key help with a completing-read interface
   (setq prefix-help-command #'embark-prefix-help-command)
 
-  ;; Show the Embark target at point via Eldoc.  You may adjust the Eldoc
-  ;; strategy, if you want to see the documentation from multiple providers.
-  (add-hook 'eldoc-documentation-functions #'embark-eldoc-first-target)
+  ;; Show the Embark target at point via Eldoc. You may adjust the
+  ;; Eldoc strategy, if you want to see the documentation from
+  ;; multiple providers. Beware that using this can be a little
+  ;; jarring since the message shown in the minibuffer can be more
+  ;; than one line, causing the modeline to move up and down:
+
+  ;; (add-hook 'eldoc-documentation-functions #'embark-eldoc-first-target)
   ;; (setq eldoc-documentation-strategy #'eldoc-documentation-compose-eagerly)
 
   :config
@@ -593,7 +597,7 @@ Embark comes with the following indicators:
 @item
 @samp{embark-minimal-indicator}: shows a messages in the echo area or
 minibuffer prompt showing the current target and the types of all
-targets starting with the current one; this one is on by default.
+targets starting with the current one.
 
 @item
 @samp{embark-highlight-indicator}: highlights the target at point;

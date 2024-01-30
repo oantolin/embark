@@ -456,7 +456,7 @@ Embark comes with the following indicators:
 
 - =embark-minimal-indicator=: shows a messages in the echo area or
   minibuffer prompt showing the current target and the types of all
-  targets starting with the current one; this one is on by default.
+  targets starting with the current one.
 
 - =embark-highlight-indicator=: highlights the target at point;
   also on by default.
