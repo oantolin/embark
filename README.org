@@ -458,8 +458,8 @@ Embark comes with the following indicators:
   minibuffer prompt showing the current target and the types of all
   targets starting with the current one.
 
-- =embark-highlight-indicator=: highlights the target at point;
-  also on by default.
+- =embark-highlight-indicator=: highlights the target at point; on by
+  default.
 
 - =embark-verbose-indicator=: displays a table of actions and their key
   bindings in a buffer; this is not on by default, in favor of the

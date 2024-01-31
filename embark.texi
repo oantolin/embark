@@ -600,8 +600,8 @@ minibuffer prompt showing the current target and the types of all
 targets starting with the current one.
 
 @item
-@samp{embark-highlight-indicator}: highlights the target at point;
-also on by default.
+@samp{embark-highlight-indicator}: highlights the target at point; on by
+default.
 
 @item
 @samp{embark-verbose-indicator}: displays a table of actions and their key
