@@ -152,8 +152,7 @@ The elements of LINES are assumed to be values of category `consult-line'."
   "Create an occur or grep mode buffer listing LINES.
 The elements of LINES are assumed to be values of category `consult-location'."
   (let ((buf (generate-new-buffer "*Embark Export Grep*"))
-        (count 0)
-        prop)
+        (count 0))
     (with-current-buffer buf
       (insert (propertize "Exported line search results (file-backed buffers only):\n" 'wgrep-header t 'font-lock-face '(:weight bold)))
       (save-excursion (let (last-buf
@@ -241,8 +240,7 @@ This function is meant to be added to `embark-collect-mode-hook'."
 (defun embark-consult-export-grep (lines)
   "Create a grep mode buffer listing LINES."
   (let ((buf (generate-new-buffer "*Embark Export Grep*"))
-        (count 0)
-        prop)
+        (count 0))
     (with-current-buffer buf
       (insert (propertize "Exported grep results:\n\n" 'wgrep-header t))
       (dolist (line lines) (insert line "\n"))
