@@ -103,7 +103,7 @@
 (setf (alist-get 'consult-location embark-default-action-overrides)
       #'embark-consult-goto-location)
 
-(defun embark-consult-export-occur (lines)
+(defun embark-consult-export-location-occur (lines)
   "Create an occur mode buffer listing LINES.
 The elements of LINES are assumed to be values of category `consult-line'."
   (let ((buf (generate-new-buffer "*Embark Export Occur*"))
@@ -148,6 +148,64 @@ The elements of LINES are assumed to be values of category `consult-line'."
       (occur-mode))
     (pop-to-buffer buf)))
 
+(defun embark-consult-export-location-grep (lines)
+  "Create an occur or grep mode buffer listing LINES.
+The elements of LINES are assumed to be values of category `consult-location'."
+  (let ((buf (generate-new-buffer "*Embark Export Grep*"))
+        (count 0)
+        prop)
+    (with-current-buffer buf
+      (insert (propertize "Exported line search results (file-backed buffers only):\n" 'wgrep-header t 'font-lock-face '(:weight bold)))
+      (save-excursion (let (last-buf
+                            filename
+                            (not-saved-buffers '()))
+                        (dolist (line lines)
+                          (pcase-let*
+                              ((`(,loc . ,num) (consult--get-location line))
+                               (lineno (format "%d" num))
+                               (contents (embark-consult--strip line))
+                               (this-buf (marker-buffer loc))
+                               (file-path (buffer-file-name this-buf)))
+                            (if file-path
+                                ;; Handle `consult-line-multi' scenario where many buffers contain matches
+                                (progn (unless (eq this-buf last-buf)
+                                         (setq last-buf this-buf)
+                                         (setq filename (file-name-nondirectory file-path))
+                                         ;; Start listing matches for a new file
+                                         (insert "\n" (propertize (concat "file: " filename) 'wgrep-ignore t 'font-lock-face '(:inherit compilation-info :underline t)) "\n"))
+                                       (insert (propertize
+                                                (concat file-path ":")
+                                                'invisible t)
+                                               lineno
+                                               ":"
+                                               contents "\n" ))
+                              (cl-pushnew 'not-saved-buffers this-buf))))
+                        ;; Show a footer warning listing not saved buffers
+                        (when not-saved-buffers
+                          (save-excursion
+                            (insert "\n\nSome " (propertize "buffers" 'font-lock-face '(:weight bold)) " are not visiting (saved to) a file and are missing from exported results:\n")
+                            (dolist (nsbuf not-saved-buffers)
+                              (insert "- " (buffer-name nsbuf) "\n"))
+                            (insert "Either save the buffers or use `embark-consult-export-location-occur' as your export adapter`")
+                            ;; Send simplified information about unsaved buffers to Messages
+                            (message "This exporter requires the following buffers to be saved first %s" not-saved-buffers))
+                          ;; Add footer properties to a warning so that it is skipped by `wgrep'
+                          (add-text-properties (point) (point-max) '(read-only t wgrep-footer t front-sticky t)))))
+      (grep-mode)
+      (when (> count 0)
+        (setq-local grep-num-matches-found count
+                    mode-line-process grep-mode-line-matches))
+      ;; Make this buffer current for next/previous-error
+      (setq next-error-last-buffer buf)
+      ;; Set up keymap before possible wgrep-setup, so that wgrep
+      ;; restores our binding too when the user finishes editing.
+      (use-local-map (make-composed-keymap
+                      embark-consult-revert-map
+                      (current-local-map)))
+      (setq-local wgrep-header&footer-parser #'embark-consult--wgrep-prepare)
+      (when (fboundp 'wgrep-setup) (wgrep-setup)))
+    (pop-to-buffer buf)))
+
 (defun embark-consult--upgrade-markers ()
   "Upgrade consult-location cheap markers to real markers.
 This function is meant to be added to `embark-collect-mode-hook'."
@@ -156,8 +214,10 @@ This function is meant to be added to `embark-collect-mode-hook'."
       (when (car entry)
         (consult--get-location (car entry))))))
 
+;; Set default `occur-mode' based exporter for consult-line, consult-line-multi, consult-outline and alike
+;; Another option is using grep-mode by using `embark-consult-export-location-grep'
 (setf (alist-get 'consult-location embark-exporters-alist)
-      #'embark-consult-export-occur)
+      #'embark-consult-export-location-occur)
 (cl-pushnew #'embark-consult--upgrade-markers embark-collect-mode-hook)
 
 ;;; Support for consult-grep
@@ -253,12 +313,12 @@ This function is meant to be added to `embark-collect-mode-hook'."
                        'minibuffer-exit-hook
                        (lambda ()
                          (throw 'xref-items
-                           (xref-items
-                            (or
-                             (plist-get
-                              (embark--maybe-transform-candidates)
-                              :candidates)
-                             (user-error "No candidates for export")))))
+                                (xref-items
+                                 (or
+                                  (plist-get
+                                   (embark--maybe-transform-candidates)
+                                   :candidates)
+                                  (user-error "No candidates for export")))))
                        nil t))
                   (consult-xref fetcher))))))
         `((fetched-xrefs . ,(xref-items items))
