@@ -1,5 +1,25 @@
 #+title: Embark changelog
 
+* Development version
+- The =embark-consult= package contains a new exporter for
+  =consult-location= targets (produced by several =consult= commands such
+  as =consult-line=), which exports to a grep mode buffer. Users wishing
+  to use the new grep mode exporter can use the following
+  configuration:
+  #+begin_src emacs-lisp
+    (setf (alist-get 'consult-location embark-exporters-alist)
+          #'embark-consult-export-location-grep)
+  #+end_src
+  The main reason for adding the new exporter is that users of the
+  =wgrep= package will be able to make use of a feature that =wgrep= has
+  and the built-in =occur-edit-mode= lacks: when editing search results
+  you can add new lines to a result location. There are also some
+  disadvantages of grep mode compared to occur mode (which is why the
+  previously existing occur mode exporter continues to be the
+  default): (1) =wgrep= is a third party package while =occur-edit-mode=
+  is built-in; (2) occur mode buffers can list lines in any kind of
+  buffer, but grep mode and =wgrep= are meant for lines of files
+  exclusively.
 * Version 1.0 (2023-12-08)
 - You can now use around action hooks with multitarget actions (that
   you couldn't previously was an oversight).
