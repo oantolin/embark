@@ -168,9 +168,7 @@ The function FOOTER is called to insert a footer."
       (setq next-error-last-buffer buf)
       ;; Set up keymap before possible wgrep-setup, so that wgrep
       ;; restores our binding too when the user finishes editing.
-      (use-local-map (make-composed-keymap
-                      embark-consult-revert-map
-                      (current-local-map)))
+      (keymap-set (current-local-map) "g" #'embark-rerun-collect-or-export)
       ;; TODO Wgrep 3.0 and development versions use different names for the
       ;; parser variable.
       (defvar wgrep-header/footer-parser)
@@ -242,11 +240,6 @@ This function is meant to be added to `embark-collect-mode-hook'."
 (defvar grep-mode-line-matches)
 (defvar grep-num-matches-found)
 (declare-function wgrep-setup "ext:wgrep")
-
-(defvar-keymap embark-consult-revert-map
-  :doc "A keymap with a binding for revert-buffer."
-  :parent nil
-  "g" #'revert-buffer)
 
 (defun embark-consult-export-grep (lines)
   "Create a grep mode buffer listing LINES.
