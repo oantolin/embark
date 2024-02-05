@@ -149,37 +149,6 @@ category `consult-line'."
       (occur-mode))
     (pop-to-buffer buf)))
 
-(cl-defun embark-consult--export-grep (&key header lines insert footer)
-  "Create a grep mode buffer listing LINES.
-The HEADER string is inserted at the top of the buffer.  The
-function INSERT is called to insert the LINES and should return a
-count of the matches (there may be more than one match per line).
-The function FOOTER is called to insert a footer."
-  (let ((buf (generate-new-buffer "*Embark Export Grep*")))
-    (with-current-buffer buf
-      (insert (propertize header 'wgrep-header t 'front-sticky t))
-      (let ((count (funcall insert lines)))
-        (funcall footer)
-        (goto-char (point-min))
-        (grep-mode)
-        (setq-local grep-num-matches-found count
-                    mode-line-process grep-mode-line-matches))
-      ;; Make this buffer current for next/previous-error
-      (setq next-error-last-buffer buf)
-      ;; Set up keymap before possible wgrep-setup, so that wgrep
-      ;; restores our binding too when the user finishes editing.
-      (use-local-map (make-composed-keymap
-                      embark-consult-revert-map
-                      (current-local-map)))
-      ;; TODO Wgrep 3.0 and development versions use different names for the
-      ;; parser variable.
-      (defvar wgrep-header/footer-parser)
-      (defvar wgrep-header&footer-parser)
-      (setq-local wgrep-header/footer-parser #'ignore
-                  wgrep-header&footer-parser #'ignore)
-      (when (fboundp 'wgrep-setup) (wgrep-setup)))
-    (pop-to-buffer buf)))
-
 (defun embark-consult-export-location-grep (lines)
   "Create a grep mode buffer listing LINES.
 Any LINES that come from a buffer which is not visiting a file
@@ -243,10 +212,41 @@ This function is meant to be added to `embark-collect-mode-hook'."
 (defvar grep-num-matches-found)
 (declare-function wgrep-setup "ext:wgrep")
 
-(defvar-keymap embark-consult-revert-map
-  :doc "A keymap with a binding for revert-buffer."
+(defvar-keymap embark-consult-rerun-map
+  :doc "A keymap with a binding for `embark-rerun-collect-or-export'."
   :parent nil
-  "g" #'revert-buffer)
+  "g" #'embark-rerun-collect-or-export)
+
+(cl-defun embark-consult--export-grep (&key header lines insert footer)
+  "Create a grep mode buffer listing LINES.
+The HEADER string is inserted at the top of the buffer.  The
+function INSERT is called to insert the LINES and should return a
+count of the matches (there may be more than one match per line).
+The function FOOTER is called to insert a footer."
+  (let ((buf (generate-new-buffer "*Embark Export Grep*")))
+    (with-current-buffer buf
+      (insert (propertize header 'wgrep-header t 'front-sticky t))
+      (let ((count (funcall insert lines)))
+        (funcall footer)
+        (goto-char (point-min))
+        (grep-mode)
+        (setq-local grep-num-matches-found count
+                    mode-line-process grep-mode-line-matches))
+      ;; Make this buffer current for next/previous-error
+      (setq next-error-last-buffer buf)
+      ;; Set up keymap before possible wgrep-setup, so that wgrep
+      ;; restores our binding too when the user finishes editing.
+      (use-local-map (make-composed-keymap
+                      embark-consult-rerun-map
+                      (current-local-map)))
+      ;; TODO Wgrep 3.0 and development versions use different names for the
+      ;; parser variable.
+      (defvar wgrep-header/footer-parser)
+      (defvar wgrep-header&footer-parser)
+      (setq-local wgrep-header/footer-parser #'ignore
+                  wgrep-header&footer-parser #'ignore)
+      (when (fboundp 'wgrep-setup) (wgrep-setup)))
+    (pop-to-buffer buf)))
 
 (defun embark-consult-export-grep (lines)
   "Create a grep mode buffer listing LINES.
@@ -259,7 +259,7 @@ category `consult-grep'."
    (lambda (lines)
      (dolist (line lines) (insert line "\n"))
      (goto-char (point-min))
-     (let ((count 0))
+     (let ((count 0) prop)
        (while (setq prop (text-property-search-forward
                           'face 'consult-highlight-match t))
          (cl-incf count)
