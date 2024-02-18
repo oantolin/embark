@@ -4370,6 +4370,7 @@ This simply calls RUN with the REST of its arguments inside
   "m" #'pp-macroexpand-expression
   "TAB" #'indent-region
   "r" #'raise-sexp
+  ";" #'comment-dwim
   "t" #'transpose-sexps
   "k" #'kill-region
   "u" #'backward-up-list
