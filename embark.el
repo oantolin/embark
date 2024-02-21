@@ -3364,7 +3364,7 @@ PRED is a predicate function used to filter the items."
                                  files)))))
     (with-current-buffer buf
       ;; Unadvertise to prevent the new buffer from being reused.
-      (dired-unadvertise (car dired-directory))
+      (dired-unadvertise default-directory)
       (rename-buffer (format "*Embark Export Dired %s*" default-directory)))
     (pop-to-buffer buf)))
 
