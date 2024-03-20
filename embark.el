@@ -3651,7 +3651,8 @@ its own."
                   (if multiline (maybe-newline) (maybe-space)))
                 (ins-string ()
                   (let ((start (point)))
-                    (insert (string-join strings separator))
+                    (insert
+                     (mapconcat #'substring-no-properties strings separator))
                     (save-excursion (goto-char start) (maybe-whitespace))
                     (when (looking-back "\n" 1) (delete-char -1))
                     (save-excursion (maybe-whitespace)))))
