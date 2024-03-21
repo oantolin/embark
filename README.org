@@ -480,6 +480,42 @@ definition from the wiki into your configuration and customize the
 =embark-indicators= user option to exclude the mixed and verbose
 indicators and to include =embark-which-key-indicator=.
 
+If you use [[https://github.com/minad/vertico][Vertico]], there is an even easier way to get a =which-key= like
+behaviour that also lets you use Embark's usual functionality for narrowing
+down the list of alternatives. Put the following in your Embark
+configuration:
+
+#+begin_src emacs-lisp
+  (setq prefix-help-command #'embark-prefix-help-command)
+  (add-to-list 'vertico-multiform-categories '(embark-keybinding grid))
+#+end_src
+
+Now, when you have started on a prefix sequence like =C-x= or =C-c=,
+pressing =C-h= will bring up the Embark version of the built-in
+=prefix-help-command=, listing the keys under that prefix and letting you
+select the one you wanted interactively. Also make sure to add the
+following line to your Vertico configuration:
+
+#+begin_src emacs-lisp
+  (vertico-multiform-mode)
+#+end_src
+
+This will make the available keys be shown in a compact grid like in
+=which-key=. The =vertico-multiform-mode= also enables keys such as =M-V=,
+=M-G=, =M-B=, and =M-U= for manually switching between layouts in Vertico
+buffers.
+
+If you furthermore configure Embark to only use the minimal indicator
+without the delayed pop-up window, pressing =C-h= whenever you need the
+full list of commands (see =embark-help-key= below), you get a very nice
+and unobtrusive behaviour:
+#+begin_src emacs-lisp
+  (setq embark-indicators
+        '(embark-minimal-indicator  ; default is embark-mixed-indicator
+          embark-highlight-indicator
+          embark-isearch-highlight-indicator))
+#+end_src
+
 ** Selecting commands via completions instead of key bindings
 
 As an alternative to reading the list of actions in the verbose or
