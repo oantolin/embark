@@ -119,10 +119,10 @@
                end (1- end))
       collect `(,(intern (format "org-%s" (car elt))) ,target ,begin . ,end))))
 
-(if-let (((not (memq 'embark-org-target-element-context embark-target-finders)))
-         (tail (memq 'embark-target-active-region embark-target-finders)))
-    (push 'embark-org-target-element-context (cdr tail))
-  (push 'embark-org-target-element-context embark-target-finders))
+(unless (memq 'embark-org-target-element-context embark-target-finders)
+  (if-let ((tail (memq 'embark-target-active-region embark-target-finders)))
+      (push 'embark-org-target-element-context (cdr tail))
+    (push 'embark-org-target-element-context embark-target-finders)))
 
 ;;; Custom Org actions
 
