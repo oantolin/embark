@@ -2107,7 +2107,12 @@ minibuffer before executing the action."
 
 (defun embark--refine-multi-category (_type target)
   "Refine `multi-category' TARGET to its actual type."
-  (or (get-text-property 0 'multi-category target)
+  (or (let ((mc (get-text-property 0 'multi-category target)))
+        (cond
+         ;; The `cdr' of the `multi-category' property can be a buffer object.
+         ((and (eq (car mc) 'buffer) (buffer-live-p (cdr mc)))
+          (cons 'buffer (buffer-name (cdr mc))))
+         ((stringp (cdr mc)) mc)))
       (cons 'general target)))
 
 (defun embark--simplify-path (_type target)
