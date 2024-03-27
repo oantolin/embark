@@ -60,6 +60,10 @@ Advanced configuration
 * Creating your own keymaps::
 * Defining actions for new categories of targets::
 
+Selecting commands via completions instead of key bindings
+
+* Selecting commands via completion outside of Embark::
+
 Defining actions for new categories of targets
 
 * New minibuffer target example - tab-bar tabs::
@@ -626,6 +630,11 @@ definition from the wiki into your configuration and customize the
 @samp{embark-indicators} user option to exclude the mixed and verbose
 indicators and to include @samp{embark-which-key-indicator}.
 
+If you use @uref{https://github.com/minad/vertico, Vertico}, there is an even easier way to get a
+@samp{which-key}-like display that also lets you use completion to narrow
+down the list of alternatives, described at the end of the next
+section.
+
 @node Selecting commands via completions instead of key bindings
 @section Selecting commands via completions instead of key bindings
 
@@ -646,9 +655,80 @@ select an action by name, but personally I find that typing a small
 portion of the action name to narrow down the list of candidates feels
 significantly faster than visually scanning the entire list of actions.
 
-If you find you prefer entering actions that way, you can configure
+If you find you prefer selecting actions that way, you can configure
 embark to always prompt you for actions by setting the variable
 @samp{embark-prompter} to @samp{embark-completing-read-prompter}.
+
+On the other hand, you may wish to continue using key bindings for the
+actions you perform most often, and to use completion only to explore
+what further actions are available or when you've forgotten a key
+binding. In that case, you may prefer to use the minimal indicator,
+which does not pop-up an @samp{*Embark Actions*} buffer at all, and to use
+the @samp{embark-help-key} whenever you need help. This unobtrusive setup is
+achieved with the following configuration:
+
+@lisp
+(setq embark-indicators
+      '(embark-minimal-indicator  ; default is embark-mixed-indicator
+        embark-highlight-indicator
+        embark-isearch-highlight-indicator))
+@end lisp
+
+@uref{https://github.com/minad/vertico, Vertico} users may wish to configure a grid display for the actions and
+key-bindings, reminiscent of the popular package @uref{https://github.com/justbur/emacs-which-key, which-key}, but, of
+course, enhanced by the use of completion to narrow the list of
+commands. In order to get the grid display, put the following in your
+Vertico configuration:
+
+@lisp
+(add-to-list 'vertico-multiform-categories '(embark-keybinding grid))
+(vertico-multiform-mode)
+@end lisp
+
+This will make the available keys be shown in a compact grid like in
+@samp{which-key}. The @samp{vertico-multiform-mode} also enables keys such as @samp{M-V},
+@samp{M-G}, @samp{M-B}, and @samp{M-U} for manually switching between layouts in Vertico
+buffers.
+
+@menu
+* Selecting commands via completion outside of Embark::
+@end menu
+
+@node Selecting commands via completion outside of Embark
+@subsection Selecting commands via completion outside of Embark
+
+If you like this completion interface for exploring key bindings for
+Embark actions, you may want to use it elsewhere in Emacs. You can use
+Embark's completion-based command prompter to list:
+
+@itemize
+@item
+key bindings under a prefix,
+@item
+local key bindings, or
+@item
+all key bindings.
+@end itemize
+
+To use it for key bindings under a prefix (you can use this to replace
+the @samp{which-key} package, for example), use this configuration:
+
+@lisp
+(setq prefix-help-command #'embark-prefix-help-command)
+@end lisp
+
+Now, when you have started on a prefix sequence such as @samp{C-x} or @samp{C-c},
+pressing @samp{C-h} will bring up the Embark version of the built-in
+@samp{prefix-help-command}, which will list the keys under that prefix and
+their bindings, and lets you select the one you wanted with completion,
+or by key binding if you press @samp{embark-keymap-prompter-key}.
+
+To list local or global key bindings, use the command @samp{embark-bindings}.
+You can bind that to @samp{C-h b}, which is the default key binding for the
+built-in @samp{describe-bindings} command, which this command can replace. By
+default, @samp{embark-bindings} lists local key bindings, typically those
+bound in the major mode keymap; to get global bindings as well, call
+it with a @samp{C-u} prefix argument.
 
 @node Quitting the minibuffer after an action
 @section Quitting the minibuffer after an action
