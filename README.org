@@ -480,41 +480,10 @@ definition from the wiki into your configuration and customize the
 =embark-indicators= user option to exclude the mixed and verbose
 indicators and to include =embark-which-key-indicator=.
 
-If you use [[https://github.com/minad/vertico][Vertico]], there is an even easier way to get a =which-key= like
-behaviour that also lets you use Embark's usual functionality for narrowing
-down the list of alternatives. Put the following in your Embark
-configuration:
-
-#+begin_src emacs-lisp
-  (setq prefix-help-command #'embark-prefix-help-command)
-  (add-to-list 'vertico-multiform-categories '(embark-keybinding grid))
-#+end_src
-
-Now, when you have started on a prefix sequence like =C-x= or =C-c=,
-pressing =C-h= will bring up the Embark version of the built-in
-=prefix-help-command=, listing the keys under that prefix and letting you
-select the one you wanted interactively. Also make sure to add the
-following line to your Vertico configuration:
-
-#+begin_src emacs-lisp
-  (vertico-multiform-mode)
-#+end_src
-
-This will make the available keys be shown in a compact grid like in
-=which-key=. The =vertico-multiform-mode= also enables keys such as =M-V=,
-=M-G=, =M-B=, and =M-U= for manually switching between layouts in Vertico
-buffers.
-
-If you furthermore configure Embark to only use the minimal indicator
-without the delayed pop-up window, pressing =C-h= whenever you need the
-full list of commands (see =embark-help-key= below), you get a very nice
-and unobtrusive behaviour:
-#+begin_src emacs-lisp
-  (setq embark-indicators
-        '(embark-minimal-indicator  ; default is embark-mixed-indicator
-          embark-highlight-indicator
-          embark-isearch-highlight-indicator))
-#+end_src
+If you use [[https://github.com/minad/vertico][Vertico]], there is an even easier way to get a
+=which-key=-like display that also lets you use completion to narrow
+down the list of alternatives, described at the end of the next
+section.
 
 ** Selecting commands via completions instead of key bindings
 
@@ -535,9 +504,70 @@ select an action by name, but personally I find that typing a small
 portion of the action name to narrow down the list of candidates feels
 significantly faster than visually scanning the entire list of actions.
 
-If you find you prefer entering actions that way, you can configure
+If you find you prefer selecting actions that way, you can configure
 embark to always prompt you for actions by setting the variable
 =embark-prompter= to =embark-completing-read-prompter=.
+
+On the other hand, you may wish to continue using key bindings for the
+actions you perform most often, and to use completion only to explore
+what further actions are available or when you've forgotten a key
+binding. In that case, you may prefer to use the minimal indicator,
+which does not pop-up an =*Embark Actions*= buffer at all, and to use
+the =embark-help-key= whenever you need help. This unobtrusive setup is
+achieved with the following configuration:
+
+#+begin_src emacs-lisp
+  (setq embark-indicators
+        '(embark-minimal-indicator  ; default is embark-mixed-indicator
+          embark-highlight-indicator
+          embark-isearch-highlight-indicator))
+#+end_src
+
+[[https://github.com/minad/vertico][Vertico]] users may wish to configure a grid display for the actions and
+key-bindings, reminiscent of the popular package [[https://github.com/justbur/emacs-which-key][which-key]], but, of
+course, enhanced by the use of completion to narrow the list of
+commands. In order to get the grid display, put the following in your
+Vertico configuration:
+
+#+begin_src emacs-lisp
+  (add-to-list 'vertico-multiform-categories '(embark-keybinding grid))
+  (vertico-multiform-mode)
+#+end_src
+
+This will make the available keys be shown in a compact grid like in
+=which-key=. The =vertico-multiform-mode= also enables keys such as =M-V=,
+=M-G=, =M-B=, and =M-U= for manually switching between layouts in Vertico
+buffers.
+
+*** Selecting commands via completion outside of Embark
+
+If you like this completion interface for exploring key bindings for
+Embark actions, you may want to use it elsewhere in Emacs. You can use
+Embark's completion-based command prompter to list:
+
+- key bindings under a prefix,
+- local key bindings, or
+- all key bindings.
+  
+To use it for key bindings under a prefix (you can use this to replace
+the =which-key= package, for example), use this configuration:
+
+#+begin_src emacs-lisp
+  (setq prefix-help-command #'embark-prefix-help-command)
+#+end_src
+
+Now, when you have started on a prefix sequence such as =C-x= or =C-c=,
+pressing =C-h= will bring up the Embark version of the built-in
+=prefix-help-command=, which will list the keys under that prefix and
+their bindings, and lets you select the one you wanted with completion,
+or by key binding if you press =embark-keymap-prompter-key=.
+
+To list local or global key bindings, use the command =embark-bindings=.
+You can bind that to =C-h b=, which is the default key binding for the
+built-in =describe-bindings= command, which this command can replace. By
+default, =embark-bindings= lists local key bindings, typically those
+bound in the major mode keymap; to get global bindings as well, call
+it with a =C-u= prefix argument.
 
 ** Quitting the minibuffer after an action
 
