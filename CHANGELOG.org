@@ -1,6 +1,6 @@
 #+title: Embark changelog
 
-* Development version
+* Version 1.1 (2024-04-18)
 - The =embark-consult= package contains a new exporter for
   =consult-location= targets (produced by several =consult= commands such
   as =consult-line=), which exports to a grep mode buffer. Users wishing
