@@ -871,7 +871,7 @@ property respectively."
 (defmacro embark-define-thingatpt-target (thing &rest modes)
   "Define a target finder for THING using the thingatpt library.
 The function defined is named embark-target-NAME-at-point and it
-uses (thing-at-point 'THING) to find its targets.
+uses (thing-at-point \\='THING) to find its targets.
 
 If any MODES are given, the target finder only applies to buffers
 in one of those major modes."
