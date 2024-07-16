@@ -282,8 +282,9 @@ category `consult-grep'."
 
 ;;; Support for consult-xref
 
-(declare-function xref--show-xref-buffer "ext:xref")
 (declare-function consult-xref "ext:consult-xref")
+(declare-function xref--show-xref-buffer "xref")
+(declare-function xref-pop-to-location "xref")
 (defvar xref-auto-jump-to-first-xref)
 (defvar consult-xref--fetcher)
 
@@ -323,6 +324,13 @@ category `consult-grep'."
 
 (setf (alist-get 'consult-xref embark-exporters-alist)
       #'embark-consult-export-xref)
+
+(defun embark-consult-xref (cand)
+  "Default action override for `consult-xref', open CAND xref location."
+  (xref-pop-to-location (get-text-property 0 'consult-xref cand)))
+
+(setf (alist-get 'consult-xref embark-default-action-overrides)
+      #'embark-consult-xref)
 
 ;;; Support for consult-find and consult-locate
 
