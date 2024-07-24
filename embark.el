@@ -3982,9 +3982,13 @@ ALGORITHM is the hash algorithm symbol understood by `secure-hash'."
     (insert encoded)))
 
 (defun embark-decode-url (start end)
-  "Decode the URI-encoded region between START and END in current buffer."
+  "Decode the URI-encoded region between START and END in current buffer.
+It assumes the URL was encoded in UTF-8."
   (interactive "r")
-  (let ((decoded (url-unhex-string (buffer-substring-no-properties start end))))
+  (let ((decoded (decode-coding-string
+                  (url-unhex-string
+                   (buffer-substring-no-properties start end))
+                  'utf-8)))
     (delete-region start end)
     (insert decoded)))
 
