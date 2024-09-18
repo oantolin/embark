@@ -985,7 +985,7 @@ similar situations where the easiest option is not available.
 @node New minibuffer target example - tab-bar tabs
 @subsection New minibuffer target example - tab-bar tabs
 
-As an example, take the new @uref{https://www.gnu.org/software/emacs/manual/html_node/emacs/Tab-Bars.html, tab bars} from Emacs 27. I'll explain how
+As an example let us take a look at the @uref{https://www.gnu.org/software/emacs/manual/html_node/emacs/Tab-Bars.html, tab bars}. I'll explain how
 to configure Embark to offer tab-specific actions when you use the
 tab-bar-mode commands that mention tabs by name. The configuration
 explained here is now built-in to Embark (and Marginalia), but it's
@@ -1183,14 +1183,14 @@ bound by default in Embark's action keymaps are standard Emacs
 commands). It also allows you to write new custom actions in such a
 way that they are useful even without Embark.
 
-Staring from version 28.1, Emacs has a variable
-@samp{y-or-n-p-use-read-key}, which when set to @samp{t} causes @samp{y-or-n-p} to use
-@samp{read-key} instead of @samp{read-from-minibuffer}. Setting
-@samp{y-or-n-p-use-read-key} to @samp{t} is recommended for Embark users because
-it keeps Embark from attempting to insert the target at a @samp{y-or-n-p}
-prompt, which would almost never be sensible. Also consider this as
-a warning to structure your own action commands so that if they use
-@samp{y-or-n-p}, they do so only after the prompting for the target.
+Emacs has a variable @samp{y-or-n-p-use-read-key}, which when set to @samp{t}
+causes @samp{y-or-n-p} to use @samp{read-key} instead of @samp{read-from-minibuffer}.
+Setting @samp{y-or-n-p-use-read-key} to @samp{t} is recommended for Embark users
+because it keeps Embark from attempting to insert the target at a
+@samp{y-or-n-p} prompt, which would almost never be sensible. Also consider
+this as a warning to structure your own action commands so that if
+they use @samp{y-or-n-p}, they do so only after the prompting for the
+target.
 
 Here is a simple example illustrating the various ways of reading
 input from the user mentioned above. Bind the following commands to
