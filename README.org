@@ -797,7 +797,7 @@ similar situations where the easiest option is not available.
 
 *** New minibuffer target example - tab-bar tabs
 
-As an example, take the new [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Tab-Bars.html][tab bars]] from Emacs 27. I'll explain how
+As an example let us take a look at the [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Tab-Bars.html][tab bars]]. I'll explain how
 to configure Embark to offer tab-specific actions when you use the
 tab-bar-mode commands that mention tabs by name. The configuration
 explained here is now built-in to Embark (and Marginalia), but it's
@@ -983,14 +983,14 @@ documentation for =embark-target-finders= for details.)
   commands). It also allows you to write new custom actions in such a
   way that they are useful even without Embark.
 
-  Staring from version 28.1, Emacs has a variable
-  =y-or-n-p-use-read-key=, which when set to =t= causes =y-or-n-p= to use
-  =read-key= instead of =read-from-minibuffer=. Setting
-  =y-or-n-p-use-read-key= to =t= is recommended for Embark users because
-  it keeps Embark from attempting to insert the target at a =y-or-n-p=
-  prompt, which would almost never be sensible. Also consider this as
-  a warning to structure your own action commands so that if they use
-  =y-or-n-p=, they do so only after the prompting for the target.
+  Emacs has a variable =y-or-n-p-use-read-key=, which when set to =t=
+  causes =y-or-n-p= to use =read-key= instead of =read-from-minibuffer=.
+  Setting =y-or-n-p-use-read-key= to =t= is recommended for Embark users
+  because it keeps Embark from attempting to insert the target at a
+  =y-or-n-p= prompt, which would almost never be sensible. Also consider
+  this as a warning to structure your own action commands so that if
+  they use =y-or-n-p=, they do so only after the prompting for the
+  target.
 
   Here is a simple example illustrating the various ways of reading
   input from the user mentioned above. Bind the following commands to

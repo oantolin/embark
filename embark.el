@@ -7,7 +7,7 @@
 ;; Keywords: convenience
 ;; Version: 1.1
 ;; Homepage: https://github.com/oantolin/embark
-;; Package-Requires: ((emacs "27.1") (compat "30"))
+;; Package-Requires: ((emacs "28.1") (compat "30"))
 
 ;; This file is part of GNU Emacs.
 
@@ -1967,9 +1967,7 @@ If called outside the minibuffer, simply apply FN to ARGS."
     (apply #'embark--run-after-command fn args)
     (embark--run-after-command #'set 'ring-bell-function ring-bell-function)
     (setq ring-bell-function #'ignore)
-    (if (fboundp 'minibuffer-quit-recursive-edit)
-        (minibuffer-quit-recursive-edit)
-      (abort-recursive-edit))))
+    (minibuffer-quit-recursive-edit)))
 
 (defun embark--run-action-hooks (hooks action target quit)
   "Run HOOKS for ACTION.
@@ -2138,7 +2136,6 @@ work on them."
             (symbol-name (lookup-minor-mode-from-indicator target))))))
 
 (declare-function project-current "project")
-(declare-function project-roots "project")
 (declare-function project-root "project")
 
 (defun embark--project-file-full-path (_type target)
@@ -2148,10 +2145,7 @@ work on them."
   ;; case yet, since there is no current project.
   (cons 'file
         (if-let ((project (project-current))
-                 (root (if (fboundp 'project-root)
-                           (project-root project)
-                         (with-no-warnings
-                           (car (project-roots project))))))
+                 (root (project-root project)))
             (expand-file-name target root)
           target)))
 
@@ -3666,11 +3660,6 @@ its own."
             (ins-string))
         (ins-string)))))
 
-;; For Emacs 28 dired-jump will be moved to dired.el, but it seems
-;; that since it already has an autoload in Emacs 28, this next
-;; autoload is ignored.
-(autoload 'dired-jump "dired-x" nil t)
-
 (defun embark-dired-jump (file &optional other-window)
   "Open Dired buffer in directory containing FILE and move to its line.
 When called with a prefix argument OTHER-WINDOW, open Dired in other window."
@@ -4008,9 +3997,7 @@ It assumes the URL was encoded in UTF-8."
   (let ((dir eww-download-directory))
     (when (functionp dir) (setq dir (funcall dir)))
     (access-file dir "Download failed")
-    (url-retrieve
-     url #'eww-download-callback
-     (static-if (>= emacs-major-version 28) (list url dir) (list url)))))
+    (url-retrieve url #'eww-download-callback (list url dir))))
 
 ;;; Setup and pre-action hooks
 
@@ -4216,10 +4203,6 @@ This simply calls RUN with the REST of its arguments inside
 
 (fset 'embark-sort-map embark-sort-map)
 
-;; these will have autoloads in Emacs 28
-(autoload 'calc-grab-sum-down "calc" nil t)
-(autoload 'calc-grab-sum-across "calc" nil t)
-
 ;; this has had an autoload cookie since at least Emacs 26
 ;; but that autoload doesn't seem to work for me
 (autoload 'org-table-convert-region "org-table" nil t)
@@ -4403,7 +4386,7 @@ This simply calls RUN with the REST of its arguments inside
   :doc "Keymap for Embark heading actions."
   :parent embark-general-map
   "RET" 'outline-show-subtree
-  "TAB" 'outline-cycle ;; New in Emacs 28!
+  "TAB" 'outline-cycle
   "C-SPC" 'outline-mark-subtree
   "n" 'outline-next-visible-heading
   "p" 'outline-previous-visible-heading
