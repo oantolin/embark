@@ -2656,7 +2656,7 @@ default is `embark-collect'"
   "Face for group titles in Embark Collect buffers.")
 
 (defface embark-collect-group-separator
-  '((t :inherit shadow :strike-through t italic))
+  '((t :inherit shadow :strike-through t :italic t))
   "Face for group titles in Embark Collect buffers.")
 
 (defcustom embark-collect-group-format
