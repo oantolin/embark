@@ -1040,27 +1040,23 @@ their own target finder.  See for example
 (defun embark-target-completion-list-candidate ()
   "Return the completion candidate at point in a completions buffer."
   (when (derived-mode-p 'completion-list-mode)
-    (if (not (get-text-property (point) 'mouse-face))
-        (user-error "No completion here")
-      ;; this fairly delicate logic is taken from `choose-completion'
-      (let (beg end)
-        (cond
-         ((and (not (eobp)) (get-text-property (point) 'mouse-face))
-          (setq end (point) beg (1+ (point))))
-         ((and (not (bobp))
-               (get-text-property (1- (point)) 'mouse-face))
-          (setq end (1- (point)) beg (point)))
-         (t (user-error "No completion here")))
-        (setq beg (previous-single-property-change beg 'mouse-face))
-        (setq end (or (next-single-property-change end 'mouse-face)
-                      (point-max)))
-        (let ((raw (or (get-text-property beg 'completion--string)
-                       (buffer-substring beg end))))
-          `(,embark--type
-            ,(if (eq embark--type 'file)
-                 (abbreviate-file-name (expand-file-name raw))
-               raw)
-            ,beg . ,end))))))
+    ;; this fairly delicate logic is taken from `choose-completion'
+    (let (beg end)
+      (cond
+       ((and (not (eobp)) (get-text-property (point) 'completion--string))
+        (setq beg (1+ (point))))
+       ((and (not (bobp)) (get-text-property (1- (point)) 'completion--string))
+        (setq beg (point)))
+       (t (user-error "No completion here")))
+      (setq beg (or (previous-single-property-change beg 'completion--string) beg)
+            end (or (next-single-property-change beg 'completion--string)
+                    (point-max)))
+      (let ((raw (get-text-property beg 'completion--string)))
+        `(,embark--type
+          ,(if (eq embark--type 'file)
+               (abbreviate-file-name (expand-file-name raw))
+             raw)
+          ,beg . ,end)))))
 
 (defun embark--cycle-key ()
   "Return the key to use for `embark-cycle'."
