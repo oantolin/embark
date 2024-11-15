@@ -6,7 +6,7 @@
 ;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Keywords: convenience
 ;; Version: 1.1
-;; Homepage: https://github.com/oantolin/embark
+;; URL: https://github.com/oantolin/embark
 ;; Package-Requires: ((emacs "28.1") (compat "30") (embark "1.1") (consult "1.8"))
 
 ;; This program is free software; you can redistribute it and/or modify

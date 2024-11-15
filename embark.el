@@ -6,7 +6,7 @@
 ;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Keywords: convenience
 ;; Version: 1.1
-;; Homepage: https://github.com/oantolin/embark
+;; URL: https://github.com/oantolin/embark
 ;; Package-Requires: ((emacs "28.1") (compat "30"))
 
 ;; This file is part of GNU Emacs.
@@ -121,7 +121,8 @@
 (defgroup embark nil
   "Emacs Mini-Buffer Actions Rooted in Keymaps."
   :link '(info-link :tag "Info Manual" "(embark)")
-  :link '(url-link :tag "Homepage" "https://github.com/oantolin/embark")
+  :link '(url-link :tag "Website" "https://github.com/oantolin/embark")
+  :link '(url-link :tag "Wiki" "https://github.com/oantolin/embark/wiki")
   :link '(emacs-library-link :tag "Library Source" "embark.el")
   :group 'minibuffer
   :prefix "embark-")
