@@ -5,7 +5,7 @@
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Keywords: convenience
 ;; Version: 0.3
-;; Homepage: https://github.com/oantolin/embark
+;; URL: https://github.com/oantolin/embark
 ;; Package-Requires: ((emacs "25.1") (embark "0.9") (avy "0.5"))
 
 ;; This program is free software; you can redistribute it and/or modify
