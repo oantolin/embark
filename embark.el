@@ -281,6 +281,12 @@ Used by `embark-completing-read-prompter' and `embark-keymap-help'.")
 (defface embark-target '((t :inherit highlight))
   "Face used to highlight the target at point during `embark-act'.")
 
+(defface embark-minibuffer-action '((t :inherit highlight))
+  "Face used to highlight the current action in minibuffer prompt.")
+
+(defface embark-minibuffer-target-types '((t :inherit shadow))
+  "Face used to highlight the current target types in minibuffer prompt.")
+
 (defcustom embark-quit-after-action t
   "Should `embark-act' quit the minibuffer?
 This controls whether calling `embark-act' without a prefix
@@ -1141,10 +1147,10 @@ a repeating sequence of actions."
                ((plist-get target :multi) "∀ct")
                (rep "Rep")
                (t "Act"))
-              'face 'highlight)))
+              'face 'embark-minibuffer-action)))
     (cond
      ((eq (plist-get target :type) 'embark-become)
-      (propertize "Become" 'face 'highlight))
+      (propertize "Become" 'face 'embark-minibuffer-action))
      ((and (minibufferp)
            (not (eq 'embark-keybinding
                     (completion-metadata-get
@@ -1163,7 +1169,7 @@ a repeating sequence of actions."
          act
          (plist-get target :type)
          (if shadowed-targets
-             (format (propertize "(%s)" 'face 'shadow)
+             (format (propertize "(%s)" 'face 'embark-minibuffer-target-types)
                      (mapconcat
                       (lambda (target) (symbol-name (plist-get target :type)))
                       shadowed-targets
