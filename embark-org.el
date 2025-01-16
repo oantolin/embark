@@ -1,6 +1,6 @@
 ;;; embark-org.el --- Embark targets and actions for Org Mode  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2022-2023  Free Software Foundation, Inc.
+;; Copyright (C) 2022-2025  Free Software Foundation, Inc.
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
