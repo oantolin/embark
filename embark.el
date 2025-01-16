@@ -404,7 +404,7 @@ the key :always are executed always."
     (embark-kill-buffer-and-window embark--confirm)
     (bookmark-delete embark--confirm)
     (package-delete embark--confirm)
-    (,'tab-bar-close-tab-by-name embark--confirm) ;; Avoid package-lint warning
+    (tab-bar-close-tab-by-name embark--confirm)
     ;; search for region contents outside said region
     (embark-isearch-forward embark--unmark-target)
     (embark-isearch-backward embark--unmark-target)
@@ -441,8 +441,8 @@ arguments and more details."
     (make-directory embark--restart)
     (kill-buffer embark--restart)
     (embark-rename-buffer embark--restart)
-    (,'tab-bar-rename-tab-by-name embark--restart) ;; Avoid package-lint warning
-    (,'tab-bar-close-tab-by-name embark--restart)
+    (tab-bar-rename-tab-by-name embark--restart)
+    (tab-bar-close-tab-by-name embark--restart)
     (package-delete embark--restart))
   "Alist associating commands with post-action hooks.
 The hooks are run after an embarked upon action concludes.  See
