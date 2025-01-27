@@ -1,12 +1,12 @@
 ;;; embark-consult.el --- Consult integration for Embark -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2021-2023  Free Software Foundation, Inc.
+;; Copyright (C) 2021-2025  Free Software Foundation, Inc.
 
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Keywords: convenience
 ;; Version: 1.1
-;; Homepage: https://github.com/oantolin/embark
+;; URL: https://github.com/oantolin/embark
 ;; Package-Requires: ((emacs "28.1") (compat "30") (embark "1.1") (consult "1.8"))
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -225,13 +225,18 @@ count of the matches (there may be more than one match per line).
 The function FOOTER is called to insert a footer."
   (let ((buf (generate-new-buffer "*Embark Export Grep*")))
     (with-current-buffer buf
-      (insert (propertize header 'wgrep-header t 'front-sticky t))
-      (let ((count (funcall insert lines)))
-        (funcall footer)
-        (goto-char (point-min))
-        (grep-mode)
-        (setq-local grep-num-matches-found count
-                    mode-line-process grep-mode-line-matches))
+      (grep-mode)
+      (setq-local mode-line-process grep-mode-line-matches)
+      (let ((inhibit-read-only t))
+        (insert (propertize header 'wgrep-header t 'front-sticky t))
+        (dlet ((compilation-filter-start (point)))
+          (setq-local grep-num-matches-found (funcall insert lines))
+          ;; Emacs 30 feature `grep-use-headings'
+          (when (and (bound-and-true-p grep-use-headings)
+                     (fboundp 'grep--heading-filter))
+            (grep--heading-filter))
+          (funcall footer)
+          (goto-char (point-min))))
       ;; Make this buffer current for next/previous-error
       (setq next-error-last-buffer buf)
       ;; Set up keymap before possible wgrep-setup, so that wgrep

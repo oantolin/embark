@@ -1,12 +1,12 @@
 ;;; embark.el --- Conveniently act on minibuffer completions   -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2021-2023  Free Software Foundation, Inc.
+;; Copyright (C) 2021-2025  Free Software Foundation, Inc.
 
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Keywords: convenience
 ;; Version: 1.1
-;; Homepage: https://github.com/oantolin/embark
+;; URL: https://github.com/oantolin/embark
 ;; Package-Requires: ((emacs "28.1") (compat "30"))
 
 ;; This file is part of GNU Emacs.
@@ -121,7 +121,8 @@
 (defgroup embark nil
   "Emacs Mini-Buffer Actions Rooted in Keymaps."
   :link '(info-link :tag "Info Manual" "(embark)")
-  :link '(url-link :tag "Homepage" "https://github.com/oantolin/embark")
+  :link '(url-link :tag "Website" "https://github.com/oantolin/embark")
+  :link '(url-link :tag "Wiki" "https://github.com/oantolin/embark/wiki")
   :link '(emacs-library-link :tag "Library Source" "embark.el")
   :group 'minibuffer
   :prefix "embark-")
@@ -403,7 +404,7 @@ the key :always are executed always."
     (embark-kill-buffer-and-window embark--confirm)
     (bookmark-delete embark--confirm)
     (package-delete embark--confirm)
-    (,'tab-bar-close-tab-by-name embark--confirm) ;; Avoid package-lint warning
+    (tab-bar-close-tab-by-name embark--confirm)
     ;; search for region contents outside said region
     (embark-isearch-forward embark--unmark-target)
     (embark-isearch-backward embark--unmark-target)
@@ -440,8 +441,8 @@ arguments and more details."
     (make-directory embark--restart)
     (kill-buffer embark--restart)
     (embark-rename-buffer embark--restart)
-    (,'tab-bar-rename-tab-by-name embark--restart) ;; Avoid package-lint warning
-    (,'tab-bar-close-tab-by-name embark--restart)
+    (tab-bar-rename-tab-by-name embark--restart)
+    (tab-bar-close-tab-by-name embark--restart)
     (package-delete embark--restart))
   "Alist associating commands with post-action hooks.
 The hooks are run after an embarked upon action concludes.  See

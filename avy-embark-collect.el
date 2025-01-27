@@ -1,11 +1,11 @@
 ;;; avy-embark-collect.el --- Use avy to jump to Embark Collect entries  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2020  Omar Antolín Camarena
+;; Copyright (C) 2020-2025  Omar Antolín Camarena
 
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Keywords: convenience
 ;; Version: 0.3
-;; Homepage: https://github.com/oantolin/embark
+;; URL: https://github.com/oantolin/embark
 ;; Package-Requires: ((emacs "25.1") (embark "0.9") (avy "0.5"))
 
 ;; This program is free software; you can redistribute it and/or modify
