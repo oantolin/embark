@@ -231,6 +231,7 @@ The function FOOTER is called to insert a footer."
         (insert (propertize header 'wgrep-header t 'front-sticky t))
         (dlet ((compilation-filter-start (point)))
           (setq-local grep-num-matches-found (funcall insert lines))
+          (goto-char (point-max))
           ;; Emacs 30 feature `grep-use-headings'
           (when (and (bound-and-true-p grep-use-headings)
                      (fboundp 'grep--heading-filter))
