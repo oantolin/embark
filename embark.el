@@ -2070,12 +2070,15 @@ minibuffer before executing the action."
                             (embark--run-action-hooks embark-pre-action-hooks
                                                       action target quit)
                             (minibuffer-with-setup-hook inject
-                              ;; pacify commands that use (this-command-keys)
-                              (when (= (length (this-command-keys)) 0)
+                              ;; HACK work around `browse-url-interactive-arg'
+                              ;; expecting a non-empty `this-command-keys'
+                              ;; output.
+                              (when (and (eq action 'browse-url)
+                                         (= (length (this-command-keys)) 0))
                                 (set--this-command-keys
                                  (if (characterp last-command-event)
                                      (string last-command-event)
-                                  "\r")))
+                                   "\r")))
                               (setq this-command action)
                               (embark--run-around-action-hooks
                                action target quit)))
