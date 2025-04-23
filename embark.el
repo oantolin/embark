@@ -2523,7 +2523,8 @@ See `embark-act' for the meaning of the prefix ARG."
                    targets)))
              (type (plist-get target :type))
              (default-action (embark--default-action type))
-             (action (or (command-remapping default-action) default-action)))
+             (command-remapping (command-remapping default-action))
+             (action (or (unless (eq 'embark-dwim command-remapping) command-remapping) default-action)))
         (unless action
           (user-error "No default action for %s targets" type))
         (when (and arg (minibufferp)) (setq embark--toggle-quit t))
