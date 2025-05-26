@@ -176,6 +176,7 @@ or a list of such symbols."
     embark-target-email-at-point
     embark-target-url-at-point
     embark-target-file-at-point
+    embark-target-gnus-attachment-at-point
     embark-target-custom-variable-at-point
     embark-target-identifier-at-point
     embark-target-guess-file-at-point
@@ -755,6 +756,28 @@ following exceptions:
           (setq file (cadr guess) bounds (cddr guess))))
     (when file
       `(file ,(abbreviate-file-name (expand-file-name file)) ,@bounds))))
+
+(declare-function mm-handle-filename "mm-decode")
+(declare-function mm-save-part-to-file "mm-decode")
+(defvar gnus-article-current)
+
+(defun embark-target-gnus-attachment-at-point ()
+  "Target the attachment in an Gnus article buffer."
+  (when-let ((handle (get-text-property (point) 'gnus-data))
+             (file (mm-handle-filename handle))
+             (beg (previous-single-property-change (point) 'gnus-data nil (pos-bol)))
+             (end (next-single-property-change beg 'gnus-data nil (pos-eol))))
+    (let* ((inhibit-message t)
+           (tmp (file-name-concat
+                 temporary-file-directory
+                 (concat "embark-gnus-attachment-"
+                         (sha1 (format "%s%s%S"
+                                       user-login-name gnus-article-current file)))))
+           (file (file-name-concat tmp (string-replace "/" "-" file))))
+      (unless (file-exists-p file)
+        (with-file-modes #o700 (make-directory tmp t))
+        (mm-save-part-to-file handle file))
+      `(file ,file ,beg . ,end))))
 
 (defun embark-target-package-at-point ()
   "Target the package on the current line in a packages buffer."
