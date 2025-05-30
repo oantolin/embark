@@ -176,6 +176,7 @@ or a list of such symbols."
     embark-target-email-at-point
     embark-target-url-at-point
     embark-target-file-at-point
+    embark-target-buffer-at-point
     embark-target-custom-variable-at-point
     embark-target-identifier-at-point
     embark-target-guess-file-at-point
@@ -755,6 +756,14 @@ following exceptions:
           (setq file (cadr guess) bounds (cddr guess))))
     (when file
       `(file ,(abbreviate-file-name (expand-file-name file)) ,@bounds))))
+
+(defun embark-target-buffer-at-point ()
+  "Target buffer at point in Ibuffer or the buffer menu."
+  (when-let ((bol (pos-bol))
+             (buf (or (car (get-text-property bol 'ibuffer-properties))
+                      (get-text-property bol 'tabulated-list-id)))
+             ((buffer-live-p buf)))
+    `(buffer ,(buffer-name buf) ,bol . ,(pos-eol))))
 
 (defun embark-target-package-at-point ()
   "Target the package on the current line in a packages buffer."
