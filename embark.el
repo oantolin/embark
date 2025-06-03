@@ -1155,6 +1155,7 @@ added to `eldoc-documentation-functions'."
                         (interactive)
                         (mouse-set-point event)
                         (embark-act))
+                     :keys "\\[embark-act]"
                      :help ,(format "Act on %s ‘%s’" type target)))
       (when (and action (symbolp action))
         (define-key menu [embark-dwim]
@@ -1163,6 +1164,7 @@ added to `eldoc-documentation-functions'."
                           (interactive)
                           (mouse-set-point event)
                           (embark-dwim))
+                       :keys "\\[embark-dwim]"
                        :help ,(format "Run ‘%s’ on %s ‘%s’"
                                       action type target))))))
   menu)
