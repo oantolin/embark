@@ -1139,6 +1139,34 @@ added to `eldoc-documentation-functions'."
                       targets
                       ", ")))))
 
+;;;###autoload
+(defun embark-context-menu (menu event)
+  "Add Embark menu items to context MENU at the position of mouse EVENT."
+  (when-let (((not (minibufferp)))
+             (target (save-excursion
+                       (mouse-set-point event)
+                       (car (embark--targets)))))
+    (let* ((type (plist-get target :type))
+           (target (embark--truncate-target (plist-get target :target)))
+           (action (embark--default-action type)))
+      (define-key menu [embark-act]
+                  `( menu-item "Embark Act"
+                     ,(lambda ()
+                        (interactive)
+                        (mouse-set-point event)
+                        (embark-act))
+                     :help ,(format "Act on %s ‘%s’" type target)))
+      (when (and action (symbolp action))
+        (define-key menu [embark-dwim]
+                    `( menu-item "Embark DWIM"
+                       ,(lambda ()
+                          (interactive)
+                          (mouse-set-point event)
+                          (embark-dwim))
+                       :help ,(format "Run ‘%s’ on %s ‘%s’"
+                                      action type target))))))
+  menu)
+
 (defun embark--format-targets (target shadowed-targets rep)
   "Return a formatted string indicating the TARGET of an action.
 

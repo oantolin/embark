@@ -500,6 +500,10 @@ starting configuration:
   ;; (add-hook 'eldoc-documentation-functions #'embark-eldoc-first-target)
   ;; (setq eldoc-documentation-strategy #'eldoc-documentation-compose-eagerly)
 
+  ;; Add Embark to the mouse context menu. Also enable `context-menu-mode'.
+  ;; (context-menu 1)
+  ;; (add-hook 'context-menu-functions #'embark-context-menu 100)
+
   :config
 
   ;; Hide the mode line of the Embark live/completions buffers
