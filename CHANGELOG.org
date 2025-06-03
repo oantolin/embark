@@ -1,5 +1,11 @@
 #+title: Embark changelog
 
+* Development
+- =embark-target-buffer-at-point=: New target finder for buffers at point in
+  Ibuffer or Buffer-menu.
+- =embark-context-menu=: Bew function which can be added to
+  =context-menu-functions=. The mouse context menu is activated via
+  =context-menu-mode=.
 * Version 1.1 (2024-04-18)
 - The =embark-consult= package contains a new exporter for
   =consult-location= targets (produced by several =consult= commands such

@@ -1139,6 +1139,47 @@ added to `eldoc-documentation-functions'."
                       targets
                       ", ")))))
 
+;;;###autoload
+(defun embark-context-menu (menu event)
+  "Add Embark menu items to context MENU at the position of mouse EVENT."
+  (if (and (minibufferp) (embark--targets))
+      (define-key menu [embark-context-menu]
+                  `( "Embark" .
+                     ,(easy-menu-create-menu
+                       ""
+                       ;; PROBLEM: embark-dwim and embark-act in the minibuffer
+                       ;; do not select the correct candidate
+                       '(;;["DWIM" embark-dwim :keys "\\[embark-dwim]"]
+                         ;;["Act" embark-act :keys "\\[embark-act]"]
+                         ["Act All" embark-act :keys "\\[embark-act] A"]
+                         ["Export" embark-export :keys "\\[embark-act] A"]
+                         ["Snapshot" embark-collect :keys "\\[embark-act] S"]))))
+    (when-let ((target (save-excursion
+                         (mouse-set-point event)
+                         (car (embark--targets)))))
+      (let* ((type (plist-get target :type))
+             (target (embark--truncate-target (plist-get target :target)))
+             (action (embark--default-action type)))
+        (define-key menu [embark-act]
+                    `( menu-item "Embark Act"
+                       ,(lambda ()
+                          (interactive)
+                          (mouse-set-point event)
+                          (embark-act))
+                       :keys "\\[embark-act]"
+                       :help ,(format "Act on %s ‘%s’" type target)))
+        (when (and action (symbolp action))
+          (define-key menu [embark-dwim]
+                      `( menu-item "Embark DWIM"
+                         ,(lambda ()
+                            (interactive)
+                            (mouse-set-point event)
+                            (embark-dwim))
+                         :keys "\\[embark-dwim]"
+                         :help ,(format "Run ‘%s’ on %s ‘%s’"
+                                        action type target)))))))
+    menu)
+
 (defun embark--format-targets (target shadowed-targets rep)
   "Return a formatted string indicating the TARGET of an action.
 
