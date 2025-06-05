@@ -1309,7 +1309,7 @@ first line of the documentation string; for keyboard macros use
    (cond
     ((or (stringp cmd) (vectorp cmd)) (key-description cmd))
     ((stringp (car-safe cmd)) (car cmd))
-    ((eq (car-safe cmd) 'menu-item) (format "%S" (caddr cmd)))
+    ((eq (car-safe cmd) 'menu-item) (embark--command-name (caddr cmd)))
     ((keymapp cmd)
      (propertize (if (symbolp cmd) (format "+%s" cmd) "<keymap>")
                  'face 'embark-keymap))
