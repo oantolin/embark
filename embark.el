@@ -1371,6 +1371,7 @@ If NESTED is non-nil subkeymaps are not flattened."
                    for cmd = (keymap--menu-item-binding def)
                    unless (memq cmd '(nil embark-keymap-help
                                       negative-argument digit-argument))
+                   unless (string= "<keymap>" name)
                    collect (list name cmd key
                                  (concat (key-description key)))))
          (width (cl-loop for (_name _cmd _key desc) in commands
