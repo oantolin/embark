@@ -210,6 +210,7 @@ This function is meant to be added to `embark-collect-mode-hook'."
 
 (defvar grep-mode-line-matches)
 (defvar grep-num-matches-found)
+(declare-function compilation--ensure-parse "compile")
 (declare-function wgrep-setup "ext:wgrep")
 
 (defvar-keymap embark-consult-rerun-map
@@ -232,7 +233,11 @@ The function FOOTER is called to insert a footer."
         (dlet ((compilation-filter-start (point)))
           (setq-local grep-num-matches-found (funcall insert lines))
           (goto-char (point-max))
-          ;; Emacs 30 feature `grep-use-headings'
+          ;; Ensure that all `compilation-message' text properties are added.
+          (compilation--ensure-parse (point))
+          ;; Instead of (run-hooks 'compilation-filter-hook), we only run the
+          ;; Emacs 30 grep heading filter. The other `compilation-filter-hook'
+          ;; functions handle escape sequences, which we do not need here.
           (when (and (bound-and-true-p grep-use-headings)
                      (fboundp 'grep--heading-filter))
             (grep--heading-filter))
