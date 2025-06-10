@@ -211,7 +211,6 @@ This function is meant to be added to `embark-collect-mode-hook'."
 (defvar grep-mode-line-matches)
 (defvar grep-num-matches-found)
 (declare-function compilation--ensure-parse "compile")
-(declare-function wgrep-setup "ext:wgrep")
 
 (defvar-keymap embark-consult-rerun-map
   :doc "A keymap with a binding for `embark-rerun-collect-or-export'."
@@ -250,13 +249,15 @@ The function FOOTER is called to insert a footer."
       (use-local-map (make-composed-keymap
                       embark-consult-rerun-map
                       (current-local-map)))
-      ;; TODO Wgrep 3.0 and development versions use different names for the
-      ;; parser variable.
-      (defvar wgrep-header/footer-parser)
-      (defvar wgrep-header&footer-parser)
-      (setq-local wgrep-header/footer-parser #'ignore
-                  wgrep-header&footer-parser #'ignore)
-      (when (fboundp 'wgrep-setup) (wgrep-setup)))
+      ;; NOTE Wgrep is not needed anymore on Emacs 31 with `grep-edit-mode'.
+      (when (fboundp 'wgrep-setup)
+        ;; TODO Wgrep 3.0 and development versions use different names for the
+        ;; parser variable.
+        (defvar wgrep-header/footer-parser)
+        (defvar wgrep-header&footer-parser)
+        (setq-local wgrep-header/footer-parser #'ignore
+                    wgrep-header&footer-parser #'ignore)
+        (wgrep-setup)))
     (pop-to-buffer buf)))
 
 (defun embark-consult-export-grep (lines)
