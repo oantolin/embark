@@ -359,7 +359,10 @@ indicate that for files at the prompt of the `delete-file' command,
     (xref-find-definitions embark--ignore-target)
     (xref-find-references embark--ignore-target)
     (sort-regexp-fields embark--ignore-target)
-    (align-regexp embark--ignore-target))
+    (align-regexp embark--ignore-target)
+    ;; Treat target as file
+    (embark-dired-jump embark--as-file)
+    (embark-open-externally embark--as-file))
   "Alist associating commands with post-injection setup hooks.
 For commands appearing as keys in this alist, run the
 corresponding value as a setup hook after injecting the target
@@ -3836,14 +3839,6 @@ with command output.  For replacement behavior see
 (declare-function bookmark-prop-get "bookmark")
 (declare-function bookmark-completing-read "bookmark")
 
-(defun embark-bookmark-open-externally (bookmark)
-  "Open BOOKMARK in external application."
-  (interactive (list (bookmark-completing-read "Open externally: ")))
-  (embark-open-externally
-   (or (bookmark-prop-get bookmark 'location)
-       (bookmark-prop-get bookmark 'filename)
-       (user-error "Bookmark `%s' does not have a location" bookmark))))
-
 (defun embark-bury-buffer (buf)
   "Bury buffer BUF."
   (interactive "bBuffer: ")
@@ -4116,16 +4111,26 @@ the REST of the arguments."
                  (let ((buffer (get-buffer target)))
                    (or (buffer-file-name buffer)
                        (buffer-local-value 'default-directory buffer)))))
-    (bookmark . bookmark-location)
+    (bookmark . ,(lambda (target)
+                   ;; Do not use `bookmark-location', which can return the
+                   ;; invalid string "-- Unknown location --".
+                   (or (bookmark-prop-get target 'location)
+                       (bookmark-prop-get target 'filename))))
     (library . locate-library))
   "Alist of functions that extract a file path from targets of a given type.")
+
+(defun embark--associated-file (target type)
+  "Return file associated to TARGET of given TYPE.
+The supported values of TYPE are file, buffer, bookmark and
+library, which have an obvious notion of associated file."
+  (when-let ((fn (alist-get type embark--associated-file-fn-alist)))
+    (funcall fn target)))
 
 (defun embark--associated-directory (target type)
   "Return directory associated to TARGET of given TYPE.
 The supported values of TYPE are file, buffer, bookmark and
 library, which have an obvious notion of associated directory."
-  (when-let ((file-fn (alist-get type embark--associated-file-fn-alist))
-             (file (funcall file-fn target)))
+  (when-let ((file (embark--associated-file target type)))
     (if (file-directory-p file)
         (file-name-as-directory file)
       (file-name-directory file))))
@@ -4138,6 +4143,12 @@ The REST of the arguments are also passed to RUN."
   (let ((default-directory
           (or (embark--associated-directory target type) default-directory)))
     (apply run :target target :type type rest)))
+
+(cl-defun embark--as-file (&key target type &allow-other-keys)
+  "Inject TARGET of TYPE as file."
+  (when-let ((file (embark--associated-file target type)))
+    (delete-minibuffer-contents)
+    (insert file)))
 
 (cl-defun embark--save-excursion (&rest rest &key run &allow-other-keys)
   "Run action without moving point.
@@ -4280,9 +4291,10 @@ This simply calls RUN with the REST of its arguments inside
   "r" #'rename-file
   "c" #'copy-file
   "s" #'make-symbolic-link
-  "j" #'embark-dired-jump
   "!" #'shell-command
   "&" #'async-shell-command
+  "x" #'embark-open-externally
+  "/" #'embark-dired-jump
   "$" #'eshell
   "<" #'insert-file
   "m" #'chmod
@@ -4291,7 +4303,6 @@ This simply calls RUN with the REST of its arguments inside
   "\\" #'embark-recentf-remove
   "I" #'embark-insert-relative-path
   "W" #'embark-save-relative-path
-  "x" #'embark-open-externally
   "e" #'eww-open-file
   "l" #'load-file
   "b" #'byte-compile-file
@@ -4328,6 +4339,8 @@ This simply calls RUN with the REST of its arguments inside
   "a" #'apropos-library
   "L" #'locate-library
   "m" #'info-display-manual
+  "x" #'embark-open-externally
+  "/" #'embark-dired-jump
   "$" #'eshell)
 
 (defvar-keymap embark-buffer-map
@@ -4343,6 +4356,8 @@ This simply calls RUN with the REST of its arguments inside
   "=" #'ediff-buffers
   "|" #'embark-shell-command-on-buffer
   "<" #'insert-buffer
+  "x" #'embark-open-externally
+  "/" #'embark-dired-jump
   "$" #'eshell)
 
 (defvar-keymap embark-tab-map
@@ -4500,7 +4515,8 @@ This simply calls RUN with the REST of its arguments inside
   "f" #'bookmark-jump-other-frame
   "a" 'bookmark-show-annotation
   "e" 'bookmark-edit-annotation
-  "x" #'embark-bookmark-open-externally
+  "x" #'embark-open-externally
+  "/" #'embark-dired-jump
   "$" #'eshell)
 
 (defvar-keymap embark-unicode-name-map
