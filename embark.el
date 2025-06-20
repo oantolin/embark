@@ -4294,7 +4294,7 @@ This simply calls RUN with the REST of its arguments inside
   "!" #'shell-command
   "&" #'async-shell-command
   "x" #'embark-open-externally
-  "/" #'embark-dired-jump
+  "j" #'embark-dired-jump
   "$" #'eshell
   "<" #'insert-file
   "m" #'chmod
@@ -4340,7 +4340,7 @@ This simply calls RUN with the REST of its arguments inside
   "L" #'locate-library
   "m" #'info-display-manual
   "x" #'embark-open-externally
-  "/" #'embark-dired-jump
+  "j" #'embark-dired-jump
   "$" #'eshell)
 
 (defvar-keymap embark-buffer-map
@@ -4357,7 +4357,7 @@ This simply calls RUN with the REST of its arguments inside
   "|" #'embark-shell-command-on-buffer
   "<" #'insert-buffer
   "x" #'embark-open-externally
-  "/" #'embark-dired-jump
+  "j" #'embark-dired-jump
   "$" #'eshell)
 
 (defvar-keymap embark-tab-map
@@ -4504,19 +4504,19 @@ This simply calls RUN with the REST of its arguments inside
   :doc "Keymap for Embark bookmark actions."
   :parent embark-general-map
   "RET" #'bookmark-jump
+  "b" #'bookmark-jump
   "s" #'bookmark-set
   "d" #'bookmark-delete
   "r" #'bookmark-rename
   "R" #'bookmark-relocate
   "l" #'bookmark-locate
   "<" #'bookmark-insert
-  "j" #'bookmark-jump
   "o" #'bookmark-jump-other-window
   "f" #'bookmark-jump-other-frame
   "a" 'bookmark-show-annotation
   "e" 'bookmark-edit-annotation
   "x" #'embark-open-externally
-  "/" #'embark-dired-jump
+  "j" #'embark-dired-jump
   "$" #'eshell)
 
 (defvar-keymap embark-unicode-name-map
