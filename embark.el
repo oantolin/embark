@@ -207,6 +207,7 @@ Each function should take no arguments and return one of:
     (project-file . embark--project-file-full-path)
     (package . embark--remove-package-version)
     (multi-category . embark--refine-multi-category)
+    (buffer . embark--uniquify-orig-buffer)
     (file . embark--simplify-path))
   "Alist associating type to functions for transforming targets.
 Each function should take a type and a target string and return a
@@ -2159,6 +2160,14 @@ minibuffer before executing the action."
                                                 action target quit))))))))
       (setq prefix-arg nil)
       (if quit (embark--quit-and-run run-action) (funcall run-action)))))
+
+(defun embark--uniquify-orig-buffer (_type target)
+  "Return `uniquify-orig-buffer' property of TARGET.
+Used by `project--read-project-buffer' on Emacs 31."
+  (cons 'buffer
+        (if-let ((buf (get-text-property 0 'uniquify-orig-buffer target)))
+            (buffer-name buf)
+          target)))
 
 (defun embark--refine-multi-category (_type target)
   "Refine `multi-category' TARGET to its actual type."
