@@ -4067,14 +4067,15 @@ not handle that themselves."
   (when (minibufferp)
     (embark--become-command embark--command (minibuffer-contents))))
 
-(defun embark--shell-prep (&rest _)
+(cl-defun embark--shell-prep (&key type &allow-other-keys)
   "Prepare target for use as argument for a shell command.
-This quotes the spaces, inserts an extra space at the beginning
-and leaves the point to the left of it."
-  (let ((contents (minibuffer-contents)))
-    (delete-minibuffer-contents)
-    (insert " " (shell-quote-wildcard-pattern contents))
-    (goto-char (minibuffer-prompt-end))))
+If the target's TYPE is file, this quotes the spaces, inserts an extra
+space at the beginning and leaves the point to the left of it."
+  (when (eq type 'file)
+    (let ((contents (minibuffer-contents)))
+      (delete-minibuffer-contents)
+      (insert " " (shell-quote-wildcard-pattern contents))
+      (goto-char (minibuffer-prompt-end)))))
 
 (defun embark--force-complete (&rest _)
   "Select first minibuffer completion candidate matching target."
