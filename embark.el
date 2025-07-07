@@ -1123,7 +1123,8 @@ If CYCLE is non-nil bind `embark-cycle'."
 This function uses the eldoc REPORT callback and is meant to be
 added to `eldoc-documentation-functions'."
   (when-let (((not (minibufferp)))
-             (target (car (embark--targets))))
+             (target (let (file-name-handler-alist) ;; Prevent Tramp slowdown.
+                       (car (embark--targets)))))
     (funcall report
              (format "Embark on %s ‘%s’"
                      (plist-get target :type)
@@ -1135,7 +1136,8 @@ added to `eldoc-documentation-functions'."
 This function uses the eldoc REPORT callback and is meant to be
 added to `eldoc-documentation-functions'."
   (when-let (((not (minibufferp)))
-             (targets (embark--targets)))
+             (targets (let (file-name-handler-alist) ;; Prevent Tramp slowdown.
+                        (embark--targets))))
     (funcall report
              (format "Embark target types: %s"
                      (mapconcat
