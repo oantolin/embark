@@ -4111,6 +4111,30 @@ It assumes the URL was encoded in UTF-8."
   (when (string-match embark-iso-date-regexp date)
     (org-agenda-list nil date)))
 
+(declare-function days-between "time-date")
+
+(defun embark-echo-day-difference-from-date (date)
+  "Echo day difference between current date and DATE."
+  (interactive "sDate (YYYY-MM-DD): ")
+  (when (string-match embark-iso-date-regexp date)
+    (let ((day-difference (days-between date (format-time-string "%F"))))
+      (cond ((> day-difference 0)
+             (message "This date will arrive in %d days" day-difference))
+            ((< day-difference 0)
+             (message "This date was %d days ago" (- day-difference)))
+            (t
+             (message "This is today's date"))))))
+
+(declare-function calendar-date-string "calendar")
+
+(defun embark-pretty-print-date (date)
+  "Echo a pretty representation for DATE.
+Format is defined by the variable `calendar-date-display-form'."
+  (interactive "sDate (YYYY-MM-DD): ")
+  (when (string-match embark-iso-date-regexp date)
+    (require 'calendar)
+    (message (calendar-date-string (embark--iso-date-to-calendar date)))))
+
 ;;; Setup and pre-action hooks
 
 (defun embark--restart (&rest _)
@@ -4671,7 +4695,9 @@ Recognized dates are those following ISO 8601, that is, YYYY-MM-DD."
   "RET" #'embark-show-calendar-for-date
   "a" #'embark-show-agenda-for-date
   "c" #'embark-show-calendar-for-date
-  "d" #'embark-show-diary-for-date)
+  "d" #'embark-show-diary-for-date
+  "f" #'embark-echo-day-difference-from-date
+  "p" #'embark-pretty-print-date)
 
 (defvar-keymap embark-become-help-map
   :doc "Keymap for Embark help actions."
