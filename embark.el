@@ -939,13 +939,13 @@ centered at point that includes the current line)."
                      ,(or bounds
                           '(cons (match-beginning 0) (match-end 0)))))))))
 
-(defvar embark-iso-date-regexp
+(defvar embark-date--regexp
   (rx (group (= 4 digit)) "-"
       (group (= 2 digit)) "-"
       (group (= 2 digit)))
   "Regexp matching an ISO 8601 date string.")
 
-(embark-define-regexp-target date embark-iso-date-regexp nil
+(embark-define-regexp-target date embark-date--regexp nil
                              (match-string-no-properties 0)
                              nil 10)
 
@@ -4072,9 +4072,9 @@ It assumes the URL was encoded in UTF-8."
     (access-file dir "Download failed")
     (url-retrieve url #'eww-download-callback (list url dir))))
 
-(defun embark--iso-date-to-calendar (date)
+(defun embark-date--to-calendar (date)
   "Convert ISO 8601 DATE to calendar internal format."
-  (when (string-match embark-iso-date-regexp date)
+  (when (string-match embark-date--regexp date)
     (let ((day (match-string 3 date))
           (month (match-string 2 date))
           (year (match-string 1 date)))
@@ -4083,57 +4083,59 @@ It assumes the URL was encoded in UTF-8."
        (string-to-number day)
        (string-to-number year)))))
 
+(defun embark-date--read ()
+  "Read date in YYYY-MM-DD format."
+  (let ((date (read-string "Date (YYYY-MM-DD): ")))
+    (unless (string-match-p embark-date--regexp date)
+      (user-error "Date not in YYYY-MM-DD format"))
+    date))
+
 (declare-function calendar-goto-date "cal-move")
 
-(defun embark-show-calendar-for-date (date)
-  "Display calendar and center it at DATE, an ISO 8601 date string."
-  (interactive "sDate (YYYY-MM-DD): ")
-  (when (string-match embark-iso-date-regexp date)
-    (calendar)
-    (calendar-goto-date (embark--iso-date-to-calendar date))))
+(defun embark-date-calendar (date)
+  "Display calendar and go to DATE."
+  (interactive (list (embark-date--read)))
+  (calendar)
+  (calendar-goto-date (embark-date--to-calendar date)))
+
+(declare-function org-agenda-list "org-agenda")
+
+(defun embark-date-agenda (date)
+  "Show Org agenda for DATE."
+  (interactive (list (embark-date--read)))
+  (org-agenda-list nil date))
 
 (declare-function diary-check-diary-file "diary-lib")
 (declare-function diary-list-entries "diary-lib")
 
-(defun embark-show-diary-for-date (date)
-  "Display a buffer with diary entries for DATE, an ISO 8601 date string."
-  (interactive "sDate (YYYY-MM-DD): ")
-  (when (string-match embark-iso-date-regexp date)
-    (require 'diary-lib)
-    (diary-check-diary-file)
-    (diary-list-entries (embark--iso-date-to-calendar date) 1)))
-
-(declare-function org-agenda-list "org-agenda")
-
-(defun embark-show-agenda-for-date (date)
-  "Show Org agenda for DATE (an ISO 8601 date string)."
-  (interactive "sDate (YYYY-MM-DD): ")
-  (when (string-match embark-iso-date-regexp date)
-    (org-agenda-list nil date)))
+(defun embark-date-diary (date)
+  "Display a buffer with diary entries for DATE."
+  (interactive (list (embark-date--read)))
+  (require 'diary-lib)
+  (diary-check-diary-file)
+  (diary-list-entries (embark-date--to-calendar date) 1))
 
 (declare-function days-between "time-date")
 
-(defun embark-echo-day-difference-from-date (date)
+(defun embark-date-echo-difference (date)
   "Echo day difference between current date and DATE."
-  (interactive "sDate (YYYY-MM-DD): ")
-  (when (string-match embark-iso-date-regexp date)
-    (let ((day-difference (days-between date (format-time-string "%F"))))
-      (cond ((> day-difference 0)
-             (message "This date will arrive in %d days" day-difference))
-            ((< day-difference 0)
-             (message "This date was %d days ago" (- day-difference)))
-            (t
-             (message "This is today's date"))))))
+  (interactive (list (embark-date--read)))
+  (let ((day-difference (days-between date (format-time-string "%F"))))
+    (cond ((> day-difference 0)
+           (message "This date will arrive in %d days" day-difference))
+          ((< day-difference 0)
+           (message "This date was %d days ago" (- day-difference)))
+          (t
+           (message "This is today's date")))))
 
 (declare-function calendar-date-string "calendar")
 
-(defun embark-pretty-print-date (date)
+(defun embark-date-pretty-print (date)
   "Echo a pretty representation for DATE.
 Format is defined by the variable `calendar-date-display-form'."
-  (interactive "sDate (YYYY-MM-DD): ")
-  (when (string-match embark-iso-date-regexp date)
-    (require 'calendar)
-    (message (calendar-date-string (embark--iso-date-to-calendar date)))))
+  (interactive (list (embark-date--read)))
+  (require 'calendar)
+  (message (calendar-date-string (embark-date--to-calendar date))))
 
 ;;; Setup and pre-action hooks
 
@@ -4692,12 +4694,12 @@ This simply calls RUN with the REST of its arguments inside
 
 Recognized dates are those following ISO 8601, that is, YYYY-MM-DD."
   :parent embark-general-map
-  "RET" #'embark-show-calendar-for-date
-  "a" #'embark-show-agenda-for-date
-  "c" #'embark-show-calendar-for-date
-  "d" #'embark-show-diary-for-date
-  "f" #'embark-echo-day-difference-from-date
-  "p" #'embark-pretty-print-date)
+  "RET" #'embark-date-calendar
+  "a" #'embark-date-agenda
+  "c" #'embark-date-calendar
+  "d" #'embark-date-diary
+  "f" #'embark-date-echo-difference
+  "p" #'embark-date-pretty-print)
 
 (defvar-keymap embark-become-help-map
   :doc "Keymap for Embark help actions."
