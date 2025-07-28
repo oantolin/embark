@@ -4074,14 +4074,8 @@ It assumes the URL was encoded in UTF-8."
 
 (defun embark-date--to-calendar (date)
   "Convert ISO 8601 DATE to calendar internal format."
-  (when (string-match embark-date--regexp date)
-    (let ((day (match-string 3 date))
-          (month (match-string 2 date))
-          (year (match-string 1 date)))
-      (list
-       (string-to-number month)
-       (string-to-number day)
-       (string-to-number year)))))
+  (require 'calendar)
+  (calendar-gregorian-from-absolute (date-to-day date)))
 
 (defun embark-date--read ()
   "Read date in YYYY-MM-DD format."
@@ -4120,7 +4114,7 @@ It assumes the URL was encoded in UTF-8."
 (defun embark-date-echo-difference (date)
   "Echo day difference between current date and DATE."
   (interactive (list (embark-date--read)))
-  (let ((day-difference (days-between date (format-time-string "%F"))))
+  (let ((day-difference (- (date-to-day date) (time-to-days nil))))
     (cond ((> day-difference 0)
            (message "This date will arrive in %d days" day-difference))
           ((< day-difference 0)
