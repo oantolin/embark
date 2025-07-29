@@ -4072,10 +4072,13 @@ It assumes the URL was encoded in UTF-8."
     (access-file dir "Download failed")
     (url-retrieve url #'eww-download-callback (list url dir))))
 
+(declare-function calendar-gregorian-from-absolute "calendar")
+
 (defun embark-date--to-calendar (date)
   "Convert ISO 8601 DATE to calendar internal format."
   (require 'calendar)
-  (calendar-gregorian-from-absolute (date-to-day date)))
+  (when (string-match embark-date--regexp date)
+    (calendar-gregorian-from-absolute (date-to-day date))))
 
 (defun embark-date--read ()
   "Read date in YYYY-MM-DD format."
