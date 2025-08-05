@@ -547,23 +547,26 @@ of the arguments."
   "s" #'org-sort-list
   "b" #'org-cycle-list-bullet
   "t" #'org-list-make-subtree
-  "c" #'org-toggle-checkbox)
+  "c" #'org-toggle-checkbox
+  "h" #'org-toggle-heading)
 
 (add-to-list 'embark-repeat-actions 'org-cycle-list-bullet)
 
 (add-to-list 'embark-keymap-alist '(org-plain-list embark-org-plain-list-map))
 
-(cl-defun embark-org--toggle-checkboxes
+(cl-defun embark-org--mark-plain-list
     (&rest rest &key run type &allow-other-keys)
-  "Around action hook for `org-toggle-checkbox'.
+  "Mark the target if it is a plain org list.
+Around action hook for `org-toggle-checkbox' and `org-toggle-heading'.
 See `embark-around-action-hooks' for the keyword arguments RUN and TYPE.
 REST are the remaining arguments."
   (apply (if (eq type 'org-plain-list) #'embark--mark-target run)
          :type type
          rest))
 
-(cl-pushnew #'embark-org--toggle-checkboxes
-            (alist-get 'org-toggle-checkbox embark-around-action-hooks))
+(dolist (cmd '(org-toggle-checkbox org-toggle-heading))
+  (cl-pushnew #'embark-org--mark-plain-list
+              (alist-get cmd embark-around-action-hooks)))
 
 ;;; "Encode" region using Org export in place
 
