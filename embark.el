@@ -208,6 +208,7 @@ Each function should take no arguments and return one of:
     (package . embark--remove-package-version)
     (multi-category . embark--refine-multi-category)
     (buffer . embark--uniquify-orig-buffer)
+    (project-buffer . embark--uniquify-orig-buffer)
     (file . embark--simplify-path))
   "Alist associating type to functions for transforming targets.
 Each function should take a type and a target string and return a
