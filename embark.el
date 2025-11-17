@@ -3377,7 +3377,7 @@ PRED is a predicate function used to filter the items."
   (embark--export-rename "*Apropos*" "Apropos"
     (apropos-parse-pattern "") ;; Initialize apropos pattern
     ;; HACK: Ensure that order of exported symbols is kept.
-    (cl-letf (((symbol-function #'sort) (lambda (list _pred) (nreverse list))))
+    (cl-letf (((symbol-function #'sort) (lambda (list &rest _args) (nreverse list))))
       (apropos-symbols-internal
        (delq nil (mapcar #'intern-soft symbols))
        (bound-and-true-p apropos-do-all)))))
