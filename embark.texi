@@ -55,6 +55,7 @@ Advanced configuration
 * Showing information about available targets and actions::
 * Selecting commands via completions instead of key bindings::
 * Quitting the minibuffer after an action::
+* Recording acted-on minibuffer candidates in minibuffer history::
 * Running some setup after injecting the target::
 * Running hooks before, after or around an action: Running hooks before after or around an action. 
 * Creating your own keymaps::
@@ -501,7 +502,7 @@ starting configuration:
   ;; (setq eldoc-documentation-strategy #'eldoc-documentation-compose-eagerly)
 
   ;; Add Embark to the mouse context menu. Also enable `context-menu-mode'.
-  ;; (context-menu 1)
+  ;; (context-menu-mode 1)
   ;; (add-hook 'context-menu-functions #'embark-context-menu 100)
 
   :config
@@ -575,6 +576,7 @@ integration despite this.)
 * Showing information about available targets and actions::
 * Selecting commands via completions instead of key bindings::
 * Quitting the minibuffer after an action::
+* Recording acted-on minibuffer candidates in minibuffer history::
 * Running some setup after injecting the target::
 * Running hooks before, after or around an action: Running hooks before after or around an action. 
 * Creating your own keymaps::
@@ -778,6 +780,17 @@ non-quitting version as follows:
   (let ((embark-quit-after-action nil))
     (embark-act)))
 @end lisp
+
+@node Recording acted-on minibuffer candidates in minibuffer history
+@section Recording acted-on minibuffer candidates in minibuffer history
+
+Confirming minibuffer input with @samp{RET} records the selected candidate in
+the appropriate history list.  The user option
+@samp{embark-record-minibuffer-history} controls how Embark records acted-on
+candidates.  This option accepts three kinds of values: @samp{t} (always
+record), @samp{nil} (never record), or @samp{(skip ACTIONS...)} to record for
+everything except the listed actions.  The default is a @samp{skip} form that
+excludes meta commands such as @samp{embark-export}.
 
 @node Running some setup after injecting the target
 @section Running some setup after injecting the target

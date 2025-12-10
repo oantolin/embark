@@ -314,6 +314,21 @@ some uses of `embark-act-all', namely, for those actions whose
 entry in `embark-pre-action-hooks' includes `embark--confirm'."
   :type 'boolean)
 
+(defcustom embark-record-minibuffer-history
+  '(skip embark-export embark-collect embark-live embark-become
+         embark-act-all embark-toggle-quit)
+  "Control when acted-on minibuffer candidates go into history.
+The value takes one of the following forms:
+
+  t                  Record for every action.
+  nil                Never record.
+  (skip ACTIONS...)  Record for every action not in ACTIONS."
+  :type '(choice (const :tag "Record for all actions" t)
+                 (const :tag "Never record" nil)
+                 (cons :tag "Record except for listed actions"
+                       (const skip)
+                       (repeat (function :tag "Action to skip")))))
+
 (defcustom embark-default-action-overrides nil
   "Alist associating target types with overriding default actions.
 When the source of a target is minibuffer completion, the default
@@ -2070,10 +2085,30 @@ target as argument."
         (command-execute (plist-get args :action)))))
    :action action :quit quit target))
 
+(defun embark--record-history-p (action)
+  "Return non-nil if ACTION should push the current target to history."
+  (pcase embark-record-minibuffer-history
+    ('t t)
+    ('nil nil)
+    (`(skip . ,actions) (not (memq action actions)))
+    (_ nil)))
+
+(defun embark--record-target-in-history (action target)
+  "Record TARGET for ACTION in the current minibuffer history."
+  (when (and (minibufferp)
+             (embark--record-history-p action)
+             (not (eq minibuffer-history-variable t)))
+    (let ((raw (plist-get target :target)))
+      (when (stringp raw)
+        (add-to-history
+         minibuffer-history-variable
+         (substring-no-properties raw))))))
+
 (defun embark--act (action target &optional quit)
   "Perform ACTION injecting the TARGET.
 If called from a minibuffer with non-nil QUIT, quit the
 minibuffer before executing the action."
+  (embark--record-target-in-history action target)
   (if (memq action '(embark-become       ; these actions should run in
                      embark-collect      ; the current buffer, not the
                      embark-live         ; target buffer
