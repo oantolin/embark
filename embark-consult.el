@@ -149,6 +149,23 @@ category `consult-line'."
       (occur-mode))
     (pop-to-buffer buf)))
 
+(defun embark-consult-export-location--insert-footer (non-file-buffers)
+  "Insert the names of `NON-FILE-BUFFERS'.
+Any locations that come from a buffer which is not visiting a file
+will be inserted at the end of the grep buffer."
+  (when non-file-buffers
+    (let ((start (goto-char (point-max))))
+      (insert "\nSome results were in buffers with no associated file"
+              " and are missing\nfrom the exported result:\n")
+      (dolist (buf non-file-buffers)
+        (insert "- " (buffer-name buf) "\n"))
+      (insert "\nEither save the buffers or use alternative exporters.")
+      (message "This exporter does not support non-file buffers: %s"
+               non-file-buffers)
+      (add-text-properties
+       start (point-max)
+       '(read-only t wgrep-footer t front-sticky t)))))
+
 (defun embark-consult-export-location-grep (lines)
   "Create a grep mode buffer listing LINES.
 Any LINES that come from a buffer which is not visiting a file
@@ -177,19 +194,7 @@ candidates do not carry that information."
          count))
      :footer
      (lambda ()
-       (when non-file-buffers
-         (let ((start (goto-char (point-max))))
-           (insert "\nSome results were in buffers with no associated file"
-                   " and are missing\nfrom the exported result:\n")
-           (dolist (buf non-file-buffers)
-             (insert "- " (buffer-name buf) "\n"))
-           (insert "\nEither save the buffers or use the"
-                   " `embark-consult-export-location-occur'\nexporter.")
-           (message "This exporter does not support non-file buffers: %s"
-                    non-file-buffers)
-           (add-text-properties
-            start (point-max)
-            '(read-only t wgrep-footer t front-sticky t))))))))
+       (embark-consult-export-location--insert-footer non-file-buffers)))))
 
 (defun embark-consult--upgrade-markers ()
   "Upgrade consult-location cheap markers to real markers.
@@ -334,6 +339,42 @@ category `consult-grep'."
           (auto-jump . ,xref-auto-jump-to-first-xref)
           (display-action)))))))
 
+(declare-function xref-item-location "ext:xref")
+(declare-function xref-item-summary "ext:xref")
+(declare-function xref-location-marker "ext:xref")
+(declare-function xref-location-line "ext:xref")
+
+(defun embark-consult-export-xref-grep (items)
+  "Create a grep mode buffer listing xref ITEMS.
+Any ITEMS that come from a buffer which is not visiting a file
+will be excluded from the grep buffer, since grep mode only works
+with files. The elements of ITEMS should be completion
+candidates with category `consult-xref'."
+  (let (non-file-buffers)
+    (embark-consult--export-grep
+     :header "Exported xref results (file-backed buffers only):\n\n"
+     :lines items
+     :insert
+     (lambda (items)
+       (let ((count 0))
+         (dolist (item items)
+           (pcase-let* ((xref (get-text-property 0 'consult-xref item))
+                        (loc (xref-location-marker (xref-item-location xref)))
+                        (lineno (format "%d" (xref-location-line (xref-item-location xref))))
+                        (contents (xref-item-summary xref))
+                        (buffer (marker-buffer loc))
+                        (file (buffer-file-name buffer)))
+             (if (null file)
+                 (cl-pushnew buffer non-file-buffers)
+               (insert (file-relative-name file) ":" lineno ":" contents "\n")
+               (cl-incf count))))
+         count))
+     :footer
+     (lambda ()
+       (embark-consult-export-location--insert-footer non-file-buffers)))))
+
+;; Set default exporter for consult-xref. Another option is
+;; using grep-mode by using `embark-consult-export-xref-grep'
 (setf (alist-get 'consult-xref embark-exporters-alist)
       #'embark-consult-export-xref)
 
