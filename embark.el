@@ -1056,8 +1056,8 @@ their own target finder.  See for example
   "Return the completion candidate at point in a completions buffer."
   (embark--with-completion-list-buffer
    (lambda ()
-     ;; TODO Use `completion-list-candidate-at-point' via Compat 3131
-     ;; this fairly delicate logic is taken from `choose-completion'
+     ;; TODO Use `completion-list-candidate-at-point' via Compat 31 as soon as
+     ;; it becomes available instead of this delicate logic.
      (when (get-text-property (point) 'mouse-face)
        (let (beg end)
          (cond
