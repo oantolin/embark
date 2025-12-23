@@ -1054,28 +1054,29 @@ their own target finder.  See for example
 
 (defun embark-target-completion-list-candidate ()
   "Return the completion candidate at point in a completions buffer."
-  (when (derived-mode-p 'completion-list-mode)
-    (if (not (get-text-property (point) 'mouse-face))
-        (user-error "No completion here")
-      ;; this fairly delicate logic is taken from `choose-completion'
-      (let (beg end)
-        (cond
-         ((and (not (eobp)) (get-text-property (point) 'mouse-face))
-          (setq end (point) beg (1+ (point))))
-         ((and (not (bobp))
-               (get-text-property (1- (point)) 'mouse-face))
-          (setq end (1- (point)) beg (point)))
-         (t (user-error "No completion here")))
-        (setq beg (previous-single-property-change beg 'mouse-face))
-        (setq end (or (next-single-property-change end 'mouse-face)
-                      (point-max)))
-        (let ((raw (or (get-text-property beg 'completion--string)
-                       (buffer-substring beg end))))
-          `(,embark--type
-            ,(if (eq embark--type 'file)
-                 (abbreviate-file-name (expand-file-name raw))
-               raw)
-            ,beg . ,end))))))
+  (embark--with-completion-list-buffer
+   (lambda ()
+     ;; TODO Use `completion-list-candidate-at-point' via Compat 3131
+     ;; this fairly delicate logic is taken from `choose-completion'
+     (when (get-text-property (point) 'mouse-face)
+       (let (beg end)
+         (cond
+          ((and (not (eobp)) (get-text-property (point) 'mouse-face))
+           (setq end (point) beg (1+ (point))))
+          ((and (not (bobp))
+                (get-text-property (1- (point)) 'mouse-face))
+           (setq end (1- (point)) beg (point))))
+         (when (and beg end)
+           (setq beg (previous-single-property-change beg 'mouse-face))
+           (setq end (or (next-single-property-change end 'mouse-face)
+                         (point-max)))
+           (let ((raw (or (get-text-property beg 'completion--string)
+                          (buffer-substring beg end))))
+             `(,embark--type
+               ,(if (eq embark--type 'file)
+                    (abbreviate-file-name (expand-file-name raw))
+                  raw)
+               ,beg . ,end))))))))
 
 (defun embark--cycle-key ()
   "Return the key to use for `embark-cycle'."
@@ -2850,19 +2851,30 @@ This makes `embark-export' work in Embark Collect buffers."
                   (push (cdr cand) all)))
               (nreverse all))))))
 
+(defun embark--with-completion-list-buffer (fun)
+  "Run function FUN in currently active *Completions* buffer."
+  (if (derived-mode-p #'completion-list-mode)
+      (funcall fun)
+    (when-let ((window (get-buffer-window "*Completions*" 'visible))
+               (buffer (window-buffer window))
+               ((eq (buffer-local-value 'completion-reference-buffer buffer)
+                    (window-buffer (active-minibuffer-window)))))
+      (with-current-buffer buffer (funcall fun)))))
+
 (defun embark-completion-list-candidates ()
   "Return all candidates in a completions buffer."
-  (when (derived-mode-p 'completion-list-mode)
-    (cons
-     embark--type
-     (save-excursion
-       (goto-char (point-min))
-       (next-completion 1)
-       (let (all)
-         (while (not (eobp))
-           (push (cdr (embark-target-completion-list-candidate)) all)
-           (next-completion 1))
-         (nreverse all))))))
+  (embark--with-completion-list-buffer
+   (lambda ()
+     (cons
+      embark--type
+      (save-excursion
+        (goto-char (point-min))
+        (next-completion 1)
+        (let (all)
+          (while (not (eobp))
+            (push (cdr (embark-target-completion-list-candidate)) all)
+            (next-completion 1))
+          (nreverse all)))))))
 
 (defun embark-custom-candidates ()
   "Return all variables and faces listed in this `Custom-mode' buffer."
