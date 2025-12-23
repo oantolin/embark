@@ -503,5 +503,10 @@ Meant as :after-until advice for `embark-collect--metadatum'."
              #'embark-consult-imenu-or-outline-candidates
              'append)
 
+;; Automatically preview in live collect buffer
+(when (fboundp 'consult--default-completion-list-preview-setup)
+  (add-hook 'embark-collect-mode-hook
+            'consult--default-completion-list-preview-setup))
+
 (provide 'embark-consult)
 ;;; embark-consult.el ends here
