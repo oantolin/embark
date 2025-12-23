@@ -164,10 +164,10 @@ or a list of such symbols."
                              (repeat :tag "Keymaps" variable))))
 
 (defcustom embark-target-finders
-  '(embark-target-top-minibuffer-candidate
+  '(embark-target-completion-list-candidate
+    embark-target-top-minibuffer-candidate
     embark-target-active-region
     embark-target-collect-candidate
-    embark-target-completion-list-candidate
     embark-target-text-heading-at-point
     embark-target-bug-reference-at-point
     embark-target-flymake-at-point
