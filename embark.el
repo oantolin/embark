@@ -1446,6 +1446,7 @@ If NESTED is non-nil subkeymaps are not flattened."
                    collect (cons formatted item))))
     (cons candidates default)))
 
+;; TODO Use `completion-table-with-metadata' via Compat 31.
 (defun embark--with-category (category candidates)
   "Return completion table for CANDIDATES of CATEGORY with sorting disabled."
   (lambda (string predicate action)
