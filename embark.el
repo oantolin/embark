@@ -2854,11 +2854,17 @@ This makes `embark-export' work in Embark Collect buffers."
 (defun embark--with-completion-list-buffer (fun)
   "Run function FUN in currently active *Completions* buffer."
   (if (derived-mode-p #'completion-list-mode)
+      ;; Proceed if we're already inside the *Completions* buffer.
       (funcall fun)
-    (when-let ((window (get-buffer-window "*Completions*" 'visible))
+    ;; Switch to the *Completions* buffer if the buffer is connected to the
+    ;; current minibuffer and if the *Completions* buffer can be navigated from
+    ;; the minibuffer (see `minibuffer-visible-completions').
+    (when-let (((bound-and-true-p minibuffer-visible-completions))
+               ((minibufferp))
+               (window (get-buffer-window "*Completions*"))
                (buffer (window-buffer window))
-               ((eq (buffer-local-value 'completion-reference-buffer buffer)
-                    (window-buffer (active-minibuffer-window)))))
+               ((eq (current-buffer)
+                    (buffer-local-value 'completion-reference-buffer buffer))))
       (with-current-buffer buffer (funcall fun)))))
 
 (defun embark-completion-list-candidates ()
