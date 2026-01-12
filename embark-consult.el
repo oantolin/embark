@@ -7,7 +7,7 @@
 ;; Keywords: convenience
 ;; Version: 1.1
 ;; URL: https://github.com/oantolin/embark
-;; Package-Requires: ((emacs "28.1") (compat "30") (embark "1.1") (consult "1.8"))
+;; Package-Requires: ((emacs "28.1") (compat "30") (embark "1.1") (consult "3.2"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -504,9 +504,8 @@ Meant as :after-until advice for `embark-collect--metadatum'."
              'append)
 
 ;; Automatically preview in live collect buffer
-(when (fboundp 'consult--default-completion-list-preview-setup)
-  (add-hook 'embark-collect-mode-hook
-            'consult--default-completion-list-preview-setup))
+(add-hook 'embark-collect-mode-hook
+          'consult--default-completion-list-preview-setup)
 
 (provide 'embark-consult)
 ;;; embark-consult.el ends here
