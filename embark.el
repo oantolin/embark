@@ -7,7 +7,7 @@
 ;; Keywords: convenience
 ;; Version: 1.1
 ;; URL: https://github.com/oantolin/embark
-;; Package-Requires: ((emacs "28.1") (compat "30"))
+;; Package-Requires: ((emacs "29.1") (compat "30"))
 
 ;; This file is part of GNU Emacs.
 
@@ -506,11 +506,6 @@ used for other types of action hooks, for more details see
                         (const :tag "Default" t)
                         (const :tag "Always" :always))
                 :value-type hook))
-
-(static-if (< emacs-major-version 29)
-  ;; narrow to target for duration of action
-  (setf (alist-get 'repunctuate-sentences embark-around-action-hooks)
-        '(embark--narrow-to-target)))
 
 (defcustom embark-multitarget-actions '(embark-insert embark-copy-as-kill)
   "Commands for which `embark-act-all' should pass a list of targets.
@@ -4017,16 +4012,6 @@ argument), no quoting is used for strings."
                (eval (read (buffer-substring beg end)) lexical-binding)))
       (delete-region beg end))))
 
-(static-if (< emacs-major-version 29)
-  (defun embark-elp-restore-package (prefix)
-    "Remove instrumentation from functions with names starting with PREFIX."
-    (interactive "SPrefix: ")
-    (when (fboundp 'elp-restore-list)
-      (elp-restore-list
-       (mapcar #'intern
-               (all-completions (symbol-name prefix)
-                                obarray 'elp-profilable-p))))))
-
 (defmacro embark--define-hash (algorithm)
   "Define command which computes hash from a string.
 ALGORITHM is the hash algorithm symbol understood by `secure-hash'."
@@ -4569,9 +4554,7 @@ This simply calls RUN with the REST of its arguments inside
   "a" #'package-autoremove
   "g" #'package-refresh-contents
   "m" #'elp-instrument-package ;; m=measure
-  "M" (if (fboundp 'embark-elp-restore-package)
-        'embark-elp-restore-package
-        'elp-restore-package))
+  "M" 'elp-restore-package)
 
 (defvar-keymap embark-bookmark-map
   :doc "Keymap for Embark bookmark actions."
