@@ -1426,7 +1426,7 @@ leave the minibuffer open so you can navigate among the matches.
 @chapter Related Packages
 
 There are several packages that offer functionality similar
-to Embark's. 
+to Embark's.
 
 @table @asis
 @item Acting on minibuffer completion candidates

@@ -1,4 +1,5 @@
 #+TITLE: Embark: Emacs Mini-Buffer Actions Rooted in Keymaps
+#+AUTHOR: Omar Antolín Camarena
 #+OPTIONS: d:nil
 #+EXPORT_FILE_NAME: embark.texi
 #+TEXINFO_DIR_CATEGORY: Emacs misc features
@@ -276,7 +277,7 @@ The selection functionality is supported in every buffer:
   paragraphs scattered over a file and you want to bring them
   together, you can select each one, insert them all somewhere and
   finally delete all of them (from their original locations).
-  
+
 *** =embark-live= a live-updating variant of =embark-collect=
 
 Finally, there is also an =embark-live= variant of the =embark-collect=
@@ -550,7 +551,7 @@ Embark's completion-based command prompter to list:
 - key bindings under a prefix,
 - local key bindings, or
 - all key bindings.
-  
+
 To use it for key bindings under a prefix (you can use this to replace
 the =which-key= package, for example), use this configuration:
 
@@ -1188,7 +1189,7 @@ Embark and Consult. Some examples are:
 * Related Packages
 
 There are several packages that offer functionality similar
-to Embark's. 
+to Embark's.
 
 - Acting on minibuffer completion candidates :: The popular Ivy and
   Helm packages have support for acting on the completion candidates
@@ -1204,7 +1205,7 @@ to Embark's.
   has the command =ivy-occur= which is similar to =embark-collect=. As
   with Ivy actions, =ivy-occur= only works for commands written using
   the Ivy API.
-  
+
 * Resources
 
 If you want to learn more about how others have used Embark here are
