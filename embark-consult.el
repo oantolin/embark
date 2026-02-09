@@ -90,7 +90,10 @@ category `consult-line'."
   (let ((buf (generate-new-buffer "*Embark Export Occur*"))
         (mouse-msg "mouse-2: go to this occurrence")
         (inhibit-read-only t)
+        (affixator (embark--get-affixator 'consult-location))
         last-buf)
+    ;; Run affixator for lazy highlighting
+    (setq lines (mapcar #'car (funcall affixator lines)))
     (with-current-buffer buf
       (dolist (line lines)
         (pcase-let*

@@ -3050,7 +3050,7 @@ For non-minibuffers, assume candidates are of given TYPE."
     ;; otherwise fake some metadata for Marginalia users's benefit
     (completion-metadata-get `((category . ,type)) metadatum)))
 
-(defun embark-collect--affixator (type)
+(defun embark--get-affixator (type)
   "Get affixation function for current buffer's candidates.
 For non-minibuffers, assume candidates are of given TYPE."
   (or (embark-collect--metadatum type 'affixation-function)
@@ -3153,7 +3153,7 @@ example)."
          (type (plist-get transformed :orig-type)) ; we need the originals for
          (candidates (plist-get transformed :orig-candidates)) ; default action
          (bounds (plist-get transformed :bounds))
-         (affixator (embark-collect--affixator type))
+         (affixator (embark--get-affixator type))
          (grouper (embark-collect--metadatum type 'group-function)))
     (when (eq type 'file)
       (let ((dir (buffer-local-value 'default-directory buffer)))
