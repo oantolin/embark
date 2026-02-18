@@ -29,7 +29,7 @@
 * Quick start::
 * Advanced configuration::
 * How does Embark call the actions?::
-* Embark, Marginalia and Consult: Embark Marginalia and Consult. 
+* Embark@comma{} Marginalia and Consult::
 * Related Packages::
 * Resources::
 * Contributions::
@@ -56,7 +56,7 @@ Advanced configuration
 * Selecting commands via completions instead of key bindings::
 * Quitting the minibuffer after an action::
 * Running some setup after injecting the target::
-* Running hooks before, after or around an action: Running hooks before after or around an action. 
+* Running hooks before@comma{} after or around an action::
 * Creating your own keymaps::
 * Defining actions for new categories of targets::
 
@@ -73,7 +73,7 @@ How does Embark call the actions?
 
 * Non-interactive functions as actions::
 
-Embark, Marginalia and Consult
+Embark@comma{} Marginalia and Consult
 
 * Marginalia::
 * Consult::
@@ -85,20 +85,20 @@ Embark, Marginalia and Consult
 @chapter Overview
 
 Embark makes it easy to choose a command to run based on what is near
-point, both during a minibuffer completion session (in a way familiar
+point@comma{} both during a minibuffer completion session (in a way familiar
 to Helm or Counsel users) and in normal buffers. Bind the command
 @samp{embark-act} to a key and it acts like prefix-key for a keymap of
 @emph{actions} (commands) relevant to the @emph{target} around point. With point on
 an URL in a buffer you can open the URL in a browser or eww or
 download the file it points to. If while switching buffers you spot an
-old one, you can kill it right there and continue to select another.
+old one@comma{} you can kill it right there and continue to select another.
 Embark comes preconfigured with over a hundred actions for common
-types of targets such as files, buffers, identifiers, s-expressions,
+types of targets such as files@comma{} buffers@comma{} identifiers@comma{} s-expressions@comma{}
 sentences; and it is easy to add more actions and more target types.
 Embark can also collect all the candidates in a minibuffer to an
 occur-like buffer or export them to a buffer in a major-mode specific
-to the type of candidates, such as dired for a set of files, ibuffer
-for a set of buffers, or customize for a set of variables.
+to the type of candidates@comma{} such as dired for a set of files@comma{} ibuffer
+for a set of buffers@comma{} or customize for a set of variables.
 
 @menu
 * Acting on targets::
@@ -112,18 +112,18 @@ for a set of buffers, or customize for a set of variables.
 
 You can think of @samp{embark-act} as a keyboard-based version of a
 right-click contextual menu. The @samp{embark-act} command (which you should
-bind to a convenient key), acts as a prefix for a keymap offering you
+bind to a convenient key)@comma{} acts as a prefix for a keymap offering you
 relevant @emph{actions} to use on a @emph{target} determined by the context:
 
 @itemize
 @item
-In the minibuffer, the target is the current top completion
+In the minibuffer@comma{} the target is the current top completion
 candidate.
 @item
 In the @samp{*Completions*} buffer the target is the completion at point.
 @item
-In a regular buffer, the target is the region if active, or else the
-file, symbol, URL, s-expression or defun at point.
+In a regular buffer@comma{} the target is the region if active@comma{} or else the
+file@comma{} symbol@comma{} URL@comma{} s-expression or defun at point.
 @end itemize
 
 Multiple targets can be present at the same location and you can cycle
@@ -133,48 +133,48 @@ a few of the actions offered in the default configuration:
 
 @itemize
 @item
-For files you get offered actions like deleting, copying,
-renaming, visiting in another window, running a shell command on the
-file, etc.
+For files you get offered actions like deleting@comma{} copying@comma{}
+renaming@comma{} visiting in another window@comma{} running a shell command on the
+file@comma{} etc.
 @item
 For buffers the actions include switching to or killing the buffer.
 @item
-For package names the actions include installing, removing or
+For package names the actions include installing@comma{} removing or
 visiting the homepage.
 @item
-For Emacs Lisp symbols the actions include finding the definition,
-looking up documentation, evaluating (which for a variable
-immediately shows the value, but for a function lets you pass it
-some arguments first). There are some actions specific to variables,
-such as setting the value directly or though the customize system,
-and some actions specific to commands, such as binding it to a key.
+For Emacs Lisp symbols the actions include finding the definition@comma{}
+looking up documentation@comma{} evaluating (which for a variable
+immediately shows the value@comma{} but for a function lets you pass it
+some arguments first). There are some actions specific to variables@comma{}
+such as setting the value directly or though the customize system@comma{}
+and some actions specific to commands@comma{} such as binding it to a key.
 @end itemize
 
 By default when you use @samp{embark-act} if you don't immediately select an
-action, after a short delay Embark will pop up a buffer showing a list
+action@comma{} after a short delay Embark will pop up a buffer showing a list
 of actions and their corresponding key bindings. If you are using
-@samp{embark-act} outside the minibuffer, Embark will also highlight the
+@samp{embark-act} outside the minibuffer@comma{} Embark will also highlight the
 current target. These behaviors are configurable via the variable
-@samp{embark-indicators}. Instead of selecting an action via its key binding,
+@samp{embark-indicators}. Instead of selecting an action via its key binding@comma{}
 you can select it by name with completion by typing @samp{C-h} after
 @samp{embark-act}.
 
-Everything is easily configurable: determining the current target,
-classifying it, and deciding which actions are offered for each type
+Everything is easily configurable: determining the current target@comma{}
+classifying it@comma{} and deciding which actions are offered for each type
 in the classification. The above introduction just mentions part of
 the default configuration.
 
 Configuring which actions are offered for a type is particularly easy
 and requires no programming: the variable @samp{embark-keymap-alist}
-associates target types with variables containing keymaps, and those
+associates target types with variables containing keymaps@comma{} and those
 keymaps containing bindings for the actions. (To examine the available
-categories and their associated keymaps, you can use @samp{C-h v
-embark-keymap-alist} or customize that variable.) For example, in the
+categories and their associated keymaps@comma{} you can use @samp{C-h v
+embark-keymap-alist} or customize that variable.) For example@comma{} in the
 default configuration the type @samp{file} is associated with the symbol
 @samp{embark-file-map}. That symbol names a keymap with single-letter key
-bindings for common Emacs file commands, for instance @samp{c} is bound to
+bindings for common Emacs file commands@comma{} for instance @samp{c} is bound to
 @samp{copy-file}. This means that if you are in the minibuffer after running
-a command that prompts for a file, such as @samp{find-file} or @samp{rename-file},
+a command that prompts for a file@comma{} such as @samp{find-file} or @samp{rename-file}@comma{}
 you can copy a file by running @samp{embark-act} and then pressing @samp{c}.
 
 These action keymaps are very convenient but not strictly necessary
@@ -182,9 +182,9 @@ when using @samp{embark-act}: you can use any command that reads from the
 minibuffer as an action and the target of the action will be inserted
 at the first minibuffer prompt. After running @samp{embark-act} all of your
 key bindings and even @samp{execute-extended-command} can be used to run a
-command. For example, if you want to replace all occurrences of the
-symbol at point, just use @samp{M-%} as the action, there is no need to bind
-@samp{query-replace} in one of Embark's keymaps. Also, those action keymaps
+command. For example@comma{} if you want to replace all occurrences of the
+symbol at point@comma{} just use @samp{M-%} as the action@comma{} there is no need to bind
+@samp{query-replace} in one of Embark's keymaps. Also@comma{} those action keymaps
 are normal Emacs keymaps and you should feel free to bind in them
 whatever commands you find useful as actions and want to be available
 through convenient bindings.
@@ -197,18 +197,18 @@ that was current when you executed a command that opened up the
 minibuffer).
 
 Emacs's minibuffer completion system includes metadata indicating the
-@emph{category} of what is being completed. For example, @samp{find-file}'s
+@emph{category} of what is being completed. For example@comma{} @samp{find-file}'s
 metadata indicates a category of @samp{file} and @samp{switch-to-buffer}'s metadata
 indicates a category of @samp{buffer}. Embark has the related notion of the
-@emph{type} of a target for actions, and by default when category metadata
+@emph{type} of a target for actions@comma{} and by default when category metadata
 is present it is taken to be the type of minibuffer completion
 candidates when used as targets. Emacs commands often do not set
-useful category metadata so the @uref{https://github.com/minad/marginalia, Marginalia} package, which supplies
-this missing metadata, is highly recommended for use with Embark.
+useful category metadata so the @uref{https://github.com/minad/marginalia, Marginalia} package@comma{} which supplies
+this missing metadata@comma{} is highly recommended for use with Embark.
 
 Embark's default configuration has actions for the following target
-types: files, buffers, symbols, packages, URLs, bookmarks, and as a
-somewhat special case, actions for when the region is active. You can
+types: files@comma{} buffers@comma{} symbols@comma{} packages@comma{} URLs@comma{} bookmarks@comma{} and as a
+somewhat special case@comma{} actions for when the region is active. You can
 read about the @uref{https://github.com/oantolin/embark/wiki/Default-Actions, default actions and their key bindings} on the GitHub
 project wiki.
 
@@ -219,22 +219,22 @@ Embark has a notion of default action for a target:
 
 @itemize
 @item
-If the target is a minibuffer completion candidate, then the default
+If the target is a minibuffer completion candidate@comma{} then the default
 action is whatever command opened the minibuffer in the first place.
-For example if you run @samp{kill-buffer}, then the default action will be
+For example if you run @samp{kill-buffer}@comma{} then the default action will be
 to kill buffers.
 @item
-If the target comes from a regular buffer (i.e., not a minibuffer),
+If the target comes from a regular buffer (i.e.@comma{} not a minibuffer)@comma{}
 then the default action is whatever is bound to @samp{RET} in the keymap of
-actions for that type of target. For example, in Embark's default
+actions for that type of target. For example@comma{} in Embark's default
 configuration for a URL found at point the default action is
-@samp{browse-url}, because @samp{RET} is bound to @samp{browse-url} in the @samp{embark-url-map}
+@samp{browse-url}@comma{} because @samp{RET} is bound to @samp{browse-url} in the @samp{embark-url-map}
 keymap.
 @end itemize
 
 To run the default action you can press @samp{RET} after running @samp{embark-act}.
-Note that if there are several different targets at a given location,
-each has its own default action, so first cycle to the target you want
+Note that if there are several different targets at a given location@comma{}
+each has its own default action@comma{} so first cycle to the target you want
 and then press @samp{RET} to run the corresponding default action.
 
 There is also @samp{embark-dwim} which runs the default action for the first
@@ -250,11 +250,11 @@ command).
 @item
 Compose a new email to the email address at point.
 @item
-In an Emacs Lisp buffer, if point is on an opening parenthesis or
-right after a closing one, it will evaluate the corresponding
+In an Emacs Lisp buffer@comma{} if point is on an opening parenthesis or
+right after a closing one@comma{} it will evaluate the corresponding
 expression.
 @item
-Go to the definition of an Emacs Lisp function, variable or macro at
+Go to the definition of an Emacs Lisp function@comma{} variable or macro at
 point.
 @item
 Find the file corresponding to an Emacs Lisp library at point.
@@ -263,8 +263,8 @@ Find the file corresponding to an Emacs Lisp library at point.
 @node Working with sets of possible targets
 @section Working with sets of possible targets
 
-Besides acting individually on targets, Embark lets you work
-collectively on a set of target @emph{candidates}. For example, while you are
+Besides acting individually on targets@comma{} Embark lets you work
+collectively on a set of target @emph{candidates}. For example@comma{} while you are
 in the minibuffer the candidates are simply the possible completions
 of your input. Embark provides three main commands to work on candidate
 sets:
@@ -274,63 +274,63 @@ sets:
 The @samp{embark-act-all} command runs the same action on each of the
 current candidates. It is just like using @samp{embark-act} on each
 candidate in turn. (Because you can easily act on many more
-candidates than you meant to, by default Embark asks you to confirm
+candidates than you meant to@comma{} by default Embark asks you to confirm
 uses of @samp{embark-act-all}; you can turn this off by setting the user
 option @samp{embark-confirm-act-all} to @samp{nil}.)
 
 @item
 The @samp{embark-collect} command produces a buffer listing all the current
-candidates, for you to peruse and run actions on at your leisure.
+candidates@comma{} for you to peruse and run actions on at your leisure.
 The candidates are displayed as a list showing additional
-annotations. If any of the candidates contain newlines, then
+annotations. If any of the candidates contain newlines@comma{} then
 horizontal lines are used to separate candidates.
 
 The Embark Collect buffer is somewhat ``dired-like'': you can select
 and deselect candidates through @samp{embark-select} (available as an
-action in @samp{embark-act}, bound to @samp{SPC}; but you could also give it a
+action in @samp{embark-act}@comma{} bound to @samp{SPC}; but you could also give it a
 global key binding). In an Embark Collect buffer @samp{embark-act} is bound
 to @samp{a} and @samp{embark-act-all} is bound to @samp{A}; @samp{embark-act-all} will act on
-all currently marked candidates if there any, and will act on all
-candidates if none are marked. In particular, this means that @samp{a SPC}
-will toggle whether the candidate at point is selected, and @samp{A SPC}
-will select all candidates if none are selected, or deselect all
+all currently marked candidates if there any@comma{} and will act on all
+candidates if none are marked. In particular@comma{} this means that @samp{a SPC}
+will toggle whether the candidate at point is selected@comma{} and @samp{A SPC}
+will select all candidates if none are selected@comma{} or deselect all
 selected candidates if there are some.
 
 @item
 The @samp{embark-export} command tries to open a buffer in an appropriate
 major mode for the set of candidates. If the candidates are files
-export produces a Dired buffer; if they are buffers, you get an
+export produces a Dired buffer; if they are buffers@comma{} you get an
 Ibuffer buffer; and if they are packages you get a buffer in
 package menu mode.
 
-If you use the grepping commands from the @uref{https://github.com/minad/consult/, Consult} package,
-@samp{consult-grep}, @samp{consult-git-grep} or @samp{consult-ripgrep}, then you should
-install the @samp{embark-consult} package, which adds support for exporting a
-list of grep results to an honest grep-mode buffer, on which you can
+If you use the grepping commands from the @uref{https://github.com/minad/consult/, Consult} package@comma{}
+@samp{consult-grep}@comma{} @samp{consult-git-grep} or @samp{consult-ripgrep}@comma{} then you should
+install the @samp{embark-consult} package@comma{} which adds support for exporting a
+list of grep results to an honest grep-mode buffer@comma{} on which you can
 even use @uref{https://github.com/mhayashi1120/Emacs-wgrep, wgrep} if you wish.
 @end itemize
 
-When in doubt choosing between exporting and collecting, a good rule
+When in doubt choosing between exporting and collecting@comma{} a good rule
 of thumb is to always prefer @samp{embark-export} since when an exporter to a
-special major mode is available for a given type of target, it will be
-more featureful than an Embark collect buffer, and if no such exporter
+special major mode is available for a given type of target@comma{} it will be
+more featureful than an Embark collect buffer@comma{} and if no such exporter
 is configured the @samp{embark-export} command falls back to the generic
 @samp{embark-collect}.
 
 These commands are always available as ``actions'' (although they do not
 act on just the current target but on all candidates) for @samp{embark-act}
-and are bound to @samp{A}, @samp{S} (for ``snapshot''), and @samp{E}, respectively, in
+and are bound to @samp{A}@comma{} @samp{S} (for ``snapshot'')@comma{} and @samp{E}@comma{} respectively@comma{} in
 @samp{embark-general-map}. This means that you do not have to bind your own
-key bindings for these (although you can, of course!), just a key
+key bindings for these (although you can@comma{} of course!)@comma{} just a key
 binding for @samp{embark-act}.
 
 In Embark Collect or Embark Export buffers that were obtained by
 running @samp{embark-collect} or @samp{embark-export} from within a minibuffer
-completion session, @samp{g} is bound to a command that restarts the
-completion session, that is, the command that opened the minibuffer is
+completion session@comma{} @samp{g} is bound to a command that restarts the
+completion session@comma{} that is@comma{} the command that opened the minibuffer is
 run again and the minibuffer contents restored. You can then interact
-normally with the command, perhaps editing the minibuffer contents,
-and, if you wish, you can rerun @samp{embark-collect} or @samp{embark-export} to get
+normally with the command@comma{} perhaps editing the minibuffer contents@comma{}
+and@comma{} if you wish@comma{} you can rerun @samp{embark-collect} or @samp{embark-export} to get
 an updated buffer.
 
 @menu
@@ -341,32 +341,32 @@ an updated buffer.
 @node Selecting some targets to make an ad hoc candidate set
 @subsection Selecting some targets to make an ad hoc candidate set
 
-The commands for working with sets of candidates just described,
-namely @samp{embark-act-all}, @samp{embark-export} and @samp{embark-collect} by default
-work with all candidates defined in the current context. For example,
-in the minibuffer they operate on all currently completion candidates,
+The commands for working with sets of candidates just described@comma{}
+namely @samp{embark-act-all}@comma{} @samp{embark-export} and @samp{embark-collect} by default
+work with all candidates defined in the current context. For example@comma{}
+in the minibuffer they operate on all currently completion candidates@comma{}
 or in a dired buffer they work on all marked files (or all files if
-none are marked). Embark also has a notion of @emph{selection}, where you can
+none are marked). Embark also has a notion of @emph{selection}@comma{} where you can
 accumulate an ad hoc list of targets for these commands to work on.
 
-The selection is controlled by using the @samp{embark-select} action, bound
+The selection is controlled by using the @samp{embark-select} action@comma{} bound
 to @samp{SPC} in @samp{embark-general-map} so that it is always available (you can
 also give @samp{embark-select} a global key binding if you wish; when called
-directly, not as an action for @samp{embark-act}, it will select the first
+directly@comma{} not as an action for @samp{embark-act}@comma{} it will select the first
 target at point). Calling this action on a target toggles its
-membership in the current buffer's Embark selection; that is, it adds
+membership in the current buffer's Embark selection; that is@comma{} it adds
 it to selection if not selected and removes it from the selection if
-it was selected. Whenever the selection for a buffer is non-empty, the
-commands @samp{embark-act-all}, @samp{embark-export} and @samp{embark-collect} will act on
+it was selected. Whenever the selection for a buffer is non-empty@comma{} the
+commands @samp{embark-act-all}@comma{} @samp{embark-export} and @samp{embark-collect} will act on
 the selection.
 
-To deselect all selected targets, you can use the @samp{embark-select} action
-through @samp{embark-act-all}, since this will run @samp{embark-select} on each
+To deselect all selected targets@comma{} you can use the @samp{embark-select} action
+through @samp{embark-act-all}@comma{} since this will run @samp{embark-select} on each
 member of the current selection. Similarly if no targets are selected
-and you are in a minibuffer completion session, running @samp{embark-select}
+and you are in a minibuffer completion session@comma{} running @samp{embark-select}
 from @samp{embark-act-all} will select all the current completion candidates.
 
-By default, whenever some targets are selected in the current buffer,
+By default@comma{} whenever some targets are selected in the current buffer@comma{}
 a count of selected targets appears in the mode line. This can be
 turned off or customized through the @samp{embark-selection-indicator} user
 option.
@@ -377,36 +377,36 @@ The selection functionality is supported in every buffer:
 @item
 In the minibuffer this gives a convenient way to act on several
 completion candidates that don't follow any simple pattern: just go
-through the completions selecting the ones you want, then use
-@samp{embark-act-all}. For example, you could attach several files at once
+through the completions selecting the ones you want@comma{} then use
+@samp{embark-act-all}. For example@comma{} you could attach several files at once
 to an email.
 @item
 For Embark Collect buffers this functionality enables a dired-like
-workflow, in which you mark various candidates and apply an action
+workflow@comma{} in which you mark various candidates and apply an action
 to all at once. (It supersedes a previous ad hoc dired-like
-interface that was implemented only in Embark Collect buffers, with
+interface that was implemented only in Embark Collect buffers@comma{} with
 a slightly different interface.)
 @item
 In a eww buffer you could use this to select various links you wish
-to follow up on, and then collect them into a buffer. Similarly,
+to follow up on@comma{} and then collect them into a buffer. Similarly@comma{}
 while reading Emacs's info manual you could select some symbols you
 want to read more about and export them to an @samp{apropos-mode} buffer.
 @item
 You can use selections in regular text or programming buffers to do
-complex editing operations. For example, if you have three
+complex editing operations. For example@comma{} if you have three
 paragraphs scattered over a file and you want to bring them
-together, you can select each one, insert them all somewhere and
+together@comma{} you can select each one@comma{} insert them all somewhere and
 finally delete all of them (from their original locations).
 @end itemize
 
 @node @samp{embark-live} a live-updating variant of @samp{embark-collect}
 @subsection @samp{embark-live} a live-updating variant of @samp{embark-collect}
 
-Finally, there is also an @samp{embark-live} variant of the @samp{embark-collect}
+Finally@comma{} there is also an @samp{embark-live} variant of the @samp{embark-collect}
 command which automatically updates the collection after each change
 in the source buffer. Users of a completion UI that automatically
-updates and displays the candidate list (such as Vertico, Icomplete,
-Fido-mode, or MCT) will probably not want to use
+updates and displays the candidate list (such as Vertico@comma{} Icomplete@comma{}
+Fido-mode@comma{} or MCT) will probably not want to use
 @samp{embark-live} from the minibuffer as they will then have two live
 updating displays of the completion candidates!
 
@@ -414,9 +414,9 @@ A more likely use of @samp{embark-live} is to be called from a regular buffer
 to display a sort of live updating ``table of contents'' for the buffer.
 This depends on having appropriate candidate collectors configured in
 @samp{embark-candidate-collectors}. There are not many in Embark's default
-configuration, but you can try this experiment: open a dired buffer in
-a directory that has very many files, mark a few, and run @samp{embark-live}.
-You'll get an Embark Collect buffer containing only the marked files,
+configuration@comma{} but you can try this experiment: open a dired buffer in
+a directory that has very many files@comma{} mark a few@comma{} and run @samp{embark-live}.
+You'll get an Embark Collect buffer containing only the marked files@comma{}
 which updates as you mark or unmark files in dired. To make
 @samp{embark-live} genuinely useful other candidate collectors are required.
 The @samp{embark-consult} package (documented near the end of this manual)
@@ -428,36 +428,36 @@ used by @samp{outline-minor-mode}. Those collectors really do give
 @section Switching to a different command without losing what you've typed
 
 Embark also has the @samp{embark-become} command which is useful for when
-you run a command, start typing at the minibuffer and realize you
+you run a command@comma{} start typing at the minibuffer and realize you
 meant a different command. The most common case for me is that I run
-@samp{switch-to-buffer}, start typing a buffer name and realize I haven't
+@samp{switch-to-buffer}@comma{} start typing a buffer name and realize I haven't
 opened the file I had in mind yet! I'll use this situation as a
-running example to illustrate @samp{embark-become}. When this happens I can,
-of course, press @samp{C-g} and then run @samp{find-file} and open the file, but
+running example to illustrate @samp{embark-become}. When this happens I can@comma{}
+of course@comma{} press @samp{C-g} and then run @samp{find-file} and open the file@comma{} but
 this requires retyping the portion of the file name you already
 typed. This process can be streamlined with @samp{embark-become}: while still
 in the @samp{switch-to-buffer} you can run @samp{embark-become} and effectively
 make the @samp{switch-to-buffer} command become @samp{find-file} for this run.
 
-You can bind @samp{embark-become} to a key in @samp{minibuffer-local-map}, but it is
-also available as an action under the letter @samp{B} (uppercase), so you
-don't need a binding if you already have one for @samp{embark-act}. So,
-assuming I have @samp{embark-act} bound to, say, @samp{C-.}, once I realize I
+You can bind @samp{embark-become} to a key in @samp{minibuffer-local-map}@comma{} but it is
+also available as an action under the letter @samp{B} (uppercase)@comma{} so you
+don't need a binding if you already have one for @samp{embark-act}. So@comma{}
+assuming I have @samp{embark-act} bound to@comma{} say@comma{} @samp{C-.}@comma{} once I realize I
 haven't open the file I can type @samp{C-. B C-x C-f} to have
 @samp{switch-to-buffer} become @samp{find-file} without losing what I have already
 typed in the minibuffer.
 
-But for even more convenience, @samp{embark-become} offers shorter key
+But for even more convenience@comma{} @samp{embark-become} offers shorter key
 bindings for commands you are likely to want the current command to
 become. When you use @samp{embark-become} it looks for the current command in
 all keymaps named in the list @samp{embark-become-keymaps} and then activates
-all keymaps that contain it. For example, the default value of
+all keymaps that contain it. For example@comma{} the default value of
 @samp{embark-become-keymaps} contains a keymap @samp{embark-become-file+buffer-map}
-with bindings for several commands related to files and buffers, in
-particular, it binds @samp{switch-to-buffer} to @samp{b} and @samp{find-file} to @samp{f}. So when
+with bindings for several commands related to files and buffers@comma{} in
+particular@comma{} it binds @samp{switch-to-buffer} to @samp{b} and @samp{find-file} to @samp{f}. So when
 I accidentally try to switch to a buffer for a file I haven't opened
-yet, @samp{embark-become} finds that the command I ran, @samp{switch-to-buffer}, is
-in the keymap @samp{embark-become-file+buffer-map}, so it activates that
+yet@comma{} @samp{embark-become} finds that the command I ran@comma{} @samp{switch-to-buffer}@comma{} is
+in the keymap @samp{embark-become-file+buffer-map}@comma{} so it activates that
 keymap (and any others that also contain a binding for
 @samp{switch-to-buffer}). The end result is that I can type @samp{C-. B f} to
 switch to @samp{find-file}.
@@ -465,11 +465,11 @@ switch to @samp{find-file}.
 @node Quick start
 @chapter Quick start
 
-The easiest way to install Embark is from GNU ELPA, just run @samp{M-x
+The easiest way to install Embark is from GNU ELPA@comma{} just run @samp{M-x
 package-install RET embark RET}. (It is also available on MELPA@.) It is
 highly recommended to also install @uref{https://github.com/minad/marginalia, Marginalia} (also available on GNU
-ELPA), so that Embark can offer you preconfigured actions in more
-contexts. For @samp{use-package} users, the following is a very reasonable
+ELPA)@comma{} so that Embark can offer you preconfigured actions in more
+contexts. For @samp{use-package} users@comma{} the following is a very reasonable
 starting configuration:
 
 @lisp
@@ -492,16 +492,16 @@ starting configuration:
   (setq prefix-help-command #'embark-prefix-help-command)
 
   ;; Show the Embark target at point via Eldoc. You may adjust the
-  ;; Eldoc strategy, if you want to see the documentation from
+  ;; Eldoc strategy@comma{} if you want to see the documentation from
   ;; multiple providers. Beware that using this can be a little
   ;; jarring since the message shown in the minibuffer can be more
-  ;; than one line, causing the modeline to move up and down:
+  ;; than one line@comma{} causing the modeline to move up and down:
 
   ;; (add-hook 'eldoc-documentation-functions #'embark-eldoc-first-target)
   ;; (setq eldoc-documentation-strategy #'eldoc-documentation-compose-eagerly)
 
   ;; Add Embark to the mouse context menu. Also enable `context-menu-mode'.
-  ;; (context-menu 1)
+  ;; (context-menu-mode 1)
   ;; (add-hook 'context-menu-functions #'embark-context-menu 100)
 
   :config
@@ -514,53 +514,51 @@ starting configuration:
 
 ;; Consult users will also want the embark-consult package.
 (use-package embark-consult
-  :ensure t ; only need to install it, embark loads it after consult if found
-  :hook
-  (embark-collect-mode . consult-preview-at-point-mode))
+  :ensure t) ; only need to install it@comma{} embark loads it after consult if found
 @end lisp
 
 About the suggested key bindings for @samp{embark-act} and @samp{embark-dwim}:
 @itemize
 @item
-Those key bindings are unlikely to work in the terminal, but
+Those key bindings are unlikely to work in the terminal@comma{} but
 terminal users are probably well aware of this and will know to
 select different bindings.
 @item
 The suggested @samp{C-.} binding is used by default in (at least some
-installations of) GNOME to input emojis, and Emacs doesn't even get
+installations of) GNOME to input emojis@comma{} and Emacs doesn't even get
 a chance to respond to the binding. You can select a different key
 binding for @samp{embark-act} or use @samp{ibus-setup} to change the shortcut for
-emoji insertion (Emacs 29 uses @samp{C-x 8 e e}, in case you want to set
+emoji insertion (Emacs 29 uses @samp{C-x 8 e e}@comma{} in case you want to set
 the same one system-wide).
 @item
 The suggested alternative of @samp{M-.} for @samp{embark-dwim} is bound by default
 to @samp{xref-find-definitions}. That is a very useful command but
 overwriting it with @samp{embark-dwim} is sensible since in Embark's
-default configuration, @samp{embark-dwim} will also find the definition of
+default configuration@comma{} @samp{embark-dwim} will also find the definition of
 the identifier at point. (Note that @samp{xref-find-definitions} with a
-prefix argument prompts you for an identifier, @samp{embark-dwim} does not
+prefix argument prompts you for an identifier@comma{} @samp{embark-dwim} does not
 cover this case).
 @end itemize
 
-Other Embark commands such as @samp{embark-act-all}, @samp{embark-become},
-@samp{embark-collect}, and @samp{embark-export} can be run through @samp{embark-act} as
-actions bound to @samp{A}, @samp{B}, @samp{S} (for ``snapshot''), and @samp{E} respectively, and
-thus don't really need a dedicated key binding, but feel free to bind
-them directly if you so wish. If you do choose to bind them directly,
-you'll probably want to bind them in @samp{minibuffer-local-map}, since they
-are most useful in the minibuffer (in fact, @samp{embark-become} only works
+Other Embark commands such as @samp{embark-act-all}@comma{} @samp{embark-become}@comma{}
+@samp{embark-collect}@comma{} and @samp{embark-export} can be run through @samp{embark-act} as
+actions bound to @samp{A}@comma{} @samp{B}@comma{} @samp{S} (for ``snapshot'')@comma{} and @samp{E} respectively@comma{} and
+thus don't really need a dedicated key binding@comma{} but feel free to bind
+them directly if you so wish. If you do choose to bind them directly@comma{}
+you'll probably want to bind them in @samp{minibuffer-local-map}@comma{} since they
+are most useful in the minibuffer (in fact@comma{} @samp{embark-become} only works
 in the minibuffer).
 
 The command @samp{embark-dwim} executes the default action at point. Another good
 keybinding for @samp{embark-dwim} is @samp{M-.} since @samp{embark-dwim} acts like
 @samp{xref-find-definitions} on the symbol at point. @samp{C-.} can be seen as a
 right-click context menu at point and @samp{M-.} acts like left-click. The
-keybindings are mnemonic, both act at the point (@samp{.}).
+keybindings are mnemonic@comma{} both act at the point (@samp{.}).
 
 Embark needs to know what your minibuffer completion system considers
 to be the list of candidates and which one is the current candidate.
-Embark works out of the box if you use Emacs's default tab completion,
-the built-in @samp{icomplete-mode} or @samp{fido-mode}, or the third-party packages
+Embark works out of the box if you use Emacs's default tab completion@comma{}
+the built-in @samp{icomplete-mode} or @samp{fido-mode}@comma{} or the third-party packages
 @uref{https://github.com/minad/vertico, Vertico} or @uref{https://github.com/abo-abo/swiper, Ivy}.
 
 If you are a @uref{https://emacs-helm.github.io/helm/, Helm} or @uref{https://github.com/abo-abo/swiper, Ivy} user you are unlikely to want Embark since
@@ -576,7 +574,7 @@ integration despite this.)
 * Selecting commands via completions instead of key bindings::
 * Quitting the minibuffer after an action::
 * Running some setup after injecting the target::
-* Running hooks before, after or around an action: Running hooks before after or around an action. 
+* Running hooks before@comma{} after or around an action::
 * Creating your own keymaps::
 * Defining actions for new categories of targets::
 @end menu
@@ -584,16 +582,16 @@ integration despite this.)
 @node Showing information about available targets and actions
 @section Showing information about available targets and actions
 
-By default, if you run @samp{embark-act} and do not immediately select an
-action, after a short delay Embark will pop up a buffer called @samp{*Embark
+By default@comma{} if you run @samp{embark-act} and do not immediately select an
+action@comma{} after a short delay Embark will pop up a buffer called @samp{*Embark
 Actions*} containing a list of available actions with their key
 bindings. You can scroll that buffer with the mouse of with the usual
 commands @samp{scroll-other-window} and @samp{scroll-other-window-down} (bound by
 default to @samp{C-M-v} and @samp{C-M-S-v}).
 
-That functionality is provided by the @samp{embark-mixed-indicator}, but
+That functionality is provided by the @samp{embark-mixed-indicator}@comma{} but
 Embark has other indicators that can provide information about the
-target and its type, what other targets you can cycle to, and which
+target and its type@comma{} what other targets you can cycle to@comma{} and which
 actions have key bindings in the action map for the current type of
 target. Any number of indicators can be active at once and the user
 option @samp{embark-indicators} should be set to a list of the desired
@@ -613,7 +611,7 @@ default.
 
 @item
 @samp{embark-verbose-indicator}: displays a table of actions and their key
-bindings in a buffer; this is not on by default, in favor of the
+bindings in a buffer; this is not on by default@comma{} in favor of the
 mixed indicator described next.
 
 @item
@@ -623,9 +621,9 @@ this is on by default.
 
 @item
 @samp{embark-isearch-highlight-indicator}: this only does something when
-the current target is the symbol at point, in which case it
+the current target is the symbol at point@comma{} in which case it
 lazily highlights all occurrences of that symbol in the current
-buffer, like isearch; also on by default.
+buffer@comma{} like isearch; also on by default.
 @end itemize
 
 Users of the popular @uref{https://github.com/justbur/emacs-which-key, which-key} package may prefer to use the
@@ -634,9 +632,9 @@ definition from the wiki into your configuration and customize the
 @samp{embark-indicators} user option to exclude the mixed and verbose
 indicators and to include @samp{embark-which-key-indicator}.
 
-If you use @uref{https://github.com/minad/vertico, Vertico}, there is an even easier way to get a
+If you use @uref{https://github.com/minad/vertico, Vertico}@comma{} there is an even easier way to get a
 @samp{which-key}-like display that also lets you use completion to narrow
-down the list of alternatives, described at the end of the next
+down the list of alternatives@comma{} described at the end of the next
 section.
 
 @node Selecting commands via completions instead of key bindings
@@ -644,30 +642,30 @@ section.
 
 As an alternative to reading the list of actions in the verbose or
 mixed indicators (see the previous section for a description of
-these), you can press the @samp{embark-help-key}, which is @samp{C-h} by default
+these)@comma{} you can press the @samp{embark-help-key}@comma{} which is @samp{C-h} by default
 (but you may prefer @samp{?} to free up @samp{C-h} for use as a prefix) after
 running @samp{embark-act}. Pressing the help key will prompt you for the name
 of an action with completion (but feel free to enter a command that is
-not among the offered candidates!), and will also remind you of the
-key bindings. You can press @samp{embark-keymap-prompter-key}, which is @samp{@@} by
-default, at the prompt and then one of the key bindings to enter the
+not among the offered candidates!)@comma{} and will also remind you of the
+key bindings. You can press @samp{embark-keymap-prompter-key}@comma{} which is @samp{@@} by
+default@comma{} at the prompt and then one of the key bindings to enter the
 name of the corresponding action.
 
 You may think that with the @samp{*Embark Actions*} buffer popping up to
 remind you of the key bindings you'd never want to use completion to
-select an action by name, but personally I find that typing a small
+select an action by name@comma{} but personally I find that typing a small
 portion of the action name to narrow down the list of candidates feels
 significantly faster than visually scanning the entire list of actions.
 
-If you find you prefer selecting actions that way, you can configure
+If you find you prefer selecting actions that way@comma{} you can configure
 embark to always prompt you for actions by setting the variable
 @samp{embark-prompter} to @samp{embark-completing-read-prompter}.
 
-On the other hand, you may wish to continue using key bindings for the
-actions you perform most often, and to use completion only to explore
+On the other hand@comma{} you may wish to continue using key bindings for the
+actions you perform most often@comma{} and to use completion only to explore
 what further actions are available or when you've forgotten a key
-binding. In that case, you may prefer to use the minimal indicator,
-which does not pop-up an @samp{*Embark Actions*} buffer at all, and to use
+binding. In that case@comma{} you may prefer to use the minimal indicator@comma{}
+which does not pop-up an @samp{*Embark Actions*} buffer at all@comma{} and to use
 the @samp{embark-help-key} whenever you need help. This unobtrusive setup is
 achieved with the following configuration:
 
@@ -679,9 +677,9 @@ achieved with the following configuration:
 @end lisp
 
 @uref{https://github.com/minad/vertico, Vertico} users may wish to configure a grid display for the actions and
-key-bindings, reminiscent of the popular package @uref{https://github.com/justbur/emacs-which-key, which-key}, but, of
-course, enhanced by the use of completion to narrow the list of
-commands. In order to get the grid display, put the following in your
+key-bindings@comma{} reminiscent of the popular package @uref{https://github.com/justbur/emacs-which-key, which-key}@comma{} but@comma{} of
+course@comma{} enhanced by the use of completion to narrow the list of
+commands. In order to get the grid display@comma{} put the following in your
 Vertico configuration:
 
 @lisp
@@ -690,8 +688,8 @@ Vertico configuration:
 @end lisp
 
 This will make the available keys be shown in a compact grid like in
-@samp{which-key}. The @samp{vertico-multiform-mode} also enables keys such as @samp{M-V},
-@samp{M-G}, @samp{M-B}, and @samp{M-U} for manually switching between layouts in Vertico
+@samp{which-key}. The @samp{vertico-multiform-mode} also enables keys such as @samp{M-V}@comma{}
+@samp{M-G}@comma{} @samp{M-B}@comma{} and @samp{M-U} for manually switching between layouts in Vertico
 buffers.
 
 @menu
@@ -702,72 +700,72 @@ buffers.
 @subsection Selecting commands via completion outside of Embark
 
 If you like this completion interface for exploring key bindings for
-Embark actions, you may want to use it elsewhere in Emacs. You can use
+Embark actions@comma{} you may want to use it elsewhere in Emacs. You can use
 Embark's completion-based command prompter to list:
 
 @itemize
 @item
-key bindings under a prefix,
+key bindings under a prefix@comma{}
 @item
-local key bindings, or
+local key bindings@comma{} or
 @item
 all key bindings.
 @end itemize
 
 To use it for key bindings under a prefix (you can use this to replace
-the @samp{which-key} package, for example), use this configuration:
+the @samp{which-key} package@comma{} for example)@comma{} use this configuration:
 
 @lisp
 (setq prefix-help-command #'embark-prefix-help-command)
 @end lisp
 
-Now, when you have started on a prefix sequence such as @samp{C-x} or @samp{C-c},
+Now@comma{} when you have started on a prefix sequence such as @samp{C-x} or @samp{C-c}@comma{}
 pressing @samp{C-h} will bring up the Embark version of the built-in
-@samp{prefix-help-command}, which will list the keys under that prefix and
-their bindings, and lets you select the one you wanted with completion,
+@samp{prefix-help-command}@comma{} which will list the keys under that prefix and
+their bindings@comma{} and lets you select the one you wanted with completion@comma{}
 or by key binding if you press @samp{embark-keymap-prompter-key}.
 
-To list local or global key bindings, use the command @samp{embark-bindings}.
-You can bind that to @samp{C-h b}, which is the default key binding for the
-built-in @samp{describe-bindings} command, which this command can replace. By
-default, @samp{embark-bindings} lists local key bindings, typically those
-bound in the major mode keymap; to get global bindings as well, call
+To list local or global key bindings@comma{} use the command @samp{embark-bindings}.
+You can bind that to @samp{C-h b}@comma{} which is the default key binding for the
+built-in @samp{describe-bindings} command@comma{} which this command can replace. By
+default@comma{} @samp{embark-bindings} lists local key bindings@comma{} typically those
+bound in the major mode keymap; to get global bindings as well@comma{} call
 it with a @samp{C-u} prefix argument.
 
 @node Quitting the minibuffer after an action
 @section Quitting the minibuffer after an action
 
-By default, if you call @samp{embark-act} from the minibuffer it quits the
+By default@comma{} if you call @samp{embark-act} from the minibuffer it quits the
 minibuffer after performing the action. You can change this by setting
 the user option @samp{embark-quit-after-action} to @samp{nil}. Having @samp{embark-act} @emph{not}
 quit the minibuffer can be useful to turn commands into little ``thing
-managers''. For example, you can use @samp{find-file} as a little file manager
+managers''. For example@comma{} you can use @samp{find-file} as a little file manager
 or @samp{describe-package} as a little package manager: you can run those
-commands, perform a series of actions, and then quit the command.
+commands@comma{} perform a series of actions@comma{} and then quit the command.
 
 If you want to control the quitting behavior in a fine-grained manner
-depending on the action, you can set @samp{embark-quit-after-action} to an
-alist, associating commands to either @samp{t} for quitting or @samp{nil} for not
-quitting. When using an alist, you can use the special key @samp{t} to
-specify the default behavior. For example, to specify that by default
+depending on the action@comma{} you can set @samp{embark-quit-after-action} to an
+alist@comma{} associating commands to either @samp{t} for quitting or @samp{nil} for not
+quitting. When using an alist@comma{} you can use the special key @samp{t} to
+specify the default behavior. For example@comma{} to specify that by default
 actions should not quit the minibuffer but that using @samp{kill-buffer} as
-an action should quit, you can use the following configuration:
+an action should quit@comma{} you can use the following configuration:
 
 @lisp
 (setq embark-quit-after-action '((kill-buffer . t) (t . nil)))
 @end lisp
 
-The variable @samp{embark-quit-after-action} only specifies a default, that
-is, it only controls whether or not @samp{embark-act} quits the minibuffer
-when you call it without a prefix argument, and you can select the
+The variable @samp{embark-quit-after-action} only specifies a default@comma{} that
+is@comma{} it only controls whether or not @samp{embark-act} quits the minibuffer
+when you call it without a prefix argument@comma{} and you can select the
 opposite behavior to what the variable says by calling @samp{embark-act} with
 @samp{C-u}. Also note that both the variable @samp{embark-quit-after-action} and @samp{C-u}
 have no effect when you call @samp{embark-act} outside the minibuffer.
 
 If you find yourself using the quitting and non-quitting variants of
-@samp{embark-act} about equally often, independently of the action, you may
+@samp{embark-act} about equally often@comma{} independently of the action@comma{} you may
 prefer to simply have separate commands for them instead of a single
-command that you call with @samp{C-u} half the time. You could, for example,
+command that you call with @samp{C-u} half the time. You could@comma{} for example@comma{}
 keep the default exiting behavior of @samp{embark-act} and define a
 non-quitting version as follows:
 
@@ -784,28 +782,28 @@ non-quitting version as follows:
 
 You can customize what happens after the target is inserted at the
 minibuffer prompt of an action. There are
-@samp{embark-target-injection-hooks}, that are run by default after injecting
+@samp{embark-target-injection-hooks}@comma{} that are run by default after injecting
 the target into the minibuffer. The variable
 @samp{embark-target-injection-hooks} is an alist associating commands to
 their setup hooks. There are two special keys: if no setup hook is
-specified for a given action, the hook associated to @samp{t} is run; and the
+specified for a given action@comma{} the hook associated to @samp{t} is run; and the
 hook associated to @samp{:always} is run regardless of the action. (This
 variable used to have the less explicit name of
-@samp{embark-setup-action-hooks}, so please update your configuration.)
+@samp{embark-setup-action-hooks}@comma{} so please update your configuration.)
 
-For example, consider using @samp{shell-command} as an action during file
+For example@comma{} consider using @samp{shell-command} as an action during file
 completion. It would be useful to insert a space before the target
-file name and to leave the point at the beginning, so you can
+file name and to leave the point at the beginning@comma{} so you can
 immediately type the shell command to run on that file. That's why in
 Embark's default configuration there is an entry in
 @samp{embark-target-injection-hooks} associating @samp{shell-command} to a hook that
-includes @samp{embark--shell-prep}, a simple helper function that quotes all
-the spaces in the file name, inserts an extra space at the beginning
+includes @samp{embark--shell-prep}@comma{} a simple helper function that quotes all
+the spaces in the file name@comma{} inserts an extra space at the beginning
 of the line and leaves point to the left of it.
 
-Now, the preparation that @samp{embark--shell-prep} does would be useless if
+Now@comma{} the preparation that @samp{embark--shell-prep} does would be useless if
 Embark did what it normally does after it inserts the target of the
-action at the minibuffer prompt, which is to ``press @samp{RET}'' for you,
+action at the minibuffer prompt@comma{} which is to ``press @samp{RET}'' for you@comma{}
 accepting the target as is; if Embark did that for @samp{shell-command} you
 wouldn't get a chance to type in the command to execute! That is why
 in Embark's default configuration the entry for @samp{shell-command} in
@@ -815,7 +813,7 @@ in Embark's default configuration the entry for @samp{shell-command} in
 Embark used to have a dedicated variable @samp{embark-allow-edit-actions} to
 which you could add commands for which Embark should forgo pressing
 @samp{RET} for you after inserting the target. Since its effect can also be
-achieved via the general @samp{embark-target-injection-hooks} mechanism, that
+achieved via the general @samp{embark-target-injection-hooks} mechanism@comma{} that
 variable has been removed to simplify Embark. Be sure to update your
 configuration; if you had something like:
 
@@ -832,37 +830,37 @@ you should replace it with:
 
 
 Also note that while you could abuse @samp{embark--allow-edit} so that you
-have to confirm ``dangerous'' actions such as @samp{delete-file}, it is better
+have to confirm ``dangerous'' actions such as @samp{delete-file}@comma{} it is better
 to implement confirmation by adding the @samp{embark--confirm} function to
-the appropriate entry of a different hook alist, namely,
+the appropriate entry of a different hook alist@comma{} namely@comma{}
 @samp{embark-pre-action-hooks}.
 
-Besides @samp{embark--allow-edit}, Embark comes with another function that is
+Besides @samp{embark--allow-edit}@comma{} Embark comes with another function that is
 of general utility in action setup hooks: @samp{embark--ignore-target}. Use
 it for commands that do prompt you in the minibuffer but for which
 inserting the target would be inappropriate. This is not a common
 situation but does occasionally arise. For example it is used by
 default for @samp{shell-command-on-region}: that command is used as an action
-for region targets, and it prompts you for a shell command; you
-typically do @emph{not} want the target, that is the contents of the region,
+for region targets@comma{} and it prompts you for a shell command; you
+typically do @emph{not} want the target@comma{} that is the contents of the region@comma{}
 to be entered at that prompt!
 
-@node Running hooks before after or around an action
-@section Running hooks before, after or around an action
+@node Running hooks before@comma{} after or around an action
+@section Running hooks before@comma{} after or around an action
 
-Embark has three variables, @samp{embark-pre-action-hooks},
-@samp{embark-post-action-hooks} and @samp{embark-around-action-hooks}, which are
+Embark has three variables@comma{} @samp{embark-pre-action-hooks}@comma{}
+@samp{embark-post-action-hooks} and @samp{embark-around-action-hooks}@comma{} which are
 alists associating commands to hooks that should run before or after
 or as around advice for the command when used as an action. As with
-@samp{embark-target-injection-hooks}, there are two special keys for the
+@samp{embark-target-injection-hooks}@comma{} there are two special keys for the
 alists: @samp{t} designates the default hook to run when no specific hook is
 specified for a command; and the hook associated to @samp{:always} runs
 regardless.
 
-The default values of those variables are fairly extensive, adding
+The default values of those variables are fairly extensive@comma{} adding
 creature comforts to make running actions a smooth experience. Embark
-comes with several functions intended to be added to these hooks, and
-used in the default values of @samp{embark-pre-action-hooks},
+comes with several functions intended to be added to these hooks@comma{} and
+used in the default values of @samp{embark-pre-action-hooks}@comma{}
 @samp{embark-post-action-hooks} and @samp{embark-around-action-hooks}.
 
 For pre-action hooks:
@@ -870,31 +868,31 @@ For pre-action hooks:
 @table @asis
 @item @samp{embark--confirm}
 Prompt the user for confirmation before executing
-the action. This is used be default for commands deemed ``dangerous'',
-or, more accurately, hard to undo, such as @samp{delete-file} and
+the action. This is used be default for commands deemed ``dangerous''@comma{}
+or@comma{} more accurately@comma{} hard to undo@comma{} such as @samp{delete-file} and
 @samp{kill-buffer}.
 
 @item @samp{embark--unmark-target}
 Unmark the active region. Use this for
 commands you want to act on the region contents but without the
 region being active. The default configuration uses this function as
-a pre-action hook for @samp{occur} and @samp{query-replace}, for example, so that
+a pre-action hook for @samp{occur} and @samp{query-replace}@comma{} for example@comma{} so that
 you can use them as actions with region targets to search the whole
 buffer for the text contained in the region. Without this pre-action
 hook using @samp{occur} as an action for a region target would be
 pointless: it would search for the the region contents @emph{in the
-region}, (typically, due to the details of regexps) finding only one
+region}@comma{} (typically@comma{} due to the details of regexps) finding only one
 match!
 
 @item @samp{embark--beginning-of-target}
 Move to the beginning of the target
 (for targets that report bounds). This is used by default for
-backward motion commands such as @samp{backward-sexp}, so that they don't
+backward motion commands such as @samp{backward-sexp}@comma{} so that they don't
 accidentally leave you on the current target.
 
 @item @samp{embark--end-of-target}
 Move to the end of the target. This is used
-similarly to the previous function, but also for commands that act
+similarly to the previous function@comma{} but also for commands that act
 on the last s-expression like @samp{eval-last-sexp}. This allow you to act
 on an s-expression from anywhere inside it and still use
 @samp{eval-last-sexp} as an action.
@@ -911,31 +909,31 @@ For post-action hooks:
 @table @asis
 @item @samp{embark--restart}
 Restart the command currently prompting in the
-minibuffer, so that the list of completion candidates is updated.
+minibuffer@comma{} so that the list of completion candidates is updated.
 This is useful as a post action hook for commands that delete or
 rename a completion candidate; for example the default value of
-@samp{embark-post-action-hooks} uses it for @samp{delete-file}, @samp{kill-buffer},
-@samp{rename-file}, @samp{rename-buffer}, etc.
+@samp{embark-post-action-hooks} uses it for @samp{delete-file}@comma{} @samp{kill-buffer}@comma{}
+@samp{rename-file}@comma{} @samp{rename-buffer}@comma{} etc.
 @end table
 
 For around-action hooks:
 
 @table @asis
 @item @samp{embark--mark-target}
-Save existing mark and point location, mark
+Save existing mark and point location@comma{} mark
 the target and run the action. Most targets at point outside the
 minibuffer report which region of the buffer they correspond to
 (this is the information used by @samp{embark-highlight-indicator} to
 know what portion of the buffer to highlight); this function marks
 that region. It is useful as an around action hook for commands that
-expect a region to be marked, for example, it is used by default for
-@samp{indent-region} so that it works on s-expression targets, or for
+expect a region to be marked@comma{} for example@comma{} it is used by default for
+@samp{indent-region} so that it works on s-expression targets@comma{} or for
 @samp{fill-region} so that it works on paragraph targets.
 
 @item @samp{embark--cd}
 Run the action with @samp{default-directory} set to the
 directory associated to the current target. The target should be of
-type @samp{file}, @samp{buffer}, @samp{bookmark} or @samp{library}, and the associated directory
+type @samp{file}@comma{} @samp{buffer}@comma{} @samp{bookmark} or @samp{library}@comma{} and the associated directory
 is what you'd expect in each case.
 
 @item @samp{embark--narrow-to-target}
@@ -975,9 +973,9 @@ and @samp{embark-export} are also made available via @samp{embark-general-map}.
 @section Defining actions for new categories of targets
 
 It is easy to configure Embark to provide actions for new types of
-targets, either in the minibuffer or outside it. I present below two
+targets@comma{} either in the minibuffer or outside it. I present below two
 very detailed examples of how to do this. At several points I'll
-explain more than one way to proceed, typically with the easiest
+explain more than one way to proceed@comma{} typically with the easiest
 option first. I include the alternative options since there will be
 similar situations where the easiest option is not available.
 
@@ -992,10 +990,10 @@ similar situations where the easiest option is not available.
 As an example let us take a look at the @uref{https://www.gnu.org/software/emacs/manual/html_node/emacs/Tab-Bars.html, tab bars}. I'll explain how
 to configure Embark to offer tab-specific actions when you use the
 tab-bar-mode commands that mention tabs by name. The configuration
-explained here is now built-in to Embark (and Marginalia), but it's
+explained here is now built-in to Embark (and Marginalia)@comma{} but it's
 still a good self-contained example. In order to setup up tab actions
 you would need to: (1) make sure Embark knows those commands deal with
-tabs, (2) define a keymap for tab actions and configure Embark so it
+tabs@comma{} (2) define a keymap for tab actions and configure Embark so it
 knows that's the keymap you want.
 
 @enumerate
@@ -1003,23 +1001,23 @@ knows that's the keymap you want.
 @anchor{Telling Embark about commands that prompt for tabs by name}Telling Embark about commands that prompt for tabs by name
 
 
-For step (1), it would be great if the @samp{tab-bar-mode} commands reported
+For step (1)@comma{} it would be great if the @samp{tab-bar-mode} commands reported
 the completion category @samp{tab} when asking you for a tab with
-completion. (All built-in Emacs commands that prompt for file names,
-for example, do have metadata indicating that they want a @samp{file}.) They
-do not, unfortunately, and I will describe a couple of ways to deal
+completion. (All built-in Emacs commands that prompt for file names@comma{}
+for example@comma{} do have metadata indicating that they want a @samp{file}.) They
+do not@comma{} unfortunately@comma{} and I will describe a couple of ways to deal
 with this.
 
 Maybe the easiest thing is to configure @uref{https://github.com/minad/marginalia, Marginalia} to enhance those
 commands. All of the @samp{tab-bar-*-tab-by-name} commands have the words
-``tab by name'' in the minibuffer prompt, so you can use:
+``tab by name'' in the minibuffer prompt@comma{} so you can use:
 
 @lisp
 (add-to-list 'marginalia-prompt-categories '("tab by name" . tab))
 @end lisp
 
 That's it! But in case you are ever in a situation where you don't
-already have commands that prompt for the targets you want, I'll
+already have commands that prompt for the targets you want@comma{} I'll
 describe how writing your own command with appropriate @samp{category}
 metadata looks:
 
@@ -1040,7 +1038,7 @@ metadata looks:
   (tab-bar-select-tab-by-name tab))
 @end lisp
 
-As you can see, the built-in support for setting the category
+As you can see@comma{} the built-in support for setting the category
 meta-datum is not very easy to use or pretty to look at. To help with
 this I recommend the @samp{consult--read} function from the excellent
 @uref{https://github.com/minad/consult/, Consult} package. With that function we can rewrite the command as
@@ -1060,18 +1058,18 @@ follows:
 @end lisp
 
 Much nicer! No matter how you define the @samp{my-select-tab-by-name}
-command, the first approach with Marginalia and prompt detection has
+command@comma{} the first approach with Marginalia and prompt detection has
 the following advantages: you get the @samp{tab} category for all the
-@samp{tab-bar-*-bar-by-name} commands at once, also, you enhance built-in
-commands, instead of defining new ones.
+@samp{tab-bar-*-bar-by-name} commands at once@comma{} also@comma{} you enhance built-in
+commands@comma{} instead of defining new ones.
 
 @item
 @anchor{Defining and configuring a keymap for tab actions}Defining and configuring a keymap for tab actions
 
 
-Let's say we want to offer select, rename and close actions for tabs
-(in addition to Embark general actions, such as saving the tab name to
-the kill-ring, which you get for free). Then this will do:
+Let's say we want to offer select@comma{} rename and close actions for tabs
+(in addition to Embark general actions@comma{} such as saving the tab name to
+the kill-ring@comma{} which you get for free). Then this will do:
 
 @lisp
 (defvar-keymap embark-tab-actions
@@ -1089,7 +1087,7 @@ without confirmation is dangerous? You have a couple of options:
 
 @enumerate
 @item
-You can keep using the @samp{tab-bar-close-tab-by-name} command, but have
+You can keep using the @samp{tab-bar-close-tab-by-name} command@comma{} but have
 Embark ask you for confirmation:
 @lisp
 (push #'embark--confirm
@@ -1109,7 +1107,7 @@ use that instead of @samp{tab-bar-close-tab-by-name} in the above keymap:
 
 Notice that this is a command you can also use directly from @samp{M-x}
 independently of Embark. Using it from @samp{M-x} leaves something to be
-desired, though, since you don't get completion for the tab names.
+desired@comma{} though@comma{} since you don't get completion for the tab names.
 You can fix this if you wish as described in the previous section.
 @end enumerate
 @end enumerate
@@ -1118,19 +1116,19 @@ You can fix this if you wish as described in the previous section.
 @subsection New target example in regular buffers - short Wikipedia links
 
 Say you want to teach Embark to treat text of the form
-@samp{wikipedia:Garry_Kasparov} in any regular buffer as a link to Wikipedia,
+@samp{wikipedia:Garry_Kasparov} in any regular buffer as a link to Wikipedia@comma{}
 with actions to open the Wikipedia page in eww or an external browser
 or to save the URL of the page in the kill-ring. We can take advantage
-of the actions that Embark has preconfigured for URLs, so all we need
+of the actions that Embark has preconfigured for URLs@comma{} so all we need
 to do is teach Embark that @samp{wikipedia:Garry_Kasparov} stands for the URL
 @samp{https://en.wikipedia.org/wiki/Garry_Kasparov}.
 
-You can be as fancy as you want with the recognized syntax. Here, to
-keep the example simple, I'll assume the link matches the regexp
+You can be as fancy as you want with the recognized syntax. Here@comma{} to
+keep the example simple@comma{} I'll assume the link matches the regexp
 @samp{wikipedia:[[:alnum:]_]+}. We will write a function that looks for a
-match surrounding point, and returns a dotted list of the form @samp{'(url
+match surrounding point@comma{} and returns a dotted list of the form @samp{'(url
 URL-OF-THE-PAGE START . END)} where @samp{START} and @samp{END} are the buffer
-positions bounding the target, and are used by Embark to highlight it
+positions bounding the target@comma{} and are used by Embark to highlight it
 if you have @samp{embark-highlight-indicator} included in the list
 @samp{embark-indicators}. (There are a couple of other options for the return
 value of a target finder: the bounding positions are optional and a
@@ -1147,9 +1145,9 @@ documentation for @samp{embark-target-finders} for details.)
       (save-match-data
         (when (string-match "wikipedia:\\([[:alnum:]_]+\\)" str)
           `(url
-            ,(format "https://en.wikipedia.org/wiki/%s"
+            @comma{}(format "https://en.wikipedia.org/wiki/%s"
                      (match-string 1 str))
-            ,start . ,end))))))
+            @comma{}start . @comma{}end))))))
 
 (add-to-list 'embark-target-finders 'my-short-wikipedia-link)
 @end lisp
@@ -1157,28 +1155,28 @@ documentation for @samp{embark-target-finders} for details.)
 @node How does Embark call the actions?
 @chapter How does Embark call the actions?
 
-Embark actions are normal Emacs commands, that is, functions with an
-interactive specification. In order to execute an action, Embark
-calls the command with @samp{call-interactively}, so the command reads user
+Embark actions are normal Emacs commands@comma{} that is@comma{} functions with an
+interactive specification. In order to execute an action@comma{} Embark
+calls the command with @samp{call-interactively}@comma{} so the command reads user
 input exactly as if run directly by the user. For example the
 command may open a minibuffer and read a string
 (@samp{read-from-minibuffer}) or open a completion interface
-(@samp{completing-read}). If this happens, Embark takes the target string
-and inserts it automatically into the minibuffer, simulating user
-input this way. After inserting the string, Embark exits the
-minibuffer, submitting the input. (The immediate minibuffer exit can
+(@samp{completing-read}). If this happens@comma{} Embark takes the target string
+and inserts it automatically into the minibuffer@comma{} simulating user
+input this way. After inserting the string@comma{} Embark exits the
+minibuffer@comma{} submitting the input. (The immediate minibuffer exit can
 be disabled for specific actions in order to allow editing the
 input; this is done by adding the @samp{embark--allow-edit} function to the
 appropriate entry of @samp{embark-target-injection-hooks}). Embark inserts
 the target string at the first minibuffer opened by the action
-command, and if the command happens to prompt the user for input
-more than once, the user still interacts with the second and further
+command@comma{} and if the command happens to prompt the user for input
+more than once@comma{} the user still interacts with the second and further
 prompts in the normal fashion. Note that if a command does not
-prompt the user for input in the minibuffer, Embark still allows you
-to use it as an action, but of course, never inserts the target
+prompt the user for input in the minibuffer@comma{} Embark still allows you
+to use it as an action@comma{} but of course@comma{} never inserts the target
 anywhere. (There are plenty of examples in the default configuration
 of commands that do not prompt the user bound to keys in the action
-maps, most of the region actions, for instance.)
+maps@comma{} most of the region actions@comma{} for instance.)
 
 This is how Embark manages to reuse normal commands as actions. The
 mechanism allows you to use as Embark actions commands that were not
@@ -1187,18 +1185,18 @@ bound by default in Embark's action keymaps are standard Emacs
 commands). It also allows you to write new custom actions in such a
 way that they are useful even without Embark.
 
-Emacs has a variable @samp{y-or-n-p-use-read-key}, which when set to @samp{t}
+Emacs has a variable @samp{y-or-n-p-use-read-key}@comma{} which when set to @samp{t}
 causes @samp{y-or-n-p} to use @samp{read-key} instead of @samp{read-from-minibuffer}.
 Setting @samp{y-or-n-p-use-read-key} to @samp{t} is recommended for Embark users
 because it keeps Embark from attempting to insert the target at a
-@samp{y-or-n-p} prompt, which would almost never be sensible. Also consider
+@samp{y-or-n-p} prompt@comma{} which would almost never be sensible. Also consider
 this as a warning to structure your own action commands so that if
-they use @samp{y-or-n-p}, they do so only after the prompting for the
+they use @samp{y-or-n-p}@comma{} they do so only after the prompting for the
 target.
 
 Here is a simple example illustrating the various ways of reading
 input from the user mentioned above. Bind the following commands to
-the @samp{embark-symbol-map} to be used as actions, then put the point on
+the @samp{embark-symbol-map} to be used as actions@comma{} then put the point on
 some symbol and run them with @samp{embark-act}:
 
 @lisp
@@ -1208,7 +1206,7 @@ some symbol and run them with @samp{embark-act}:
 
 (defun example-action-command2 (arg input1 input2)
   (interactive "P\nsInput 1: \nsInput 2: ")
-  (message "The first input %swas `%s', and the second was `%s'."
+  (message "The first input %swas `%s'@comma{} and the second was `%s'."
            (if arg "truly " "")
            input1
            input2))
@@ -1228,12 +1226,12 @@ some symbol and run them with @samp{embark-act}:
 (keymap-set embark-symbol-map "X 4" #'example-action-command4)
 @end lisp
 
-Also note that if you are using the key bindings to call actions,
+Also note that if you are using the key bindings to call actions@comma{}
 you can pass prefix arguments to actions in the normal way. For
-example, you can use @samp{C-u X2} with the above demonstration actions to
+example@comma{} you can use @samp{C-u X2} with the above demonstration actions to
 make the message printed by @samp{example-action-command2} more emphatic.
 This ability to pass prefix arguments to actions is useful for some
-actions in the default configuration, such as
+actions in the default configuration@comma{} such as
 @samp{embark-shell-command-on-buffer}.
 
 @menu
@@ -1243,7 +1241,7 @@ actions in the default configuration, such as
 @node Non-interactive functions as actions
 @section Non-interactive functions as actions
 
-Alternatively, Embark does support one other type of action: a
+Alternatively@comma{} Embark does support one other type of action: a
 non-interactive function of a single argument. The target is passed
 as argument to the function. For example:
 
@@ -1255,37 +1253,37 @@ as argument to the function. For example:
 @end lisp
 
 Note that normally binding non-interactive functions in a keymap is
-useless, since when attempting to run them using the key binding you
-get an error message similar to ``Wrong type argument: commandp,
+useless@comma{} since when attempting to run them using the key binding you
+get an error message similar to ``Wrong type argument: commandp@comma{}
 example-action-function''. In general it is more flexible to write
-any new Embark actions as commands, that is, as interactive
-functions, because that way you can also run them directly, without
+any new Embark actions as commands@comma{} that is@comma{} as interactive
+functions@comma{} because that way you can also run them directly@comma{} without
 Embark. But there are a couple of reasons to use non-interactive
 functions as actions:
 
 @enumerate
 @item
-You may already have the function lying around, and it is
+You may already have the function lying around@comma{} and it is
 convenient to simply reuse it.
 
 @item
-For command actions the targets can only be simple string, with
+For command actions the targets can only be simple string@comma{} with
 no text properties. For certain advanced uses you may want the
-action to receive a string @emph{with} some text properties, or even a
+action to receive a string @emph{with} some text properties@comma{} or even a
 non-string target.
 @end enumerate
 
-@node Embark Marginalia and Consult
-@chapter Embark, Marginalia and Consult
+@node Embark@comma{} Marginalia and Consult
+@chapter Embark@comma{} Marginalia and Consult
 
 Embark cooperates well with the @uref{https://github.com/minad/marginalia, Marginalia} and @uref{https://github.com/minad/consult, Consult} packages.
-Neither of those packages is a dependency of Embark, but both are
-highly recommended companions to Embark, for opposite reasons:
-Marginalia greatly enhances Embark's usefulness, while Embark can help
+Neither of those packages is a dependency of Embark@comma{} but both are
+highly recommended companions to Embark@comma{} for opposite reasons:
+Marginalia greatly enhances Embark's usefulness@comma{} while Embark can help
 enhance Consult.
 
 In the remainder of this section I'll explain what exactly Marginalia
-does for Embark, and what Embark can do for Consult.
+does for Embark@comma{} and what Embark can do for Consult.
 
 @menu
 * Marginalia::
@@ -1295,20 +1293,20 @@ does for Embark, and what Embark can do for Consult.
 @node Marginalia
 @section Marginalia
 
-Embark comes with actions for symbols (commands, functions, variables
-with actions such as finding the definition, looking up the
-documentation, evaluating, etc.) in the @samp{embark-symbol-map} keymap, and
-for packages (actions like install, delete, browse url, etc.) in the
+Embark comes with actions for symbols (commands@comma{} functions@comma{} variables
+with actions such as finding the definition@comma{} looking up the
+documentation@comma{} evaluating@comma{} etc.) in the @samp{embark-symbol-map} keymap@comma{} and
+for packages (actions like install@comma{} delete@comma{} browse url@comma{} etc.) in the
 @samp{embark-package-keymap}.
 
 Unfortunately Embark does not automatically offers you these keymaps
-when relevant, because many built-in Emacs commands don't report
-accurate category metadata. For example, a command like
-@samp{describe-package}, which reads a package name from the minibuffer,
+when relevant@comma{} because many built-in Emacs commands don't report
+accurate category metadata. For example@comma{} a command like
+@samp{describe-package}@comma{} which reads a package name from the minibuffer@comma{}
 does not have metadata indicating this fact.
 
-In an earlier Embark version, there were functions to supply this
-missing metadata, but they have been moved to Marginalia, which
+In an earlier Embark version@comma{} there were functions to supply this
+missing metadata@comma{} but they have been moved to Marginalia@comma{} which
 augments many Emacs command to report accurate category metadata.
 Simply activating @samp{marginalia-mode} allows Embark to offer you the
 package and symbol actions when appropriate again. Candidate
@@ -1317,12 +1315,12 @@ Marginalia package:
 
 @itemize
 @item
-If you install Marginalia and activate @samp{marginalia-mode}, Embark
+If you install Marginalia and activate @samp{marginalia-mode}@comma{} Embark
 Collect buffers will use the Marginalia annotations automatically.
 
 @item
-If you don't install Marginalia, you will see only the annotations
-that come with Emacs (such as key bindings in @samp{M-x}, or the unicode
+If you don't install Marginalia@comma{} you will see only the annotations
+that come with Emacs (such as key bindings in @samp{M-x}@comma{} or the unicode
 characters in @samp{C-x 8 RET}).
 @end itemize
 
@@ -1330,18 +1328,18 @@ characters in @samp{C-x 8 RET}).
 @section Consult
 
 The excellent Consult package provides many commands that use
-minibuffer completion, via the @samp{completing-read} function; plenty of its
+minibuffer completion@comma{} via the @samp{completing-read} function; plenty of its
 commands can be considered enhanced versions of built-in Emacs
-commands, and some are completely new functionality. One common
+commands@comma{} and some are completely new functionality. One common
 enhancement provided in all commands for which it makes sense is
-preview functionality, for example @samp{consult-buffer} will show you a
+preview functionality@comma{} for example @samp{consult-buffer} will show you a
 quick preview of a buffer before you actually switch to it.
 
 If you use both Consult and Embark you should install the
 @samp{embark-consult} package which provides integration between the two. It
 provides exporters for several Consult commands and also tweaks the
 behavior of many Consult commands when used as actions with @samp{embark-act}
-in subtle ways that you may not even notice, but make for a smoother
+in subtle ways that you may not even notice@comma{} but make for a smoother
 experience. You need only install it to get these benefits: Embark
 will automatically load it after Consult if found.
 
@@ -1349,25 +1347,25 @@ The @samp{embark-consult} package provides the following exporters:
 
 @itemize
 @item
-You can use @samp{embark-export} from @samp{consult-line}, @samp{consult-outline}, or
+You can use @samp{embark-export} from @samp{consult-line}@comma{} @samp{consult-outline}@comma{} or
 @samp{consult-mark} to obtain an @samp{occur-mode} buffer. As with the built-in
-@samp{occur} command you use that buffer to jump to a match and after that,
+@samp{occur} command you use that buffer to jump to a match and after that@comma{}
 you can then use @samp{next-error} and @samp{previous-error} to navigate to other
 matches. You can also press @samp{e} to activate @samp{occur-edit-mode} and edit
 the matches in place!
 
 @item
-You can export from any of the Consult asynchronous search commands,
-@samp{consult-grep}, @samp{consult-git-grep}, or @samp{consult-ripgrep} to get a
+You can export from any of the Consult asynchronous search commands@comma{}
+@samp{consult-grep}@comma{} @samp{consult-git-grep}@comma{} or @samp{consult-ripgrep} to get a
 @samp{grep-mode} buffer. Here too you can use @samp{next-error} and @samp{previous-error}
-to navigate among matches, and, if you install the @uref{http://github.com/mhayashi1120/Emacs-wgrep/raw/master/wgrep.el , wgrep} package,
+to navigate among matches@comma{} and@comma{} if you install the @uref{http://github.com/mhayashi1120/Emacs-wgrep/raw/master/wgrep.el , wgrep} package@comma{}
 you can use it to edit the matches in place.
 @end itemize
 
-In both cases, pressing @samp{g} will rerun the Consult command you had
+In both cases@comma{} pressing @samp{g} will rerun the Consult command you had
 exported from and re-enter the input you had typed (which is similar
 to reverting but a little more flexible). You can then proceed to
-re-export if that's what you want, but you can also edit the input
+re-export if that's what you want@comma{} but you can also edit the input
 changing the search terms or simply cancel if you see you are done
 with that search.
 
@@ -1378,10 +1376,10 @@ your buffer:
 @itemize
 @item
 @samp{embark-consult-outline-candidates} produces the outline headings of
-the current buffer, using @samp{consult-outline}.
+the current buffer@comma{} using @samp{consult-outline}.
 @item
 @samp{embark-consult-imenu-candidates} produces the imenu items of
-the current buffer, using @samp{consult-imenu}.
+the current buffer@comma{} using @samp{consult-imenu}.
 @item
 @samp{embark-consult-imenu-or-outline-candidates} is a simple combination
 of the two previous functions: it produces imenu items in buffers
@@ -1391,36 +1389,36 @@ deriving from @samp{prog-mode} and otherwise outline headings.
 The way to configure @samp{embark-live} (or @samp{embark-collect} and @samp{embark-export}
 for that matter) to use one of these function is to add it at the end
 of the @samp{embark-candidate-collectors} list. The @samp{embark-consult} package by
-default adds the last one, which seems to be the most sensible
+default adds the last one@comma{} which seems to be the most sensible
 default.
 
-Besides those exporters and candidate collectors, the @samp{embark-consult}
+Besides those exporters and candidate collectors@comma{} the @samp{embark-consult}
 package provides many subtle tweaks and small integrations between
 Embark and Consult. Some examples are:
 
 @itemize
 @item
-When used as actions, the asynchronous search commands will search
-only the files associated to the targets: if the targets @emph{are} files,
+When used as actions@comma{} the asynchronous search commands will search
+only the files associated to the targets: if the targets @emph{are} files@comma{}
 it searches those files; for buffers it will search either the
-associated file if there is one, else all files in the buffer's
+associated file if there is one@comma{} else all files in the buffer's
 @samp{default-directory}; for bookmarks it will search the file they point
-to, same for Emacs Lisp libraries. This is particularly powerful
-when using @samp{embark-act-all} to act on multiple files at once, for
+to@comma{} same for Emacs Lisp libraries. This is particularly powerful
+when using @samp{embark-act-all} to act on multiple files at once@comma{} for
 example you can use @samp{consult-find} to search among file @emph{names} and then
 @samp{embark-act-all} and @samp{consult-grep} to search within the matching files.
 
 @itemize
 @item
-For all other target types, those that do not have a sensible
-notion of associated file, a Consult search command (asynchronous
+For all other target types@comma{} those that do not have a sensible
+notion of associated file@comma{} a Consult search command (asynchronous
 or not) will search for the text of the target but leave the
 minibuffer open so you can interact with the Consult command.
 @end itemize
 
 @item
 @samp{consult-imenu} will search for the target and take you directly to
-the location if it matches a unique imenu entry, otherwise it will
+the location if it matches a unique imenu entry@comma{} otherwise it will
 leave the minibuffer open so you can navigate among the matches.
 @end itemize
 
@@ -1428,25 +1426,25 @@ leave the minibuffer open so you can navigate among the matches.
 @chapter Related Packages
 
 There are several packages that offer functionality similar
-to Embark's. 
+to Embark's.
 
 @table @asis
 @item Acting on minibuffer completion candidates
 The popular Ivy and
 Helm packages have support for acting on the completion candidates
-of commands written using their APIs, and there is an extensive
+of commands written using their APIs@comma{} and there is an extensive
 ecosystem of packages meant for Helm and for Ivy (the Ivy ones
 usually have ``counsel'' in the name) providing commands and
 appropriate actions.
 @item Acting on things at point
 The built-in @samp{context-menu-mode} provides
 a mouse-driven context-sensitive configurable menu. The @samp{do-at-point}
-package by Philip Kaludercic (available on GNU ELPA), on the other
+package by Philip Kaludercic (available on GNU ELPA)@comma{} on the other
 hand is keyboard-driven.
 @item Collecting completion candidates into a buffer
 The Ivy package
 has the command @samp{ivy-occur} which is similar to @samp{embark-collect}. As
-with Ivy actions, @samp{ivy-occur} only works for commands written using
+with Ivy actions@comma{} @samp{ivy-occur} only works for commands written using
 the Ivy API@.
 @end table
 
@@ -1458,9 +1456,9 @@ some links to read:
 
 @itemize
 @item
-@uref{https://karthinks.com/software/fifteen-ways-to-use-embark/, Fifteen ways to use Embark}, a blog post by Karthik Chikmagalur.
+@uref{https://karthinks.com/software/fifteen-ways-to-use-embark/, Fifteen ways to use Embark}@comma{} a blog post by Karthik Chikmagalur.
 @item
-@uref{https://protesilaos.com/dotemacs/, Protesilaos Stavrou's dotemacs}, look for the section called
+@uref{https://protesilaos.com/dotemacs/, Protesilaos Stavrou's dotemacs}@comma{} look for the section called
 ``Extended minibuffer actions and more (embark.el and
 prot-embark.el)''
 @end itemize
@@ -1479,7 +1477,7 @@ message} by Sacha Chua.
 @item
 @uref{https://youtu.be/qk2Is_sC8Lk, System Crafters Live! - The Many Uses of Embark} by David Wilson.
 @item
-@uref{https://youtu.be/5ffb2at2d7w, Using Emacs Episode 80 - Vertico, Marginalia, Consult and Embark} by
+@uref{https://youtu.be/5ffb2at2d7w, Using Emacs Episode 80 - Vertico@comma{} Marginalia@comma{} Consult and Embark} by
 Mike Zamansky.
 @end itemize
 
@@ -1487,24 +1485,24 @@ Mike Zamansky.
 @chapter Contributions
 
 Contributions to Embark are very welcome. There is a @uref{https://github.com/oantolin/embark/issues/95, wish list} for
-actions, target finders, candidate collectors and exporters. For other
-ideas you have for Embark, feel free to open an issue on the @uref{https://github.com/oantolin/embark/issues, issue
+actions@comma{} target finders@comma{} candidate collectors and exporters. For other
+ideas you have for Embark@comma{} feel free to open an issue on the @uref{https://github.com/oantolin/embark/issues, issue
 tracker}. Any neat configuration tricks you find might be a good fit
 for the @uref{https://github.com/oantolin/embark/wiki, wiki}.
 
-Code contributions are very welcome too, but since Embark is now on
-GNU ELPA, copyright assignment to the FSF is required before you can
+Code contributions are very welcome too@comma{} but since Embark is now on
+GNU ELPA@comma{} copyright assignment to the FSF is required before you can
 contribute code.
 
 @node Acknowledgments
 @chapter Acknowledgments
 
-While I, Omar Antolín Camarena, have written most of the Embark code
-and remain very stubborn about some of the design decisions, Embark
+While I@comma{} Omar Antolín Camarena@comma{} have written most of the Embark code
+and remain very stubborn about some of the design decisions@comma{} Embark
 has received substantial help from a number of other people which this
-document has neglected to mention for far too long. In particular,
-Daniel Mendler has been absolutely invaluable, implementing several
-important features, and providing a lot of useful advice.
+document has neglected to mention for far too long. In particular@comma{}
+Daniel Mendler has been absolutely invaluable@comma{} implementing several
+important features@comma{} and providing a lot of useful advice.
 
 Code contributions:
 

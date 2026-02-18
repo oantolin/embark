@@ -1,13 +1,13 @@
 ;;; embark.el --- Conveniently act on minibuffer completions   -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2021-2025  Free Software Foundation, Inc.
+;; Copyright (C) 2021-2026  Free Software Foundation, Inc.
 
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Keywords: convenience
 ;; Version: 1.1
 ;; URL: https://github.com/oantolin/embark
-;; Package-Requires: ((emacs "28.1") (compat "30"))
+;; Package-Requires: ((emacs "29.1") (compat "30"))
 
 ;; This file is part of GNU Emacs.
 
@@ -164,10 +164,10 @@ or a list of such symbols."
                              (repeat :tag "Keymaps" variable))))
 
 (defcustom embark-target-finders
-  '(embark-target-top-minibuffer-candidate
+  '(embark-target-completion-list-candidate
+    embark-target-top-minibuffer-candidate
     embark-target-active-region
     embark-target-collect-candidate
-    embark-target-completion-list-candidate
     embark-target-text-heading-at-point
     embark-target-bug-reference-at-point
     embark-target-flymake-at-point
@@ -506,11 +506,6 @@ used for other types of action hooks, for more details see
                         (const :tag "Default" t)
                         (const :tag "Always" :always))
                 :value-type hook))
-
-(static-if (< emacs-major-version 29)
-  ;; narrow to target for duration of action
-  (setf (alist-get 'repunctuate-sentences embark-around-action-hooks)
-        '(embark--narrow-to-target)))
 
 (defcustom embark-multitarget-actions '(embark-insert embark-copy-as-kill)
   "Commands for which `embark-act-all' should pass a list of targets.
@@ -1054,28 +1049,29 @@ their own target finder.  See for example
 
 (defun embark-target-completion-list-candidate ()
   "Return the completion candidate at point in a completions buffer."
-  (when (derived-mode-p 'completion-list-mode)
-    (if (not (get-text-property (point) 'mouse-face))
-        (user-error "No completion here")
-      ;; this fairly delicate logic is taken from `choose-completion'
-      (let (beg end)
-        (cond
-         ((and (not (eobp)) (get-text-property (point) 'mouse-face))
-          (setq end (point) beg (1+ (point))))
-         ((and (not (bobp))
-               (get-text-property (1- (point)) 'mouse-face))
-          (setq end (1- (point)) beg (point)))
-         (t (user-error "No completion here")))
-        (setq beg (previous-single-property-change beg 'mouse-face))
-        (setq end (or (next-single-property-change end 'mouse-face)
-                      (point-max)))
-        (let ((raw (or (get-text-property beg 'completion--string)
-                       (buffer-substring beg end))))
-          `(,embark--type
-            ,(if (eq embark--type 'file)
-                 (abbreviate-file-name (expand-file-name raw))
-               raw)
-            ,beg . ,end))))))
+  (embark--with-completion-list-buffer
+   (lambda ()
+     ;; TODO Use `completion-list-candidate-at-point' via Compat 31 as soon as
+     ;; it becomes available instead of this delicate logic.
+     (when (get-text-property (point) 'mouse-face)
+       (let (beg end)
+         (cond
+          ((and (not (eobp)) (get-text-property (point) 'mouse-face))
+           (setq end (point) beg (1+ (point))))
+          ((and (not (bobp))
+                (get-text-property (1- (point)) 'mouse-face))
+           (setq end (1- (point)) beg (point))))
+         (when (and beg end)
+           (setq beg (previous-single-property-change beg 'mouse-face))
+           (setq end (or (next-single-property-change end 'mouse-face)
+                         (point-max)))
+           (let ((raw (or (get-text-property beg 'completion--string)
+                          (buffer-substring beg end))))
+             `(,embark--type
+               ,(if (eq embark--type 'file)
+                    (abbreviate-file-name (expand-file-name raw))
+                  raw)
+               ,beg . ,end))))))))
 
 (defun embark--cycle-key ()
   "Return the key to use for `embark-cycle'."
@@ -1446,6 +1442,7 @@ If NESTED is non-nil subkeymaps are not flattened."
                    collect (cons formatted item))))
     (cons candidates default)))
 
+;; TODO Use `completion-table-with-metadata' via Compat 31.
 (defun embark--with-category (category candidates)
   "Return completion table for CANDIDATES of CATEGORY with sorting disabled."
   (lambda (string predicate action)
@@ -2849,19 +2846,36 @@ This makes `embark-export' work in Embark Collect buffers."
                   (push (cdr cand) all)))
               (nreverse all))))))
 
+(defun embark--with-completion-list-buffer (fun)
+  "Run function FUN in currently active *Completions* buffer."
+  (if (derived-mode-p #'completion-list-mode)
+      ;; Proceed if we're already inside the *Completions* buffer.
+      (funcall fun)
+    ;; Switch to the *Completions* buffer if the buffer is connected to the
+    ;; current minibuffer and if the *Completions* buffer can be navigated from
+    ;; the minibuffer (see `minibuffer-visible-completions').
+    (when-let (((bound-and-true-p minibuffer-visible-completions))
+               ((minibufferp))
+               (window (get-buffer-window "*Completions*"))
+               (buffer (window-buffer window))
+               ((eq (current-buffer)
+                    (buffer-local-value 'completion-reference-buffer buffer))))
+      (with-current-buffer buffer (funcall fun)))))
+
 (defun embark-completion-list-candidates ()
   "Return all candidates in a completions buffer."
-  (when (derived-mode-p 'completion-list-mode)
-    (cons
-     embark--type
-     (save-excursion
-       (goto-char (point-min))
-       (next-completion 1)
-       (let (all)
-         (while (not (eobp))
-           (push (cdr (embark-target-completion-list-candidate)) all)
-           (next-completion 1))
-         (nreverse all))))))
+  (embark--with-completion-list-buffer
+   (lambda ()
+     (cons
+      embark--type
+      (save-excursion
+        (goto-char (point-min))
+        (next-completion 1)
+        (let (all)
+          (while (not (eobp))
+            (push (cdr (embark-target-completion-list-candidate)) all)
+            (next-completion 1))
+          (nreverse all)))))))
 
 (defun embark-custom-candidates ()
   "Return all variables and faces listed in this `Custom-mode' buffer."
@@ -3036,7 +3050,7 @@ For non-minibuffers, assume candidates are of given TYPE."
     ;; otherwise fake some metadata for Marginalia users's benefit
     (completion-metadata-get `((category . ,type)) metadatum)))
 
-(defun embark-collect--affixator (type)
+(defun embark--get-affixator (type)
   "Get affixation function for current buffer's candidates.
 For non-minibuffers, assume candidates are of given TYPE."
   (or (embark-collect--metadatum type 'affixation-function)
@@ -3139,7 +3153,7 @@ example)."
          (type (plist-get transformed :orig-type)) ; we need the originals for
          (candidates (plist-get transformed :orig-candidates)) ; default action
          (bounds (plist-get transformed :bounds))
-         (affixator (embark-collect--affixator type))
+         (affixator (embark--get-affixator type))
          (grouper (embark-collect--metadatum type 'group-function)))
     (when (eq type 'file)
       (let ((dir (buffer-local-value 'default-directory buffer)))
@@ -3998,16 +4012,6 @@ argument), no quoting is used for strings."
                (eval (read (buffer-substring beg end)) lexical-binding)))
       (delete-region beg end))))
 
-(static-if (< emacs-major-version 29)
-  (defun embark-elp-restore-package (prefix)
-    "Remove instrumentation from functions with names starting with PREFIX."
-    (interactive "SPrefix: ")
-    (when (fboundp 'elp-restore-list)
-      (elp-restore-list
-       (mapcar #'intern
-               (all-completions (symbol-name prefix)
-                                obarray 'elp-profilable-p))))))
-
 (defmacro embark--define-hash (algorithm)
   "Define command which computes hash from a string.
 ALGORITHM is the hash algorithm symbol understood by `secure-hash'."
@@ -4550,9 +4554,7 @@ This simply calls RUN with the REST of its arguments inside
   "a" #'package-autoremove
   "g" #'package-refresh-contents
   "m" #'elp-instrument-package ;; m=measure
-  "M" (if (fboundp 'embark-elp-restore-package)
-        'embark-elp-restore-package
-        'elp-restore-package))
+  "M" 'elp-restore-package)
 
 (defvar-keymap embark-bookmark-map
   :doc "Keymap for Embark bookmark actions."
