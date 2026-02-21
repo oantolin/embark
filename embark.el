@@ -1353,7 +1353,7 @@ first line of the documentation string; for keyboard macros use
    (cond
     ((or (stringp cmd) (vectorp cmd)) (key-description cmd))
     ((stringp (car-safe cmd)) (car cmd))
-    ((eq (car-safe cmd) 'menu-item) (eval (cadr cmd)))
+    ((eq (car-safe cmd) 'menu-item) (embark--command-name (caddr cmd)))
     ((keymapp cmd)
      (propertize (if (symbolp cmd) (format "+%s" cmd) "<keymap>")
                  'face 'embark-keymap))
@@ -1415,11 +1415,9 @@ If NESTED is non-nil subkeymaps are not flattened."
                    for cmd = (keymap--menu-item-binding def)
                    unless (memq cmd '(nil embark-keymap-help
                                       negative-argument digit-argument))
+                   unless (string= "<keymap>" name)
                    collect (list name cmd key
-                                 (concat
-                                  (if (eq (car-safe def) 'menu-item)
-                                      "menu-item"
-                                    (key-description key))))))
+                                 (concat (key-description key)))))
          (width (cl-loop for (_name _cmd _key desc) in commands
                          maximize (length desc)))
          (default)
