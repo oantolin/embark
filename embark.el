@@ -4267,6 +4267,8 @@ This simply calls RUN with the REST of its arguments inside
   "F" #'format-decode-region
   "b" #'base64-encode-region
   "B" #'base64-decode-region
+  "n" #'nato-region
+  "N" #'denato-region
   "u" #'embark-encode-url
   "U" #'embark-decode-url
   "c" #'epa-encrypt-region
