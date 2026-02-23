@@ -1,6 +1,10 @@
 #+title: Embark changelog
 
 * Development
+- Acted-on minibuffer candidates now get recorded in the minibuffer
+  history.  You can configure which actions record history via the new
+  =embark-record-minibuffer-history= option; by default, we skip meta
+  commands such as =embark-export=, =embark-collect= and =embark-become=.
 - =embark-target-buffer-at-point=: New target finder for buffers at point in
   Ibuffer or Buffer-menu.
 - =embark-context-menu=: Bew function which can be added to
