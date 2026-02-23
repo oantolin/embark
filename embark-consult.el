@@ -129,6 +129,8 @@ category `consult-line'."
             (setq last-buf this-buf))
           (insert lineno contents nl)))
       (goto-char (point-min))
+      ;; Make this buffer current for next/previous-error
+      (setq next-error-last-buffer buf)
       (occur-mode))
     (pop-to-buffer buf)))
 
