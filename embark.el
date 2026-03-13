@@ -725,6 +725,14 @@ This function is meant to be added to `minibuffer-setup-hook'."
     ;; thingatpt bounds, which might be a little off
     ;; adjust bounds if thingatpt gobbled punctuation around file
     (when (or (string-match (regexp-quote file) tap-file)
+              ;; If the file is a tramp file name, try matching with the local
+              ;; part.
+              (if (boundp 'tramp-file-name-structure)
+                  (if-let (((string-match
+                             (nth 0 tramp-file-name-structure) file))
+                           (local-file
+                            (match-string (nth 4 tramp-file-name-structure) file)))
+                      (string-match (regexp-quote local-file) tap-file)))
               (string-match (regexp-quote (file-name-base file)) tap-file))
       (setq bounds (cons (+ (car bounds) (match-beginning 0))
                          (- (cdr bounds) (- (length tap-file)
