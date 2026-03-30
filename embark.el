@@ -184,7 +184,8 @@ or a list of such symbols."
     embark-target-sentence-at-point
     embark-target-paragraph-at-point
     embark-target-defun-at-point
-    embark-target-prog-heading-at-point)
+    embark-target-prog-heading-at-point
+    embark-target-help-symbol)
   "List of functions to determine the target in current context.
 Each function should take no arguments and return one of:
 
@@ -1072,6 +1073,32 @@ their own target finder.  See for example
                     (abbreviate-file-name (expand-file-name raw))
                   raw)
                ,beg . ,end))))))))
+
+(defun embark-target-help-symbol ()
+  "Return the subject of the current help buffer.
+
+Guess symbol's heuristically. If `help-mode--current-data'
+has a :type property then follow that. If not return 'function if
+if the symbol passes `functionp', or 'face if it passes `facep'
+or 'symbol as a default."
+  (when help-mode--current-data
+    (let* ((sym (plist-get help-mode--current-data :symbol))
+           (type
+            ;; This is not perfect but covers lots of cases
+            (cond ((alist-get
+                    (plist-get help-mode--current-data :type)
+                    '((defvar . variable)
+                      (defface . face))))
+                  ((functionp sym) 'function)
+                  ((facep sym) 'face)
+                  'symbol))
+	   (name (symbol-name sym))
+	   beg end)
+      (save-excursion
+	(goto-char 0)
+	(setq end (search-forward name))
+	(setq beg (search-backward name)))
+      `(,type ,name ,beg . ,end))))
 
 (defun embark--cycle-key ()
   "Return the key to use for `embark-cycle'."
