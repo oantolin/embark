@@ -599,21 +599,26 @@ REST are the remaining arguments."
 (let ((tail (memq 'embark-org-target-element-context embark-target-finders)))
   (cl-pushnew 'embark-org-target-agenda-item (cdr tail)))
 
+(defun embark-org--heading-location (target)
+  "Return location of TARGET in `org-refile-target-table'."
+  (or (get-text-property 0 'org-marker target)
+      (when-let ((loc (org-refile--get-location target nil)))
+        (pcase-let ((`(,heading ,file ,regexp ,position) loc))
+          (let ((marker (make-marker)))
+            (set-marker marker position (find-file-noselect file))
+            marker)))))
+
 (cl-defun embark-org--at-heading
     (&rest rest &key run target &allow-other-keys)
   "RUN the action at the location of the heading TARGET refers to.
 The location is given by the `org-marker' text property of
 target.  Applies RUN to the REST of the arguments."
-  (if-let ((marker (or (get-text-property 0 'org-marker target)
-                       (nth 3 (org-refile--get-location target nil)))))
-      (org-with-point-at marker
-        (apply run :target target rest))
+  (org-with-point-at (embark-org--heading-location target)
     (apply run :target target rest)))
 
 (cl-defun embark-org-goto-heading (&key target &allow-other-keys)
   "Jump to the org heading TARGET refers to."
-  (when-let ((marker (or (get-text-property 0 'org-marker target)
-                         (nth 3 (org-refile--get-location target nil)))))
+  (when-let ((marker (embark-org--heading-location target)))
     (pop-to-buffer (marker-buffer marker))
     (widen)
     (goto-char marker)
