@@ -329,15 +329,12 @@ category `consult-grep'."
 (setf (alist-get 'consult-xref embark-default-action-overrides)
       #'embark-consult-xref)
 
-;;; Support for consult-find and consult-locate
+;;; Support for consult-find, consult-locate and consult-fd
 
-(setf (alist-get '(file . consult-find) embark-default-action-overrides
-                 nil nil #'equal)
-      #'find-file)
-
-(setf (alist-get '(file . consult-locate) embark-default-action-overrides
-                 nil nil #'equal)
-      #'find-file)
+(dolist (cmd '(consult-find consult-locate consult-fd))
+  (setf (alist-get `(file . ,cmd) embark-default-action-overrides
+                   nil nil #'equal)
+        #'find-file))
 
 ;;; Support for consult-isearch-history
 
@@ -389,6 +386,7 @@ category `consult-grep'."
   "r" #'consult-ripgrep
   "G" #'consult-git-grep
   "f" #'consult-find
+  "d" #'consult-fd
   "F" #'consult-locate)
 
 (defvar embark-consult-search-map
