@@ -604,14 +604,16 @@ REST are the remaining arguments."
   "RUN the action at the location of the heading TARGET refers to.
 The location is given by the `org-marker' text property of
 target.  Applies RUN to the REST of the arguments."
-  (if-let ((marker (get-text-property 0 'org-marker target)))
+  (if-let ((marker (or (get-text-property 0 'org-marker target)
+                       (nth 3 (org-refile--get-location target nil)))))
       (org-with-point-at marker
         (apply run :target target rest))
     (apply run :target target rest)))
 
 (cl-defun embark-org-goto-heading (&key target &allow-other-keys)
   "Jump to the org heading TARGET refers to."
-  (when-let ((marker (get-text-property 0 'org-marker target)))
+  (when-let ((marker (or (get-text-property 0 'org-marker target)
+                         (nth 3 (org-refile--get-location target nil)))))
     (pop-to-buffer (marker-buffer marker))
     (widen)
     (goto-char marker)
