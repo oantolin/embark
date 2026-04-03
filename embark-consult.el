@@ -435,7 +435,7 @@ file (files, buffers, libraries and some bookmarks do), then run
 the ACTION with `consult-project-function' set to nil, and search
 only the files associated to the TARGET or CANDIDATES.  For other
 types, run the ACTION with TARGET or CANDIDATES as initial input."
-  (if-let ((file-fn (cdr (assq type embark--associated-file-fn-alist))))
+  (if-let* ((file-fn (cdr (assq type embark--associated-file-fn-alist))))
       (let (consult-project-function)
         (funcall action
                  (delq nil (mapcar file-fn (or candidates (list target))))))

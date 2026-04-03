@@ -120,7 +120,7 @@
       collect `(,(intern (format "org-%s" (car elt))) ,target ,begin . ,end))))
 
 (unless (memq 'embark-org-target-element-context embark-target-finders)
-  (if-let ((tail (memq 'embark-target-active-region embark-target-finders)))
+  (if-let* ((tail (memq 'embark-target-active-region embark-target-finders)))
       (push 'embark-org-target-element-context (cdr tail))
     (push 'embark-org-target-element-context embark-target-finders)))
 
@@ -602,8 +602,8 @@ REST are the remaining arguments."
 (defun embark-org--heading-location (target)
   "Return location of TARGET in `org-refile-target-table'."
   (or (get-text-property 0 'org-marker target)
-      (when-let ((loc (org-refile--get-location target nil)))
-        (pcase-let ((`(,heading ,file ,regexp ,position) loc))
+      (when-let* ((loc (org-refile--get-location target nil)))
+        (pcase-let ((`(,_heading ,file ,_regexp ,position) loc))
           (let ((marker (make-marker)))
             (set-marker marker position (find-file-noselect file))
             marker)))))
@@ -618,7 +618,7 @@ target.  Applies RUN to the REST of the arguments."
 
 (cl-defun embark-org-goto-heading (&key target &allow-other-keys)
   "Jump to the org heading TARGET refers to."
-  (when-let ((marker (embark-org--heading-location target)))
+  (when-let* ((marker (embark-org--heading-location target)))
     (pop-to-buffer (marker-buffer marker))
     (widen)
     (goto-char marker)
@@ -676,7 +676,7 @@ and the `other-window-for-scrolling' is an org mode buffer, then
 the FUNCTION is called with that other window temporarily
 selected; otherwise the FUNCTION is called in the selected
 window."
-  (if-let ((marker (get-text-property 0 'org-marker target)))
+  (if-let* ((marker (get-text-property 0 'org-marker target)))
       (with-selected-window
           (or (and (derived-mode-p 'org-agenda-mode)
                    (let ((window (ignore-errors (other-window-for-scrolling))))
