@@ -1,13 +1,13 @@
 #+title: Embark changelog
 
-* Development
+* Version 1.2 (2026-04-04)
 - Acted-on minibuffer candidates now get recorded in the minibuffer
   history.  You can configure which actions record history via the new
   =embark-record-minibuffer-history= option; by default, we skip meta
   commands such as =embark-export=, =embark-collect= and =embark-become=.
 - =embark-target-buffer-at-point=: New target finder for buffers at point in
   Ibuffer or Buffer-menu.
-- =embark-context-menu=: Bew function which can be added to
+- =embark-context-menu=: New function which can be added to
   =context-menu-functions=. The mouse context menu is activated via
   =context-menu-mode=.
 * Version 1.1 (2024-04-18)
