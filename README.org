@@ -616,6 +616,16 @@ non-quitting version as follows:
       (embark-act)))
 #+end_src
 
+** Recording acted-on minibuffer candidates in minibuffer history
+
+Confirming minibuffer input with =RET= records the selected candidate in
+the appropriate history list.  The user option
+=embark-record-minibuffer-history= controls how Embark records acted-on
+candidates.  This option accepts three kinds of values: =t= (always
+record), =nil= (never record), or =(skip ACTIONS...)= to record for
+everything except the listed actions.  The default is a =skip= form that
+excludes meta commands such as =embark-export=.
+
 ** Running some setup after injecting the target
 
 You can customize what happens after the target is inserted at the
