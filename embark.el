@@ -366,14 +366,14 @@ indicate that for files at the prompt of the `delete-file' command,
     (embark-dired-jump embark--as-file)
     (embark-open-externally embark--as-file))
   "Alist associating commands with post-injection setup hooks.
-For commands appearing as keys in this alist, run the
-corresponding value as a setup hook after injecting the target
-into in the minibuffer and before acting on it.  The hooks must
-accept arbitrary keyword arguments.  The :action command, the
-:target string and target :type are always present.  For actions
-at point the target :bounds are passed too.  The default pre-action
-hook is specified by the entry with key t.  Furthermore, hooks with
-the key :always are executed always."
+For commands appearing as keys in this alist, run the corresponding
+value as a setup hook after injecting the target into in the minibuffer
+and before acting on it.  The hooks must accept arbitrary keyword
+arguments.  The :action command, the :target string and target :type are
+always present.  For actions at point the target :bounds are passed too.
+The default hook (used when no command-specific hook is found) is
+specified by the entry with key t.  Finally, hooks with the key
+:always are always executed."
   :type '(alist :key-type
                 (choice symbol
                         (const :tag "Default" t)
