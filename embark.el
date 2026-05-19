@@ -1004,10 +1004,10 @@ As a convenience, in Org Mode an initial ' or surrounding == or
         (end (line-end-position)))
     (when (save-excursion
             (goto-char beg)
-            (and (bolp)
-                 (looking-at
-                  ;; default definition from outline.el
-                  (or (bound-and-true-p outline-regexp) "[*\^L]+"))))
+            (if (boundp 'outline-search-function)
+                (funcall outline-search-function nil nil nil t)
+              ;; default definition from outline.el
+              (looking-at (or (bound-and-true-p outline-regexp) "[*\^L]+"))))
       (require 'outline) ;; Ensure that outline commands are available
       `(heading ,(buffer-substring beg end) ,beg . ,end))))
 
