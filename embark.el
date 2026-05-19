@@ -184,7 +184,8 @@ or a list of such symbols."
     embark-target-sentence-at-point
     embark-target-paragraph-at-point
     embark-target-defun-at-point
-    embark-target-prog-heading-at-point)
+    embark-target-prog-heading-at-point
+    embark-target-eww-heading-at-point)
   "List of functions to determine the target in current context.
 Each function should take no arguments and return one of:
 
@@ -1019,6 +1020,11 @@ As a convenience, in Org Mode an initial ' or surrounding == or
 (defun embark-target-prog-heading-at-point ()
   "Target the outline heading at point in programming modes."
   (when (derived-mode-p 'prog-mode)
+    (embark-target-heading-at-point)))
+
+(defun embark-target-eww-heading-at-point ()
+  "Target the HTML heading at point in an eww buffer."
+  (when (derived-mode-p 'eww-mode)
     (embark-target-heading-at-point)))
 
 (defun embark-target-top-minibuffer-candidate ()
