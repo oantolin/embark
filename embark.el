@@ -1005,7 +1005,7 @@ As a convenience, in Org Mode an initial ' or surrounding == or
         (end (line-end-position)))
     (when (save-excursion
             (goto-char beg)
-            (if (bound-and-true-p 'outline-search-function)
+            (if (bound-and-true-p outline-search-function)
                 (funcall outline-search-function nil nil nil t)
               ;; default definition from outline.el
               (looking-at (or (bound-and-true-p outline-regexp) "[*\^L]+"))))
