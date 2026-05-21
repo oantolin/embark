@@ -3100,6 +3100,7 @@ For non-minibuffers, assume candidates are of given TYPE."
                 (add-face-text-property
                  0 (length disp) face t (setq disp (concat disp))))
               (setq pos nextd chunks (cons disp chunks)))
+          (pcase disp (`(space :align-to . ,_) (push " " chunks)))
           (while (< pos nextd)
             (let ((nexti
                    (next-single-property-change pos 'invisible str nextd)))
