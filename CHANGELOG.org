@@ -1,6 +1,13 @@
 #+title: Embark changelog
 
 * Development version
+- When you use =embark-prefix-help-command= as your =prefix-help-command=
+  and also have the =which-key= package on, the help key now invokes
+  Embark even while the =which-key= popup is showing, instead of
+  =which-key='s own paging menu. This also works when =which-key= was
+  summoned explicitly (e.g. via =which-key-show-top-level= or
+  =which-key-show-keymap=), in which case the keymap =which-key= is
+  displaying is described.
 - The target finders for outline headings now also work with heading
   determined by ~outline-search-function~, not just ~outline-regexp~ as
   previously. A new heading target finder specifically for eww buffers

@@ -1948,6 +1948,71 @@ type @ and the key binding (without the prefix)."
                          (format " under %s" (key-description prefix)))))
       (embark-bindings-in-keymap keymap))))
 
+;;; Integration with which-key
+
+(declare-function which-key--popup-showing-p "ext:which-key")
+(declare-function which-key--current-key-string "ext:which-key")
+(declare-function which-key-C-h-dispatch "ext:which-key")
+(declare-function which-key--show-keymap "ext:which-key")
+(declare-function which-key-show-top-level "ext:which-key")
+
+(defvar embark--which-key-keymap nil
+  "Keymap that `which-key' is currently displaying, if any.
+Recorded by `embark--which-key-record-keymap' and
+`embark--which-key-record-top-level' so that
+`embark-which-key-C-h-dispatch' can describe that keymap when
+`which-key' is summoned explicitly rather than from an incomplete
+key sequence.")
+
+(defun embark--which-key-record-keymap (_keymap-name keymap &rest _)
+  "Record KEYMAP as the one `which-key' is currently displaying.
+Intended as `:before' advice for `which-key--show-keymap'."
+  (setq embark--which-key-keymap keymap))
+
+(defun embark--which-key-record-top-level (&rest _)
+  "Record the global map as the keymap `which-key' is displaying.
+Intended as `:before' advice for `which-key-show-top-level', which
+shows the top-level bindings via `which-key--create-buffer-and-show'
+and so never goes through `embark--which-key-record-keymap'."
+  (setq embark--which-key-keymap (current-global-map)))
+
+(defun embark-which-key-C-h-dispatch (oldfun &rest args)
+  "Make `embark-prefix-help-command' take effect under `which-key'.
+Intended as `:around' advice for `which-key-C-h-dispatch'.
+
+Embark lets you use `embark-prefix-help-command' as your
+`prefix-help-command', but while a `which-key' popup is showing it
+binds the help key to its own paging menu, which shadows the prefix
+help.  When `prefix-help-command' is `embark-prefix-help-command',
+this advice routes the help key to Embark instead.
+
+This also handles the case where `which-key' was summoned explicitly,
+for example via `which-key-show-top-level' or `which-key-show-keymap',
+rather than from an incomplete key sequence.  In that case there is no
+active prefix to describe, so the keymap that `which-key' is currently
+displaying (as recorded in `embark--which-key-keymap') is passed to
+`embark-bindings-in-keymap' instead.
+
+When `prefix-help-command' is not `embark-prefix-help-command', defer
+to OLDFUN, the original `which-key-C-h-dispatch', called with ARGS."
+  (if (not (eq prefix-help-command #'embark-prefix-help-command))
+      (apply oldfun args)
+    (cond ((not (which-key--popup-showing-p))
+           (setq this-command 'embark-prefix-help-command)
+           (call-interactively #'embark-prefix-help-command))
+          ((string-empty-p (which-key--current-key-string))
+           (setq this-command 'embark-prefix-help-command)
+           (embark-bindings-in-keymap (or embark--which-key-keymap
+                                          (current-global-map))))
+          (t (call-interactively #'embark-prefix-help-command)))))
+
+(advice-add 'which-key--show-keymap :before
+            #'embark--which-key-record-keymap)
+(advice-add 'which-key-show-top-level :before
+            #'embark--which-key-record-top-level)
+(advice-add 'which-key-C-h-dispatch :around
+            #'embark-which-key-C-h-dispatch)
+
 (defun embark--prompt (indicators keymap targets)
   "Call the prompter with KEYMAP and INDICATORS.
 The TARGETS are displayed for actions outside the minibuffer."
