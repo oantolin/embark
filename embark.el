@@ -3741,7 +3741,10 @@ constituent character next to an existing word constituent.
 
 2. For a multiline inserted string, newlines may be added before
 or after as needed to ensure the inserted string is on lines of
-its own."
+its own.
+
+As a convenience, if the buffer is read-only, attempt the insertion in
+the window returned by `other-window-for-scrolling' instead."
   (let* ((separator (embark--separator strings))
          (multiline
           (or (and (cdr strings) (string-match-p "\n" separator))
