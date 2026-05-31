@@ -4091,7 +4091,7 @@ It assumes the URL was encoded in UTF-8."
     (access-file dir "Download failed")
     (url-retrieve url #'eww-download-callback (list url dir))))
 
-;;; Setup and pre-action hooks
+;;; Hooks
 
 (defun embark--restart (&rest _)
   "Restart current command with current input.
