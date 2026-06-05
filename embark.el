@@ -2639,6 +2639,7 @@ See `embark-act' for the meaning of the prefix ARG."
                        collect keymap))))
     (when embark-help-key
       (keymap-set map embark-help-key #'embark-keymap-help))
+    (keymap-set map "RET" embark--command)
     map))
 
 ;;;###autoload

@@ -5,6 +5,9 @@
   determined by ~outline-search-function~, not just ~outline-regexp~ as
   previously. A new heading target finder specifically for eww buffers
   (with targets HTML h1, h2, etc.) was added and turned on by default.
+- Now =RET= will restart the current command in =embark-become=, this is
+  for consistency with =embark-act= which uses =RET= for the default
+  action, usually the current command.
 * Version 1.2 (2026-04-04)
 - Acted-on minibuffer candidates now get recorded in the minibuffer
   history.  You can configure which actions record history via the new
