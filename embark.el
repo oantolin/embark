@@ -583,6 +583,10 @@ action."
                          (cons function
                                (symbol :tag "Next target type")))))
 
+(defcustom embark-automatic-prefix-help-delay 2.0
+  "Delay in seconds before automatic prefix help is shown."
+  :type 'number)
+
 ;;; Overlay properties
 
 ;; high priority to override both bug reference and the lazy
@@ -1934,15 +1938,21 @@ in a `vc-dir' buffer."
 ;;;###autoload
 (defun embark-prefix-help-command ()
   "Prompt for and run a command bound in the prefix used for this command.
-The prefix described consists of all but the last event of the
-key sequence that ran this command.  This function is intended to
-be used as a value for `prefix-help-command'.
+The prefix described consists of all but the last event of the key
+sequence that ran this command.  This function is intended to be used as
+a value for `prefix-help-command'; when used that way you can press
+`help-char' (by default C-h) after a key binding prefix to be prompted
+for a command under the prefix to run.
 
-In addition to using completion to select a command, you can also
-type @ and the key binding (without the prefix)."
+In addition to using completion to select a command, you can also type
+the `embark-keymap-prompter-key' (@ by default) and then the key
+binding (without the prefix)."
   (interactive)
   (when-let* ((keys (this-command-keys-vector))
-              (prefix (seq-take keys (1- (length keys))))
+              (prefix (if (and (> (length keys) 0)
+                               (= (aref keys (1- (length keys))) help-char))
+                          (seq-take keys (1- (length keys)))
+                        keys))
               (keymap (key-binding prefix 'accept-default)))
     (minibuffer-with-setup-hook
         (lambda ()
@@ -3691,6 +3701,34 @@ Return the category metadatum as the type of the target."
   (add-hook 'embark-candidate-collectors #'embark--ivy-candidates)
   (remove-hook 'embark-candidate-collectors #'embark-selected-candidates)
   (add-hook 'embark-candidate-collectors #'embark-selected-candidates))
+
+;;; Automatic prefix help
+
+(defvar embark--automatic-prefix-help-timer nil
+  "Timer used to decide when to display automatic prefix help.")
+
+(define-minor-mode embark-automatic-prefix-help-mode
+  "Global minor mode to automatically provide prefix help.
+
+This global minor mode will automatically prompt you for a command to
+run under the key binding prefix you have typed, if you pause for a
+number of seconds (given by `embark-automatic-prefix-help-delay').  This
+functionality is similar to that of the which-key package, which comes
+with Emacs 30 and later.
+
+If you do sometimes want this kind of help remembering commands under a
+prefix, but do not want it to occur automatically after a delay, you can
+have it instead appear when pressing `help-char' (C-h by default) after
+a prefix, by setting:
+
+\(setq prefix-help-command #'embark-prefix-help-command)"
+  :lighter " eaph"
+  :global t
+  (if embark-automatic-prefix-help-mode
+      (setq embark--automatic-prefix-help-timer
+            (run-with-idle-timer embark-automatic-prefix-help-delay t
+                                 #'embark-prefix-help-command))
+    (cancel-timer embark--automatic-prefix-help-timer)))
 
 ;;; Custom actions
 

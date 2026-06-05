@@ -8,6 +8,9 @@
 - Now =RET= will restart the current command in =embark-become=, this is
   for consistency with =embark-act= which uses =RET= for the default
   action, usually the current command.
+- New =embark-automatic-prefix-help-mode=, a global minor mode similar
+  to =which-key-mode= but that prompts you for a command or key binding
+  under the current prefix using completion.
 * Version 1.2 (2026-04-04)
 - Acted-on minibuffer candidates now get recorded in the minibuffer
   history.  You can configure which actions record history via the new
