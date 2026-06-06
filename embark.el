@@ -1950,7 +1950,7 @@ binding (without the prefix)."
   (interactive)
   (when-let* ((keys (this-command-keys-vector))
               (prefix (if (and (> (length keys) 0)
-                               (= (aref keys (1- (length keys))) help-char))
+                               (eql (aref keys (1- (length keys))) help-char))
                           (seq-take keys (1- (length keys)))
                         keys))
               (keymap (key-binding prefix 'accept-default)))
