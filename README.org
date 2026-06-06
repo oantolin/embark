@@ -567,8 +567,8 @@ or by key binding if you press =embark-keymap-prompter-key=.
 
 If you like this kind of prefix help, but want it to appear
 automatically after a delay, like =which-key-mode= does by default, you
-can use =embark-automatic-prefix-help-mode= (independently of whether
-you also use the above setting for =prefix-help-command= or not).
+can use =embark-auto-prefix-help-mode= (independently of whether you
+also use the above setting for =prefix-help-command= or not).
 
 To list local or global key bindings, use the command =embark-bindings=.
 You can bind that to =C-h b=, which is the default key binding for the

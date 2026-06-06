@@ -583,7 +583,7 @@ action."
                          (cons function
                                (symbol :tag "Next target type")))))
 
-(defcustom embark-automatic-prefix-help-delay 2.0
+(defcustom embark-auto-prefix-help-delay 2.0
   "Delay in seconds before automatic prefix help is shown."
   :type 'number)
 
@@ -3704,15 +3704,23 @@ Return the category metadatum as the type of the target."
 
 ;;; Automatic prefix help
 
-(defvar embark--automatic-prefix-help-timer nil
+(defvar embark--auto-prefix-help-timer nil
   "Timer used to decide when to display automatic prefix help.")
 
-(define-minor-mode embark-automatic-prefix-help-mode
+(defvar embark--backup-prefix-help-command nil
+  "Previous value `prefix-help-command' to restore.")
+
+(defun embark--auto-prefix-help ()
+  "If the current keys are a prefix, simulate pressing `help-char'."
+  (when (keymapp (key-binding (this-command-keys) 'accept-default))
+    (push help-char unread-command-events)))
+
+(define-minor-mode embark-auto-prefix-help-mode
   "Global minor mode to automatically provide prefix help.
 
 This global minor mode will automatically prompt you for a command to
 run under the key binding prefix you have typed, if you pause for a
-number of seconds (given by `embark-automatic-prefix-help-delay').  This
+number of seconds (given by `embark-auto-prefix-help-delay').  This
 functionality is similar to that of the which-key package, which comes
 with Emacs 30 and later.
 
@@ -3721,14 +3729,17 @@ prefix, but do not want it to occur automatically after a delay, you can
 have it instead appear when pressing `help-char' (C-h by default) after
 a prefix, by setting:
 
-\(setq prefix-help-command #'embark-prefix-help-command)"
+\(setq prefix-help-command #\='embark-prefix-help-command)"
   :lighter " eaph"
   :global t
-  (if embark-automatic-prefix-help-mode
-      (setq embark--automatic-prefix-help-timer
-            (run-with-idle-timer embark-automatic-prefix-help-delay t
-                                 #'embark-prefix-help-command))
-    (cancel-timer embark--automatic-prefix-help-timer)))
+  (if embark-auto-prefix-help-mode
+      (setq embark--backup-prefix-help-command prefix-help-command
+            prefix-help-command #'embark-prefix-help-command
+            embark--auto-prefix-help-timer
+            (run-with-idle-timer embark-auto-prefix-help-delay t
+                                 #'embark--auto-prefix-help))
+    (cancel-timer embark--auto-prefix-help-timer)
+    (setq prefix-help-command embark--backup-prefix-help-command)))
 
 ;;; Custom actions
 
