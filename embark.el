@@ -3715,6 +3715,7 @@ Return the category metadatum as the type of the target."
   (when (keymapp (key-binding (this-command-keys) 'accept-default))
     (push help-char unread-command-events)))
 
+;;;###autoload
 (define-minor-mode embark-auto-prefix-help-mode
   "Global minor mode to automatically provide prefix help.
 
