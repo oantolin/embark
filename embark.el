@@ -2583,7 +2583,9 @@ target and the other occurrences of it highlighted in different
 colors."
   (lambda (&optional _keymap targets _prefix)
     (if (and (not (minibufferp))
-             (memq (plist-get (car targets) :orig-type) '(symbol identifier)))
+             (memq (plist-get (car targets) :type)
+                   '(identifier command variable function
+                                face library package symbol)))
         (let ((isearch-string (plist-get (car targets) :target))
               (isearch-regexp-function #'isearch-symbol-regexp))
           (isearch-lazy-highlight-new-loop))
