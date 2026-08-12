@@ -3150,12 +3150,24 @@ example)."
      tabulated-list-entries
      (mapcan
       (lambda (group)
-        (let ((multiline (seq-some (lambda (x) (string-match-p "\n" (car x)))
-                                   candidates)))
+        (let* ((multiline (seq-some (lambda (x) (string-match-p "\n" (car x)))
+                                    candidates))
+               ;; Format the group's title string (e.g., the file path)
+               (group-title (format embark-collect-group-format (car group)))
+               ;; Calculate the visual width of the title to prevent truncation
+               (group-title-width (string-width group-title)))
+          ;; The following includes the group title in the max-width calculation
+          ;; to prevent tabulated-list-mode from truncating long headers (such
+          ;; as file paths).
+          ;;
+          ;; If grouper is nil, the candidates are not grouped. We only apply
+          ;; this when a grouper is actively used.
+          (when grouper
+            (setq max-width (max max-width group-title-width)))
           (cons
            `(nil [(,(concat (propertize embark-collect--outline-string
                                         'invisible t)
-                            (format embark-collect-group-format (car group)))
+                            group-title)
                    type embark-collect-group)
                   ("" skip t)])
            (mapcar
