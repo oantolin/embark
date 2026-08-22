@@ -2967,14 +2967,15 @@ If NESTED is non-nil subkeymaps are not flattened."
   (let (bindings maps)
     (map-keymap
      (lambda (key def)
-       (cond
-        ((keymapp def)
-         (if nested
-             (push (cons (vector key) def) maps)
-           (dolist (bind (embark--all-bindings def))
-             (push (cons (vconcat (vector key) (car bind)) (cdr bind))
-                   maps))))
-        (def (push (cons (vector key) def) bindings))))
+       (let ((binding (keymap--menu-item-binding def)))
+         (cond
+          ((keymapp binding)
+           (if nested
+               (push (cons (vector key) binding) maps)
+             (dolist (bind (embark--all-bindings binding))
+               (push (cons (vconcat (vector key) (car bind)) (cdr bind))
+                     maps))))
+          (binding (push (cons (vector key) def) bindings)))))
      (keymap-canonicalize keymap))
     (nconc (nreverse bindings) (nreverse maps))))
 
