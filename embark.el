@@ -170,8 +170,8 @@ or a list of such symbols."
     embark-target-collect-candidate
     embark-target-text-heading-at-point
     embark-target-bug-reference-at-point
-    embark-target-flymake-at-point
     embark-target-smerge-at-point
+    embark-target-flymake-at-point
     embark-target-package-at-point
     embark-target-email-at-point
     embark-target-url-at-point
