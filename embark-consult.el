@@ -263,7 +263,7 @@ category `consult-grep'."
          (put-text-property (prop-match-beginning prop)
                             (prop-match-end prop)
                             'font-lock-face
-                            'match))
+                            grep-match-face))
        count))
    :footer #'ignore))
 
